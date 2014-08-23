@@ -16,6 +16,9 @@ fn start(argc: int, argv: *const *const u8) -> int {
 
 
 fn main () -> () {
+    // https://github.com/jeremyletang/rust-sfml/issues/37
+    unsafe { ::std::rt::stack::record_sp_limit(0); }
+
     // Create the window of the application
     let setting: ContextSettings = ContextSettings::default();
     let mut window: RenderWindow =
