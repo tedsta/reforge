@@ -6,7 +6,24 @@ extern crate native;
 extern crate rsfml;
 
 use rsfml::graphics::{RenderWindow, Color};
-use rsfml::window::{VideoMode, ContextSettings, event, keyboard, Close};
+use rsfml::window::{VideoMode, ContextSettings, keyboard, Close};
+
+use input_system::InputSystem;
+use input_system::KeyHandler;
+
+pub mod input_system;
+
+struct Foo;
+
+impl KeyHandler for Foo {
+    fn on_key_pressed(&mut self, key: keyboard::Key) {
+        println!("Pressed {}!", key);
+    }
+    
+    fn on_key_released(&mut self, key: keyboard::Key) {
+        println!("Released {}!", key);
+    }
+}
 
 #[cfg(target_os="macos")]
 #[start]
@@ -18,6 +35,11 @@ fn start(argc: int, argv: *const *const u8) -> int {
 fn main () -> () {
     // https://github.com/jeremyletang/rust-sfml/issues/37
     unsafe { ::std::rt::stack::record_sp_limit(0); }
+    
+    let mut input_sys = InputSystem::new();
+    
+    let mut foo = Foo;
+    input_sys.add_key_handler(&mut foo);
 
     // Create the window of the application
     let setting: ContextSettings = ContextSettings::default();
@@ -31,17 +53,7 @@ fn main () -> () {
         };
 
     while window.is_open() {
-        loop {
-            match window.poll_event() {
-                event::Closed => window.close(),
-                event::KeyPressed{code, ..} => match code {
-                    keyboard::Escape      => {window.close(); break},
-                    _                     => {}
-                } ,
-                event::NoEvent => break,
-                _ => {}
-            }
-        }
+        input_sys.update(&mut window);
         
         // Clear the screen
         window.clear(&Color::black());
@@ -49,5 +61,4 @@ fn main () -> () {
         // Display things on screen
         window.display()
     }
-
 }
