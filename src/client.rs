@@ -53,12 +53,13 @@ fn main () -> () {
         };
 
     while window.is_open() {
+        // Poll for inputs
         input_sys.update(&mut window);
         
         // Clear the screen
         window.clear(&Color::black());
 
         // Display things on screen
-        window.display()
+        window.display();
     }
 }

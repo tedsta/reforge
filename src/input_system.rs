@@ -21,11 +21,11 @@ impl<'r> InputSystem<'r> {
         InputSystem{key_handlers: vec!(), mouse_handlers: vec!()}
     }
     
-    pub fn add_key_handler(&mut self, handler: &'r mut KeyHandler) {
+    pub fn add_key_handler<T: KeyHandler+'static>(&mut self, handler: &'r mut T) {
         self.key_handlers.push(handler);
     }
     
-    pub fn add_mouse_handler(&mut self, handler: &'r mut MouseHandler) {
+    pub fn add_mouse_handler<T: MouseHandler+'static>(&mut self, handler: &'r mut T) {
         self.mouse_handlers.push(handler);
     }
     
