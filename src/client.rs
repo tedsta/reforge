@@ -11,9 +11,7 @@ use rsfml::window::{VideoMode, ContextSettings, keyboard, Close};
 use input_system::InputSystem;
 use input_system::KeyHandler;
 
-use net::Server;
-
-use std::io::TcpStream;
+use net::{Server, Client, OutPacket};
 
 pub mod input_system;
 pub mod net;
@@ -68,17 +66,18 @@ fn main () -> () {
         window.display();
     }*/
     
+    let mut server = Server::new(30000);
+    
     spawn(proc() {
-            let mut server = Server::new(30000);
             server.listen();
         });
         
-    let mut stream = TcpStream::connect("127.0.0.1", 30000);
+    let mut client = Client::new("127.0.0.1", 30000);
+    
+    let mut packet = OutPacket::new();
+    packet.write_int(42).unwrap();
+    packet.write_uint(444422).unwrap();
+    packet.write_int(64).unwrap();
 
-    stream.write_le_u16(6);
-    stream.write([1, 2, 3, 5, 7, 8]).unwrap();
-    stream.write_le_u16(5);
-    stream.write([1, 2, 3, 5, 7]).unwrap();
-    let mut buf = [0];
-    stream.read(buf).unwrap();
+    client.send(&packet);
 }
