@@ -84,12 +84,27 @@ fn main () -> () {
     client.send(&packet);
     client2.send(&packet);
     
-    loop {
-        match slot.receive() {
-            ReceivedPacket(_, mut packet) => {
-                println!("{}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
-            },
-            _ => {}
+    slot.send(1, packet);
+    //slot.send(1, packet);
+    
+    spawn(proc() {
+        loop {
+            match slot.receive() {
+                ReceivedPacket(_, mut packet) => {
+                    println!("Server got: {}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
+                },
+                _ => {}
+            }
         }
-    }
+    });
+    
+    spawn(proc() {
+        let mut packet = client.receive();
+        println!("client got: {}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
+    });
+    
+    spawn(proc() {
+        let mut packet = client2.receive();
+        println!("client2 got: {}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
+    });
 }

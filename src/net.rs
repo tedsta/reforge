@@ -28,8 +28,8 @@ impl ServerSlot {
         ServerSlot{sender: sender, receiver: receiver}
     }
     
-    pub fn send(&self, msg: SlotOutMsg) {
-        self.sender.send(msg)
+    pub fn send(&self, client_id: u32, packet: OutPacket) {
+        self.sender.send(SendPacket(client_id, packet));
     }
     
     pub fn receive(&self) -> SlotInMsg {
@@ -105,6 +105,10 @@ impl Server {
                         // Assign client to default slot
                         client_slots.insert(client_id, self.slots.find(&0).unwrap().clone());
                         
+                        // Create client packet output channel
+                        let (client_out_t, client_out_r) = channel();
+                        client_outs.insert(client_id, client_out_t);
+                        
                         // Clone packet in channel
                         let packet_in_t = packet_in_t.clone();
                         
@@ -118,7 +122,7 @@ impl Server {
                         
                         // Client output process
                         spawn(proc() {
-                            handle_client_out(out_stream);
+                            handle_client_out(out_stream, client_out_r);
                         });
                         
                         accepted_connections += 1;
@@ -175,21 +179,16 @@ impl Server {
 
 fn handle_client_in(client_id: u32, mut stream: TcpStream, packet_in_t: Sender<(u32, InPacket)>) {
     loop {
-        // Build packet
-        //let mut packet = InPacket::new_from_reader(&mut stream);
-        
         packet_in_t.send((client_id, InPacket::new_from_reader(&mut stream)));
-        
-        //println!("{}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
     }
 }
 
-fn handle_client_out(mut stream: TcpStream) {
+fn handle_client_out(mut stream: TcpStream, out_r: Receiver<OutPacket>) {
     loop {
-        // Build packet
-        //let mut packet = InPacket::new_from_reader(&mut stream);
-        
-        //println!("{}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
+        let mut packet = out_r.recv();
+        let mut data = packet.writer.get_ref();
+        stream.write_le_u16(data.len() as u16);
+        stream.write(data);
     }
 }
 
