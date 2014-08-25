@@ -11,7 +11,7 @@ use rsfml::window::{VideoMode, ContextSettings, keyboard, Close};
 use input_system::InputSystem;
 use input_system::KeyHandler;
 
-use net::{Server, Client, OutPacket};
+use net::{Server, Client, ReceivedPacket, OutPacket};
 
 pub mod input_system;
 pub mod net;
@@ -37,7 +37,7 @@ fn start(argc: int, argv: *const *const u8) -> int {
 
 fn main () -> () {
     // https://github.com/jeremyletang/rust-sfml/issues/37
-/*    unsafe { ::std::rt::stack::record_sp_limit(0); }
+    /*unsafe { ::std::rt::stack::record_sp_limit(0); }
     
     let mut input_sys = InputSystem::new();
     
@@ -66,13 +66,15 @@ fn main () -> () {
         window.display();
     }*/
     
-    let mut server = Server::new(30000);
+    let mut server = Server::new();
+    let slot = server.create_slot();
     
     spawn(proc() {
-            server.listen();
+            server.listen(30000);
         });
         
     let mut client = Client::new("127.0.0.1", 30000);
+    let mut client2 = Client::new("127.0.0.1", 30000);
     
     let mut packet = OutPacket::new();
     packet.write_int(42).unwrap();
@@ -80,4 +82,14 @@ fn main () -> () {
     packet.write_int(64).unwrap();
 
     client.send(&packet);
+    client2.send(&packet);
+    
+    loop {
+        match slot.receive() {
+            ReceivedPacket(_, mut packet) => {
+                println!("{}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
+            },
+            _ => {}
+        }
+    }
 }

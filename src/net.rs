@@ -1,50 +1,195 @@
 use std::io::{TcpListener, TcpStream, Acceptor, Listener};
-use std::io::{MemReader, MemWriter, IoResult};
+use std::io::{MemReader, MemWriter, IoResult, TimedOut};
 
 use std::collections::HashMap;
 
-use rsfml::network::Packet;
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Server Slot
+
+// Messages incoming to slots
+pub enum SlotInMsg {
+    Joined(u32),                      // Client joined slot (client_id)
+    Disconnected(u32),                // Client was disconnected from server (client_id)
+    ReceivedPacket(u32, InPacket), // Received packet from client (client_id, packet)
+}
+
+// Messages outgoing from slots
+pub enum SlotOutMsg {
+    SendPacket(u32, OutPacket), // Received packet from client (client_id, packet)
+}
+
+pub struct ServerSlot {
+    sender: Sender<SlotOutMsg>,
+    receiver: Receiver<SlotInMsg>,
+}
+
+impl ServerSlot {
+    fn new(sender: Sender<SlotOutMsg>, receiver: Receiver<SlotInMsg>) -> ServerSlot {
+        ServerSlot{sender: sender, receiver: receiver}
+    }
+    
+    pub fn send(&self, msg: SlotOutMsg) {
+        self.sender.send(msg)
+    }
+    
+    pub fn receive(&self) -> SlotInMsg {
+        self.receiver.recv()
+    }
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Server
 
 pub struct Server {
-    listener: TcpListener,
+    // Server slots. Maps slot ID to communication channels with slot
+    slots: HashMap<u32, Sender<SlotInMsg>>,
     
-    // Packet receivers
-    receivers: HashMap<u32, Receiver<Packet>>,
+    // Channel for communication between server master task and slots
+    slot_channel_t: Sender<SlotOutMsg>,
+    slot_channel_r: Receiver<SlotOutMsg>,
+    
+    // ID to give to next slot
+    next_slot_id: u32,
 }
 
 impl Server {
-    pub fn new(port: u16) -> Server {
-        Server{listener: TcpListener::bind("127.0.0.1", port).ok().unwrap(), receivers: HashMap::new()}
+    pub fn new() -> Server {
+        let (slot_channel_t, slot_channel_r) = channel();
+    
+        Server {
+            slots: HashMap::new(),
+            slot_channel_t: slot_channel_t, slot_channel_r: slot_channel_r,
+            next_slot_id: 0,
+        }
     }
     
-    pub fn set_default_receiver(&mut self) {
+    pub fn create_slot(&mut self) -> ServerSlot {
+        let (slot_in_t, slot_in_r) = channel();
+        
+        self.slots.insert(self.next_slot_id, slot_in_t);
+        self.next_slot_id += 1;
+    
+        ServerSlot::new(self.slot_channel_t.clone(), slot_in_r)
     }
     
-    pub fn listen(self) {
-        let mut acceptor = self.listener.listen();
-
-        // accept connections and process them, spawning a new tasks for each one
-        for stream in acceptor.incoming() {
-            match stream {
-                Err(e) => println!("Incoming connection failed: {}", e),
-                Ok(stream) => spawn(proc() {
-                    // connection succeeded
-                    handle_client(stream)
-                })
+    pub fn listen(&mut self, port: u16) {
+        let listener = TcpListener::bind("127.0.0.1", port).ok().unwrap();
+        
+        let mut acceptor = listener.listen().ok().unwrap();
+        acceptor.set_timeout(Some(0));
+        
+        // Maps clients to their server slots
+        let mut client_slots: HashMap<u32, Sender<SlotInMsg>> = HashMap::new();
+        
+        // Maps clients to their out packet channels
+        let mut client_outs: HashMap<u32, Sender<OutPacket>> = HashMap::new();
+        
+        // Client task to master: packet channel
+        let (packet_in_t, packet_in_r): (Sender<(u32, InPacket)>, Receiver<(u32, InPacket)>) = channel();
+        
+        // Next ID to give to each client
+        let mut next_client_id = 0;
+        
+        // Manage server slots
+        loop {
+            // Accept connections and process them, spawning a new tasks for each one
+            let mut accepted_connections = 0u; // Counter for accepted connections - move on after a while if connections keep coming
+            for stream in acceptor.incoming() {
+                match stream {
+                    Err(ref e) if e.kind == TimedOut => { break }, // TimedOut is fine, because timeout is 0 lolz
+                    Err(e) => println!("Incoming connection failed: {}", e),
+                    Ok(stream) => {
+                        let client_id = next_client_id;
+                        next_client_id += 1;
+                        
+                        // Assign client to default slot
+                        client_slots.insert(client_id, self.slots.find(&0).unwrap().clone());
+                        
+                        // Clone packet in channel
+                        let packet_in_t = packet_in_t.clone();
+                        
+                        // Clone stream for output stream
+                        let out_stream = stream.clone(); // Create copy of stream for output
+                    
+                        // Client input process
+                        spawn(proc() {
+                            handle_client_in(client_id, stream, packet_in_t);
+                        });
+                        
+                        // Client output process
+                        spawn(proc() {
+                            handle_client_out(out_stream);
+                        });
+                        
+                        accepted_connections += 1;
+                    }
+                }
+                
+                if accepted_connections >= 5 {
+                    break;
+                }
+            }
+        
+            // Check for new packets
+            let mut received_packets = 0u; // Packet counter. Move on after a while if packets keep coming
+            loop {
+                match packet_in_r.try_recv() {
+                    Ok((client_id, packet)) => {
+                        received_packets += 1;
+                        match client_slots.find(&client_id) {
+                            Some(c) => c.send(ReceivedPacket(client_id, packet)),
+                            None => println!("Received packet with invalid client ID {}", client_id)
+                        }
+                    },
+                    Err(_) => break
+                }
+                
+                if received_packets >= 10 {
+                    break;
+                }
+            }
+            
+            // Check for messages from slots
+            let mut received_messages = 0u; // Packet counter. Move on after a while if messages keep coming
+            loop {
+                match self.slot_channel_r.try_recv() {
+                    Ok(msg) => {
+                        received_messages += 1;
+                        match msg {
+                            SendPacket(client_id, packet) => match client_outs.find(&client_id) {
+                                Some(c) => c.send(packet),
+                                None => println!("Failed to send packet to invalid client ID {}", client_id)
+                            }
+                        }
+                    },
+                    Err(_) => break
+                }
+                
+                if received_messages >= 10 {
+                    break;
+                }
             }
         }
     }
 }
 
-fn handle_client(mut stream: TcpStream) {
+fn handle_client_in(client_id: u32, mut stream: TcpStream, packet_in_t: Sender<(u32, InPacket)>) {
     loop {
         // Build packet
-        let mut packet = InPacket::new_from_reader(&mut stream);
+        //let mut packet = InPacket::new_from_reader(&mut stream);
         
-        println!("{}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
+        packet_in_t.send((client_id, InPacket::new_from_reader(&mut stream)));
+        
+        //println!("{}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
+    }
+}
+
+fn handle_client_out(mut stream: TcpStream) {
+    loop {
+        // Build packet
+        //let mut packet = InPacket::new_from_reader(&mut stream);
+        
+        //println!("{}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
     }
 }
 
@@ -53,14 +198,11 @@ fn handle_client(mut stream: TcpStream) {
 
 pub struct Client {
     stream: TcpStream,
-    
-    // Receiver ID on server to send packets to
-    send_to: u32,
 }
 
 impl Client {
     pub fn new(host: &str, port: u16) -> Client {
-        Client{stream: TcpStream::connect(host, port).unwrap(), send_to: 0}
+        Client{stream: TcpStream::connect(host, port).unwrap()}
     }
     
     pub fn send(&mut self, packet: &OutPacket) {
