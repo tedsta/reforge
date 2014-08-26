@@ -10,7 +10,7 @@ use std::collections::HashMap;
 pub enum SlotInMsg {
     Joined(u32),                      // Client joined slot (client_id)
     Disconnected(u32),                // Client was disconnected from server (client_id)
-    ReceivedPacket(u32, InPacket), // Received packet from client (client_id, packet)
+    ReceivedPacket(u32, Box<InPacket>), // Received packet from client (client_id, packet)
 }
 
 // Messages outgoing from slots
@@ -85,7 +85,7 @@ impl Server {
         let mut client_outs: HashMap<u32, Sender<OutPacket>> = HashMap::new();
         
         // Client task to master: packet channel
-        let (packet_in_t, packet_in_r): (Sender<(u32, InPacket)>, Receiver<(u32, InPacket)>) = channel();
+        let (packet_in_t, packet_in_r): (Sender<(u32, Box<InPacket>)>, Receiver<(u32, Box<InPacket>)>) = channel();
         
         // Next ID to give to each client
         let mut next_client_id = 0;
@@ -181,9 +181,9 @@ impl Server {
     }
 }
 
-fn handle_client_in(client_id: u32, mut stream: TcpStream, packet_in_t: Sender<(u32, InPacket)>) {
+fn handle_client_in(client_id: u32, mut stream: TcpStream, packet_in_t: Sender<(u32, Box<InPacket>)>) {
     loop {
-        packet_in_t.send((client_id, InPacket::new_from_reader(&mut stream)));
+        packet_in_t.send((client_id, box InPacket::new_from_reader(&mut stream)));
     }
 }
 
@@ -231,6 +231,10 @@ impl OutPacket {
         OutPacket{writer: MemWriter::new()}
     }
     
+    pub fn len(&self) -> uint {
+        self.writer.get_ref().len()
+    }
+    
     pub fn write_int(&mut self, data: int) -> IoResult<()> {
         self.writer.write_le_int(data)
     }
@@ -264,6 +268,10 @@ impl InPacket {
         
         // Build packet
         InPacket::new(data)
+    }
+    
+    pub fn len(&self) -> uint {
+        self.reader.get_ref().len()
     }
     
     pub fn read_int(&mut self) -> IoResult<int> {
