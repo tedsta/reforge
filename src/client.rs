@@ -1,5 +1,5 @@
-#![crate_name = "spacegame"]
-#![desc = "spacegame awesome mmo"]
+#![crate_name = "spacegame_client"]
+#![desc = "spacegame awesome mmo client"]
 #![crate_type = "bin"]
 
 extern crate native;
@@ -11,7 +11,7 @@ use rsfml::window::{VideoMode, ContextSettings, keyboard, Close};
 use input_system::InputSystem;
 use input_system::KeyHandler;
 
-use net::{Server, Client, Joined, ReceivedPacket, OutPacket};
+use net::{Client, OutPacket};
 
 pub mod input_system;
 pub mod net;
@@ -35,7 +35,7 @@ fn start(argc: int, argv: *const *const u8) -> int {
 }
 
 
-fn main () -> () {
+fn main () {
     // https://github.com/jeremyletang/rust-sfml/issues/37
     /*unsafe { ::std::rt::stack::record_sp_limit(0); }
     
@@ -66,15 +66,7 @@ fn main () -> () {
         window.display();
     }*/
     
-    let mut server = Server::new();
-    let slot = server.create_slot();
-    
-    spawn(proc() {
-            server.listen(30000);
-        });
-        
     let mut client = Client::new("127.0.0.1", 30000);
-    let mut client2 = Client::new("127.0.0.1", 30000);
     
     let mut packet = OutPacket::new();
     packet.write_int(42).unwrap();
@@ -82,30 +74,9 @@ fn main () -> () {
     packet.write_int(64).unwrap();
 
     client.send(&packet);
-    client2.send(&packet);
-    
-    slot.send(1, packet);
-    //slot.send(1, packet);
-    
-    spawn(proc() {
-        loop {
-            match slot.receive() {
-                ReceivedPacket(_, mut packet) => {
-                    println!("Server got: {}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
-                },
-                Joined(client_id) => println!("{} has joined.", client_id),
-                _ => {}
-            }
-        }
-    });
     
     spawn(proc() {
         let mut packet = client.receive();
         println!("client got: {}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
-    });
-    
-    spawn(proc() {
-        let mut packet = client2.receive();
-        println!("client2 got: {}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
     });
 }

@@ -189,10 +189,10 @@ fn handle_client_in(client_id: u32, mut stream: TcpStream, packet_in_t: Sender<(
 
 fn handle_client_out(mut stream: TcpStream, out_r: Receiver<OutPacket>) {
     loop {
-        let mut packet = out_r.recv();
-        let mut data = packet.writer.get_ref();
-        stream.write_le_u16(data.len() as u16);
-        stream.write(data);
+        let packet = out_r.recv();
+        let data = packet.writer.get_ref();
+        stream.write_le_u16(data.len() as u16).unwrap();
+        stream.write(data).unwrap();
     }
 }
 
@@ -210,8 +210,8 @@ impl Client {
     
     pub fn send(&mut self, packet: &OutPacket) {
         let data = packet.writer.get_ref();
-        self.stream.write_le_u16(data.len() as u16);
-        self.stream.write(data);
+        self.stream.write_le_u16(data.len() as u16).unwrap();
+        self.stream.write(data).unwrap();
     }
     
     pub fn receive(&mut self) -> InPacket {
