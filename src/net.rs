@@ -103,7 +103,8 @@ impl Server {
                         next_client_id += 1;
                         
                         // Assign client to default slot
-                        client_slots.insert(client_id, self.slots.find(&0).unwrap().clone());
+                        let default_slot = self.slots.find(&0).unwrap();
+                        client_slots.insert(client_id, default_slot.clone());
                         
                         // Create client packet output channel
                         let (client_out_t, client_out_r) = channel();
@@ -124,6 +125,9 @@ impl Server {
                         spawn(proc() {
                             handle_client_out(out_stream, client_out_r);
                         });
+                        
+                        // Tell the default channel that it's been joined
+                        default_slot.send(Joined(client_id));
                         
                         accepted_connections += 1;
                     }

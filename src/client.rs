@@ -11,7 +11,7 @@ use rsfml::window::{VideoMode, ContextSettings, keyboard, Close};
 use input_system::InputSystem;
 use input_system::KeyHandler;
 
-use net::{Server, Client, ReceivedPacket, OutPacket};
+use net::{Server, Client, Joined, ReceivedPacket, OutPacket};
 
 pub mod input_system;
 pub mod net;
@@ -93,6 +93,7 @@ fn main () -> () {
                 ReceivedPacket(_, mut packet) => {
                     println!("Server got: {}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
                 },
+                Joined(client_id) => println!("{} has joined.", client_id),
                 _ => {}
             }
         }
