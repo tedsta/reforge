@@ -7,6 +7,7 @@ use net::Server;
 use battle_scheduler::BattleScheduler;
 
 pub mod battle_scheduler;
+pub mod battle_state;
 pub mod net;
 
 fn main() {
@@ -17,6 +18,6 @@ fn main() {
             server.listen(30000);
         });
 
-    let mut scheduler = BattleScheduler::new();
-    scheduler.run(slot);
+    let mut scheduler = BattleScheduler::new(slot);
+    scheduler.run();
 }
