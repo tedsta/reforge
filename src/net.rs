@@ -102,7 +102,7 @@ impl Server {
     }
     
     pub fn listen(&mut self, port: u16) {
-        let listener = TcpListener::bind("127.0.0.1", port).ok().unwrap();
+        let listener = TcpListener::bind("0.0.0.0", port).ok().unwrap();
         
         let mut acceptor = listener.listen().ok().unwrap();
         acceptor.set_timeout(Some(0));
