@@ -1,7 +1,6 @@
 use std::collections::RingBuf;
 
 use net::{ClientId, ServerSlot, Joined, ReceivedPacket};
-
 use battle_state::ServerBattleState;
 
 pub struct BattleScheduler {

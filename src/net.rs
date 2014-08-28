@@ -1,7 +1,6 @@
+use std::collections::HashMap;
 use std::io::{TcpListener, TcpStream, Acceptor, Listener};
 use std::io::{MemReader, MemWriter, IoResult, TimedOut};
-
-use std::collections::HashMap;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Some basic types
@@ -276,11 +275,11 @@ impl OutPacket {
         self.writer.get_ref().len()
     }
     
-    pub fn write_int32(&mut self, data: i32) -> IoResult<()> {
+    pub fn write_i32(&mut self, data: i32) -> IoResult<()> {
         self.writer.write_le_i32(data)
     }
     
-    pub fn write_uint32(&mut self, data: u32) -> IoResult<()> {
+    pub fn write_u32(&mut self, data: u32) -> IoResult<()> {
         self.writer.write_le_u32(data)
     }
 }
@@ -315,11 +314,11 @@ impl InPacket {
         self.reader.get_ref().len()
     }
     
-    pub fn read_int32(&mut self) -> IoResult<i32> {
+    pub fn read_i32(&mut self) -> IoResult<i32> {
         self.reader.read_le_i32()
     }
     
-    pub fn read_uint32(&mut self) -> IoResult<u32> {
+    pub fn read_u32(&mut self) -> IoResult<u32> {
         self.reader.read_le_u32()
     }
 }

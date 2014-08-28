@@ -3,12 +3,13 @@
 #![crate_type = "bin"]
 
 use net::Server;
-
 use battle_scheduler::BattleScheduler;
 
 pub mod battle_scheduler;
 pub mod battle_state;
+pub mod module;
 pub mod net;
+pub mod sim_element;
 
 fn main() {
     let mut server = Server::new();

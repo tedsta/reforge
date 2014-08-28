@@ -18,9 +18,9 @@ impl ServerBattleState {
                 Joined(client_id) => {
                     println!("Client {} joined battle {}", client_id, self.slot.id());
                     let mut packet = OutPacket::new();
-                    packet.write_int32(42).unwrap();
-                    packet.write_uint32(444422).unwrap();
-                    packet.write_int32(64).unwrap();
+                    packet.write_i32(42).unwrap();
+                    packet.write_u32(444422).unwrap();
+                    packet.write_i32(64).unwrap();
                     self.slot.send(client_id, packet);
                 },
                 ReceivedPacket(client_id, packet) => {

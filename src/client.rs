@@ -10,11 +10,14 @@ use rsfml::window::{VideoMode, ContextSettings, keyboard, Close};
 
 use input_system::InputSystem;
 use input_system::KeyHandler;
-
 use net::{Client, OutPacket};
 
+pub mod battle_scheduler;
+pub mod battle_state;
 pub mod input_system;
+pub mod module;
 pub mod net;
+pub mod sim_element;
 
 struct Foo;
 
@@ -69,15 +72,15 @@ fn main () {
     let mut client = Client::new("127.0.0.1", 30000);
     
     let mut packet = OutPacket::new();
-    packet.write_int32(42).unwrap();
-    packet.write_uint32(444422).unwrap();
-    packet.write_int32(64).unwrap();
+    packet.write_i32(42).unwrap();
+    packet.write_u32(444422).unwrap();
+    packet.write_i32(64).unwrap();
 
     client.send(&packet);
 
     let mut packet = client.receive();
-    println!("client got: {}, {}, {}", packet.read_int32().unwrap(), packet.read_uint32().unwrap(), packet.read_int32().unwrap());
+    println!("client got: {}, {}, {}", packet.read_i32().unwrap(), packet.read_u32().unwrap(), packet.read_i32().unwrap());
     let mut packet = OutPacket::new();
-    packet.write_int32(42).unwrap();
+    packet.write_i32(42).unwrap();
     client.send(&packet);
 }
