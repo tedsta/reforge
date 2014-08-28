@@ -69,14 +69,15 @@ fn main () {
     let mut client = Client::new("127.0.0.1", 30000);
     
     let mut packet = OutPacket::new();
-    packet.write_int(42).unwrap();
-    packet.write_uint(444422).unwrap();
-    packet.write_int(64).unwrap();
+    packet.write_int32(42).unwrap();
+    packet.write_uint32(444422).unwrap();
+    packet.write_int32(64).unwrap();
 
     client.send(&packet);
-    
-    spawn(proc() {
-        let mut packet = client.receive();
-        println!("client got: {}, {}, {}", packet.read_int().unwrap(), packet.read_uint().unwrap(), packet.read_int().unwrap());
-    });
+
+    let mut packet = client.receive();
+    println!("client got: {}, {}, {}", packet.read_int32().unwrap(), packet.read_uint32().unwrap(), packet.read_int32().unwrap());
+    let mut packet = OutPacket::new();
+    packet.write_int32(42).unwrap();
+    client.send(&packet);
 }

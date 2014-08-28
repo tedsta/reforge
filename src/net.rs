@@ -276,12 +276,12 @@ impl OutPacket {
         self.writer.get_ref().len()
     }
     
-    pub fn write_int(&mut self, data: int) -> IoResult<()> {
-        self.writer.write_le_int(data)
+    pub fn write_int32(&mut self, data: i32) -> IoResult<()> {
+        self.writer.write_le_i32(data)
     }
     
-    pub fn write_uint(&mut self, data: uint) -> IoResult<()> {
-        self.writer.write_le_uint(data)
+    pub fn write_uint32(&mut self, data: u32) -> IoResult<()> {
+        self.writer.write_le_u32(data)
     }
 }
 
@@ -315,11 +315,11 @@ impl InPacket {
         self.reader.get_ref().len()
     }
     
-    pub fn read_int(&mut self) -> IoResult<int> {
-        self.reader.read_le_int()
+    pub fn read_int32(&mut self) -> IoResult<i32> {
+        self.reader.read_le_i32()
     }
     
-    pub fn read_uint(&mut self) -> IoResult<uint> {
-        self.reader.read_le_uint()
+    pub fn read_uint32(&mut self) -> IoResult<u32> {
+        self.reader.read_le_u32()
     }
 }
