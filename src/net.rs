@@ -172,6 +172,8 @@ impl Server {
                 match packet_in_r.try_recv() {
                     Ok((client_id, packet)) => {
                         received_packets += 1;
+                        
+                        // Send the received packet to the slot the client is in
                         client_slots[client_id].send(ReceivedPacket(client_id, packet));
                     },
                     Err(_) => break
@@ -229,8 +231,13 @@ fn handle_client_in(client_id: ClientId, mut stream: TcpStream, packet_in_t: Sen
 
 fn handle_client_out(mut stream: TcpStream, out_r: Receiver<OutPacket>) {
     loop {
+        // Receive a packet to send
         let packet = out_r.recv();
+        
+        // Get the packet's data
         let data = packet.writer.get_ref();
+        
+        // Write the packet size, then the actual packet data
         stream.write_le_u16(data.len() as u16).unwrap();
         stream.write(data).unwrap();
     }
@@ -282,6 +289,14 @@ impl OutPacket {
     pub fn write_u32(&mut self, data: u32) -> IoResult<()> {
         self.writer.write_le_u32(data)
     }
+    
+    pub fn write_i16(&mut self, data: i16) -> IoResult<()> {
+        self.writer.write_le_i16(data)
+    }
+    
+    pub fn write_u16(&mut self, data: u16) -> IoResult<()> {
+        self.writer.write_le_u16(data)
+    }
 }
 
 pub struct InPacket {
@@ -320,5 +335,13 @@ impl InPacket {
     
     pub fn read_u32(&mut self) -> IoResult<u32> {
         self.reader.read_le_u32()
+    }
+    
+    pub fn read_i16(&mut self) -> IoResult<i16> {
+        self.reader.read_le_i16()
+    }
+    
+    pub fn read_u16(&mut self) -> IoResult<u16> {
+        self.reader.read_le_u16()
     }
 }

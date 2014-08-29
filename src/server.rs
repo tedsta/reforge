@@ -8,6 +8,7 @@ use battle_scheduler::BattleScheduler;
 pub mod battle_scheduler;
 pub mod battle_state;
 pub mod module;
+pub mod modules;
 pub mod net;
 pub mod sim_element;
 

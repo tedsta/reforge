@@ -28,12 +28,11 @@ impl ModuleBase {
         })
     }
     
-    pub fn to_packet(&self) -> IoResult<OutPacket> {
-        let mut packet = OutPacket::new();
+    pub fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()> {
         try!(packet.write_u32(self.power));
         try!(packet.write_u32(self.max_power));
         try!(packet.write_u32(self.damage));
         try!(packet.write_u32(self.hull));
-        Ok(packet)
+        Ok(())
     }
 }
