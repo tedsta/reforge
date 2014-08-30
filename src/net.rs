@@ -269,6 +269,12 @@ impl Client {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Packet
 
+pub trait Packable {
+    fn new_from_packet(packet: &mut InPacket) -> IoResult<Self>;
+    
+    fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()>;
+}
+
 pub struct OutPacket {
     writer: MemWriter,
 }

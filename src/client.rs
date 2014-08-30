@@ -16,7 +16,6 @@ pub mod battle_scheduler;
 pub mod battle_state;
 pub mod input_system;
 pub mod module;
-pub mod modules;
 pub mod net;
 pub mod sim_element;
 
