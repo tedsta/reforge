@@ -53,7 +53,7 @@ impl ServerSlot {
         self.create_slot.recv()
     }
     
-    // Transfer a client to a different lost
+    // Transfer a client to a different slot
     pub fn transfer_client(&self, client_id: ClientId, to_slot: ServerSlotId) {
         self.sender.send(TransferClient(client_id, to_slot));
     }
@@ -303,6 +303,14 @@ impl OutPacket {
     pub fn write_u16(&mut self, data: u16) -> IoResult<()> {
         self.writer.write_le_u16(data)
     }
+    
+    pub fn write_i8(&mut self, data: i8) -> IoResult<()> {
+        self.writer.write_i8(data)
+    }
+    
+    pub fn write_u8(&mut self, data: u8) -> IoResult<()> {
+        self.writer.write_u8(data)
+    }
 }
 
 pub struct InPacket {
@@ -349,5 +357,13 @@ impl InPacket {
     
     pub fn read_u16(&mut self) -> IoResult<u16> {
         self.reader.read_le_u16()
+    }
+    
+    pub fn read_i8(&mut self) -> IoResult<i8> {
+        self.reader.read_i8()
+    }
+    
+    pub fn read_u8(&mut self) -> IoResult<u8> {
+        self.reader.read_u8()
     }
 }

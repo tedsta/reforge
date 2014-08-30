@@ -9,6 +9,7 @@ pub mod battle_scheduler;
 pub mod battle_state;
 pub mod module;
 pub mod net;
+pub mod ship;
 pub mod sim_element;
 
 fn main() {

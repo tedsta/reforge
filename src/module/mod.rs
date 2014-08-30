@@ -12,9 +12,12 @@ pub mod engine;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub trait Module : ModuleTypeId+Packable {
+pub trait Module : ModuleTypeId + Packable {
     fn create_sim_elements(&self) -> Vec<Box<SimElement>>;
 }
+
+// Type alias for boxed Module... because with the 'static it's too tedious
+pub type ModuleBox = Box<Module + 'static>;
 
 pub struct ModuleBase {
     power: u32,
@@ -53,7 +56,7 @@ pub enum ModuleType {
     Engine,
 }
 
-fn module_from_packet(packet: &mut InPacket) -> IoResult<Box<Module>> {
+pub fn read_module_from_packet(packet: &mut InPacket) -> IoResult<ModuleBox> {
     let module_type: ModuleType = match FromPrimitive::from_u16(try!(packet.read_u16())) {
         Some(module_type) => module_type,
         None => return Err(IoError{kind: InvalidInput, desc: "Unknown module type", detail: None})
@@ -61,12 +64,12 @@ fn module_from_packet(packet: &mut InPacket) -> IoResult<Box<Module>> {
     match module_type {
         Engine => {
             let module: Box<EngineModule> = box try!(Packable::new_from_packet(packet));
-            Ok(module as Box<Module>)
+            Ok(module as ModuleBox)
         },
     }
 }
 
-fn write_module_to_packet(module: Box<Module>, packet: &mut OutPacket) -> IoResult<()> {
+pub fn write_module_to_packet(module: &ModuleBox, packet: &mut OutPacket) -> IoResult<()> {
     if module.get_type_id() == TypeId::of::<EngineModule>() {
         try!(packet.write_u16(Engine as u16));
     }

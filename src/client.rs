@@ -17,6 +17,7 @@ pub mod battle_state;
 pub mod input_system;
 pub mod module;
 pub mod net;
+pub mod ship;
 pub mod sim_element;
 
 struct Foo;
@@ -40,12 +41,11 @@ fn start(argc: int, argv: *const *const u8) -> int {
 
 fn main () {
     // https://github.com/jeremyletang/rust-sfml/issues/37
-    /*unsafe { ::std::rt::stack::record_sp_limit(0); }
+    unsafe { ::std::rt::stack::record_sp_limit(0); }
     
-    let mut input_sys = InputSystem::new();
+    /*let mut input_sys = InputSystem::new();
     
-    let mut foo = Foo;
-    input_sys.add_key_handler(&mut foo);
+    input_sys.add_key_handler(box Foo);
 
     // Create the window of the application
     let setting: ContextSettings = ContextSettings::default();

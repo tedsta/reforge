@@ -11,21 +11,25 @@ pub trait MouseHandler {
     fn on_mouse_button_released(&mut self, mouse::MouseButton);
 }
 
-pub struct InputSystem<'r> {
-    key_handlers: Vec<&'r mut KeyHandler>,
-    mouse_handlers: Vec<&'r mut MouseHandler>,
+// Type aliases for boxed KeyHandler and MouseHandler
+pub type KeyHandlerBox = Box<KeyHandler + 'static>;
+pub type MouseHandlerBox = Box<MouseHandler + 'static>;
+
+pub struct InputSystem {
+    key_handlers: Vec<KeyHandlerBox>,
+    mouse_handlers: Vec<MouseHandlerBox>,
 }
 
-impl<'r> InputSystem<'r> {
-    pub fn new() -> InputSystem<'r> {
+impl InputSystem {
+    pub fn new() -> InputSystem {
         InputSystem{key_handlers: vec!(), mouse_handlers: vec!()}
     }
     
-    pub fn add_key_handler<T: KeyHandler+'static>(&mut self, handler: &'r mut T) {
+    pub fn add_key_handler(&mut self, handler: KeyHandlerBox) {
         self.key_handlers.push(handler);
     }
     
-    pub fn add_mouse_handler<T: MouseHandler+'static>(&mut self, handler: &'r mut T) {
+    pub fn add_mouse_handler(&mut self, handler: MouseHandlerBox) {
         self.mouse_handlers.push(handler);
     }
     
