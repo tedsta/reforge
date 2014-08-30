@@ -74,7 +74,7 @@ impl Packable for Ship {
         try!(self.state.write_to_packet(packet));
         try!(packet.write_u8(self.modules.len() as u8));
         for module in self.modules.iter() {
-            try!(write_module_to_packet(&*module, packet));
+            try!(write_module_to_packet(module, packet));
         }
         Ok(())
     }

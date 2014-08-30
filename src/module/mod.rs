@@ -30,8 +30,10 @@ impl ModuleBase {
     pub fn new() -> ModuleBase {
         ModuleBase{power: 0, max_power: 1, damage: 0, hull: 0}
     }
-    
-    pub fn new_from_packet(packet: &mut InPacket) -> IoResult<ModuleBase> {
+}
+
+impl Packable for ModuleBase {
+    fn new_from_packet(packet: &mut InPacket) -> IoResult<ModuleBase> {
         Ok(ModuleBase {
             power: try!(packet.read_u32()),
             max_power: try!(packet.read_u32()),
@@ -40,7 +42,7 @@ impl ModuleBase {
         })
     }
     
-    pub fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()> {
+    fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()> {
         try!(packet.write_u32(self.power));
         try!(packet.write_u32(self.max_power));
         try!(packet.write_u32(self.damage));

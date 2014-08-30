@@ -22,11 +22,15 @@ impl Module for EngineModule {
 
 impl Packable for EngineModule {
     fn new_from_packet(packet: &mut InPacket) -> IoResult<EngineModule> {
-        let engine = EngineModule::new();
-        Ok(engine)
+        let base = try!(Packable::new_from_packet(packet));
+    
+        Ok(EngineModule {
+            base: base,
+        })
     }
     
     fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()> {
+        try!(self.base.write_to_packet(packet));
         Ok(())
     }
 }
