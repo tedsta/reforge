@@ -33,7 +33,7 @@ impl ModuleBase {
 }
 
 impl Packable for ModuleBase {
-    fn new_from_packet(packet: &mut InPacket) -> IoResult<ModuleBase> {
+    fn read_from_packet(packet: &mut InPacket) -> IoResult<ModuleBase> {
         Ok(ModuleBase {
             power: try!(packet.read_u32()),
             max_power: try!(packet.read_u32()),
@@ -65,7 +65,7 @@ pub fn read_module_from_packet(packet: &mut InPacket) -> IoResult<ModuleBox> {
     };
     match module_type {
         Engine => {
-            let module: Box<EngineModule> = box try!(Packable::new_from_packet(packet));
+            let module: Box<EngineModule> = box try!(packet.read());
             Ok(module as ModuleBox)
         },
     }

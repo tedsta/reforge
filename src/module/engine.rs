@@ -21,8 +21,8 @@ impl Module for EngineModule {
 }
 
 impl Packable for EngineModule {
-    fn new_from_packet(packet: &mut InPacket) -> IoResult<EngineModule> {
-        let base = try!(Packable::new_from_packet(packet));
+    fn read_from_packet(packet: &mut InPacket) -> IoResult<EngineModule> {
+        let base = try!(packet.read());
     
         Ok(EngineModule {
             base: base,

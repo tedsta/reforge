@@ -270,7 +270,7 @@ impl Client {
 // Packet
 
 pub trait Packable {
-    fn new_from_packet(packet: &mut InPacket) -> IoResult<Self>;
+    fn read_from_packet(packet: &mut InPacket) -> IoResult<Self>;
     
     fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()>;
 }
@@ -286,6 +286,10 @@ impl OutPacket {
     
     pub fn len(&self) -> uint {
         self.writer.get_ref().len()
+    }
+    
+    pub fn write<T: Packable>(&mut self, data: &T) -> IoResult<()> {
+        Ok(try!(data.write_to_packet(self)))
     }
     
     pub fn write_i32(&mut self, data: i32) -> IoResult<()> {
@@ -341,6 +345,10 @@ impl InPacket {
     
     pub fn len(&self) -> uint {
         self.reader.get_ref().len()
+    }
+    
+    pub fn read<T: Packable>(&mut self) -> IoResult<T> {
+        Ok(try!(Packable::read_from_packet(self)))
     }
     
     pub fn read_i32(&mut self) -> IoResult<i32> {

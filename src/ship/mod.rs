@@ -21,7 +21,7 @@ impl ShipState {
 }
 
 impl Packable for ShipState {
-    fn new_from_packet(packet: &mut InPacket) -> IoResult<ShipState> {
+    fn read_from_packet(packet: &mut InPacket) -> IoResult<ShipState> {
         Ok(ShipState {
             engines: try!(packet.read_u32()) as uint,
             shields: try!(packet.read_u32()) as uint,
@@ -53,8 +53,8 @@ impl Ship {
 }
 
 impl Packable for Ship {
-    fn new_from_packet(packet: &mut InPacket) -> IoResult<Ship> {
-        let state: ShipState = try!(Packable::new_from_packet(packet));
+    fn read_from_packet(packet: &mut InPacket) -> IoResult<Ship> {
+        let state: ShipState = try!(packet.read());
         
         // Deserialize modules
         let num_modules = try!(packet.read_u8());
