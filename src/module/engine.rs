@@ -30,7 +30,7 @@ impl Packable for EngineModule {
     }
     
     fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()> {
-        try!(self.base.write_to_packet(packet));
+        try!(packet.write(&self.base));
         Ok(())
     }
 }
