@@ -1,15 +1,19 @@
-use net::{ServerSlot, Client, Joined, ReceivedPacket, OutPacket};
+use std::collections::HashMap;
+
+use net::{ClientId, ServerSlot, Client, Joined, ReceivedPacket, OutPacket};
+use ship::Ship;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Server
 
 pub struct ServerBattleState {
     slot: Box<ServerSlot>,
+    ships: HashMap<ClientId, Ship>,
 }
 
 impl ServerBattleState {
-    pub fn new(slot: Box<ServerSlot>) -> ServerBattleState {
-        ServerBattleState{slot: slot}
+    pub fn new(slot: Box<ServerSlot>, ships: HashMap<ClientId, Ship>) -> ServerBattleState {
+        ServerBattleState{slot: slot, ships: ships}
     }
     
     pub fn run(&mut self) {

@@ -1,6 +1,6 @@
 use std::io::IoResult;
 
-use module::{ModuleBox, read_module_from_packet, write_module_to_packet};
+use module::{Module, ModuleBox, read_module_from_packet, write_module_to_packet};
 use net::{InPacket, OutPacket, Packable};
 use self::ship_gen::generate_ship;
 
@@ -49,6 +49,12 @@ impl Ship {
     
     pub fn generate() -> Ship {
         generate_ship()
+    }
+    
+    // Returns true if adding the module was successful, false if it failed.
+    pub fn add_module<T: Module>(&mut self, module: T) -> bool {
+        self.modules.push(box module);
+        true
     }
 }
 

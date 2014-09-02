@@ -1,7 +1,8 @@
-use std::collections::RingBuf;
+use std::collections::{RingBuf, HashMap};
 
 use net::{ClientId, ServerSlot, Joined, ReceivedPacket};
 use battle_state::ServerBattleState;
+use ship::Ship;
 
 pub struct BattleScheduler {
     slot: Box<ServerSlot>,
@@ -32,10 +33,21 @@ impl BattleScheduler {
     pub fn try_schedule(&mut self) {
         if self.waiting.len() >= 2 {
             let new_slot = self.slot.create_slot();
-            self.slot.transfer_client(self.waiting.pop().unwrap(), new_slot.id());
-            self.slot.transfer_client(self.waiting.pop().unwrap(), new_slot.id());
+            
+            let client1 = self.waiting.pop().unwrap();
+            let client2 = self.waiting.pop().unwrap();
+            
+            // Transfer clients to battle state
+            self.slot.transfer_client(client1, new_slot.id());
+            self.slot.transfer_client(client2, new_slot.id());
+            
             spawn(proc() {
-                let mut battle_state = ServerBattleState::new(new_slot);
+                // Map clients to their ships
+                let mut ships = HashMap::new();
+                ships.insert(client1, Ship::generate());
+                ships.insert(client2, Ship::generate());
+            
+                let mut battle_state = ServerBattleState::new(new_slot, ships);
                 battle_state.run();
             });
         }
