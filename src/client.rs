@@ -8,13 +8,14 @@ extern crate rsfml;
 use rsfml::graphics::{RenderWindow, Color};
 use rsfml::window::{VideoMode, ContextSettings, keyboard, Close};
 
-use input_system::InputSystem;
-use input_system::KeyHandler;
+use client_battle_state::ClientBattleState;
+use input::InputSystem;
+use input::KeyHandler;
 use net::{Client, OutPacket};
 
-pub mod battle_scheduler;
-pub mod battle_state;
-pub mod input_system;
+pub mod battle_state_packets;
+pub mod client_battle_state;
+pub mod input;
 pub mod module;
 pub mod net;
 pub mod ship;
@@ -43,7 +44,7 @@ fn main () {
     // https://github.com/jeremyletang/rust-sfml/issues/37
     unsafe { ::std::rt::stack::record_sp_limit(0); }
     
-    /*let mut input_sys = InputSystem::new();
+    let mut input_sys = InputSystem::new();
     
     input_sys.add_key_handler(box Foo);
 
@@ -57,30 +58,12 @@ fn main () {
             Some(window) => window,
             None => fail!("Cannot create a new Render Window.")
         };
-
-    while window.is_open() {
-        // Poll for inputs
-        input_sys.update(&mut window);
-        
-        // Clear the screen
-        window.clear(&Color::black());
-
-        // Display things on screen
-        window.display();
-    }*/
     
+    // Connect to server
     let mut client = Client::new("127.0.0.1", 30000);
     
-    let mut packet = OutPacket::new();
-    packet.write_i32(42).unwrap();
-    packet.write_u32(444422).unwrap();
-    packet.write_i32(64).unwrap();
+    // Create the battle state
+    let mut battle = ClientBattleState::new(client);
 
-    client.send(&packet);
-
-    let mut packet = client.receive();
-    println!("client got: {}, {}, {}", packet.read_i32().unwrap(), packet.read_u32().unwrap(), packet.read_i32().unwrap());
-    let mut packet = OutPacket::new();
-    packet.write_i32(42).unwrap();
-    client.send(&packet);
+    battle.run(&mut window, &mut input_sys);
 }

@@ -1,7 +1,7 @@
 use std::collections::{RingBuf, HashMap};
 
 use net::{ClientId, ServerSlot, Joined, ReceivedPacket};
-use battle_state::ServerBattleState;
+use server_battle_state::ServerBattleState;
 use ship::Ship;
 
 pub struct BattleScheduler {

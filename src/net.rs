@@ -16,7 +16,7 @@ pub type ServerSlotId = u32;
 pub enum SlotInMsg {
     Joined(ClientId),                        // Client joined slot (client_id)
     Disconnected(ClientId),                  // Client was disconnected from server (client_id)
-    ReceivedPacket(ClientId, Box<InPacket>), // Received packet from client (client_id, packet)
+    ReceivedPacket(ClientId, InPacket), // Received packet from client (client_id, packet)
 }
 
 // Messages outgoing from slots
@@ -32,11 +32,11 @@ pub struct ServerSlot {
     receiver: Receiver<SlotInMsg>,
     
     // When this server slot requests to make a new slot, the new slot will come on this channel.
-    create_slot: Receiver<Box<ServerSlot>>,
+    create_slot: Receiver<ServerSlot>,
 }
 
 impl ServerSlot {
-    fn new(id: ServerSlotId, sender: Sender<SlotOutMsg>, receiver: Receiver<SlotInMsg>, create_slot: Receiver<Box<ServerSlot>>) -> ServerSlot {
+    fn new(id: ServerSlotId, sender: Sender<SlotOutMsg>, receiver: Receiver<SlotInMsg>, create_slot: Receiver<ServerSlot>) -> ServerSlot {
         ServerSlot{id: id, sender: sender, receiver: receiver, create_slot: create_slot}
     }
     
@@ -48,7 +48,7 @@ impl ServerSlot {
         self.receiver.recv()
     }
     
-    pub fn create_slot(&self) -> Box<ServerSlot> {
+    pub fn create_slot(&self) -> ServerSlot {
         self.sender.send(CreateSlot(self.id));
         self.create_slot.recv()
     }
@@ -68,7 +68,7 @@ impl ServerSlot {
 
 pub struct Server {
     // Server slots. Maps slot ID to communication channels with slot
-    slots: HashMap<ServerSlotId, (Sender<SlotInMsg>, Sender<Box<ServerSlot>>)>,
+    slots: HashMap<ServerSlotId, (Sender<SlotInMsg>, Sender<ServerSlot>)>,
     
     // Channel for communication between server master task and slots
     slot_channel_t: Sender<SlotOutMsg>,
@@ -113,7 +113,7 @@ impl Server {
         let mut client_outs: HashMap<ClientId, Sender<OutPacket>> = HashMap::new();
         
         // Client task to master: packet channel
-        let (packet_in_t, packet_in_r): (Sender<(ClientId, Box<InPacket>)>, Receiver<(ClientId, Box<InPacket>)>) = channel();
+        let (packet_in_t, packet_in_r): (Sender<(ClientId, InPacket)>, Receiver<(ClientId, InPacket)>) = channel();
         
         // Next ID to give to each client
         let mut next_client_id = 0;
@@ -196,7 +196,7 @@ impl Server {
                                 None => println!("Failed to send packet to invalid client ID {}", client_id)
                             },
                             CreateSlot(slot_id) =>  {
-                                let new_slot = box self.create_slot();
+                                let new_slot = self.create_slot();
                                 let (_, ref create_slot_t) = self.slots[slot_id];
                                 create_slot_t.send(new_slot);
                             },
@@ -223,9 +223,9 @@ impl Server {
     }
 }
 
-fn handle_client_in(client_id: ClientId, mut stream: TcpStream, packet_in_t: Sender<(ClientId, Box<InPacket>)>) {
+fn handle_client_in(client_id: ClientId, mut stream: TcpStream, packet_in_t: Sender<(ClientId, InPacket)>) {
     loop {
-        packet_in_t.send((client_id, box InPacket::new_from_reader(&mut stream)));
+        packet_in_t.send((client_id, InPacket::new_from_reader(&mut stream)));
     }
 }
 

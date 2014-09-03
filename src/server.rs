@@ -6,9 +6,10 @@ use net::Server;
 use battle_scheduler::BattleScheduler;
 
 pub mod battle_scheduler;
-pub mod battle_state;
+pub mod battle_state_packets;
 pub mod module;
 pub mod net;
+pub mod server_battle_state;
 pub mod ship;
 pub mod sim_element;
 
