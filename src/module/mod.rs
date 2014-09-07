@@ -12,7 +12,7 @@ pub mod engine;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub trait Module : ModuleTypeId + Packable {
+pub trait Module : ModuleTypeId + SimElement + Packable {
     fn create_sim_elements(&self) -> Vec<Box<SimElement>>;
 }
 

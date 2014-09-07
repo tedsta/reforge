@@ -5,16 +5,17 @@
 extern crate native;
 extern crate rsfml;
 
-use rsfml::graphics::{RenderWindow, Color};
+use rsfml::graphics::{RenderWindow};
 use rsfml::window::{VideoMode, ContextSettings, keyboard, Close};
 
 use client_battle_state::ClientBattleState;
 use input::InputSystem;
 use input::KeyHandler;
-use net::{Client, OutPacket};
+use net::Client;
 
 pub mod battle_state_packets;
 pub mod client_battle_state;
+pub mod drawable;
 pub mod input;
 pub mod module;
 pub mod net;
@@ -60,7 +61,7 @@ fn main () {
         };
     
     // Connect to server
-    let mut client = Client::new("127.0.0.1", 30000);
+    let client = Client::new("127.0.0.1", 30000);
     
     // Create the battle state
     let mut battle = ClientBattleState::new(client);

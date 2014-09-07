@@ -39,7 +39,7 @@ impl Packable for ShipState {
 
 pub struct Ship {
     state: ShipState,
-    modules: Vec<ModuleBox>,
+    pub modules: Vec<ModuleBox>,
 }
 
 impl Ship {

@@ -23,7 +23,7 @@ impl Module for EngineModule {
 impl Packable for EngineModule {
     fn read_from_packet(packet: &mut InPacket) -> IoResult<EngineModule> {
         let base = try!(packet.read());
-    
+
         Ok(EngineModule {
             base: base,
         })
@@ -32,5 +32,17 @@ impl Packable for EngineModule {
     fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()> {
         try!(packet.write(&self.base));
         Ok(())
+    }
+}
+
+impl SimElement for EngineModule {
+    fn on_simulation_begin(&mut self) {
+    }
+    
+    fn set_simulation_time(&mut self, time: f32) {
+        println!("Simulating engines {}", time);
+    }
+    
+    fn on_simulation_end(&mut self) {
     }
 }
