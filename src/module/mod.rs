@@ -1,4 +1,5 @@
-use std::intrinsics::TypeId;
+use std::rc::Rc;
+use std::cell::RefCell;
 
 use std::io::{IoResult, IoError, InvalidInput};
 
@@ -12,12 +13,39 @@ pub mod engine;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub trait Module : ModuleTypeId + SimElement + Packable {
-    fn create_sim_elements(&self) -> Vec<Box<SimElement>>;
+pub type ModuleRef = Rc<RefCell<Module>>;
+
+pub enum Module {
+    Engine(EngineModule),
 }
 
-// Type alias for boxed Module... because with the 'static it's too tedious
-pub type ModuleBox = Box<Module + 'static>;
+impl Module {
+    fn type_id(&self) -> u16 {
+        match *self {
+            Engine(_) => 0,
+        }
+    }
+}
+
+pub fn read_module_from_packet(packet: &mut InPacket) -> IoResult<Module> {
+    let module_type = try!(packet.read_u16());
+    match module_type {
+        0 => {
+            Ok(Engine(try!(packet.read::<EngineModule>())))
+        },
+        _ => {fail!("Failed to read module with invalid module type id {}", module_type)}
+    }
+}
+
+pub fn write_module_to_packet(module: &Module, packet: &mut OutPacket) -> IoResult<()> {
+    packet.write_u16(module.type_id());
+    match *module {
+        Engine(module) => try!(module.write_to_packet(packet)),
+    }
+    Ok(())
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct ModuleBase {
     power: u32,
@@ -49,43 +77,4 @@ impl Packable for ModuleBase {
         try!(packet.write_u32(self.hull));
         Ok(())
     }
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-#[deriving(FromPrimitive)]
-pub enum ModuleType {
-    Engine,
-}
-
-pub fn read_module_from_packet(packet: &mut InPacket) -> IoResult<ModuleBox> {
-    let module_type: ModuleType = match FromPrimitive::from_u16(try!(packet.read_u16())) {
-        Some(module_type) => module_type,
-        None => return Err(IoError{kind: InvalidInput, desc: "Unknown module type", detail: None})
-    };
-    match module_type {
-        Engine => {
-            let module: Box<EngineModule> = box try!(packet.read());
-            Ok(module as ModuleBox)
-        },
-    }
-}
-
-pub fn write_module_to_packet(module: &ModuleBox, packet: &mut OutPacket) -> IoResult<()> {
-    if module.get_type_id() == TypeId::of::<EngineModule>() {
-        try!(packet.write_u16(Engine as u16));
-    }
-    try!(module.write_to_packet(packet));
-    Ok(())
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-trait ModuleTypeId {
-    /// Get the `TypeId` of `self`
-    fn get_type_id(&self) -> TypeId;
-}
-
-impl<T: 'static> ModuleTypeId for T {
-    fn get_type_id(&self) -> TypeId { TypeId::of::<T>() }
 }

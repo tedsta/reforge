@@ -15,7 +15,6 @@ use net::Client;
 
 pub mod battle_state_packets;
 pub mod client_battle_state;
-pub mod drawable;
 pub mod input;
 pub mod module;
 pub mod net;

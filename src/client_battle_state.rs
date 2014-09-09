@@ -13,18 +13,18 @@ use sim_element::SimElement;
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Client
 
-pub struct ClientBattleState<'r> {
+pub struct ClientBattleState {
     client: Client,
     
     // All the ships involved in this battle
     ships: HashMap<ClientId, Ship>,
     
-    sim_elements: Vec<&'r mut SimElement + 'static>,
+    //sim_elements: Vec<&'r mut SimElement + 'static>,
 }
 
-impl<'r> ClientBattleState<'r> {
-    pub fn new(client: Client) -> ClientBattleState<'r> {
-        ClientBattleState{client: client, ships: HashMap::new(), sim_elements: vec!()}
+impl ClientBattleState {
+    pub fn new(client: Client) -> ClientBattleState {
+        ClientBattleState{client: client, ships: HashMap::new()}
     }
     
     pub fn run(&mut self, window: &mut RenderWindow, input: &mut InputSystem) {
@@ -33,10 +33,7 @@ impl<'r> ClientBattleState<'r> {
         let ship_count = packet.read_u32().unwrap();
         for _ in range(0, ship_count) {
             let client_id = packet.read_u32().unwrap();
-            let ship: Ship = packet.read().unwrap();
-            for module in ship.modules.mut_iter() {
-                self.sim_elements.push(&mut **module as &mut SimElement);
-            }
+            let ship = packet.read().unwrap();
             self.ships.insert(client_id, ship);
         }
     
