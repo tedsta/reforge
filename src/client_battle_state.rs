@@ -18,8 +18,6 @@ pub struct ClientBattleState {
     
     // All the ships involved in this battle
     ships: HashMap<ClientId, Ship>,
-    
-    //sim_elements: Vec<&'r mut SimElement + 'static>,
 }
 
 impl ClientBattleState {
@@ -60,8 +58,7 @@ impl ClientBattleState {
             }
         
             // Send plans
-            let mut packet = OutPacket::new();
-            packet.write_u8(Plan as u8).unwrap();
+            let packet = self.build_plans_packet();
             self.client.send(&packet);
             
             // Wait for simulation results
@@ -73,12 +70,37 @@ impl ClientBattleState {
     fn plan(&mut self) {
     }
     
-    fn handle_packet(&mut self, client_id: ClientId, packet: &mut InPacket) {
+    fn build_plans_packet(&mut self) -> OutPacket {
+        let mut packet = OutPacket::new();
+        packet.write_u8(Plan as u8).unwrap();
+        
+        let sim_elements = self.build_sim_elements_vec();
+        
+        for sim_element in sim_elements.iter() {
+            sim_element.write_plans(&mut packet);
+        }
+
+        packet
+    }
+    
+    fn build_sim_elements_vec(&mut self) -> Vec<&mut SimElement> {
+        let mut elements = vec!();
+        
+        for (_, ship) in self.ships.mut_iter() {
+            for module in ship.modules.mut_iter() {
+                elements.push(module as &mut SimElement);
+            }
+        }
+        
+        elements
+    }
+    
+    fn handle_packet(&mut self, packet: &mut InPacket) {
         let id: ClientPacketId = match packet.read_u8() {
             Ok(id) => match FromPrimitive::from_u8(id) {
                 Some(id) => id,
                 None => {
-                    println!("Received packet with invalid ID from client {}", client_id);
+                    println!("Received packet with invalid ID from server");
                     return;
                 }
             },

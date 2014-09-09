@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use battle_state_packets::{Plan, ServerPacketId};
 use net::{ClientId, ServerSlot, Joined, ReceivedPacket, InPacket, OutPacket};
 use ship::Ship;
+use sim_element::SimElement;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Server
@@ -68,9 +69,35 @@ impl ServerBattleState {
                 self.received_plans.push(client_id);
                 if self.received_plans.len() == self.ships.len() {
                     println!("Got all the plans!");
+                    
+                    // Handle the plans
+                    self.handle_plans_packet(packet);
+                    
+                    // Reset everything for the next turn
                     self.received_plans.clear();
+                    self.turn_number += 1;
                 }
             },
         }
+    }
+    
+    fn handle_plans_packet(&mut self, packet: &mut InPacket) {
+        let sim_elements = self.build_sim_elements_vec();
+        
+        for sim_element in sim_elements.iter() {
+            sim_element.read_plans(packet);
+        }
+    }
+    
+    fn build_sim_elements_vec(&mut self) -> Vec<&mut SimElement> {
+        let mut elements = vec!();
+        
+        for (_, ship) in self.ships.mut_iter() {
+            for module in ship.modules.mut_iter() {
+                elements.push(module as &mut SimElement);
+            }
+        }
+        
+        elements
     }
 }

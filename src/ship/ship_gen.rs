@@ -1,5 +1,5 @@
 use ship::Ship;
-use module::{Engine, EngineModule};
+use module::{EngineModule};
 
 pub fn generate_ship() -> Ship {
     let mut ship = Ship::new();

@@ -1,6 +1,3 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-
 use std::io::{IoResult, IoError, InvalidInput};
 
 use net::{InPacket, OutPacket, Packable};
@@ -12,8 +9,6 @@ pub use self::engine::EngineModule;
 pub mod engine;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-pub type ModuleRef = Rc<RefCell<Module>>;
 
 pub enum Module {
     Engine(EngineModule),
@@ -27,18 +22,38 @@ impl Module {
     }
 }
 
+impl SimElement for Module {
+    fn on_simulation_begin(&mut self) {
+        match *self {
+            Engine(mut m) => m.on_simulation_begin(),
+        }
+    }
+    
+    fn on_simulation_time(&mut self, time: f32) {
+         match *self {
+            Engine(mut m) => m.on_simulation_time(time),
+        }
+    }
+    
+    fn on_simulation_end(&mut self) {
+         match *self {
+            Engine(mut m) => m.on_simulation_end(),
+        }
+    }
+}
+
 pub fn read_module_from_packet(packet: &mut InPacket) -> IoResult<Module> {
     let module_type = try!(packet.read_u16());
     match module_type {
         0 => {
             Ok(Engine(try!(packet.read::<EngineModule>())))
         },
-        _ => {fail!("Failed to read module with invalid module type id {}", module_type)}
+        _ => {Err(IoError{kind: InvalidInput, desc: "Failed to read module with invalid module type ID", detail: None})}
     }
 }
 
 pub fn write_module_to_packet(module: &Module, packet: &mut OutPacket) -> IoResult<()> {
-    packet.write_u16(module.type_id());
+    packet.write_u16(module.type_id()).unwrap();
     match *module {
         Engine(module) => try!(module.write_to_packet(packet)),
     }
