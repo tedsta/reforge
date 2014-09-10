@@ -65,13 +65,13 @@ impl ServerBattleState {
         match id {
             Plan => {
                 println!("Yay plans processing on server!");
-            
                 self.received_plans.push(client_id);
+                
+                // Handle the plans
+                self.handle_plans_packet(packet);
+                
                 if self.received_plans.len() == self.ships.len() {
                     println!("Got all the plans!");
-                    
-                    // Handle the plans
-                    self.handle_plans_packet(packet);
                     
                     // Reset everything for the next turn
                     self.received_plans.clear();
