@@ -2,6 +2,7 @@ use std::io::IoResult;
 
 use module::{Module, ModuleBase, Engine};
 use net::{InPacket, OutPacket, Packable};
+use render::Renderer;
 use sim_element::SimElement;
 
 pub struct EngineModule {
@@ -38,6 +39,12 @@ impl SimElement for EngineModule {
     }
     
     fn on_simulation_end(&mut self) {
+    }
+    
+    fn draw_planning(&self, renderer: &mut Renderer) {
+    }
+    
+    fn draw_simulating(&self, renderer: &mut Renderer) {
     }
     
     fn write_plans(&self, packet: &mut OutPacket) {

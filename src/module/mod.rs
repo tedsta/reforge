@@ -1,6 +1,7 @@
 use std::io::{IoResult, IoError, InvalidInput};
 
 use net::{InPacket, OutPacket, Packable};
+use render::Renderer;
 use sim_element::SimElement;
 
 // Use+reexport all of the modules
@@ -38,6 +39,42 @@ impl SimElement for Module {
     fn on_simulation_end(&mut self) {
          match *self {
             Engine(mut m) => m.on_simulation_end(),
+        }
+    }
+    
+    fn draw_planning(&self, renderer: &mut Renderer) {
+        match *self {
+            Engine(m) => m.draw_planning(renderer),
+        }
+    }
+    
+    fn draw_simulating(&self, renderer: &mut Renderer) {
+        match *self {
+            Engine(m) => m.draw_simulating(renderer),
+        }
+    }
+    
+    fn write_plans(&self, packet: &mut OutPacket) {
+        match *self {
+            Engine(m) => m.write_plans(packet),
+        }
+    }
+    
+    fn read_plans(&self, packet: &mut InPacket) {
+        match *self {
+            Engine(m) => m.read_plans(packet),
+        }
+    }
+    
+    fn write_results(&self, packet: &mut OutPacket) {
+        match *self {
+            Engine(m) => m.write_results(packet),
+        }
+    }
+    
+    fn read_results(&self, packet: &mut InPacket) {
+        match *self {
+            Engine(m) => m.read_results(packet),
         }
     }
 }
