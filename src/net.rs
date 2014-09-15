@@ -21,7 +21,8 @@ pub enum SlotInMsg {
 
 // Messages outgoing from slots
 pub enum SlotOutMsg {
-    SendPacket(ClientId, OutPacket), // Received packet from client (client_id, packet)
+    SendPacket(ClientId, OutPacket), // Send a packet to a client (client_id, packet)
+    BroadcastPacket(OutPacket), // Send packet to all clients in slot (packet)
     CreateSlot(ServerSlotId),            // Tell the server to make a new ServerSlot (slot_id)
     TransferClient(ClientId, ServerSlotId), // Tell the server to transfer a client to a different slot
 }
@@ -42,6 +43,10 @@ impl ServerSlot {
     
     pub fn send(&self, client_id: ClientId, packet: OutPacket) {
         self.sender.send(SendPacket(client_id, packet));
+    }
+    
+    pub fn broadcast(&self, packet: OutPacket) {
+        self.sender.send(BroadcastPacket(packet));
     }
     
     pub fn receive(&self) -> SlotInMsg {
@@ -195,6 +200,10 @@ impl Server {
                                 Some(c) => c.send(packet),
                                 None => println!("Failed to send packet to invalid client ID {}", client_id)
                             },
+                            BroadcastPacket(packet) => for c in client_outs.values() {
+                                println!("Broadcasting");
+                                c.send(packet.clone());
+                            },
                             CreateSlot(slot_id) =>  {
                                 let new_slot = self.create_slot();
                                 let (_, ref create_slot_t) = self.slots[slot_id];
@@ -275,6 +284,7 @@ pub trait Packable {
     fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()>;
 }
 
+#[deriving(Clone)]
 pub struct OutPacket {
     writer: MemWriter,
 }

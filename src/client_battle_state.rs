@@ -62,6 +62,7 @@ impl ClientBattleState {
             self.client.send(&packet);
             
             // Wait for simulation results
+            self.wait_for_simulation_results();
             
             // Simulate
         }
@@ -95,23 +96,11 @@ impl ClientBattleState {
         elements
     }
     
-    fn handle_packet(&mut self, packet: &mut InPacket) {
-        let id: ClientPacketId = match packet.read_u8() {
-            Ok(id) => match FromPrimitive::from_u8(id) {
-                Some(id) => id,
-                None => {
-                    println!("Received packet with invalid ID from server");
-                    return;
-                }
-            },
-            Err(e) => {
-                println!("Failed to read packet ID from packet: {}", e);
-                return;
-            }
-        };
+    fn wait_for_simulation_results(&mut self) {
+        let mut packet = self.client.receive();
         
-        match id {
-            _ => {}
-        }
+        let count = packet.read_u32();
+        
+        println!("Got results!");
     }
 }

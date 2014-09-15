@@ -7,4 +7,7 @@ pub trait SimElement {
     
     fn write_plans(&self, &mut OutPacket) {}
     fn read_plans(&self, &mut InPacket) {}
+    
+    fn write_results(&self, &mut OutPacket) {}
+    fn read_results(&self, &mut InPacket) {}
 }

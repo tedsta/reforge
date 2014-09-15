@@ -73,6 +73,8 @@ impl ServerBattleState {
                 if self.received_plans.len() == self.ships.len() {
                     println!("Got all the plans!");
                     
+                    self.do_simulation();
+                    
                     // Reset everything for the next turn
                     self.received_plans.clear();
                     self.turn_number += 1;
@@ -87,6 +89,12 @@ impl ServerBattleState {
         for sim_element in sim_elements.iter() {
             sim_element.read_plans(packet);
         }
+    }
+    
+    fn do_simulation(&mut self) {
+        let mut packet = OutPacket::new();
+        packet.write_u32(0).unwrap();
+        self.slot.broadcast(packet);
     }
     
     fn build_sim_elements_vec(&mut self) -> Vec<&mut SimElement> {

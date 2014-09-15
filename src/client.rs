@@ -18,6 +18,8 @@ pub mod client_battle_state;
 pub mod input;
 pub mod module;
 pub mod net;
+pub mod render;
+pub mod sfml_renderer;
 pub mod ship;
 pub mod sim_element;
 

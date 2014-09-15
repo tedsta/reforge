@@ -45,4 +45,10 @@ impl SimElement for EngineModule {
     
     fn read_plans(&self, packet: &mut InPacket) {
     }
+    
+    fn write_results(&self, packet: &mut OutPacket) {
+    }
+    
+    fn read_results(&self, packet: &mut InPacket) {
+    }
 }
