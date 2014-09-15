@@ -201,7 +201,6 @@ impl Server {
                                 None => println!("Failed to send packet to invalid client ID {}", client_id)
                             },
                             BroadcastPacket(packet) => for c in client_outs.values() {
-                                println!("Broadcasting");
                                 c.send(packet.clone());
                             },
                             CreateSlot(slot_id) =>  {

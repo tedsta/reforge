@@ -100,7 +100,5 @@ impl ClientBattleState {
         let mut packet = self.client.receive();
         
         let count = packet.read_u32();
-        
-        println!("Got results!");
     }
 }
