@@ -3,7 +3,7 @@ use rsfml::graphics::{RenderTexture, RenderWindow, Sprite};
 use render::{Renderer, RenderTargetId, TextureId};
 
 pub struct SfmlRenderer<'a> {
-    window: RenderWindow,
+    pub window: RenderWindow,
     render_textures: Vec<RenderTexture>,
     render_sprites: Vec<Sprite<'a>>,
     

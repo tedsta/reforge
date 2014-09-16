@@ -12,6 +12,7 @@ use client_battle_state::ClientBattleState;
 use input::InputSystem;
 use input::KeyHandler;
 use net::Client;
+use sfml_renderer::SfmlRenderer;
 
 pub mod battle_state_packets;
 pub mod client_battle_state;
@@ -52,7 +53,7 @@ fn main () {
 
     // Create the window of the application
     let setting: ContextSettings = ContextSettings::default();
-    let mut window: RenderWindow =
+    let window: RenderWindow =
         match RenderWindow::new(VideoMode::new_init(800, 600, 32),
                                 "spacegame",
                                 Close,
@@ -61,11 +62,13 @@ fn main () {
             None => fail!("Cannot create a new Render Window.")
         };
     
+    let mut renderer = SfmlRenderer::new(window);
+    
     // Connect to server
     let client = Client::new("127.0.0.1", 30000);
     
     // Create the battle state
     let mut battle = ClientBattleState::new(client);
 
-    battle.run(&mut window, &mut input_sys);
+    battle.run(&mut renderer, &mut input_sys);
 }
