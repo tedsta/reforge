@@ -41,10 +41,7 @@ impl SimElement for EngineModule {
     fn on_simulation_end(&mut self) {
     }
     
-    fn draw_planning(&self, renderer: &mut Renderer) {
-    }
-    
-    fn draw_simulating(&self, renderer: &mut Renderer) {
+    fn draw(&self, renderer: &mut Renderer, simulating: bool) {
     }
     
     fn write_plans(&self, packet: &mut OutPacket) {

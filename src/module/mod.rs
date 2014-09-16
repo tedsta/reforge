@@ -42,15 +42,9 @@ impl SimElement for Module {
         }
     }
     
-    fn draw_planning(&self, renderer: &mut Renderer) {
+    fn draw(&self, renderer: &mut Renderer, simulating: bool) {
         match *self {
-            Engine(m) => m.draw_planning(renderer),
-        }
-    }
-    
-    fn draw_simulating(&self, renderer: &mut Renderer) {
-        match *self {
-            Engine(m) => m.draw_simulating(renderer),
+            Engine(m) => m.draw(renderer, simulating),
         }
     }
     

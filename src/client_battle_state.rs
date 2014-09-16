@@ -7,6 +7,7 @@ use rsfml::graphics::{RenderWindow, Color};
 use battle_state_packets::{ClientPacketId, Plan};
 use input::InputSystem;
 use net::{Client, ClientId, InPacket, OutPacket};
+use render::Renderer;
 use sfml_renderer::SfmlRenderer;
 use ship::Ship;
 use sim_element::SimElement;
@@ -27,6 +28,9 @@ impl ClientBattleState {
     }
     
     pub fn run(&mut self, renderer: &mut SfmlRenderer, input: &mut InputSystem) {
+        renderer.create_render_target(0, 0, 500, 500);
+        renderer.create_render_target(512, 0, 500, 500);
+    
         // Receive all of the ships participating in this battle
         let mut packet = self.client.receive();
         let ship_count = packet.read_u32().unwrap();
@@ -55,7 +59,8 @@ impl ClientBattleState {
                 
                 // Render
                 renderer.window.clear(&Color::black());
-                renderer.window.display();
+                self.draw(renderer, false);
+                renderer.display();
             }
         
             // Send plans
@@ -101,5 +106,13 @@ impl ClientBattleState {
         let mut packet = self.client.receive();
         
         let count = packet.read_u32();
+    }
+    
+    fn draw(&self, renderer: &mut Renderer, simulating: bool) {
+        for ship in self.ships.values() {
+            for module in ship.modules.iter() {
+                module.draw(renderer, simulating);
+            }
+        }
     }
 }
