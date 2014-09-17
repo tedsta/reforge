@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io::Timer;
 use std::time::Duration;
 
-use rsfml::graphics::{RenderWindow, Color};
+use rsfml::graphics::{RenderTarget, RenderWindow, Color};
 
 use battle_state_packets::{ClientPacketId, Plan};
 use input::InputSystem;
@@ -58,7 +58,7 @@ impl ClientBattleState {
                 self.plan();
                 
                 // Render
-                renderer.window.clear(&Color::black());
+                (&mut renderer.window as &mut RenderTarget).clear(&Color::black());
                 self.draw(renderer, false);
                 renderer.display();
             }
