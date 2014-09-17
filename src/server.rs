@@ -9,6 +9,7 @@ pub mod battle_scheduler;
 pub mod battle_state_packets;
 pub mod module;
 pub mod net;
+pub mod render;
 pub mod server_battle_state;
 pub mod ship;
 pub mod sim_element;

@@ -1,25 +1,28 @@
 use std::string::String;
 
-use rsfml::graphics::{RenderTexture, RenderWindow, Sprite, Texture};
+use rsfml::graphics::{Color, RenderTexture, RenderWindow, RenderTarget, Sprite, Texture, Vertex, Quads};
 use rsfml::system::{Vector2f};
 
-use render::{Renderer, RenderTargetId, TextureId};
+use render::{Renderer, RenderTargetId, TextureId, TextureCount};
 
-pub struct SfmlRenderer<'a> {
+pub struct SfmlRenderer {
     pub window: RenderWindow,
     render_textures: Vec<RenderTexture>,
-    render_sprites: Vec<Sprite<'a>>,
     
-    textures: Vec<Sprite<'a>>,
+    textures: Vec<Texture>,
 }
 
-impl<'a> SfmlRenderer<'a> {
-    pub fn new(window: RenderWindow) -> SfmlRenderer<'a> {
+impl SfmlRenderer {
+    pub fn new(window: RenderWindow) -> SfmlRenderer {
+        let textures = vec![
+            Texture::new_from_file("content/textures/modules/test1.png").expect("Failed to load texture"),
+        ];
+    
         SfmlRenderer {
             window: window,
             render_textures: vec!(),
-            render_sprites: vec!(),
-            textures: vec!(),
+
+            textures: textures,
         }
     }
     
@@ -41,23 +44,26 @@ impl<'a> SfmlRenderer<'a> {
         
         0
     }
-    
-    pub fn load_texture(&mut self, path: String) -> TextureId {
-        let texture = Texture::new_from_file(path.as_slice()).unwrap();
-        self.textures.push(texture);
-        
-        self.textures.len() - 1
-    }
 }
 
-impl<'a> Renderer for SfmlRenderer<'a> {
-    fn draw_texture(&mut self, texture: TextureId) {
-        let sprite = self.textures.get_mut(texture);
-        self.window.draw(sprite);
+impl Renderer for SfmlRenderer {
+    fn draw_texture(&mut self, texture_id: TextureId) {
+        let texture = self.textures.get_mut(texture_id as uint);
+        
+        let size = texture.get_size();
+        let (width, height) = (size.x as f32, size.y as f32);
+
+        let vertices = [
+            Vertex::new(&Vector2f{x: 0f32, y: 0f32}, &Color::red(), &Vector2f{x: 0f32, y: 0f32}),
+            Vertex::new(&Vector2f{x: 0f32, y: height}, &Color::red(), &Vector2f{x: 0f32, y: height}),
+            Vertex::new(&Vector2f{x: width, y: height}, &Color::red(), &Vector2f{x: width, y: height}),
+            Vertex::new(&Vector2f{x: width, y: 0f32}, &Color::red(), &Vector2f{x: width, y: 0f32})
+        ];
+        (&self.window as &RenderTarget).draw_primitives(&vertices, Quads);
     }
     
     fn draw_texture_on_target(&mut self, target: RenderTargetId, texture: TextureId) {
-        let sprite = self.textures.get_mut(texture);
-        self.render_textures.get_mut(target).draw(sprite);
+        //let sprite = self.textures.get_mut(texture);
+        //self.render_textures.get_mut(target).draw(sprite);
     }
 }
