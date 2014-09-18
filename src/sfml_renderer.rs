@@ -1,6 +1,6 @@
 use std::string::String;
 
-use rsfml::graphics::{Color, RenderTexture, RenderWindow, RenderTarget, Sprite, Texture, Vertex, Quads};
+use rsfml::graphics::{Color, RenderStates, RenderTarget, RenderTexture, RenderWindow, Sprite, Texture, Vertex, Quads};
 use rsfml::system::{Vector2f};
 
 use render::{Renderer, RenderTargetId, TextureId, TextureCount};
@@ -48,18 +48,22 @@ impl SfmlRenderer {
 
 impl Renderer for SfmlRenderer {
     fn draw_texture(&mut self, texture_id: TextureId) {
-        let texture = self.textures.get_mut(texture_id as uint);
+        let texture = self.textures.get(texture_id as uint);
         
         let size = texture.get_size();
         let (width, height) = (size.x as f32, size.y as f32);
 
         let vertices = [
-            Vertex::new(&Vector2f{x: 0f32, y: 0f32}, &Color::red(), &Vector2f{x: 0f32, y: 0f32}),
-            Vertex::new(&Vector2f{x: 0f32, y: height}, &Color::red(), &Vector2f{x: 0f32, y: height}),
-            Vertex::new(&Vector2f{x: width, y: height}, &Color::red(), &Vector2f{x: width, y: height}),
-            Vertex::new(&Vector2f{x: width, y: 0f32}, &Color::red(), &Vector2f{x: width, y: 0f32})
+            Vertex::new(&Vector2f{x: 0f32, y: 0f32}, &Color::white(), &Vector2f{x: 0f32, y: 0f32}),
+            Vertex::new(&Vector2f{x: 0f32, y: height}, &Color::white(), &Vector2f{x: 0f32, y: height}),
+            Vertex::new(&Vector2f{x: width, y: height}, &Color::white(), &Vector2f{x: width, y: height}),
+            Vertex::new(&Vector2f{x: width, y: 0f32}, &Color::white(), &Vector2f{x: width, y: 0f32})
         ];
-        (&self.window as &RenderTarget).draw_primitives(&vertices, Quads);
+        
+        let mut rs = RenderStates::default();
+        rs.texture = Some(texture);
+        
+        (&self.window as &RenderTarget).draw_primitives_rs(&vertices, Quads, &mut rs);
     }
     
     fn draw_texture_on_target(&mut self, target: RenderTargetId, texture: TextureId) {
