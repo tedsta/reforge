@@ -47,17 +47,17 @@ impl SfmlRenderer {
 }
 
 impl Renderer for SfmlRenderer {
-    fn draw_texture(&mut self, texture_id: TextureId) {
-        let texture = self.textures.get(texture_id as uint);
+    fn draw_texture(&mut self, texture_id: TextureId, x: f32, y: f32) {
+        let texture = &self.textures[texture_id as uint];
         
         let size = texture.get_size();
         let (width, height) = (size.x as f32, size.y as f32);
 
         let vertices = [
-            Vertex::new(&Vector2f{x: 0f32, y: 0f32}, &Color::white(), &Vector2f{x: 0f32, y: 0f32}),
-            Vertex::new(&Vector2f{x: 0f32, y: height}, &Color::white(), &Vector2f{x: 0f32, y: height}),
-            Vertex::new(&Vector2f{x: width, y: height}, &Color::white(), &Vector2f{x: width, y: height}),
-            Vertex::new(&Vector2f{x: width, y: 0f32}, &Color::white(), &Vector2f{x: width, y: 0f32})
+            Vertex::new(&Vector2f{x: x, y: y}, &Color::white(), &Vector2f{x: 0f32, y: 0f32}),
+            Vertex::new(&Vector2f{x: x, y: y + height}, &Color::white(), &Vector2f{x: 0f32, y: height}),
+            Vertex::new(&Vector2f{x: x + width, y: y + height}, &Color::white(), &Vector2f{x: width, y: height}),
+            Vertex::new(&Vector2f{x: x + width, y: y}, &Color::white(), &Vector2f{x: width, y: 0f32})
         ];
         
         let mut rs = RenderStates::default();

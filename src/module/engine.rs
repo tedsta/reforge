@@ -3,16 +3,18 @@ use std::io::IoResult;
 use module::{Module, ModuleBase, Engine};
 use net::{InPacket, OutPacket, Packable};
 use render;
-use render::{Renderer};
+use render::{Renderer, TextureId};
 use sim_element::SimElement;
 
 pub struct EngineModule {
-    base: ModuleBase,
+    pub base: ModuleBase,
 }
 
 impl EngineModule {
     pub fn new() -> Module {
-        Engine(EngineModule{base: ModuleBase::new()})
+        Engine(EngineModule{
+            base: ModuleBase::new(),
+        })
     }
 }
 
@@ -43,7 +45,7 @@ impl SimElement for EngineModule {
     }
     
     fn draw(&self, renderer: &mut Renderer, simulating: bool) {
-        renderer.draw_texture(render::Engine);
+        renderer.draw_texture(render::Engine, (self.base.x as f32)*(48f32), (self.base.y as f32)*(48f32));
     }
     
     fn write_plans(&self, packet: &mut OutPacket) {
