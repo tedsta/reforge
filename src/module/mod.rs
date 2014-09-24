@@ -1,7 +1,9 @@
+use std::collections::HashMap;
 use std::io::{IoResult, IoError, InvalidInput};
 
-use net::{InPacket, OutPacket, Packable};
+use net::{ClientId, InPacket, OutPacket, Packable};
 use render::{Renderer};
+use ship::Ship;
 use sim_element::SimElement;
 
 // Use+reexport all of the modules
@@ -30,27 +32,33 @@ impl Module {
 }
 
 impl SimElement for Module {
-    fn on_simulation_begin(&mut self) {
+    fn before_simulation(&mut self, ships: &mut HashMap<ClientId, Ship>) {
         match *self {
-            Engine(mut m) => m.on_simulation_begin(),
+            Engine(mut m) => m.before_simulation(ships),
         }
     }
     
-    fn on_simulation_time(&mut self, time: f32) {
-         match *self {
-            Engine(mut m) => m.on_simulation_time(time),
-        }
-    }
-    
-    fn on_simulation_end(&mut self) {
-         match *self {
-            Engine(mut m) => m.on_simulation_end(),
-        }
-    }
-    
-    fn draw(&self, renderer: &mut Renderer, simulating: bool) {
+    fn on_simulation_time(&mut self, ships: &mut HashMap<ClientId, Ship>, time: u32) {
         match *self {
-            Engine(m) => m.draw(renderer, simulating),
+            Engine(mut m) => m.on_simulation_time(ships, time),
+        }
+    }
+    
+    fn after_simulation(&mut self, ships: &mut HashMap<ClientId, Ship>) {
+        match *self {
+            Engine(mut m) => m.after_simulation(ships),
+        }
+    }
+    
+    fn get_critical_times(&self) -> Vec<u32> {
+        match *self {
+            Engine(mut m) => m.get_critical_times(),
+        }
+    }
+    
+    fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32) {
+        match *self {
+            Engine(m) => m.draw(renderer, simulating, time),
         }
     }
     

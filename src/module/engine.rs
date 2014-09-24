@@ -1,9 +1,11 @@
+use std::collections::HashMap;
 use std::io::IoResult;
 
 use module::{Module, ModuleBase, Engine};
-use net::{InPacket, OutPacket, Packable};
+use net::{ClientId, InPacket, OutPacket, Packable};
 use render;
 use render::{Renderer, TextureId};
+use ship::Ship;
 use sim_element::SimElement;
 
 pub struct EngineModule {
@@ -12,7 +14,7 @@ pub struct EngineModule {
 
 impl EngineModule {
     pub fn new() -> Module {
-        Engine(EngineModule{
+        Engine(EngineModule {
             base: ModuleBase::new(),
         })
     }
@@ -34,17 +36,21 @@ impl Packable for EngineModule {
 }
 
 impl SimElement for EngineModule {
-    fn on_simulation_begin(&mut self) {
+    fn before_simulation(&mut self, ships: &mut HashMap<ClientId, Ship>) {
     }
     
-    fn on_simulation_time(&mut self, time: f32) {
+    fn on_simulation_time(&mut self, ships: &mut HashMap<ClientId, Ship>, time: u32) {
         println!("Simulating module at {}", time);
     }
     
-    fn on_simulation_end(&mut self) {
+    fn after_simulation(&mut self, ships: &mut HashMap<ClientId, Ship>) {
     }
     
-    fn draw(&self, renderer: &mut Renderer, simulating: bool) {
+    fn get_critical_times(&self) -> Vec<u32> {
+        vec![2, 3]
+    }
+    
+    fn draw(&self, renderer: &mut Renderer, simulating: bool, _: f32) {
         renderer.draw_texture(render::Engine, (self.base.x as f32)*(48f32), (self.base.y as f32)*(48f32));
     }
     

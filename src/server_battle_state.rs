@@ -1,6 +1,9 @@
-use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
+use std::collections::{HashMap, TreeMap};
 
-use battle_state_packets::{Plan, ServerPacketId};
+use battle_state_packets::{Plan, ServerPacketId, SimResults};
+use module::Module;
 use net::{ClientId, ServerSlot, Joined, ReceivedPacket, InPacket, OutPacket};
 use ship::Ship;
 use sim_element::SimElement;
@@ -84,28 +87,74 @@ impl ServerBattleState {
     }
     
     fn handle_plans_packet(&mut self, packet: &mut InPacket) {
-        let sim_elements = self.build_sim_elements_vec();
-        
-        for sim_element in sim_elements.iter() {
+        self.apply_to_sim_elements(|sim_element| {
             sim_element.read_plans(packet);
-        }
+        });
     }
     
     fn do_simulation(&mut self) {
+        // Pre simulation
+        self.apply_to_sim_elements_with_ships(|sim_element, ships| {
+            sim_element.before_simulation(ships);
+        });
+    
+        // Write results packet
         let mut packet = OutPacket::new();
-        packet.write_u32(0).unwrap();
+        packet.write_u8(SimResults as u8).unwrap();
+        
+        self.apply_to_sim_elements(|sim_element| {
+            sim_element.write_results(&mut packet);
+        });
+        
         self.slot.broadcast(packet);
+        
+        // Simulation!!!
+        self.simulate();
+        
+        // Post simulation
+        self.apply_to_sim_elements_with_ships(|sim_element, ships| {
+            sim_element.after_simulation(ships);
+        });
     }
     
-    fn build_sim_elements_vec(&mut self) -> Vec<&mut SimElement> {
-        let mut elements = vec!();
+    fn apply_to_sim_elements(&mut self, f: |&mut SimElement|) {
+        for (_, ship) in self.ships.mut_iter() {
+            for module in ship.modules.mut_iter() {
+                f(module as &mut SimElement);
+            }
+        }
+    }
+    
+    fn apply_to_sim_elements_with_ships(&mut self, f: |&mut SimElement, &mut HashMap<ClientId, Ship>|) {
+        for (_, ship) in self.ships.mut_iter() {
+            for module in ship.modules.mut_iter() {
+                f(module as &mut SimElement, &mut self.ships);
+            }
+        }
+    }
+    
+    fn simulate(&mut self) {
+        let mut time_slots: TreeMap<u32, Vec<Rc<RefCell<&mut Module>>>> = TreeMap::new();
         
         for (_, ship) in self.ships.mut_iter() {
             for module in ship.modules.mut_iter() {
-                elements.push(module as &mut SimElement);
+                let times = module.get_critical_times();
+                let module_ref = Rc::new(RefCell::new(module));
+                
+                for time in times.iter() {                
+                    if time_slots.contains_key(time) {
+                        time_slots.find_mut(time).unwrap().push(module_ref.clone())
+                    } else {
+                        time_slots.insert(*time, vec![module_ref.clone()]);
+                    }
+                }
             }
         }
         
-        elements
+        for (time, sim_element_refs) in time_slots.mut_iter() {
+            for sim_element_ref in sim_element_refs.mut_iter() {
+                sim_element_ref.borrow_mut().on_simulation_time(&mut self.ships, *time);
+            }
+        }
     }
 }
