@@ -5,9 +5,9 @@ use render::Renderer;
 use ship::Ship;
 
 pub trait SimElement {
-    fn before_simulation(&mut self, ships: &mut HashMap<ClientId, Ship>);
-    fn on_simulation_time(&mut self, ships: &mut HashMap<ClientId, Ship>, time: u32);
-    fn after_simulation(&mut self, ships: &mut HashMap<ClientId, Ship>);
+    fn before_simulation(&mut self, ships: &HashMap<ClientId, Ship>);
+    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, Ship>, time: u32);
+    fn after_simulation(&mut self, ships: &HashMap<ClientId, Ship>);
     fn get_critical_times(&self) -> Vec<u32> {
         vec!()
     }

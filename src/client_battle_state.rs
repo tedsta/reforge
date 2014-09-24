@@ -12,9 +12,6 @@ use sfml_renderer::SfmlRenderer;
 use ship::Ship;
 use sim_element::SimElement;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Client
-
 pub struct ClientBattleState {
     client: Client,
     
@@ -42,11 +39,10 @@ impl ClientBattleState {
     
         let mut timer = Timer::new().unwrap();
         loop {
-            let plan_time_signal = timer.oneshot(Duration::seconds(10));
-        
             // Do planning
+            let plan_end_signal = timer.oneshot(Duration::seconds(10));
             while renderer.window.is_open() {
-                match plan_time_signal.try_recv() {
+                match plan_end_signal.try_recv() {
                     Ok(_) => break, // Received timeup signal
                     Err(_) => {}
                 }
@@ -71,9 +67,9 @@ impl ClientBattleState {
             self.receive_simulation_results();
             
             // Simulate
-            /*let plan_time_signal = timer.oneshot(Duration::seconds(5));
+            /*let simulate_end_signal = timer.oneshot(Duration::seconds(5));
             while renderer.window.is_open() {
-                match plan_time_signal.try_recv() {
+                match simulate_end_signal.try_recv() {
                     Ok(_) => break, // Received timeup signal
                     Err(_) => {}
                 }
@@ -106,14 +102,6 @@ impl ClientBattleState {
         packet
     }
     
-    fn apply_to_sim_elements(&mut self, f: |&mut SimElement|) {
-        for (_, ship) in self.ships.mut_iter() {
-            for module in ship.modules.mut_iter() {
-                f(module as &mut SimElement);
-            }
-        }
-    }
-    
     fn receive_simulation_results(&mut self) {
         let mut packet = self.client.receive();
         let id = match (packet.read_u8()) {
@@ -127,17 +115,23 @@ impl ClientBattleState {
     }
     
     fn simulate(&mut self, time: u32) {
-        for (_, ship) in self.ships.mut_iter() {
-            for module in ship.modules.mut_iter() {
-                module.on_simulation_time(&mut self.ships, time);
-            }
-        }
+        self.apply_to_sim_elements(|sim_element| {
+            sim_element.on_simulation_time(&self.ships, time);
+        });
     }
     
     fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32) {
         for ship in self.ships.values() {
             for module in ship.modules.iter() {
-                module.draw(renderer, simulating, time);
+                module.borrow().draw(renderer, simulating, time);
+            }
+        }
+    }
+    
+    fn apply_to_sim_elements(&self, f: |&mut SimElement|) {
+        for (_, ship) in self.ships.iter() {
+            for module in ship.modules.iter() {
+                f(module.borrow_mut().deref_mut() as &mut SimElement);
             }
         }
     }

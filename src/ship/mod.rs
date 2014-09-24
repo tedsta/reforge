@@ -1,6 +1,8 @@
+use std::rc::Rc;
+use std::cell::RefCell;
 use std::io::IoResult;
 
-use module::{Module, read_module_from_packet, write_module_to_packet};
+use module::{ModuleRef, Module, read_module_from_packet, write_module_to_packet};
 use net::{InPacket, OutPacket, Packable};
 use self::ship_gen::generate_ship;
 
@@ -39,7 +41,7 @@ impl Packable for ShipState {
 
 pub struct Ship {
     pub state: ShipState,
-    pub modules: Vec<Module>,
+    pub modules: Vec<ModuleRef>,
 }
 
 impl Ship {
@@ -53,7 +55,7 @@ impl Ship {
     
     // Returns true if adding the module was successful, false if it failed.
     pub fn add_module(&mut self, module: Module) -> bool {
-        self.modules.push(module);
+        self.modules.push(Rc::new(RefCell::new(module)));
         true
     }
 }
@@ -67,7 +69,7 @@ impl Packable for Ship {
         let mut modules = vec!();
         
         while modules.len() < num_modules as uint {
-            modules.push(try!(read_module_from_packet(packet)));
+            modules.push(Rc::new(RefCell::new(try!(read_module_from_packet(packet)))));
         }
         
         Ok(Ship {
@@ -80,7 +82,7 @@ impl Packable for Ship {
         try!(self.state.write_to_packet(packet));
         try!(packet.write_u8(self.modules.len() as u8));
         for module in self.modules.iter() {
-            try!(write_module_to_packet(module, packet));
+            try!(write_module_to_packet(module.borrow().deref(), packet));
         }
         Ok(())
     }
