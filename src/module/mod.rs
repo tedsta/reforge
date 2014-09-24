@@ -1,3 +1,5 @@
+use std::rc::Rc;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{IoResult, IoError, InvalidInput};
 
@@ -12,6 +14,8 @@ pub use self::engine::EngineModule;
 pub mod engine;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub type ModuleRef = Rc<RefCell<Module>>;
 
 pub enum Module {
     Engine(EngineModule),
@@ -32,19 +36,19 @@ impl Module {
 }
 
 impl SimElement for Module {
-    fn before_simulation(&mut self, ships: &mut HashMap<ClientId, Ship>) {
+    fn before_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
         match *self {
             Engine(mut m) => m.before_simulation(ships),
         }
     }
     
-    fn on_simulation_time(&mut self, ships: &mut HashMap<ClientId, Ship>, time: u32) {
+    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, Ship>, time: u32) {
         match *self {
             Engine(mut m) => m.on_simulation_time(ships, time),
         }
     }
     
-    fn after_simulation(&mut self, ships: &mut HashMap<ClientId, Ship>) {
+    fn after_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
         match *self {
             Engine(mut m) => m.after_simulation(ships),
         }
@@ -52,7 +56,7 @@ impl SimElement for Module {
     
     fn get_critical_times(&self) -> Vec<u32> {
         match *self {
-            Engine(mut m) => m.get_critical_times(),
+            Engine(m) => m.get_critical_times(),
         }
     }
     

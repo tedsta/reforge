@@ -36,14 +36,14 @@ impl Packable for EngineModule {
 }
 
 impl SimElement for EngineModule {
-    fn before_simulation(&mut self, ships: &mut HashMap<ClientId, Ship>) {
+    fn before_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
     }
     
-    fn on_simulation_time(&mut self, ships: &mut HashMap<ClientId, Ship>, time: u32) {
+    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, Ship>, time: u32) {
         println!("Simulating module at {}", time);
     }
     
-    fn after_simulation(&mut self, ships: &mut HashMap<ClientId, Ship>) {
+    fn after_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
     }
     
     fn get_critical_times(&self) -> Vec<u32> {

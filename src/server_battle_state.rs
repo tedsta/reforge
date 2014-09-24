@@ -8,9 +8,6 @@ use net::{ClientId, ServerSlot, Joined, ReceivedPacket, InPacket, OutPacket};
 use ship::Ship;
 use sim_element::SimElement;
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Server
-
 pub struct ServerBattleState {
     slot: ServerSlot,
     ships: HashMap<ClientId, Ship>,
@@ -94,8 +91,8 @@ impl ServerBattleState {
     
     fn do_simulation(&mut self) {
         // Pre simulation
-        self.apply_to_sim_elements_with_ships(|sim_element, ships| {
-            sim_element.before_simulation(ships);
+        self.apply_to_sim_elements(|sim_element| {
+            sim_element.before_simulation(&self.ships);
         });
     
         // Write results packet
@@ -112,34 +109,26 @@ impl ServerBattleState {
         self.simulate();
         
         // Post simulation
-        self.apply_to_sim_elements_with_ships(|sim_element, ships| {
-            sim_element.after_simulation(ships);
+        self.apply_to_sim_elements(|sim_element| {
+            sim_element.after_simulation(&self.ships);
         });
     }
     
-    fn apply_to_sim_elements(&mut self, f: |&mut SimElement|) {
-        for (_, ship) in self.ships.mut_iter() {
-            for module in ship.modules.mut_iter() {
-                f(module as &mut SimElement);
-            }
-        }
-    }
-    
-    fn apply_to_sim_elements_with_ships(&mut self, f: |&mut SimElement, &mut HashMap<ClientId, Ship>|) {
-        for (_, ship) in self.ships.mut_iter() {
-            for module in ship.modules.mut_iter() {
-                f(module as &mut SimElement, &mut self.ships);
+    fn apply_to_sim_elements(&self, f: |&mut SimElement|) {
+        for (_, ship) in self.ships.iter() {
+            for module in ship.modules.iter() {
+                f(module.borrow_mut().deref_mut() as &mut SimElement);
             }
         }
     }
     
     fn simulate(&mut self) {
-        let mut time_slots: TreeMap<u32, Vec<Rc<RefCell<&mut Module>>>> = TreeMap::new();
+        let mut time_slots: TreeMap<u32, Vec<Rc<RefCell<Module>>>> = TreeMap::new();
         
-        for (_, ship) in self.ships.mut_iter() {
-            for module in ship.modules.mut_iter() {
-                let times = module.get_critical_times();
-                let module_ref = Rc::new(RefCell::new(module));
+        for (_, ship) in self.ships.iter() {
+            for module in ship.modules.iter() {
+                let times = module.borrow().get_critical_times();
+                let module_ref = module.clone();
                 
                 for time in times.iter() {                
                     if time_slots.contains_key(time) {
@@ -151,9 +140,9 @@ impl ServerBattleState {
             }
         }
         
-        for (time, sim_element_refs) in time_slots.mut_iter() {
-            for sim_element_ref in sim_element_refs.mut_iter() {
-                sim_element_ref.borrow_mut().on_simulation_time(&mut self.ships, *time);
+        for (time, sim_elements) in time_slots.iter() {
+            for sim_elements in sim_elements.iter() {
+                sim_elements.borrow_mut().on_simulation_time(&mut self.ships, *time);
             }
         }
     }
