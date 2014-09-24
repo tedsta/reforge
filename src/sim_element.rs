@@ -1,12 +1,18 @@
-use net::{InPacket, OutPacket};
+use std::collections::HashMap;
+
+use net::{ClientId, InPacket, OutPacket};
 use render::Renderer;
+use ship::Ship;
 
 pub trait SimElement {
-    fn on_simulation_begin(&mut self);
-    fn on_simulation_time(&mut self, time: f32);
-    fn on_simulation_end(&mut self);
+    fn before_simulation(&mut self, ships: &mut HashMap<ClientId, Ship>);
+    fn on_simulation_time(&mut self, ships: &mut HashMap<ClientId, Ship>, time: u32);
+    fn after_simulation(&mut self, ships: &mut HashMap<ClientId, Ship>);
+    fn get_critical_times(&self) -> Vec<u32> {
+        vec!()
+    }
     
-    fn draw(&self, renderer: &mut Renderer, simulating: bool);
+    fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32);
     
     fn write_plans(&self, packet: &mut OutPacket);
     fn read_plans(&self, packet: &mut InPacket);

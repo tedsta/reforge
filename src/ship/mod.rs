@@ -9,9 +9,9 @@ mod ship_gen;
 
 // Holds everything about the ship's damage, capabilities, etc.
 pub struct ShipState {
-    engines: uint,
-    shields: uint,
-    max_shields: uint,
+    pub engines: uint,
+    pub shields: uint,
+    pub max_shields: uint,
 }
 
 impl ShipState {
@@ -38,7 +38,7 @@ impl Packable for ShipState {
 }
 
 pub struct Ship {
-    state: ShipState,
+    pub state: ShipState,
     pub modules: Vec<Module>,
 }
 
