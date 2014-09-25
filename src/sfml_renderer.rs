@@ -15,7 +15,7 @@ pub struct SfmlRenderer {
 impl SfmlRenderer {
     pub fn new(window: RenderWindow) -> SfmlRenderer {
         let textures = vec![
-            Texture::new_from_file("content/textures/modules/test1.png").expect("Failed to load texture"),
+            Texture::new_from_file("content/textures/modules/weapon1.png").expect("Failed to load texture"),
         ];
     
         SfmlRenderer {
