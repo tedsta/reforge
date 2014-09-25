@@ -3,6 +3,7 @@
 #![crate_type = "bin"]
 
 extern crate native;
+extern crate time;
 extern crate rsfml;
 
 use rsfml::graphics::{RenderWindow};
