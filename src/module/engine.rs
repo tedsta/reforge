@@ -50,8 +50,8 @@ impl SimElement for EngineModule {
         vec![2, 3]
     }
     
-    fn draw(&self, renderer: &mut Renderer, simulating: bool, _: f32) {
-        renderer.draw_texture(render::Engine, (self.base.x as f32)*(48f32), (self.base.y as f32)*(48f32));
+    fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32) {
+        renderer.draw_texture(render::Engine, (self.base.x as f32)*(48f32) + (time*100f32), (self.base.y as f32)*(48f32));
     }
     
     fn write_plans(&self, packet: &mut OutPacket) {

@@ -93,8 +93,8 @@ impl ClientBattleState {
                 // 20 ticks per second
                 let tick = (elapsed_time.num_milliseconds() / 50) as u32;
                 
-                // Calculate delta time in seconds as f32
-                let dt = ((current_time - last_time).num_milliseconds() as f32)/1000f32;
+                // Calculate elapsed time in seconds as f32
+                let elapsed_seconds = (elapsed_time.num_milliseconds() as f32)/1000f32;
                 
                 // Prepare last_time for next frame
                 last_time = current_time;
@@ -110,7 +110,7 @@ impl ClientBattleState {
                 
                 // Render
                 (&mut renderer.window as &mut RenderTarget).clear(&Color::black());
-                self.draw(renderer, true, dt);
+                self.draw(renderer, true, elapsed_seconds);
                 renderer.display();
                 
                 // Check if we're done
