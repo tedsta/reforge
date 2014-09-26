@@ -10,8 +10,10 @@ use sim_element::SimElement;
 
 // Use+reexport all of the modules
 pub use self::engine::EngineModule;
+pub use self::proj_weapon::ProjectileWeaponModule;
 
 pub mod engine;
+pub mod proj_weapon;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -19,74 +21,93 @@ pub type ModuleRef = Rc<RefCell<Module>>;
 
 pub enum Module {
     Engine(EngineModule),
+    ProjectileWeapon(ProjectileWeaponModule),
 }
 
 impl Module {
     pub fn get_base<'a>(&'a mut self) -> &'a mut ModuleBase {
         match (*self) {
             Engine(ref mut m) => &mut m.base,
+            ProjectileWeapon(ref mut m) => &mut m.base,
         }
     }
     
     fn get_type_id(&self) -> u16 {
         match *self {
             Engine(_) => 0,
+            ProjectileWeapon(_) => 1,
         }
     }
 }
 
 impl SimElement for Module {
+    fn server_preprocess(&mut self, ships: &HashMap<ClientId, Ship>) {
+        match *self {
+            Engine(ref mut m) => m.server_preprocess(ships),
+            ProjectileWeapon(ref mut m) => m.server_preprocess(ships),
+        }
+    }
+    
     fn before_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
         match *self {
-            Engine(mut m) => m.before_simulation(ships),
+            Engine(ref mut m) => m.before_simulation(ships),
+            ProjectileWeapon(ref mut m) => m.before_simulation(ships),
         }
     }
     
     fn on_simulation_time(&mut self, ships: &HashMap<ClientId, Ship>, time: u32) {
         match *self {
-            Engine(mut m) => m.on_simulation_time(ships, time),
+            Engine(ref mut m) => m.on_simulation_time(ships, time),
+            ProjectileWeapon(ref mut m) => m.on_simulation_time(ships, time),
         }
     }
     
     fn after_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
         match *self {
-            Engine(mut m) => m.after_simulation(ships),
+            Engine(ref mut m) => m.after_simulation(ships),
+            ProjectileWeapon(ref mut m) => m.after_simulation(ships),
         }
     }
     
     fn get_critical_times(&self) -> Vec<u32> {
         match *self {
-            Engine(m) => m.get_critical_times(),
+            Engine(ref m) => m.get_critical_times(),
+            ProjectileWeapon(ref m) => m.get_critical_times(),
         }
     }
     
     fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32) {
         match *self {
-            Engine(m) => m.draw(renderer, simulating, time),
+            Engine(ref m) => m.draw(renderer, simulating, time),
+            ProjectileWeapon(ref m) => m.draw(renderer, simulating, time),
         }
     }
     
     fn write_plans(&self, packet: &mut OutPacket) {
         match *self {
-            Engine(m) => m.write_plans(packet),
+            Engine(ref m) => m.write_plans(packet),
+            ProjectileWeapon(ref m) => m.write_plans(packet),
         }
     }
     
     fn read_plans(&self, packet: &mut InPacket) {
         match *self {
-            Engine(m) => m.read_plans(packet),
+            Engine(ref m) => m.read_plans(packet),
+            ProjectileWeapon(ref m) => m.read_plans(packet),
         }
     }
     
     fn write_results(&self, packet: &mut OutPacket) {
         match *self {
-            Engine(m) => m.write_results(packet),
+            Engine(ref m) => m.write_results(packet),
+            ProjectileWeapon(ref m) => m.write_results(packet),
         }
     }
     
     fn read_results(&self, packet: &mut InPacket) {
         match *self {
-            Engine(m) => m.read_results(packet),
+            Engine(ref m) => m.read_results(packet),
+            ProjectileWeapon(ref m) => m.read_results(packet),
         }
     }
 }
@@ -94,9 +115,8 @@ impl SimElement for Module {
 pub fn read_module_from_packet(packet: &mut InPacket) -> IoResult<Module> {
     let module_type = try!(packet.read_u16());
     match module_type {
-        0 => {
-            Ok(Engine(try!(packet.read::<EngineModule>())))
-        },
+        0 => Ok(Engine(try!(packet.read::<EngineModule>()))),
+        1 => Ok(ProjectileWeapon(try!(packet.read::<ProjectileWeaponModule>()))),
         _ => {Err(IoError{kind: InvalidInput, desc: "Failed to read module with invalid module type ID", detail: None})}
     }
 }
@@ -104,7 +124,8 @@ pub fn read_module_from_packet(packet: &mut InPacket) -> IoResult<Module> {
 pub fn write_module_to_packet(module: &Module, packet: &mut OutPacket) -> IoResult<()> {
     packet.write_u16(module.get_type_id()).unwrap();
     match *module {
-        Engine(module) => try!(module.write_to_packet(packet)),
+        Engine(ref module) => try!(module.write_to_packet(packet)),
+        ProjectileWeapon(ref module) => try!(module.write_to_packet(packet)),
     }
     Ok(())
 }
