@@ -1,31 +1,53 @@
 use std::collections::HashMap;
 use std::io::IoResult;
 
-use module::{Module, ModuleBase, Engine};
+use module::{Module, ModuleBase, ProjectileWeapon};
 use net::{ClientId, InPacket, OutPacket, Packable};
 use render;
 use render::{Renderer, TextureId};
 use ship::Ship;
 use sim_element::SimElement;
 
-pub struct EngineModule {
-    pub base: ModuleBase,
+#[deriving(FromPrimitive)]
+enum ProjectilePhase {
+    OriginToOffscreen,
+    OffscreenToTarget,
+    Detonate
 }
 
-impl EngineModule {
+struct Projectile {
+    texture: TextureId,
+    phase: ProjectilePhase,
+    damage: u8,
+    hit: bool,
+    
+    fire_tick: u32,       // Tick that the projectile fires at
+    off_screen_tick: u32, // Tick that the projectile starts travelling from offscreen to target at
+    hit_tick: u32,        // Tick that projectile hits target at
+}
+
+pub struct ProjectileWeaponModule {
+    pub base: ModuleBase,
+    
+    projectiles: Vec<Projectile>,
+}
+
+impl ProjectileWeaponModule {
     pub fn new() -> Module {
-        Engine(EngineModule {
+        ProjectileWeapon(ProjectileWeaponModule {
             base: ModuleBase::new(),
+            projectiles: vec!(),
         })
     }
 }
 
-impl Packable for EngineModule {
-    fn read_from_packet(packet: &mut InPacket) -> IoResult<EngineModule> {
+impl Packable for ProjectileWeaponModule {
+    fn read_from_packet(packet: &mut InPacket) -> IoResult<ProjectileWeaponModule> {
         let base = try!(packet.read());
 
-        Ok(EngineModule {
+        Ok(ProjectileWeaponModule {
             base: base,
+            projectiles: vec!(),
         })
     }
     
@@ -35,10 +57,10 @@ impl Packable for EngineModule {
     }
 }
 
-impl SimElement for EngineModule {
+impl SimElement for ProjectileWeaponModule {
     fn server_preprocess(&mut self, ships: &HashMap<ClientId, Ship>) {
     }
-    
+
     fn before_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
     }
     

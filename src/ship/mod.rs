@@ -9,6 +9,9 @@ use self::ship_gen::generate_ship;
 // Use the ship_gen module privately here
 mod ship_gen;
 
+// Type for the ID of a ship
+pub type ShipId = u32;
+
 // Holds everything about the ship's damage, capabilities, etc.
 pub struct ShipState {
     pub engines: uint,
@@ -40,13 +43,14 @@ impl Packable for ShipState {
 }
 
 pub struct Ship {
+    pub id: ShipId,
     pub state: ShipState,
     pub modules: Vec<ModuleRef>,
 }
 
 impl Ship {
     pub fn new() -> Ship {
-        Ship{state: ShipState::new(), modules: vec!()}
+        Ship{id: 0, state: ShipState::new(), modules: vec!()}
     }
     
     pub fn generate() -> Ship {
@@ -62,6 +66,7 @@ impl Ship {
 
 impl Packable for Ship {
     fn read_from_packet(packet: &mut InPacket) -> IoResult<Ship> {
+        let id = try!(packet.read_u32());
         let state: ShipState = try!(packet.read());
         
         // Deserialize modules
@@ -73,12 +78,14 @@ impl Packable for Ship {
         }
         
         Ok(Ship {
+            id: id,
             state: state,
             modules: modules,
         })
     }
     
     fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()> {
+        try!(packet.write_u32(self.id));
         try!(self.state.write_to_packet(packet));
         try!(packet.write_u8(self.modules.len() as u8));
         for module in self.modules.iter() {
