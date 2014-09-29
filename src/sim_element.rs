@@ -14,7 +14,7 @@ pub trait SimElement {
         vec!()
     }
     
-    fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32);
+    fn draw(&mut self, renderer: &mut Renderer, simulating: bool, time: f32);
     
     fn write_plans(&self, packet: &mut OutPacket);
     fn read_plans(&self, packet: &mut InPacket);

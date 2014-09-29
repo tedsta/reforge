@@ -90,6 +90,11 @@ impl ClientBattleState {
                 // Calculate total elapsed time
                 let elapsed_time = current_time - start_time;
                 
+                // Check if we're done
+                if elapsed_time.num_seconds() >= 5 {
+                    break;
+                }
+                
                 // 20 ticks per second
                 let tick = (elapsed_time.num_milliseconds() / 50) as u32;
                 
@@ -112,11 +117,6 @@ impl ClientBattleState {
                 (&mut renderer.window as &mut RenderTarget).clear(&Color::black());
                 self.draw(renderer, true, elapsed_seconds);
                 renderer.display();
-                
-                // Check if we're done
-                if elapsed_time.num_seconds() >= 5 {
-                    break;
-                }
             }
             
             // After simulation
@@ -161,7 +161,7 @@ impl ClientBattleState {
     fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32) {
         for ship in self.ships.values() {
             for module in ship.modules.iter() {
-                module.borrow().draw(renderer, simulating, time);
+                module.borrow_mut().draw(renderer, simulating, time);
             }
         }
     }

@@ -22,7 +22,7 @@ struct Projectile {
     hit: bool,
     
     fire_tick: u32,       // Tick that the projectile fires at
-    off_screen_tick: u32, // Tick that the projectile starts travelling from offscreen to target at
+    offscreen_tick: u32, // Tick that the projectile starts travelling from offscreen to target at
     hit_tick: u32,        // Tick that projectile hits target at
 }
 
@@ -59,9 +59,18 @@ impl Packable for ProjectileWeaponModule {
 
 impl SimElement for ProjectileWeaponModule {
     fn server_preprocess(&mut self, ships: &HashMap<ClientId, Ship>) {
+        for projectile in self.projectiles.iter_mut() {
+            projectile.hit = true;
+            projectile.fire_tick = 0;
+            projectile.offscreen_tick = 20;
+            projectile.hit_tick = 40;
+        }
     }
 
     fn before_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
+        for projectile in self.projectiles.iter_mut() {
+            projectile.phase = OriginToOffscreen;
+        }
     }
     
     fn on_simulation_time(&mut self, ships: &HashMap<ClientId, Ship>, time: u32) {
@@ -71,11 +80,7 @@ impl SimElement for ProjectileWeaponModule {
     fn after_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
     }
     
-    fn get_critical_times(&self) -> Vec<u32> {
-        vec![2, 3]
-    }
-    
-    fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32) {
+    fn draw(&mut self, renderer: &mut Renderer, simulating: bool, time: f32) {
         renderer.draw_texture(render::Engine, (self.base.x as f32)*(48f32) + (time*100f32), (self.base.y as f32)*(48f32));
     }
     
