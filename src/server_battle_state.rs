@@ -123,7 +123,13 @@ impl ServerBattleState {
     }
     
     fn simulate(&mut self) {
-        let mut time_slots: TreeMap<u32, Vec<Rc<RefCell<Module>>>> = TreeMap::new();
+        for i in range(0, 100) {
+            self.apply_to_sim_elements(|sim_element| {
+                sim_element.on_simulation_time(&self.ships, i);
+            });
+        }
+    
+        /*let mut time_slots: TreeMap<u32, Vec<Rc<RefCell<Module>>>> = TreeMap::new();
         
         for (_, ship) in self.ships.iter() {
             for module in ship.modules.iter() {
@@ -144,6 +150,6 @@ impl ServerBattleState {
             for sim_elements in sim_elements.iter() {
                 sim_elements.borrow_mut().on_simulation_time(&mut self.ships, *time);
             }
-        }
+        }*/
     }
 }

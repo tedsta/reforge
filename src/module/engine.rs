@@ -49,11 +49,7 @@ impl SimElement for EngineModule {
     fn after_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
     }
     
-    fn get_critical_times(&self) -> Vec<u32> {
-        vec![2, 3]
-    }
-    
-    fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32) {
+    fn draw(&mut self, renderer: &mut Renderer, simulating: bool, time: f32) {
         renderer.draw_texture(render::Engine, (self.base.x as f32)*(48f32) + (time*100f32), (self.base.y as f32)*(48f32));
     }
     

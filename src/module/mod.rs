@@ -76,10 +76,10 @@ impl SimElement for Module {
         }
     }
     
-    fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32) {
+    fn draw(&mut self, renderer: &mut Renderer, simulating: bool, time: f32) {
         match *self {
-            Engine(ref m) => m.draw(renderer, simulating, time),
-            ProjectileWeapon(ref m) => m.draw(renderer, simulating, time),
+            Engine(ref mut m) => m.draw(renderer, simulating, time),
+            ProjectileWeapon(ref mut m) => m.draw(renderer, simulating, time),
         }
     }
     
