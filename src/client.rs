@@ -15,7 +15,7 @@ use input::KeyHandler;
 use net::Client;
 use sfml_renderer::SfmlRenderer;
 
-pub mod battle_state_packets;
+pub mod battle_state;
 pub mod client_battle_state;
 pub mod input;
 pub mod module;
@@ -24,6 +24,7 @@ pub mod render;
 pub mod sfml_renderer;
 pub mod ship;
 pub mod sim_element;
+pub mod vec;
 
 struct Foo;
 

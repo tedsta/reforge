@@ -1,9 +1,17 @@
+use vec::{Vec2f};
+
 pub trait Renderer {
     fn draw_texture(&mut self, texture: TextureId, x: f32, y: f32);
+    
+    // This is available to draw things using vectors
+    fn draw_texture_vec(&mut self, texture: TextureId, pos: &Vec2f) {
+        self.draw_texture(texture, pos.x, pos.y);
+    }
+    
     fn draw_texture_on_target(&mut self, target: RenderTargetId, texture: TextureId);
 }
 
-pub type RenderTargetId = uint;
+pub type RenderTargetId = u32;
 
 #[deriving(FromPrimitive)]
 pub enum TextureId {

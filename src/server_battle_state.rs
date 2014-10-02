@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{HashMap, TreeMap};
 
-use battle_state_packets::{Plan, ServerPacketId, SimResults};
+use battle_state::{Plan, ServerPacketId, SimResults};
 use module::Module;
 use net::{ClientId, ServerSlot, Joined, ReceivedPacket, InPacket, OutPacket};
 use ship::Ship;
@@ -13,7 +13,7 @@ pub struct ServerBattleState {
     ships: HashMap<ClientId, Ship>,
     
     received_plans: Vec<ClientId>,
-    turn_number: uint,
+    turn_number: u32,
 }
 
 impl ServerBattleState {

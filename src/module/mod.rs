@@ -55,10 +55,10 @@ impl SimElement for Module {
         }
     }
     
-    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, Ship>, time: u32) {
+    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, Ship>, tick: u32) {
         match *self {
-            Engine(ref mut m) => m.on_simulation_time(ships, time),
-            ProjectileWeapon(ref mut m) => m.on_simulation_time(ships, time),
+            Engine(ref mut m) => m.on_simulation_time(ships, tick),
+            ProjectileWeapon(ref mut m) => m.on_simulation_time(ships, tick),
         }
     }
     

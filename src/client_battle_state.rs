@@ -6,7 +6,7 @@ use time;
 
 use rsfml::graphics::{RenderTarget, RenderWindow, Color};
 
-use battle_state_packets::{ClientPacketId, Plan};
+use battle_state::{ClientPacketId, Plan, TICKS_PER_SECOND};
 use input::InputSystem;
 use net::{Client, ClientId, InPacket, OutPacket};
 use render::Renderer;
@@ -96,7 +96,7 @@ impl ClientBattleState {
                 }
                 
                 // 20 ticks per second
-                let tick = (elapsed_time.num_milliseconds() / 50) as u32;
+                let tick = (elapsed_time.num_milliseconds() as u32)/(1000/TICKS_PER_SECOND);
                 
                 // Calculate elapsed time in seconds as f32
                 let elapsed_seconds = (elapsed_time.num_milliseconds() as f32)/1000f32;

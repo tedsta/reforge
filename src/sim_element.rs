@@ -8,7 +8,7 @@ pub trait SimElement {
     fn server_preprocess(&mut self, ships: &HashMap<ClientId, Ship>);
 
     fn before_simulation(&mut self, ships: &HashMap<ClientId, Ship>);
-    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, Ship>, time: u32);
+    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, Ship>, tick: u32);
     fn after_simulation(&mut self, ships: &HashMap<ClientId, Ship>);
     fn get_critical_times(&self) -> Vec<u32> {
         vec!()
