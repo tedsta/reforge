@@ -301,12 +301,24 @@ impl OutPacket {
         Ok(try!(data.write_to_packet(self)))
     }
     
+    pub fn write_vec<T: Packable>(&mut self, data: &Vec<T>) -> IoResult<()> {
+        try!(self.write_u32(data.len() as u32));
+        for d in data.iter() {
+            try!(d.write_to_packet(self));
+        }
+        Ok(())
+    }
+    
     pub fn write_i32(&mut self, data: i32) -> IoResult<()> {
         self.writer.write_le_i32(data)
     }
     
     pub fn write_u32(&mut self, data: u32) -> IoResult<()> {
         self.writer.write_le_u32(data)
+    }
+    
+    pub fn write_f32(&mut self, data: f32) -> IoResult<()> {
+        self.writer.write_le_f32(data)
     }
     
     pub fn write_i16(&mut self, data: i16) -> IoResult<()> {
@@ -323,6 +335,10 @@ impl OutPacket {
     
     pub fn write_u8(&mut self, data: u8) -> IoResult<()> {
         self.writer.write_u8(data)
+    }
+    
+    pub fn write_bool(&mut self, data: bool) -> IoResult<()> {
+        self.writer.write_u8(data as u8)
     }
 }
 
@@ -360,12 +376,25 @@ impl InPacket {
         Ok(try!(Packable::read_from_packet(self)))
     }
     
+    pub fn read_vec<T: Packable>(&mut self) -> IoResult<Vec<T>> {
+        let num_elements = try!(self.read_u32());
+        let mut vec = vec!();
+        for _ in range(0, num_elements) {
+            vec.push(try!(Packable::read_from_packet(self)));
+        }
+        Ok(vec)
+    }
+    
     pub fn read_i32(&mut self) -> IoResult<i32> {
         self.reader.read_le_i32()
     }
     
     pub fn read_u32(&mut self) -> IoResult<u32> {
         self.reader.read_le_u32()
+    }
+    
+    pub fn read_f32(&mut self) -> IoResult<f32> {
+        self.reader.read_le_f32()
     }
     
     pub fn read_i16(&mut self) -> IoResult<i16> {
@@ -382,5 +411,9 @@ impl InPacket {
     
     pub fn read_u8(&mut self) -> IoResult<u8> {
         self.reader.read_u8()
+    }
+    
+    pub fn read_bool(&mut self) -> IoResult<bool> {
+        Ok(try!(self.reader.read_u8()) == 1)
     }
 }
