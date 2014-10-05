@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use std::io::{IoResult, IoError, InvalidInput};
 
 use net::{ClientId, InPacket, OutPacket, Packable};
-use render::{Renderer};
-use ship::Ship;
+use render::{Renderer, RenderTarget, TextureId};
+use ship::ShipRef;
 use sim_element::SimElement;
 
 // Use+reexport all of the modules
@@ -41,28 +41,28 @@ impl Module {
 }
 
 impl SimElement for Module {
-    fn server_preprocess(&mut self, ships: &HashMap<ClientId, Ship>) {
+    fn server_preprocess(&mut self, ships: &HashMap<ClientId, ShipRef>) {
         match *self {
             Engine(ref mut m) => m.server_preprocess(ships),
             ProjectileWeapon(ref mut m) => m.server_preprocess(ships),
         }
     }
     
-    fn before_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
+    fn before_simulation(&mut self, ships: &HashMap<ClientId, ShipRef>) {
         match *self {
             Engine(ref mut m) => m.before_simulation(ships),
             ProjectileWeapon(ref mut m) => m.before_simulation(ships),
         }
     }
     
-    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, Ship>, tick: u32) {
+    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, ShipRef>, tick: u32) {
         match *self {
             Engine(ref mut m) => m.on_simulation_time(ships, tick),
             ProjectileWeapon(ref mut m) => m.on_simulation_time(ships, tick),
         }
     }
     
-    fn after_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
+    fn after_simulation(&mut self, ships: &HashMap<ClientId, ShipRef>) {
         match *self {
             Engine(ref mut m) => m.after_simulation(ships),
             ProjectileWeapon(ref mut m) => m.after_simulation(ships),
@@ -133,7 +133,10 @@ pub fn write_module_to_packet(module: &Module, packet: &mut OutPacket) -> IoResu
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct ModuleBase {
-    // Module position/texture stuff
+    // Ship this module belongs to
+    pub ship: Option<ShipRef>,
+
+    // Module position/size stuff
     pub x: u8,
     pub y: u8,
     pub width: u8,
@@ -144,17 +147,28 @@ pub struct ModuleBase {
     pub max_power: u32,
     pub damage: u32,
     pub hull: u32,
+    
+    // Module rendering stuff
+    pub texture: TextureId,
 }
 
 impl ModuleBase {
-    pub fn new() -> ModuleBase {
-        ModuleBase{x: 0, y: 0, width: 1, height: 1, power: 0, max_power: 1, damage: 0, hull: 0}
+    pub fn new(texture: TextureId) -> ModuleBase {
+        ModuleBase{ship: None, x: 0, y: 0, width: 1, height: 1, power: 0, max_power: 1, damage: 0, hull: 0, texture: texture}
+    }
+    
+    pub fn draw(&self, renderer: &Renderer) {
+        let x = (self.x as f32)*(48f32);
+        let y = (self.y as f32)*(48f32);
+        self.ship.as_ref().unwrap().borrow().render_target.draw_texture(renderer, self.texture, x, y);
     }
 }
 
 impl Packable for ModuleBase {
     fn read_from_packet(packet: &mut InPacket) -> IoResult<ModuleBase> {
         Ok(ModuleBase {
+            ship: None,
+        
             x: try!(packet.read_u8()),
             y: try!(packet.read_u8()),
             width: try!(packet.read_u8()),
@@ -163,7 +177,9 @@ impl Packable for ModuleBase {
             power: try!(packet.read_u32()),
             max_power: try!(packet.read_u32()),
             damage: try!(packet.read_u32()),
-            hull: try!(packet.read_u32())
+            hull: try!(packet.read_u32()),
+            
+            texture: try!(packet.read_u16()),
         })
     }
     
@@ -177,6 +193,8 @@ impl Packable for ModuleBase {
         try!(packet.write_u32(self.max_power));
         try!(packet.write_u32(self.damage));
         try!(packet.write_u32(self.hull));
+        
+        try!(packet.write_u16(self.texture));
         Ok(())
     }
 }

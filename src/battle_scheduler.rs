@@ -2,7 +2,7 @@ use std::collections::{RingBuf, HashMap};
 
 use net::{ClientId, ServerSlot, Joined, ReceivedPacket};
 use server_battle_state::ServerBattleState;
-use ship::Ship;
+use ship::ShipRef;
 
 pub struct BattleScheduler {
     slot: Box<ServerSlot>,
@@ -44,8 +44,8 @@ impl BattleScheduler {
             spawn(proc() {
                 // Map clients to their ships
                 let mut ships = HashMap::new();
-                ships.insert(client1, Ship::generate());
-                ships.insert(client2, Ship::generate());
+                ships.insert(client1, ShipRef::generate(client1));
+                ships.insert(client2, ShipRef::generate(client2));
             
                 let mut battle_state = ServerBattleState::new(new_slot, ships);
                 battle_state.run();

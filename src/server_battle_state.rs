@@ -5,19 +5,19 @@ use std::collections::{HashMap, TreeMap};
 use battle_state::{Plan, ServerPacketId, SimResults};
 use module::Module;
 use net::{ClientId, ServerSlot, Joined, ReceivedPacket, InPacket, OutPacket};
-use ship::Ship;
+use ship::ShipRef;
 use sim_element::SimElement;
 
 pub struct ServerBattleState {
     slot: ServerSlot,
-    ships: HashMap<ClientId, Ship>,
+    ships: HashMap<ClientId, ShipRef>,
     
     received_plans: Vec<ClientId>,
     turn_number: u32,
 }
 
 impl ServerBattleState {
-    pub fn new(slot: ServerSlot, ships: HashMap<ClientId, Ship>) -> ServerBattleState {
+    pub fn new(slot: ServerSlot, ships: HashMap<ClientId, ShipRef>) -> ServerBattleState {
         ServerBattleState {
             slot: slot,
             ships: ships,
@@ -116,7 +116,7 @@ impl ServerBattleState {
     
     fn apply_to_sim_elements(&self, f: |&mut SimElement|) {
         for (_, ship) in self.ships.iter() {
-            for module in ship.modules.iter() {
+            for module in ship.borrow().modules.iter() {
                 f(module.borrow_mut().deref_mut() as &mut SimElement);
             }
         }
