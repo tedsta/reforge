@@ -1,23 +1,45 @@
 use vec::{Vec2f};
 
 pub trait Renderer {
-    fn draw_texture(&mut self, texture: TextureId, x: f32, y: f32);
+    fn get_texture_info<'a>(&'a self, texture: TextureId) -> &'a TextureInfo;
+
+    fn draw_texture(&self, texture: TextureId, x: f32, y: f32);
     
     // This is available to draw things using vectors
-    fn draw_texture_vec(&mut self, texture: TextureId, pos: &Vec2f) {
+    fn draw_texture_vec(&self, texture: TextureId, pos: &Vec2f) {
         self.draw_texture(texture, pos.x, pos.y);
     }
     
-    fn draw_texture_on_target(&mut self, target: RenderTargetId, texture: TextureId);
+    fn draw_texture_target(&self, target: RenderTargetId, texture: TextureId, x: f32, y: f32);
 }
 
-pub type RenderTargetId = u32;
-
-#[deriving(FromPrimitive)]
-pub enum TextureId {
-    Engine = 0,
-    TextureCount,
+#[deriving(Default)]
+pub struct RenderTarget {
+    pub id: RenderTargetId,
+    pub texture: TextureId,
 }
+
+impl RenderTarget {
+    pub fn draw_texture(&self, renderer: &Renderer, texture: TextureId, x: f32, y: f32) {
+        renderer.draw_texture_target(self.id, texture, x, y);
+    }
+    
+    pub fn draw_texture_vec(&self, renderer: &Renderer, texture: TextureId, pos: &Vec2f) {
+        self.draw_texture(renderer, texture, pos.x, pos.y);
+    }
+}
+
+pub type RenderTargetId = u16;
+
+pub type TextureId = u16;
+
+pub struct TextureInfo {
+    pub width: u16,
+    pub height: u16,
+}
+
+pub static ENGINE_TEXTURE: u16 = 0;
+pub static LASER_TEXTURE: u16 = 1;
 
 pub struct Sprite {
     // Texture

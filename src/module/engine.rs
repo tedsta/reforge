@@ -3,9 +3,8 @@ use std::io::IoResult;
 
 use module::{Module, ModuleBase, Engine};
 use net::{ClientId, InPacket, OutPacket, Packable};
-use render;
-use render::{Renderer, TextureId};
-use ship::Ship;
+use render::{Renderer, TextureId, ENGINE_TEXTURE};
+use ship::ShipRef;
 use sim_element::SimElement;
 
 pub struct EngineModule {
@@ -15,7 +14,7 @@ pub struct EngineModule {
 impl EngineModule {
     pub fn new() -> Module {
         Engine(EngineModule {
-            base: ModuleBase::new(),
+            base: ModuleBase::new(ENGINE_TEXTURE),
         })
     }
 }
@@ -36,21 +35,21 @@ impl Packable for EngineModule {
 }
 
 impl SimElement for EngineModule {
-    fn server_preprocess(&mut self, ships: &HashMap<ClientId, Ship>) {
+    fn server_preprocess(&mut self, ships: &HashMap<ClientId, ShipRef>) {
     }
     
-    fn before_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
+    fn before_simulation(&mut self, ships: &HashMap<ClientId, ShipRef>) {
     }
     
-    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, Ship>, tick: u32) {
+    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, ShipRef>, tick: u32) {
         println!("Simulating module at {}", tick);
     }
     
-    fn after_simulation(&mut self, ships: &HashMap<ClientId, Ship>) {
+    fn after_simulation(&mut self, ships: &HashMap<ClientId, ShipRef>) {
     }
     
     fn draw(&mut self, renderer: &mut Renderer, simulating: bool, time: f32) {
-        renderer.draw_texture(render::Engine, (self.base.x as f32)*(48f32) + (time*100f32), (self.base.y as f32)*(48f32));
+        self.base.draw(renderer);
     }
     
     fn write_plans(&self, packet: &mut OutPacket) {

@@ -1,41 +1,54 @@
+use std::rc::Rc;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::Timer;
 use std::time::Duration;
 
 use time;
 
-use rsfml::graphics::{RenderTarget, RenderWindow, Color};
+use rsfml::graphics::{RenderWindow, RenderTarget, Color};
 
 use battle_state::{ClientPacketId, Plan, TICKS_PER_SECOND};
 use input::InputSystem;
 use net::{Client, ClientId, InPacket, OutPacket};
-use render::Renderer;
+use render;
+use render::{Renderer};
 use sfml_renderer::SfmlRenderer;
-use ship::Ship;
+use ship::{Ship, ShipRef};
 use sim_element::SimElement;
+use vec::{Vec2, Vec2f};
+
+pub struct ShipRenderArea {
+    render_target: render::RenderTarget,
+    position: Vec2f,
+    ship_id: ClientId,
+}
 
 pub struct ClientBattleState {
     client: Client,
     
     // All the ships involved in this battle
-    ships: HashMap<ClientId, Ship>,
+    ships: HashMap<ClientId, ShipRef>,
+    
+    // The ships' render areas
+    render_areas: Vec<ShipRenderArea>,
 }
 
 impl ClientBattleState {
     pub fn new(client: Client) -> ClientBattleState {
-        ClientBattleState{client: client, ships: HashMap::new()}
+        ClientBattleState{client: client, ships: HashMap::new(), render_areas: vec!()}
     }
     
-    pub fn run(&mut self, renderer: &mut SfmlRenderer, input: &mut InputSystem) {
-        renderer.create_render_target(0, 0, 500, 500);
-        renderer.create_render_target(512, 0, 500, 500);
-    
+    pub fn run(&mut self, renderer: &mut SfmlRenderer, input: &mut InputSystem) {    
         // Receive all of the ships participating in this battle
         let mut packet = self.client.receive();
         let ship_count = packet.read_u32().unwrap();
-        for _ in range(0, ship_count) {
+        for i in range(0, ship_count) {
             let client_id = packet.read_u32().unwrap();
-            let ship = packet.read().unwrap();
+            let mut ship: ShipRef = packet.read().unwrap();
+            let render_target = renderer.create_render_target(500, 500);
+            ship.borrow_mut().render_target = render_target;
+            self.render_areas.push(ShipRenderArea{render_target: render_target, position: Vec2{x: (i*512) as f32, y: 0f32}, ship_id: client_id});
             self.ships.insert(client_id, ship);
         }
     
@@ -57,8 +70,16 @@ impl ClientBattleState {
                 
                 // Render
                 (&mut renderer.window as &mut RenderTarget).clear(&Color::black());
-                self.draw(renderer, false, 0f32);
-                renderer.display();
+                renderer.clear_render_targets();
+                
+                self.draw(renderer, true, 0f32);
+                renderer.display_render_targets();
+                
+                for render_area in self.render_areas.iter() {
+                    renderer.draw_texture_vec(render_area.render_target.texture, &render_area.position);
+                }
+                
+                renderer.window.display();
             }
         
             // Send plans
@@ -115,8 +136,16 @@ impl ClientBattleState {
                 
                 // Render
                 (&mut renderer.window as &mut RenderTarget).clear(&Color::black());
+                renderer.clear_render_targets();
+                
                 self.draw(renderer, true, elapsed_seconds);
-                renderer.display();
+                renderer.display_render_targets();
+                
+                for render_area in self.render_areas.iter() {
+                    renderer.draw_texture_vec(render_area.render_target.texture, &render_area.position);
+                }
+                
+                renderer.window.display();
             }
             
             // After simulation
@@ -160,7 +189,7 @@ impl ClientBattleState {
     
     fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32) {
         for ship in self.ships.values() {
-            for module in ship.modules.iter() {
+            for module in ship.borrow().modules.iter() {
                 module.borrow_mut().draw(renderer, simulating, time);
             }
         }
@@ -168,7 +197,7 @@ impl ClientBattleState {
     
     fn apply_to_sim_elements(&self, f: |&mut SimElement|) {
         for (_, ship) in self.ships.iter() {
-            for module in ship.modules.iter() {
+            for module in ship.borrow().modules.iter() {
                 f(module.borrow_mut().deref_mut() as &mut SimElement);
             }
         }
