@@ -27,3 +27,9 @@ impl<T: Mul<T, T>> Mul<T, Vec2<T>> for Vec2<T> {
         Vec2{x: self.x * (*other), y: self.y * (*other)}
     }
 }
+
+impl<T: Div<T, T>> Div<T, Vec2<T>> for Vec2<T> {
+    fn div(&self, other: &T) -> Vec2<T> {
+        Vec2{x: self.x / (*other), y: self.y / (*other)}
+    }
+}

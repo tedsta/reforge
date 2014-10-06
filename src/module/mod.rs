@@ -7,6 +7,7 @@ use net::{ClientId, InPacket, OutPacket, Packable};
 use render::{Renderer, RenderTarget, TextureId};
 use ship::ShipRef;
 use sim_element::SimElement;
+use vec::{Vec2, Vec2f};
 
 // Use+reexport all of the modules
 pub use self::engine::EngineModule;
@@ -25,7 +26,14 @@ pub enum Module {
 }
 
 impl Module {
-    pub fn get_base<'a>(&'a mut self) -> &'a mut ModuleBase {
+    pub fn get_base<'a>(&'a self) -> &'a ModuleBase {
+        match (*self) {
+            Engine(ref m) => &m.base,
+            ProjectileWeapon(ref m) => &m.base,
+        }
+    }
+    
+    pub fn get_base_mut<'a>(&'a mut self) -> &'a mut ModuleBase {
         match (*self) {
             Engine(ref mut m) => &mut m.base,
             ProjectileWeapon(ref mut m) => &mut m.base,
@@ -158,9 +166,19 @@ impl ModuleBase {
     }
     
     pub fn draw(&self, renderer: &Renderer) {
-        let x = (self.x as f32)*(48f32);
-        let y = (self.y as f32)*(48f32);
-        self.ship.as_ref().unwrap().borrow().render_target.draw_texture(renderer, self.texture, x, y);
+        self.ship.as_ref().unwrap().borrow().render_target.draw_texture_vec(renderer, self.texture, &self.get_render_position());
+    }
+    
+    pub fn get_render_position(&self) -> Vec2f {
+        Vec2{x: (self.x as f32)*(48f32), y: (self.y as f32)*(48f32)}
+    }
+    
+    pub fn get_render_size(&self) -> Vec2f {
+        Vec2{x: (self.width as f32)*(48f32), y: (self.height as f32)*(48f32)}
+    }
+    
+    pub fn get_render_center(&self) -> Vec2f {
+        self.get_render_position() + (self.get_render_size()/2f32)
     }
 }
 

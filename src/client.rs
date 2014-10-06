@@ -2,8 +2,10 @@
 #![desc = "spacegame awesome mmo client"]
 #![crate_type = "bin"]
 
+extern crate binary_encode;
 extern crate native;
 extern crate time;
+extern crate serialize;
 extern crate rsfml;
 
 use rsfml::graphics::{RenderWindow};

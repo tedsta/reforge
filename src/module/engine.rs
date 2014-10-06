@@ -42,7 +42,6 @@ impl SimElement for EngineModule {
     }
     
     fn on_simulation_time(&mut self, ships: &HashMap<ClientId, ShipRef>, tick: u32) {
-        println!("Simulating module at {}", tick);
     }
     
     fn after_simulation(&mut self, ships: &HashMap<ClientId, ShipRef>) {

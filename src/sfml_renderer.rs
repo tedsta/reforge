@@ -37,7 +37,7 @@ impl SfmlRenderer {
     
     pub fn clear_render_targets(&mut self) {
         for r in self.render_textures.iter_mut() {
-            r.clear(&Color::transparent());
+            r.clear(&Color::new_RGBA(150, 70, 30, 120));
         }
     }
     
