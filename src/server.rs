@@ -2,6 +2,9 @@
 #![desc = "spacegame awesome mmo server"]
 #![crate_type = "bin"]
 
+extern crate binary_encode;
+extern crate serialize;
+
 use net::Server;
 use battle_scheduler::BattleScheduler;
 

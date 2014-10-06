@@ -67,7 +67,7 @@ impl ShipRef {
     
     // Returns true if adding the module was successful, false if it failed.
     pub fn add_module(&self, mut module: Module) -> bool {
-        module.get_base().ship = Some(self.clone());
+        module.get_base_mut().ship = Some(self.clone());
         self.borrow_mut().modules.push(Rc::new(RefCell::new(module)));
         true
     }

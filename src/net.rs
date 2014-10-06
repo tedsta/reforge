@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use std::io::{TcpListener, TcpStream, Acceptor, Listener};
-use std::io::{MemReader, MemWriter, IoResult, TimedOut};
+use std::io::{MemReader, MemWriter, IoResult, IoError, TimedOut};
+
+use serialize::Encodable;
+use serialize::Decodable;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Some basic types

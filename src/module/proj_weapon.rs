@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io::{IoResult, IoError, OtherIoError};
 
 use battle_state::TICKS_PER_SECOND;
-use module::{Module, ModuleBase, ProjectileWeapon};
+use module::{Module, ModuleRef, ModuleBase, ProjectileWeapon};
 use net::{ClientId, InPacket, OutPacket, Packable};
 use render::{Renderer, TextureId, LASER_TEXTURE};
 use ship::ShipRef;
@@ -13,6 +13,8 @@ pub struct ProjectileWeaponModule {
     pub base: ModuleBase,
     
     projectiles: Vec<Projectile>,
+    
+    target: Option<ModuleRef>,
 }
 
 impl ProjectileWeaponModule {
@@ -25,17 +27,18 @@ impl ProjectileWeaponModule {
             
             fire_tick: 0,
             offscreen_tick: 0,
-            detonate_tick: 0,
+            hit_tick: 0,
             
             fire_pos: Vec2{x: 0f32, y: 0f32},
             to_offscreen_pos: Vec2{x: 0f32, y: 0f32},
             from_offscreen_pos: Vec2{x: 0f32, y: 0f32},
-            target_pos: Vec2{x: 0f32, y: 0f32},
+            hit_pos: Vec2{x: 0f32, y: 0f32},
         };
     
         ProjectileWeapon(ProjectileWeaponModule {
             base: ModuleBase::new(LASER_TEXTURE),
             projectiles: vec![projectile],
+            target: None,
         })
     }
 }
@@ -48,6 +51,7 @@ impl Packable for ProjectileWeaponModule {
         Ok(ProjectileWeaponModule {
             base: base,
             projectiles: projectiles,
+            target: None,
         })
     }
     
@@ -66,14 +70,24 @@ impl SimElement for ProjectileWeaponModule {
     }
 
     fn before_simulation(&mut self, ships: &HashMap<ClientId, ShipRef>) {
+        'ship: for ship in ships.values() {
+            for module in ship.borrow().modules.iter() {
+                self.target = Some(module.clone());
+                break 'ship;
+            }
+        }
+        let target_pos = self.target.as_ref().unwrap().borrow().deref().get_base().get_render_position();
+    
         for projectile in self.projectiles.iter_mut() {
             projectile.phase = FireToOffscreen;
             projectile.fire_tick = 0;
             projectile.offscreen_tick = 20;
-            projectile.detonate_tick = 40;
+            projectile.hit_tick = 40;
             
-            projectile.fire_pos = Vec2{x: 0f32, y: 200f32};
-            projectile.to_offscreen_pos = Vec2{x: 1500f32, y: 200f32};
+            projectile.fire_pos = self.base.get_render_position();
+            projectile.to_offscreen_pos = projectile.fire_pos + Vec2{x: 1500f32, y: 0f32};
+            projectile.from_offscreen_pos = Vec2{x: 1500f32, y: 0f32};
+            projectile.hit_pos = Vec2{x: 0f32, y: 0f32};
         }
     }
     
@@ -86,7 +100,7 @@ impl SimElement for ProjectileWeaponModule {
                     }
                 },
                 OffscreenToTarget => {
-                    if tick >= projectile.detonate_tick {
+                    if tick >= projectile.hit_tick {
                         projectile.phase = Detonate;
                     }
                 },
@@ -105,12 +119,20 @@ impl SimElement for ProjectileWeaponModule {
         for projectile in self.projectiles.iter() {
             match projectile.phase {
                 FireToOffscreen => {
+                    let render_target = &self.base.ship.as_ref().unwrap().borrow().render_target;
+                
                     let start_time = (projectile.fire_tick as f32)/(TICKS_PER_SECOND as f32);
-                    let duration = (projectile.offscreen_tick as f32)/(TICKS_PER_SECOND as f32);
-                    let interp = (time-start_time)/duration;
-                    renderer.draw_texture_vec(projectile.texture, &(projectile.fire_pos + (projectile.to_offscreen_pos-projectile.fire_pos)*interp));
+                    let stop_time = (projectile.offscreen_tick as f32)/(TICKS_PER_SECOND as f32);
+                    let interp = (time-start_time)/(stop_time-start_time);
+                    render_target.draw_texture_vec(renderer, projectile.texture, &(projectile.fire_pos + (projectile.to_offscreen_pos-projectile.fire_pos)*interp));
                 },
                 OffscreenToTarget => {
+                    let render_target = &self.base.ship.as_ref().unwrap().borrow().render_target;
+                
+                    let start_time = (projectile.offscreen_tick as f32)/(TICKS_PER_SECOND as f32);
+                    let stop_time = (projectile.hit_tick as f32)/(TICKS_PER_SECOND as f32);
+                    let interp = (time-start_time)/(stop_time-start_time);
+                    render_target.draw_texture_vec(renderer, projectile.texture, &(projectile.from_offscreen_pos + (projectile.hit_pos-projectile.from_offscreen_pos)*interp));
                 },
                 Detonate => {
                 },
@@ -149,7 +171,7 @@ struct Projectile {
     // Simulation times that the projectile changes phases at
     fire_tick: u32,       // Tick that the projectile fires at
     offscreen_tick: u32,  // Tick that the projectile starts travelling from offscreen to target at
-    detonate_tick: u32,        // Tick that projectile hits target at
+    hit_tick: u32,        // Tick that projectile hits target at
     
     // Render stuff
 
@@ -157,7 +179,7 @@ struct Projectile {
     fire_pos: Vec2f,
     to_offscreen_pos: Vec2f,
     from_offscreen_pos: Vec2f,
-    target_pos: Vec2f,
+    hit_pos: Vec2f,
 }
 
 impl Packable for Projectile {
@@ -173,12 +195,12 @@ impl Packable for Projectile {
         
         let fire_tick = try!(packet.read_u32());
         let offscreen_tick = try!(packet.read_u32());
-        let detonate_tick = try!(packet.read_u32());
+        let hit_tick = try!(packet.read_u32());
         
         let fire_pos = Vec2{x: try!(packet.read_f32()), y: try!(packet.read_f32())};
         let to_offscreen_pos = Vec2{x: try!(packet.read_f32()), y: try!(packet.read_f32())};
         let from_offscreen_pos = Vec2{x: try!(packet.read_f32()), y: try!(packet.read_f32())};
-        let target_pos = Vec2{x: try!(packet.read_f32()), y: try!(packet.read_f32())};
+        let hit_pos = Vec2{x: try!(packet.read_f32()), y: try!(packet.read_f32())};
     
         Ok(Projectile {
             texture: texture,
@@ -188,12 +210,12 @@ impl Packable for Projectile {
             
             fire_tick: fire_tick,
             offscreen_tick: offscreen_tick,
-            detonate_tick: detonate_tick,
+            hit_tick: hit_tick,
 
             fire_pos: fire_pos,
             to_offscreen_pos: to_offscreen_pos,
             from_offscreen_pos: from_offscreen_pos,
-            target_pos: target_pos,
+            hit_pos: hit_pos,
         })
     }
     
@@ -205,12 +227,12 @@ impl Packable for Projectile {
         
         try!(packet.write_u32(self.fire_tick));
         try!(packet.write_u32(self.offscreen_tick));
-        try!(packet.write_u32(self.detonate_tick));
+        try!(packet.write_u32(self.hit_tick));
         
         try!(packet.write_f32(self.fire_pos.x)); try!(packet.write_f32(self.fire_pos.y));
         try!(packet.write_f32(self.to_offscreen_pos.x)); try!(packet.write_f32(self.to_offscreen_pos.y));
         try!(packet.write_f32(self.from_offscreen_pos.x)); try!(packet.write_f32(self.from_offscreen_pos.y));
-        try!(packet.write_f32(self.target_pos.x)); try!(packet.write_f32(self.target_pos.y));
+        try!(packet.write_f32(self.hit_pos.x)); try!(packet.write_f32(self.hit_pos.y));
         Ok(())
     }
 }
