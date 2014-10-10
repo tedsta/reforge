@@ -5,6 +5,8 @@ use std::io::{MemReader, MemWriter, IoResult, IoError, TimedOut};
 use serialize::Encodable;
 use serialize::Decodable;
 
+use binary_encode::{EncoderWriter, DecoderReader, encode_into, decode_from};
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Some basic types
 
@@ -109,9 +111,15 @@ impl Server {
     }
     
     pub fn listen(&mut self, port: u16) {
-        let listener = TcpListener::bind("0.0.0.0", port).ok().unwrap();
+        let listener = match TcpListener::bind("0.0.0.0", port) {
+            Ok(listener) => listener,
+            Err(e) => fail!("Server failed to bind port {}", port),
+        };
         
-        let mut acceptor = listener.listen().ok().unwrap();
+        let mut acceptor = match listener.listen() {
+            Ok(acceptor) => acceptor,
+            Err(e) => fail!("Server failed to listen on port {}", port),
+        };
         acceptor.set_timeout(Some(0));
         
         // Maps clients to their server slots
@@ -249,8 +257,14 @@ fn handle_client_out(mut stream: TcpStream, out_r: Receiver<OutPacket>) {
         let data = packet.writer.get_ref();
         
         // Write the packet size, then the actual packet data
-        stream.write_le_u16(data.len() as u16).unwrap();
-        stream.write(data).unwrap();
+        match stream.write_le_u16(data.len() as u16) {
+            Ok(()) => {},
+            Err(e) => fail!("Failed to write packet length: {}", e),
+        }
+        match stream.write(data) {
+            Ok(()) => {},
+            Err(e) => fail!("Failed to write packet data: {}", e),
+        }
     }
 }
 
@@ -263,28 +277,34 @@ pub struct Client {
 
 impl Client {
     pub fn new(host: &str, port: u16) -> Client {
-        Client{stream: TcpStream::connect(host, port).unwrap()}
+        let stream = match TcpStream::connect(host, port) {
+            Ok(stream) => stream,
+            Err(e) => fail!("Failed to connect to server: {}", e),
+        };
+    
+        Client{stream: stream}
     }
     
     pub fn send(&mut self, packet: &OutPacket) {
         let data = packet.writer.get_ref();
-        self.stream.write_le_u16(data.len() as u16).unwrap();
-        self.stream.write(data).unwrap();
+        match self.stream.write_le_u16(data.len() as u16) {
+            Ok(()) => {},
+            Err(e) => fail!("Failed to send packet size to server: {}"),
+        };
+        match self.stream.write(data) {
+            Ok(()) => {},
+            Err(e) => fail!("Failed to send packet data to server: {}"),
+        };
     }
     
     pub fn receive(&mut self) -> InPacket {
-        InPacket::new_from_reader(&mut self.stream)
+        let packet = InPacket::new_from_reader(&mut self.stream);
+        packet
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Packet
-
-pub trait Packable {
-    fn read_from_packet(packet: &mut InPacket) -> IoResult<Self>;
-    
-    fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()>;
-}
 
 #[deriving(Clone)]
 pub struct OutPacket {
@@ -300,48 +320,8 @@ impl OutPacket {
         self.writer.get_ref().len()
     }
     
-    pub fn write<T: Packable>(&mut self, data: &T) -> IoResult<()> {
-        Ok(try!(data.write_to_packet(self)))
-    }
-    
-    pub fn write_vec<T: Packable>(&mut self, data: &Vec<T>) -> IoResult<()> {
-        try!(self.write_u32(data.len() as u32));
-        for d in data.iter() {
-            try!(d.write_to_packet(self));
-        }
-        Ok(())
-    }
-    
-    pub fn write_i32(&mut self, data: i32) -> IoResult<()> {
-        self.writer.write_le_i32(data)
-    }
-    
-    pub fn write_u32(&mut self, data: u32) -> IoResult<()> {
-        self.writer.write_le_u32(data)
-    }
-    
-    pub fn write_f32(&mut self, data: f32) -> IoResult<()> {
-        self.writer.write_le_f32(data)
-    }
-    
-    pub fn write_i16(&mut self, data: i16) -> IoResult<()> {
-        self.writer.write_le_i16(data)
-    }
-    
-    pub fn write_u16(&mut self, data: u16) -> IoResult<()> {
-        self.writer.write_le_u16(data)
-    }
-    
-    pub fn write_i8(&mut self, data: i8) -> IoResult<()> {
-        self.writer.write_i8(data)
-    }
-    
-    pub fn write_u8(&mut self, data: u8) -> IoResult<()> {
-        self.writer.write_u8(data)
-    }
-    
-    pub fn write_bool(&mut self, data: bool) -> IoResult<()> {
-        self.writer.write_u8(data as u8)
+    pub fn write<'a, T: Encodable<EncoderWriter<'a, MemWriter>, IoError>>(&mut self, t: &T) -> IoResult<()> {
+        encode_into(t, &mut self.writer)
     }
 }
 
@@ -375,48 +355,7 @@ impl InPacket {
         self.reader.get_ref().len()
     }
     
-    pub fn read<T: Packable>(&mut self) -> IoResult<T> {
-        Ok(try!(Packable::read_from_packet(self)))
-    }
-    
-    pub fn read_vec<T: Packable>(&mut self) -> IoResult<Vec<T>> {
-        let num_elements = try!(self.read_u32());
-        let mut vec = vec!();
-        for _ in range(0, num_elements) {
-            vec.push(try!(Packable::read_from_packet(self)));
-        }
-        Ok(vec)
-    }
-    
-    pub fn read_i32(&mut self) -> IoResult<i32> {
-        self.reader.read_le_i32()
-    }
-    
-    pub fn read_u32(&mut self) -> IoResult<u32> {
-        self.reader.read_le_u32()
-    }
-    
-    pub fn read_f32(&mut self) -> IoResult<f32> {
-        self.reader.read_le_f32()
-    }
-    
-    pub fn read_i16(&mut self) -> IoResult<i16> {
-        self.reader.read_le_i16()
-    }
-    
-    pub fn read_u16(&mut self) -> IoResult<u16> {
-        self.reader.read_le_u16()
-    }
-    
-    pub fn read_i8(&mut self) -> IoResult<i8> {
-        self.reader.read_i8()
-    }
-    
-    pub fn read_u8(&mut self) -> IoResult<u8> {
-        self.reader.read_u8()
-    }
-    
-    pub fn read_bool(&mut self) -> IoResult<bool> {
-        Ok(try!(self.reader.read_u8()) == 1)
+    pub fn read<'a, T: Decodable<DecoderReader<'a, MemReader>, IoError>>(&mut self) -> IoResult<T> {
+        decode_from(&mut self.reader)
     }
 }

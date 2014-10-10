@@ -4,7 +4,7 @@ pub type Vec2i = Vec2<i32>;
 pub type Vec2u = Vec2<u32>;
 pub type Vec2f = Vec2<f32>;
 
-#[deriving(Show)]
+#[deriving(Encodable, Decodable, Show)]
 pub struct Vec2<T> {
     pub x: T,
     pub y: T

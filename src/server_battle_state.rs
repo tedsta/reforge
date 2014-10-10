@@ -2,25 +2,27 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{HashMap, TreeMap};
 
-use battle_state::{Plan, ServerPacketId, SimResults};
+use battle_state::{BattleContext, Plan, ServerPacketId, SimResults};
 use module::Module;
 use net::{ClientId, ServerSlot, Joined, ReceivedPacket, InPacket, OutPacket};
-use ship::ShipRef;
+use ship::Ship;
 use sim_element::SimElement;
 
 pub struct ServerBattleState {
     slot: ServerSlot,
-    ships: HashMap<ClientId, ShipRef>,
+    
+    // Context holding all the things involved in this battle
+    context: BattleContext,
     
     received_plans: Vec<ClientId>,
     turn_number: u32,
 }
 
 impl ServerBattleState {
-    pub fn new(slot: ServerSlot, ships: HashMap<ClientId, ShipRef>) -> ServerBattleState {
+    pub fn new(slot: ServerSlot, context: BattleContext) -> ServerBattleState {
         ServerBattleState {
             slot: slot,
-            ships: ships,
+            context: context,
             received_plans: vec!(),
             turn_number: 0,
         }
@@ -34,11 +36,7 @@ impl ServerBattleState {
                     
                     // Send the player all the ships
                     let mut packet = OutPacket::new();
-                    packet.write_u32(self.ships.len() as u32).unwrap(); // The number of ships in the packet
-                    for (ship_client_id, ship) in self.ships.iter() {
-                        packet.write_u32(*ship_client_id).unwrap();
-                        packet.write(ship).unwrap();
-                    }
+                    packet.write(&self.context);
                     self.slot.send(client_id, packet);
                 },
                 ReceivedPacket(client_id, mut packet) => { self.handle_packet(client_id, &mut packet); },
@@ -48,16 +46,10 @@ impl ServerBattleState {
     }
     
     fn handle_packet(&mut self, client_id: ClientId, packet: &mut InPacket) {
-        let id: ServerPacketId = match packet.read_u8() {
-            Ok(id) => match FromPrimitive::from_u8(id) {
-                Some(id) => id,
-                None => {
-                    println!("Received packet with invalid ID from client {}", client_id);
-                    return;
-                }
-            },
+        let id: ServerPacketId = match packet.read() {
+            Ok(id) => id,
             Err(e) => {
-                println!("Received empty packet from client {}: {}", client_id, e);
+                println!("Received invalid packet from client {}: {}", client_id, e);
                 return;
             }
         };
@@ -68,8 +60,8 @@ impl ServerBattleState {
                 
                 // Handle the plans
                 self.handle_plans_packet(packet);
-                
-                if self.received_plans.len() == self.ships.len() {
+ 
+                if self.received_plans.len() == self.context.get_num_ships() {
                     
                     self.do_simulation();
                     
@@ -82,22 +74,22 @@ impl ServerBattleState {
     }
     
     fn handle_plans_packet(&mut self, packet: &mut InPacket) {
-        self.apply_to_sim_elements(|sim_element| {
+        self.context.apply_to_sim_elements(|sim_element| {
             sim_element.read_plans(packet);
         });
     }
     
     fn do_simulation(&mut self) {
         // Pre simulation
-        self.apply_to_sim_elements(|sim_element| {
-            sim_element.before_simulation(&self.ships);
+        self.context.apply_to_sim_elements(|sim_element| {
+            sim_element.before_simulation(&self.context);
         });
-    
+
         // Write results packet
         let mut packet = OutPacket::new();
-        packet.write_u8(SimResults as u8).unwrap();
+        packet.write(&SimResults).unwrap();
         
-        self.apply_to_sim_elements(|sim_element| {
+        self.context.apply_to_sim_elements(|sim_element| {
             sim_element.write_results(&mut packet);
         });
         
@@ -107,23 +99,15 @@ impl ServerBattleState {
         self.simulate();
         
         // Post simulation
-        self.apply_to_sim_elements(|sim_element| {
-            sim_element.after_simulation(&self.ships);
+        self.context.apply_to_sim_elements(|sim_element| {
+            sim_element.after_simulation(&self.context);
         });
-    }
-    
-    fn apply_to_sim_elements(&self, f: |&mut SimElement|) {
-        for (_, ship) in self.ships.iter() {
-            for module in ship.borrow().modules.iter() {
-                f(module.borrow_mut().deref_mut() as &mut SimElement);
-            }
-        }
     }
     
     fn simulate(&mut self) {
         for i in range(0, 100) {
-            self.apply_to_sim_elements(|sim_element| {
-                sim_element.on_simulation_time(&self.ships, i);
+            self.context.apply_to_sim_elements(|sim_element| {
+                sim_element.on_simulation_time(&self.context, i);
             });
         }
     

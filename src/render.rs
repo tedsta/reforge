@@ -13,7 +13,7 @@ pub trait Renderer {
     fn draw_texture_target(&self, target: RenderTargetId, texture: TextureId, x: f32, y: f32);
 }
 
-#[deriving(Default)]
+#[deriving(Encodable, Decodable, Default)]
 pub struct RenderTarget {
     pub id: RenderTargetId,
     pub texture: TextureId,
