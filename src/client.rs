@@ -26,6 +26,7 @@ pub mod render;
 pub mod sfml_renderer;
 pub mod ship;
 pub mod sim_element;
+pub mod space_gui;
 pub mod vec;
 
 struct Foo;
@@ -69,10 +70,17 @@ fn main () {
     let mut renderer = SfmlRenderer::new(window);
     
     // Connect to server
-    let client = Client::new("127.0.0.1", 30000);
+    let mut client = Client::new("127.0.0.1", 30000);
+    
+    // Receive the battle context from the server
+    let mut packet = client.receive();
+    let context = match packet.read() {
+        Ok(context) => context,
+        Err(e) => fail!("Unable to receive battle context froms server: {}", e),
+    };
     
     // Create the battle state
-    let mut battle = ClientBattleState::new(client);
+    let mut battle = ClientBattleState::new(client, context);
 
     battle.run(&mut renderer, &mut input_sys);
 }

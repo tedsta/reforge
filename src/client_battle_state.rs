@@ -8,52 +8,51 @@ use time;
 
 use rsfml::graphics::{RenderWindow, RenderTarget, Color};
 
-use battle_state::{ClientPacketId, Plan, TICKS_PER_SECOND};
+use battle_state::{BattleContext, ClientPacketId, Plan, TICKS_PER_SECOND};
 use input::InputSystem;
 use net::{Client, ClientId, InPacket, OutPacket};
 use render;
 use render::{Renderer};
 use sfml_renderer::SfmlRenderer;
-use ship::{Ship, ShipRef};
+use ship::Ship;
 use sim_element::SimElement;
 use vec::{Vec2, Vec2f};
 
 pub struct ShipRenderArea {
     render_target: render::RenderTarget,
     position: Vec2f,
-    ship_id: ClientId,
 }
 
 pub struct ClientBattleState {
     client: Client,
     
-    // All the ships involved in this battle
-    ships: HashMap<ClientId, ShipRef>,
+    // Context holding all the things involved in this battle
+    context: BattleContext,
     
     // The ships' render areas
     render_areas: Vec<ShipRenderArea>,
 }
 
 impl ClientBattleState {
-    pub fn new(client: Client) -> ClientBattleState {
-        ClientBattleState{client: client, ships: HashMap::new(), render_areas: vec!()}
+    pub fn new(client: Client, context: BattleContext) -> ClientBattleState {
+        ClientBattleState {
+            client: client,
+            context: context,
+            render_areas: vec!(),
+        }
     }
     
-    pub fn run(&mut self, renderer: &mut SfmlRenderer, input: &mut InputSystem) {    
-        // Receive all of the ships participating in this battle
-        let mut packet = self.client.receive();
-        let ship_count = packet.read_u32().unwrap();
-        for i in range(0, ship_count) {
-            let client_id = packet.read_u32().unwrap();
-            let mut ship: ShipRef = packet.read().unwrap();
+    pub fn run(&mut self, renderer: &mut SfmlRenderer, input: &mut InputSystem) {
+        for ship in self.context.ships.iter_mut() {
             let render_target = renderer.create_render_target(500, 500);
-            ship.borrow_mut().render_target = render_target;
-            self.render_areas.push(ShipRenderArea{render_target: render_target, position: Vec2{x: (i*512) as f32, y: 0f32}, ship_id: client_id});
-            self.ships.insert(client_id, ship);
+            ship.render_target = render_target;
+            self.render_areas.push(ShipRenderArea{render_target: render_target, position: Vec2{x: (ship.id.id*512) as f32, y: 0f32}});
         }
     
         loop {
-            // Do planning
+            ////////////////////////////////
+            // Plan
+            
             let start_time = time::now().to_timespec();
             while renderer.window.is_open() {
                 let current_time = time::now().to_timespec();
@@ -93,8 +92,8 @@ impl ClientBattleState {
             // Simulate
             
             // Before simulation
-            self.apply_to_sim_elements(|sim_element| {
-                sim_element.before_simulation(&self.ships);
+            self.context.apply_to_sim_elements(|sim_element| {
+                sim_element.before_simulation(&self.context);
             });
             
             // Simulation
@@ -149,8 +148,8 @@ impl ClientBattleState {
             }
             
             // After simulation
-            self.apply_to_sim_elements(|sim_element| {
-                sim_element.after_simulation(&self.ships);
+            self.context.apply_to_sim_elements(|sim_element| {
+                sim_element.after_simulation(&self.context);
             });
         }
     }
@@ -160,9 +159,12 @@ impl ClientBattleState {
     
     fn build_plans_packet(&mut self) -> OutPacket {
         let mut packet = OutPacket::new();
-        packet.write_u8(Plan as u8).unwrap();
+        match packet.write(&Plan) {
+            Ok(()) => {},
+            Err(e) => fail!("Failed to write plan packet ID: {}", e),
+        }
         
-        self.apply_to_sim_elements(|sim_element| {
+        self.context.apply_to_sim_elements(|sim_element| {
             sim_element.write_plans(&mut packet);
         });
 
@@ -171,35 +173,25 @@ impl ClientBattleState {
     
     fn receive_simulation_results(&mut self) {
         let mut packet = self.client.receive();
-        let id = match (packet.read_u8()) {
+        let id: ClientPacketId = match (packet.read()) {
             Ok(id) => id,
             Err(e) => fail!("Failed to read simulation results packet ID: {}", e)
         };
         
-        self.apply_to_sim_elements(|sim_element| {
+        self.context.apply_to_sim_elements(|sim_element| {
             sim_element.read_results(&mut packet);
         });
     }
     
     fn simulate(&mut self, time: u32) {
-        self.apply_to_sim_elements(|sim_element| {
-            sim_element.on_simulation_time(&self.ships, time);
+        self.context.apply_to_sim_elements(|sim_element| {
+            sim_element.on_simulation_time(&self.context, time);
         });
     }
     
     fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32) {
-        for ship in self.ships.values() {
-            for module in ship.borrow().modules.iter() {
-                module.borrow_mut().draw(renderer, simulating, time);
-            }
-        }
-    }
-    
-    fn apply_to_sim_elements(&self, f: |&mut SimElement|) {
-        for (_, ship) in self.ships.iter() {
-            for module in ship.borrow().modules.iter() {
-                f(module.borrow_mut().deref_mut() as &mut SimElement);
-            }
-        }
+        self.context.apply_to_sim_elements(|sim_element| {
+            sim_element.draw(renderer, &self.context, simulating, time);
+        });
     }
 }

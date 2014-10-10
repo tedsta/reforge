@@ -3,9 +3,10 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::io::{IoResult, IoError, InvalidInput};
 
-use net::{ClientId, InPacket, OutPacket, Packable};
+use battle_state::BattleContext;
+use net::{ClientId, InPacket, OutPacket};
 use render::{Renderer, RenderTarget, TextureId};
-use ship::ShipRef;
+use ship::{Ship, ShipId};
 use sim_element::SimElement;
 use vec::{Vec2, Vec2f};
 
@@ -20,6 +21,7 @@ pub mod proj_weapon;
 
 pub type ModuleRef = Rc<RefCell<Module>>;
 
+#[deriving(Encodable, Decodable)]
 pub enum Module {
     Engine(EngineModule),
     ProjectileWeapon(ProjectileWeaponModule),
@@ -39,41 +41,34 @@ impl Module {
             ProjectileWeapon(ref mut m) => &mut m.base,
         }
     }
-    
-    fn get_type_id(&self) -> u16 {
-        match *self {
-            Engine(_) => 0,
-            ProjectileWeapon(_) => 1,
-        }
-    }
 }
 
 impl SimElement for Module {
-    fn server_preprocess(&mut self, ships: &HashMap<ClientId, ShipRef>) {
+    fn server_preprocess(&mut self, context: &BattleContext) {
         match *self {
-            Engine(ref mut m) => m.server_preprocess(ships),
-            ProjectileWeapon(ref mut m) => m.server_preprocess(ships),
+            Engine(ref mut m) => m.server_preprocess(context),
+            ProjectileWeapon(ref mut m) => m.server_preprocess(context),
         }
     }
     
-    fn before_simulation(&mut self, ships: &HashMap<ClientId, ShipRef>) {
+    fn before_simulation(&mut self, context: &BattleContext) {
         match *self {
-            Engine(ref mut m) => m.before_simulation(ships),
-            ProjectileWeapon(ref mut m) => m.before_simulation(ships),
+            Engine(ref mut m) => m.before_simulation(context),
+            ProjectileWeapon(ref mut m) => m.before_simulation(context),
         }
     }
     
-    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, ShipRef>, tick: u32) {
+    fn on_simulation_time(&mut self, context: &BattleContext, tick: u32) {
         match *self {
-            Engine(ref mut m) => m.on_simulation_time(ships, tick),
-            ProjectileWeapon(ref mut m) => m.on_simulation_time(ships, tick),
+            Engine(ref mut m) => m.on_simulation_time(context, tick),
+            ProjectileWeapon(ref mut m) => m.on_simulation_time(context, tick),
         }
     }
     
-    fn after_simulation(&mut self, ships: &HashMap<ClientId, ShipRef>) {
+    fn after_simulation(&mut self, context: &BattleContext) {
         match *self {
-            Engine(ref mut m) => m.after_simulation(ships),
-            ProjectileWeapon(ref mut m) => m.after_simulation(ships),
+            Engine(ref mut m) => m.after_simulation(context),
+            ProjectileWeapon(ref mut m) => m.after_simulation(context),
         }
     }
     
@@ -84,10 +79,10 @@ impl SimElement for Module {
         }
     }
     
-    fn draw(&mut self, renderer: &mut Renderer, simulating: bool, time: f32) {
+    fn draw(&mut self, renderer: &mut Renderer, context: &BattleContext, simulating: bool, time: f32) {
         match *self {
-            Engine(ref mut m) => m.draw(renderer, simulating, time),
-            ProjectileWeapon(ref mut m) => m.draw(renderer, simulating, time),
+            Engine(ref mut m) => m.draw(renderer, context, simulating, time),
+            ProjectileWeapon(ref mut m) => m.draw(renderer, context, simulating, time),
         }
     }
     
@@ -120,29 +115,12 @@ impl SimElement for Module {
     }
 }
 
-pub fn read_module_from_packet(packet: &mut InPacket) -> IoResult<Module> {
-    let module_type = try!(packet.read_u16());
-    match module_type {
-        0 => Ok(Engine(try!(packet.read::<EngineModule>()))),
-        1 => Ok(ProjectileWeapon(try!(packet.read::<ProjectileWeaponModule>()))),
-        _ => {Err(IoError{kind: InvalidInput, desc: "Failed to read module with invalid module type ID", detail: None})}
-    }
-}
-
-pub fn write_module_to_packet(module: &Module, packet: &mut OutPacket) -> IoResult<()> {
-    packet.write_u16(module.get_type_id()).unwrap();
-    match *module {
-        Engine(ref module) => try!(module.write_to_packet(packet)),
-        ProjectileWeapon(ref module) => try!(module.write_to_packet(packet)),
-    }
-    Ok(())
-}
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+#[deriving(Encodable, Decodable)]
 pub struct ModuleBase {
     // Ship this module belongs to
-    pub ship: Option<ShipRef>,
+    pub ship: Option<ShipId>,
 
     // Module position/size stuff
     pub x: u8,
@@ -165,8 +143,8 @@ impl ModuleBase {
         ModuleBase{ship: None, x: 0, y: 0, width: 1, height: 1, power: 0, max_power: 1, damage: 0, hull: 0, texture: texture}
     }
     
-    pub fn draw(&self, renderer: &Renderer) {
-        self.ship.as_ref().unwrap().borrow().render_target.draw_texture_vec(renderer, self.texture, &self.get_render_position());
+    pub fn draw(&self, renderer: &Renderer, ship: &Ship) {
+        ship.render_target.draw_texture_vec(renderer, self.texture, &self.get_render_position());
     }
     
     pub fn get_render_position(&self) -> Vec2f {
@@ -179,40 +157,5 @@ impl ModuleBase {
     
     pub fn get_render_center(&self) -> Vec2f {
         self.get_render_position() + (self.get_render_size()/2f32)
-    }
-}
-
-impl Packable for ModuleBase {
-    fn read_from_packet(packet: &mut InPacket) -> IoResult<ModuleBase> {
-        Ok(ModuleBase {
-            ship: None,
-        
-            x: try!(packet.read_u8()),
-            y: try!(packet.read_u8()),
-            width: try!(packet.read_u8()),
-            height: try!(packet.read_u8()),
-            
-            power: try!(packet.read_u32()),
-            max_power: try!(packet.read_u32()),
-            damage: try!(packet.read_u32()),
-            hull: try!(packet.read_u32()),
-            
-            texture: try!(packet.read_u16()),
-        })
-    }
-    
-    fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()> {
-        try!(packet.write_u8(self.x));
-        try!(packet.write_u8(self.y));
-        try!(packet.write_u8(self.width));
-        try!(packet.write_u8(self.height));
-        
-        try!(packet.write_u32(self.power));
-        try!(packet.write_u32(self.max_power));
-        try!(packet.write_u32(self.damage));
-        try!(packet.write_u32(self.hull));
-        
-        try!(packet.write_u16(self.texture));
-        Ok(())
     }
 }

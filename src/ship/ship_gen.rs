@@ -1,9 +1,8 @@
-use net::ClientId;
-use ship::ShipRef;
+use ship::{Ship, ShipId};
 use module::{EngineModule, ProjectileWeaponModule};
 
-pub fn generate_ship(id: ClientId) -> ShipRef {
-    let mut ship = ShipRef::new(id);
+pub fn generate_ship(id: u64) -> Ship {
+    let mut ship = Ship::new(ShipId{id: id, index: None});
     
     let mut engine = EngineModule::new();
     engine.get_base_mut().x = 0;

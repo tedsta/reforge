@@ -1,20 +1,21 @@
 use std::collections::HashMap;
 use std::io::{IoResult, IoError, OtherIoError};
 
+use battle_state::BattleContext;
 use battle_state::TICKS_PER_SECOND;
 use module::{Module, ModuleRef, ModuleBase, ProjectileWeapon};
-use net::{ClientId, InPacket, OutPacket, Packable};
+use net::{ClientId, InPacket, OutPacket};
 use render::{Renderer, TextureId, LASER_TEXTURE};
-use ship::ShipRef;
 use sim_element::SimElement;
 use vec::{Vec2, Vec2f};
 
+#[deriving(Encodable, Decodable)]
 pub struct ProjectileWeaponModule {
     pub base: ModuleBase,
     
     projectiles: Vec<Projectile>,
     
-    target: Option<ModuleRef>,
+    target: Option<u32>,
 }
 
 impl ProjectileWeaponModule {
@@ -43,40 +44,21 @@ impl ProjectileWeaponModule {
     }
 }
 
-impl Packable for ProjectileWeaponModule {
-    fn read_from_packet(packet: &mut InPacket) -> IoResult<ProjectileWeaponModule> {
-        let base = try!(packet.read());
-        let projectiles = try!(packet.read_vec());
-
-        Ok(ProjectileWeaponModule {
-            base: base,
-            projectiles: projectiles,
-            target: None,
-        })
-    }
-    
-    fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()> {
-        try!(packet.write(&self.base));
-        try!(packet.write_vec(&self.projectiles));
-        Ok(())
-    }
-}
-
 impl SimElement for ProjectileWeaponModule {
-    fn server_preprocess(&mut self, ships: &HashMap<ClientId, ShipRef>) {
+    fn server_preprocess(&mut self, context: &BattleContext) {
         for projectile in self.projectiles.iter_mut() {
             projectile.hit = true;
         }
     }
 
-    fn before_simulation(&mut self, ships: &HashMap<ClientId, ShipRef>) {
-        'ship: for ship in ships.values() {
+    fn before_simulation(&mut self, context: &BattleContext) {
+        /*'ship: for ship in ships.values() {
             for module in ship.borrow().modules.iter() {
                 self.target = Some(module.clone());
                 break 'ship;
             }
         }
-        let target_pos = self.target.as_ref().unwrap().borrow().deref().get_base().get_render_position();
+        let target_pos = self.target.as_ref().unwrap().borrow().deref().get_base().get_render_position();*/
     
         for projectile in self.projectiles.iter_mut() {
             projectile.phase = FireToOffscreen;
@@ -91,7 +73,7 @@ impl SimElement for ProjectileWeaponModule {
         }
     }
     
-    fn on_simulation_time(&mut self, ships: &HashMap<ClientId, ShipRef>, tick: u32) {
+    fn on_simulation_time(&mut self, context: &BattleContext, tick: u32) {
         for projectile in self.projectiles.iter_mut() {
             match projectile.phase {
                 FireToOffscreen => {
@@ -110,29 +92,27 @@ impl SimElement for ProjectileWeaponModule {
         }
     }
     
-    fn after_simulation(&mut self, ships: &HashMap<ClientId, ShipRef>) {
+    fn after_simulation(&mut self, context: &BattleContext) {
     }
     
-    fn draw(&mut self, renderer: &mut Renderer, simulating: bool, time: f32) {
-        self.base.draw(renderer);
+    fn draw(&mut self, renderer: &mut Renderer, context: &BattleContext, simulating: bool, time: f32) {
+        let ship = context.get_ship(self.base.ship.as_ref().expect("ShipId has no index")).expect(format!("Failed to get ship {}", self.base.ship).as_slice());
+    
+        self.base.draw(renderer, ship);
         
         for projectile in self.projectiles.iter() {
             match projectile.phase {
                 FireToOffscreen => {
-                    let render_target = &self.base.ship.as_ref().unwrap().borrow().render_target;
-                
                     let start_time = (projectile.fire_tick as f32)/(TICKS_PER_SECOND as f32);
                     let stop_time = (projectile.offscreen_tick as f32)/(TICKS_PER_SECOND as f32);
                     let interp = (time-start_time)/(stop_time-start_time);
-                    render_target.draw_texture_vec(renderer, projectile.texture, &(projectile.fire_pos + (projectile.to_offscreen_pos-projectile.fire_pos)*interp));
+                    ship.render_target.draw_texture_vec(renderer, projectile.texture, &(projectile.fire_pos + (projectile.to_offscreen_pos-projectile.fire_pos)*interp));
                 },
                 OffscreenToTarget => {
-                    let render_target = &self.base.ship.as_ref().unwrap().borrow().render_target;
-                
                     let start_time = (projectile.offscreen_tick as f32)/(TICKS_PER_SECOND as f32);
                     let stop_time = (projectile.hit_tick as f32)/(TICKS_PER_SECOND as f32);
                     let interp = (time-start_time)/(stop_time-start_time);
-                    render_target.draw_texture_vec(renderer, projectile.texture, &(projectile.from_offscreen_pos + (projectile.hit_pos-projectile.from_offscreen_pos)*interp));
+                    ship.render_target.draw_texture_vec(renderer, projectile.texture, &(projectile.from_offscreen_pos + (projectile.hit_pos-projectile.from_offscreen_pos)*interp));
                 },
                 Detonate => {
                 },
@@ -155,13 +135,14 @@ impl SimElement for ProjectileWeaponModule {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[deriving(FromPrimitive)]
+#[deriving(Encodable, Decodable)]
 enum ProjectilePhase {
     FireToOffscreen,
     OffscreenToTarget,
     Detonate
 }
 
+#[deriving(Encodable, Decodable)]
 struct Projectile {
     texture: TextureId,
     phase: ProjectilePhase,
@@ -180,59 +161,4 @@ struct Projectile {
     to_offscreen_pos: Vec2f,
     from_offscreen_pos: Vec2f,
     hit_pos: Vec2f,
-}
-
-impl Packable for Projectile {
-    fn read_from_packet(packet: &mut InPacket) -> IoResult<Projectile> {
-        let texture = try!(packet.read_u16());
-        let phase = 
-            match FromPrimitive::from_u8(try!(packet.read_u8())) {
-                Some(phase) => phase,
-                None => return Err(IoError{kind: OtherIoError, desc: "Failed to read projectile phase from packet", detail: None})
-            };
-        let damage = try!(packet.read_u8());
-        let hit = try!(packet.read_bool());
-        
-        let fire_tick = try!(packet.read_u32());
-        let offscreen_tick = try!(packet.read_u32());
-        let hit_tick = try!(packet.read_u32());
-        
-        let fire_pos = Vec2{x: try!(packet.read_f32()), y: try!(packet.read_f32())};
-        let to_offscreen_pos = Vec2{x: try!(packet.read_f32()), y: try!(packet.read_f32())};
-        let from_offscreen_pos = Vec2{x: try!(packet.read_f32()), y: try!(packet.read_f32())};
-        let hit_pos = Vec2{x: try!(packet.read_f32()), y: try!(packet.read_f32())};
-    
-        Ok(Projectile {
-            texture: texture,
-            phase: phase,
-            damage: damage,
-            hit: hit,
-            
-            fire_tick: fire_tick,
-            offscreen_tick: offscreen_tick,
-            hit_tick: hit_tick,
-
-            fire_pos: fire_pos,
-            to_offscreen_pos: to_offscreen_pos,
-            from_offscreen_pos: from_offscreen_pos,
-            hit_pos: hit_pos,
-        })
-    }
-    
-    fn write_to_packet(&self, packet: &mut OutPacket) -> IoResult<()> {
-        try!(packet.write_u16(self.texture));
-        try!(packet.write_u8(self.phase as u8));
-        try!(packet.write_u8(self.damage));
-        try!(packet.write_bool(self.hit));
-        
-        try!(packet.write_u32(self.fire_tick));
-        try!(packet.write_u32(self.offscreen_tick));
-        try!(packet.write_u32(self.hit_tick));
-        
-        try!(packet.write_f32(self.fire_pos.x)); try!(packet.write_f32(self.fire_pos.y));
-        try!(packet.write_f32(self.to_offscreen_pos.x)); try!(packet.write_f32(self.to_offscreen_pos.y));
-        try!(packet.write_f32(self.from_offscreen_pos.x)); try!(packet.write_f32(self.from_offscreen_pos.y));
-        try!(packet.write_f32(self.hit_pos.x)); try!(packet.write_f32(self.hit_pos.y));
-        Ok(())
-    }
 }
