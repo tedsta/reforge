@@ -28,14 +28,17 @@ impl ShipState {
 }
 
 // Type for the ID of a ship
+pub type ShipId = u64;
+
+// Index to access ship
 #[deriving(Encodable, Decodable, Show)]
-pub struct ShipId {
-    pub id: u64,
+pub struct ShipIndex {
+    pub id: ShipId,
     pub index: Option<u16>,
 }
 
 pub struct Ship {
-    pub id: ShipId,
+    pub index: ShipIndex,
     pub state: ShipState,
     pub modules: Vec<ModuleRef>,
     pub render_target: RenderTarget,
@@ -44,14 +47,14 @@ pub struct Ship {
 impl Ship {
     pub fn new(id: ShipId) -> Ship {
         Ship {
-            id: id,
+            index: ShipIndex{id: id, index: None},
             state: ShipState::new(),
             modules: vec!(),
             render_target: Default::default()
         }
     }
     
-    pub fn generate(id: u64) -> Ship {
+    pub fn generate(id: ShipId) -> Ship {
         generate_ship(id)
     }
     
@@ -65,7 +68,7 @@ impl Ship {
 impl <S: Encoder<E>, E> Encodable<S, E> for Ship {
   fn encode(&self, encoder: &mut S) -> Result<(), E> {
         encoder.emit_struct("Ship", 0, |encoder| {
-            try!(encoder.emit_struct_field( "id", 0, |encoder|self.id.encode(encoder)));
+            try!(encoder.emit_struct_field( "index", 0, |encoder|self.index.encode(encoder)));
             try!(encoder.emit_struct_field( "state", 1, |encoder| self.state.encode(encoder)));
             try!(encoder.emit_struct_field( "modules", 2, |encoder| self.modules.encode(encoder)));
             Ok(())
@@ -77,7 +80,7 @@ impl<S: Decoder<E>, E> Decodable<S, E> for Ship {
   fn decode(decoder: &mut S) -> Result<Ship, E> {
     decoder.read_struct("root", 0, |decoder| {
         let ship = Ship{
-            id: try!(decoder.read_struct_field("id", 0, |decoder| Decodable::decode(decoder))),
+            index: try!(decoder.read_struct_field("index", 0, |decoder| Decodable::decode(decoder))),
             state: try!(decoder.read_struct_field("state", 0, |decoder| Decodable::decode(decoder))),
             modules: try!(decoder.read_struct_field("modules", 0, |decoder| Decodable::decode(decoder))),
             render_target: Default::default(),

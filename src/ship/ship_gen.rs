@@ -1,8 +1,8 @@
 use ship::{Ship, ShipId};
 use module::{EngineModule, ProjectileWeaponModule};
 
-pub fn generate_ship(id: u64) -> Ship {
-    let mut ship = Ship::new(ShipId{id: id, index: None});
+pub fn generate_ship(id: ShipId) -> Ship {
+    let mut ship = Ship::new(id);
     
     let mut engine = EngineModule::new();
     engine.get_base_mut().x = 0;

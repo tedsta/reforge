@@ -6,7 +6,7 @@ use std::io::{IoResult, IoError, InvalidInput};
 use battle_state::BattleContext;
 use net::{ClientId, InPacket, OutPacket};
 use render::{Renderer, RenderTarget, TextureId};
-use ship::{Ship, ShipId};
+use ship::{Ship, ShipIndex};
 use sim_element::SimElement;
 use vec::{Vec2, Vec2f};
 
@@ -120,7 +120,7 @@ impl SimElement for Module {
 #[deriving(Encodable, Decodable)]
 pub struct ModuleBase {
     // Ship this module belongs to
-    pub ship: Option<ShipId>,
+    pub ship: Option<ShipIndex>,
 
     // Module position/size stuff
     pub x: u8,
