@@ -68,9 +68,9 @@ impl Ship {
 impl <S: Encoder<E>, E> Encodable<S, E> for Ship {
   fn encode(&self, encoder: &mut S) -> Result<(), E> {
         encoder.emit_struct("Ship", 0, |encoder| {
-            try!(encoder.emit_struct_field( "index", 0, |encoder|self.index.encode(encoder)));
-            try!(encoder.emit_struct_field( "state", 1, |encoder| self.state.encode(encoder)));
-            try!(encoder.emit_struct_field( "modules", 2, |encoder| self.modules.encode(encoder)));
+            try!(encoder.emit_struct_field("index", 0, |encoder|self.index.encode(encoder)));
+            try!(encoder.emit_struct_field("state", 1, |encoder| self.state.encode(encoder)));
+            try!(encoder.emit_struct_field("modules", 2, |encoder| self.modules.encode(encoder)));
             Ok(())
         })
     }

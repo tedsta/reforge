@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use net::ClientId;
 use ship::{Ship, ShipIndex};
+use module::ModuleIndex;
 use sim_element::SimElement;
 
 // Time value of 1 tick in seconds
@@ -30,8 +31,8 @@ impl BattleContext {
     
     pub fn add_ship(&mut self, mut ship: Ship) {
         ship.index.index = Some(self.ships.len() as u16);
-        for module in ship.modules.iter() {
-            module.borrow_mut().get_base_mut().ship = Some(ship.index);
+        for (i, module) in ship.modules.iter().enumerate() {
+            module.borrow_mut().get_base_mut().index = Some(ModuleIndex{index: i as u8, ship: ship.index});
         }
         self.ships.push(ship);
     }

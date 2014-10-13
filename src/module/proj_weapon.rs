@@ -96,8 +96,9 @@ impl SimElement for ProjectileWeaponModule {
     }
     
     fn draw(&mut self, renderer: &mut Renderer, context: &BattleContext, simulating: bool, time: f32) {
-        let ship = context.get_ship(self.base.ship.as_ref().expect("ShipId has no index")).expect(format!("Failed to get ship {}", self.base.ship).as_slice());
-    
+        let ship_index = self.base.index.as_ref().expect("Module not attached to ship").ship;
+        let ship = context.get_ship(&ship_index).expect(format!("Failed to get ship {}", ship_index).as_slice());
+        
         self.base.draw(renderer, ship);
         
         for projectile in self.projectiles.iter() {
