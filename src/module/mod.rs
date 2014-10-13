@@ -21,6 +21,12 @@ pub mod proj_weapon;
 
 pub type ModuleRef = Rc<RefCell<Module>>;
 
+#[deriving(Encodable, Decodable, Show)]
+pub struct ModuleIndex {
+    pub index: u8,
+    pub ship: ShipIndex,
+}
+
 #[deriving(Encodable, Decodable)]
 pub enum Module {
     Engine(EngineModule),
@@ -119,8 +125,8 @@ impl SimElement for Module {
 
 #[deriving(Encodable, Decodable)]
 pub struct ModuleBase {
-    // Ship this module belongs to
-    pub ship: Option<ShipIndex>,
+    // Ship's index of this module, if it belongs to a ship
+    pub index: Option<ModuleIndex>,
 
     // Module position/size stuff
     pub x: u8,
@@ -140,7 +146,7 @@ pub struct ModuleBase {
 
 impl ModuleBase {
     pub fn new(texture: TextureId) -> ModuleBase {
-        ModuleBase{ship: None, x: 0, y: 0, width: 1, height: 1, power: 0, max_power: 1, damage: 0, hull: 0, texture: texture}
+        ModuleBase{index: None, x: 0, y: 0, width: 1, height: 1, power: 0, max_power: 1, damage: 0, hull: 0, texture: texture}
     }
     
     pub fn draw(&self, renderer: &Renderer, ship: &Ship) {
