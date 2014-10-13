@@ -46,7 +46,7 @@ impl ClientBattleState {
         for ship in self.context.ships.iter_mut() {
             let render_target = renderer.create_render_target(500, 500);
             ship.render_target = render_target;
-            self.render_areas.push(ShipRenderArea{render_target: render_target, position: Vec2{x: (ship.id.id*512) as f32, y: 0f32}});
+            self.render_areas.push(ShipRenderArea{render_target: render_target, position: Vec2{x: (ship.index.id*512) as f32, y: 0f32}});
         }
     
         loop {

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use net::ClientId;
-use ship::{Ship, ShipId};
+use ship::{Ship, ShipIndex};
 use sim_element::SimElement;
 
 // Time value of 1 tick in seconds
@@ -10,7 +10,7 @@ pub static TICKS_PER_SECOND: u32 = 20;
 #[deriving(Encodable, Decodable)]
 pub struct BattleContext {
     pub ships: Vec<Ship>,
-    ship_client_ids: HashMap<ClientId, ShipId>,
+    ship_client_ids: HashMap<ClientId, ShipIndex>,
 }
 
 impl BattleContext {
@@ -21,7 +21,7 @@ impl BattleContext {
         };
         
         for (client_id, ship) in ships.move_iter() {
-            context.ship_client_ids.insert(client_id, ship.id);
+            context.ship_client_ids.insert(client_id, ship.index);
             context.add_ship(ship);
         }
         
@@ -29,14 +29,14 @@ impl BattleContext {
     }
     
     pub fn add_ship(&mut self, mut ship: Ship) {
-        ship.id.index = Some(self.ships.len() as u16);
+        ship.index.index = Some(self.ships.len() as u16);
         for module in ship.modules.iter() {
-            module.borrow_mut().get_base_mut().ship = Some(ship.id);
+            module.borrow_mut().get_base_mut().ship = Some(ship.index);
         }
         self.ships.push(ship);
     }
     
-    pub fn get_ship<'a>(&'a self, ship: &ShipId) -> Option<&'a Ship> {
+    pub fn get_ship<'a>(&'a self, ship: &ShipIndex) -> Option<&'a Ship> {
         let index = match ship.index {
             Some(index) => index,
             None => return None,
