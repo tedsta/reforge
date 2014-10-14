@@ -12,13 +12,11 @@ use rsfml::graphics::{RenderWindow};
 use rsfml::window::{VideoMode, ContextSettings, Close};
 
 use client_battle_state::ClientBattleState;
-use input::InputSystem;
 use net::Client;
 use sfml_renderer::SfmlRenderer;
 
 pub mod battle_state;
 pub mod client_battle_state;
-pub mod input;
 pub mod module;
 pub mod net;
 pub mod render;
@@ -39,8 +37,6 @@ fn main () {
     // https://github.com/jeremyletang/rust-sfml/issues/37
     unsafe { ::std::rt::stack::record_sp_limit(0); }
     
-    let mut input_sys = InputSystem::new();
-
     // Create the window of the application
     let setting: ContextSettings = ContextSettings::default();
     let window: RenderWindow =
@@ -67,5 +63,5 @@ fn main () {
     // Create the battle state
     let mut battle = ClientBattleState::new(client, context);
 
-    battle.run(&mut renderer, &mut input_sys);
+    battle.run(&mut renderer);
 }

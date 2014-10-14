@@ -9,7 +9,6 @@ use time;
 use rsfml::graphics::{RenderWindow, RenderTarget, Color};
 
 use battle_state::{BattleContext, ClientPacketId, Plan, TICKS_PER_SECOND};
-use input::InputSystem;
 use net::{Client, ClientId, InPacket, OutPacket};
 use render;
 use render::{Renderer};
@@ -43,14 +42,14 @@ impl ClientBattleState {
         }
     }
     
-    pub fn run(&mut self, renderer: &mut SfmlRenderer, input: &mut InputSystem) {
+    pub fn run(&mut self, renderer: &mut SfmlRenderer) {
         for ship in self.context.ships.iter_mut() {
             let render_target = renderer.create_render_target(500, 500);
             ship.render_target = render_target;
             self.render_areas.push(ShipRenderArea{render_target: render_target, position: Vec2{x: (ship.index.id*512) as f32, y: 0f32}});
         }
         
-        let mut gui = SpaceGui::new(input);
+        let mut gui = SpaceGui::new();
     
         loop {
             ////////////////////////////////
@@ -64,11 +63,8 @@ impl ClientBattleState {
                     break;
                 }
                 
-                // Update input
-                input.update(&mut renderer.window);
-                
                 // Update gui
-                gui.update();
+                gui.update(&mut renderer.window);
                 
                 // Do planning stuff
                 self.plan();
@@ -132,8 +128,8 @@ impl ClientBattleState {
                 // Prepare last_time for next frame
                 last_time = current_time;
                 
-                // Update input
-                input.update(&mut renderer.window);
+                // Update gui
+                gui.update(&mut renderer.window);
                 
                 // Simulate any new ticks
                 for t in range(next_tick, next_tick + tick-next_tick+1) {
