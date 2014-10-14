@@ -149,6 +149,18 @@ impl ModuleBase {
         ModuleBase{index: None, x: 0, y: 0, width: 1, height: 1, power: 0, max_power: 1, damage: 0, hull: 0, texture: texture}
     }
     
+    pub fn get_ship<'a>(&self, context: &'a BattleContext) -> &'a Ship {
+        match self.index {
+            Some(index) => {
+                match context.get_ship(&index.ship) {
+                    Some(ship) => ship,
+                    None => fail!("Failed to get ship {}", index),
+                }
+            },
+            None => fail!("Cannot draw module with no ship"),
+        }
+    }
+    
     pub fn draw(&self, renderer: &Renderer, ship: &Ship) {
         ship.render_target.draw_texture_vec(renderer, self.texture, &self.get_render_position());
     }
