@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io::IoResult;
 
 use battle_state::BattleContext;
-use module::{Module, ModuleBase, Engine};
+use module::{Module, ModuleBase, Propulsion, Engine};
 use net::{ClientId, InPacket, OutPacket};
 use render::{Renderer, TextureId, ENGINE_TEXTURE};
 use sim_element::SimElement;
@@ -15,7 +15,7 @@ pub struct EngineModule {
 impl EngineModule {
     pub fn new() -> Module {
         Engine(EngineModule {
-            base: ModuleBase::new(ENGINE_TEXTURE),
+            base: ModuleBase::new(Propulsion, ENGINE_TEXTURE),
         })
     }
 }
