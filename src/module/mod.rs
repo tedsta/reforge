@@ -19,18 +19,19 @@ pub mod proj_weapon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub enum ModuleCategoryId {
+#[deriving(Encodable, Decodable)]
+pub enum ModuleCategory {
     Weapon = 0,
     Propulsion,
 }
 
-pub struct ModuleCategory {
+pub struct ModuleCategoryData {
     pub name: &'static str,
-    pub id: ModuleCategoryId,
+    pub id: ModuleCategory,
 }
 
-pub static MODULE_CATEGORIES: [ModuleCategory, .. 1] = [
-    ModuleCategory{name: "Weapon", id: Weapon},
+pub static MODULE_CATEGORIES: [ModuleCategoryData, .. 1] = [
+    ModuleCategoryData{name: "Weapon", id: Weapon},
 ];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -156,13 +157,28 @@ pub struct ModuleBase {
     pub damage: u32,
     pub hull: u32,
     
+    // Category of this module
+    pub category: ModuleCategory,
+    
     // Module rendering stuff
     pub texture: TextureId,
 }
 
 impl ModuleBase {
-    pub fn new(texture: TextureId) -> ModuleBase {
-        ModuleBase{index: None, x: 0, y: 0, width: 1, height: 1, power: 0, max_power: 1, damage: 0, hull: 0, texture: texture}
+    pub fn new(category: ModuleCategory, texture: TextureId) -> ModuleBase {
+        ModuleBase {
+            index: None,
+            x: 0,
+            y: 0,
+            width: 1,
+            height: 1,
+            power: 0,
+            max_power: 1,
+            damage: 0,
+            hull: 0,
+            category: category,
+            texture: texture,
+        }
     }
     
     pub fn get_ship<'a>(&self, context: &'a BattleContext) -> &'a Ship {

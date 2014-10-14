@@ -3,7 +3,7 @@ use std::io::{IoResult, IoError, OtherIoError};
 
 use battle_state::BattleContext;
 use battle_state::TICKS_PER_SECOND;
-use module::{Module, ModuleRef, ModuleBase, ProjectileWeapon};
+use module::{Module, ModuleRef, ModuleBase, ProjectileWeapon, Weapon};
 use net::{ClientId, InPacket, OutPacket};
 use render::{Renderer, TextureId, LASER_TEXTURE};
 use sim_element::SimElement;
@@ -37,7 +37,7 @@ impl ProjectileWeaponModule {
         };
     
         ProjectileWeapon(ProjectileWeaponModule {
-            base: ModuleBase::new(LASER_TEXTURE),
+            base: ModuleBase::new(Weapon, LASER_TEXTURE),
             projectiles: vec![projectile],
             target: None,
         })
