@@ -16,6 +16,7 @@ use render::{Renderer};
 use sfml_renderer::SfmlRenderer;
 use ship::Ship;
 use sim_element::SimElement;
+use space_gui::SpaceGui;
 use vec::{Vec2, Vec2f};
 
 pub struct ShipRenderArea {
@@ -48,6 +49,8 @@ impl ClientBattleState {
             ship.render_target = render_target;
             self.render_areas.push(ShipRenderArea{render_target: render_target, position: Vec2{x: (ship.index.id*512) as f32, y: 0f32}});
         }
+        
+        let mut gui = SpaceGui::new(input);
     
         loop {
             ////////////////////////////////
@@ -64,6 +67,9 @@ impl ClientBattleState {
                 // Update input
                 input.update(&mut renderer.window);
                 
+                // Update gui
+                gui.update();
+                
                 // Do planning stuff
                 self.plan();
                 
@@ -77,6 +83,8 @@ impl ClientBattleState {
                 for render_area in self.render_areas.iter() {
                     renderer.draw_texture_vec(render_area.render_target.texture, &render_area.position);
                 }
+                
+                gui.draw(renderer);
                 
                 renderer.window.display();
             }

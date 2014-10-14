@@ -9,11 +9,10 @@ extern crate serialize;
 extern crate rsfml;
 
 use rsfml::graphics::{RenderWindow};
-use rsfml::window::{VideoMode, ContextSettings, keyboard, Close};
+use rsfml::window::{VideoMode, ContextSettings, Close};
 
 use client_battle_state::ClientBattleState;
 use input::InputSystem;
-use input::KeyHandler;
 use net::Client;
 use sfml_renderer::SfmlRenderer;
 
@@ -29,18 +28,6 @@ pub mod sim_element;
 pub mod space_gui;
 pub mod vec;
 
-struct Foo;
-
-impl KeyHandler for Foo {
-    fn on_key_pressed(&mut self, key: keyboard::Key) {
-        println!("Pressed {}!", key);
-    }
-    
-    fn on_key_released(&mut self, key: keyboard::Key) {
-        println!("Released {}!", key);
-    }
-}
-
 #[cfg(target_os="macos")]
 #[start]
 fn start(argc: int, argv: *const *const u8) -> int {
@@ -53,8 +40,6 @@ fn main () {
     unsafe { ::std::rt::stack::record_sp_limit(0); }
     
     let mut input_sys = InputSystem::new();
-    
-    input_sys.add_key_handler(box Foo);
 
     // Create the window of the application
     let setting: ContextSettings = ContextSettings::default();
