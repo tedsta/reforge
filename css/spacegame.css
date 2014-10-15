@@ -1,0 +1,11 @@
+#main-box {
+    background: url('../img/from_the_hubble2.pixelated.cellsize5.jpg') repeat scroll 0% 0% #074E68;
+    height: 650px;
+    text-align: left;
+    position: relative;
+    padding: 100px 20px 0px;
+}
+
+.over-dark-background {
+    color: white;
+}
