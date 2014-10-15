@@ -1,14 +1,18 @@
 use rsfml::window::{keyboard, mouse, event};
 use rsfml::graphics::RenderWindow;
 
-use module::MODULE_CATEGORIES;
+use module::{MODULE_CATEGORIES, ModuleCategory};
 use render::{Renderer, LASER_TEXTURE};
 
-pub struct SpaceGui;
+pub struct SpaceGui {
+    module_category: Option<ModuleCategory>, // Selected module category
+}
 
 impl SpaceGui {
     pub fn new() -> SpaceGui {
-        SpaceGui
+        SpaceGui {
+            module_category: None,
+        }
     }
     
     pub fn update(&mut self, window: &mut RenderWindow) {
@@ -36,7 +40,13 @@ impl SpaceGui {
     
     pub fn draw(&self, renderer: &mut Renderer) {
         for category in MODULE_CATEGORIES.iter() {
-            renderer.draw_texture(LASER_TEXTURE, 10.0 + (64.0*(category.id as u8 as f32)), 600.0);
+            let icon_y: f32 =
+                match self.module_category {
+                    Some(c) if c == category.id => 584.0,
+                    _ => { 600.0 },
+                };
+            
+            renderer.draw_texture(LASER_TEXTURE, 10.0 + (64.0*(category.id as u8 as f32)), icon_y);
         }
     }
     
@@ -48,7 +58,7 @@ impl SpaceGui {
             let icon_h = 64;
             
             if x >= icon_x && x <= icon_x+icon_w && y >= icon_y && y <= icon_y+icon_h {
-                println!("clicked!!");
+                self.module_category = Some(category.id);
             }
         }
     }

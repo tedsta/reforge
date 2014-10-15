@@ -19,7 +19,7 @@ pub mod proj_weapon;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[deriving(Encodable, Decodable)]
+#[deriving(Encodable, Decodable, PartialEq)]
 pub enum ModuleCategory {
     Weapon = 0,
     Propulsion,
