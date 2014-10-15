@@ -148,6 +148,8 @@ impl ClientBattleState {
                     renderer.draw_texture_vec(render_area.render_target.texture, &render_area.position);
                 }
                 
+                gui.draw(renderer);
+                
                 renderer.window.display();
             }
             

@@ -30,8 +30,9 @@ pub struct ModuleCategoryData {
     pub id: ModuleCategory,
 }
 
-pub static MODULE_CATEGORIES: [ModuleCategoryData, .. 1] = [
+pub static MODULE_CATEGORIES: [ModuleCategoryData, .. 2] = [
     ModuleCategoryData{name: "Weapon", id: Weapon},
+    ModuleCategoryData{name: "Propulsion", id: Propulsion},
 ];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
