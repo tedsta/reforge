@@ -40,7 +40,7 @@ fn main () {
     // Create the window of the application
     let setting: ContextSettings = ContextSettings::default();
     let window: RenderWindow =
-        match RenderWindow::new(VideoMode::new_init(1280, 768, 32),
+        match RenderWindow::new(VideoMode::new_init(1280, 720, 32),
                                 "spacegame",
                                 Close,
                                 &setting) {
