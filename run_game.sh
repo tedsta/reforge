@@ -1,6 +1,6 @@
 echo "Starting server ..."
 bin/server &
-sleep 1
+sleep 3
 echo "Starting first client ..."
 bin/client &
 sleep 1

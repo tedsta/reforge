@@ -2,7 +2,8 @@ use rsfml::window::{keyboard, mouse, event};
 use rsfml::graphics::RenderWindow;
 
 use module::{MODULE_CATEGORIES, ModuleCategory};
-use render::{Renderer, LASER_TEXTURE};
+use render::{LASER_TEXTURE, Renderer};
+use ship::Ship;
 
 pub struct SpaceGui {
     module_category: Option<ModuleCategory>, // Selected module category
@@ -38,7 +39,7 @@ impl SpaceGui {
         }
     }
     
-    pub fn draw(&self, renderer: &mut Renderer) {
+    pub fn draw(&self, renderer: &mut Renderer, client_ship: &Ship) {
         for category in MODULE_CATEGORIES.iter() {
             let icon_y: f32 =
                 match self.module_category {
@@ -48,17 +49,40 @@ impl SpaceGui {
             
             renderer.draw_texture(LASER_TEXTURE, 10.0 + (64.0*(category.id as u8 as f32)), icon_y);
         }
+        
+        match self.module_category {
+            Some(category) => {
+                let mut i = 0u8;
+                for module in client_ship.modules.iter() {
+                    if module.borrow().get_base().category == category {                    
+                        renderer.draw_texture(LASER_TEXTURE, 10.0 + (64.0*(i as f32)), 500.0);
+                        i += 1;
+                    }
+                }
+            },
+            None => {},
+        }
     }
     
     pub fn on_mouse_left_pressed(&mut self, x: i32, y: i32) {
         for category in MODULE_CATEGORIES.iter() {
             let icon_x = 10 + (64*(category.id as i32));
-            let icon_y = 600i32;
-            let icon_w = 64;
-            let icon_h = 64;
+            let icon_y: i32 =
+                match self.module_category {
+                    Some(c) if c == category.id => 584,
+                    _ => { 600 },
+                };
+            let icon_w = 48;
+            let icon_h = 48;
             
             if x >= icon_x && x <= icon_x+icon_w && y >= icon_y && y <= icon_y+icon_h {
-                self.module_category = Some(category.id);
+                match self.module_category {
+                    // Reclicked selected module category: deselect it
+                    Some(c) if c == category.id => self.module_category = None,
+                    // Selected a new module category
+                    _ => self.module_category = Some(category.id),
+                }
+                break;
             }
         }
     }

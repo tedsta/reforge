@@ -142,9 +142,12 @@ impl Server {
                 match stream {
                     Err(ref e) if e.kind == TimedOut => { break }, // TimedOut is fine, because timeout is 0 lolz
                     Err(e) => println!("Incoming connection failed: {}", e),
-                    Ok(stream) => {
+                    Ok(mut stream) => {
                         let client_id = next_client_id;
                         next_client_id += 1;
+                        
+                        // Send back the client ID
+                        stream.write_le_u32(client_id);
                         
                         // Assign client to default slot
                         let (ref default_slot, _) = self.slots[0];
@@ -272,17 +275,24 @@ fn handle_client_out(mut stream: TcpStream, out_r: Receiver<OutPacket>) {
 // Client
 
 pub struct Client {
+    id: ClientId,
     stream: TcpStream,
 }
 
 impl Client {
     pub fn new(host: &str, port: u16) -> Client {
-        let stream = match TcpStream::connect(host, port) {
+        let mut stream = match TcpStream::connect(host, port) {
             Ok(stream) => stream,
             Err(e) => fail!("Failed to connect to server: {}", e),
         };
+
+        let id = 
+            match stream.read_le_u32() {
+                Ok(id) => id,
+                Err(e) => fail!("Couldn't connect to server because client ID failed to receive: {}", e),
+            };
     
-        Client{stream: stream}
+        Client{id: id, stream: stream}
     }
     
     pub fn send(&mut self, packet: &OutPacket) {
@@ -300,6 +310,10 @@ impl Client {
     pub fn receive(&mut self) -> InPacket {
         let packet = InPacket::new_from_reader(&mut self.stream);
         packet
+    }
+    
+    pub fn get_id(&self) -> ClientId {
+        self.id
     }
 }
 

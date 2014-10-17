@@ -80,7 +80,7 @@ impl ClientBattleState {
                     renderer.draw_texture_vec(render_area.render_target.texture, &render_area.position);
                 }
                 
-                gui.draw(renderer);
+                gui.draw(renderer, self.context.get_ship_by_client_id(self.client.get_id()).expect("Failed to get my ship"));
                 
                 renderer.window.display();
             }
@@ -148,7 +148,7 @@ impl ClientBattleState {
                     renderer.draw_texture_vec(render_area.render_target.texture, &render_area.position);
                 }
                 
-                gui.draw(renderer);
+                gui.draw(renderer, self.context.get_ship_by_client_id(self.client.get_id()).expect("Failed to get my ship"));
                 
                 renderer.window.display();
             }

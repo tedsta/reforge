@@ -5,7 +5,7 @@ use std::io::IoResult;
 
 use serialize::{Encodable, Encoder, Decodable, Decoder};
 
-use module::{ModuleRef, Module};
+use module::{ModuleRef, Module, ModuleCategory};
 use net::{ClientId, InPacket, OutPacket};
 use render::{RenderTarget};
 use self::ship_gen::generate_ship;
@@ -39,6 +39,7 @@ pub struct ShipIndex {
 
 pub struct Ship {
     pub index: ShipIndex,
+    pub client_id: Option<ClientId>,
     pub state: ShipState,
     pub modules: Vec<ModuleRef>,
     pub render_target: RenderTarget,
@@ -48,6 +49,7 @@ impl Ship {
     pub fn new(id: ShipId) -> Ship {
         Ship {
             index: ShipIndex{id: id, index: None},
+            client_id: None,
             state: ShipState::new(),
             modules: vec!(),
             render_target: Default::default()
@@ -69,8 +71,9 @@ impl <S: Encoder<E>, E> Encodable<S, E> for Ship {
   fn encode(&self, encoder: &mut S) -> Result<(), E> {
         encoder.emit_struct("Ship", 0, |encoder| {
             try!(encoder.emit_struct_field("index", 0, |encoder|self.index.encode(encoder)));
-            try!(encoder.emit_struct_field("state", 1, |encoder| self.state.encode(encoder)));
-            try!(encoder.emit_struct_field("modules", 2, |encoder| self.modules.encode(encoder)));
+            try!(encoder.emit_struct_field("client_id", 1, |encoder|self.client_id.encode(encoder)));
+            try!(encoder.emit_struct_field("state", 2, |encoder| self.state.encode(encoder)));
+            try!(encoder.emit_struct_field("modules", 3, |encoder| self.modules.encode(encoder)));
             Ok(())
         })
     }
@@ -81,6 +84,7 @@ impl<S: Decoder<E>, E> Decodable<S, E> for Ship {
     decoder.read_struct("root", 0, |decoder| {
         let ship = Ship{
             index: try!(decoder.read_struct_field("index", 0, |decoder| Decodable::decode(decoder))),
+            client_id: try!(decoder.read_struct_field("client_id", 0, |decoder| Decodable::decode(decoder))),
             state: try!(decoder.read_struct_field("state", 0, |decoder| Decodable::decode(decoder))),
             modules: try!(decoder.read_struct_field("modules", 0, |decoder| Decodable::decode(decoder))),
             render_target: Default::default(),

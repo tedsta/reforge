@@ -22,7 +22,6 @@ impl BattleContext {
         };
         
         for (client_id, ship) in ships.move_iter() {
-            context.ship_client_ids.insert(client_id, ship.index);
             context.add_ship(ship);
         }
         
@@ -31,6 +30,12 @@ impl BattleContext {
     
     pub fn add_ship(&mut self, mut ship: Ship) {
         ship.index.index = Some(self.ships.len() as u16);
+        
+        match ship.client_id {
+            Some(client_id) => { self.ship_client_ids.insert(client_id, ship.index); },
+            None => {},
+        }
+        
         for (i, module) in ship.modules.iter().enumerate() {
             module.borrow_mut().get_base_mut().index = Some(ModuleIndex{index: i as u8, ship: ship.index});
         }
@@ -46,6 +51,13 @@ impl BattleContext {
             return None;
         }
         Some(&self.ships[index])
+    }
+    
+    pub fn get_ship_by_client_id<'a>(&'a self, client_id: ClientId) -> Option<&'a Ship> {
+        match self.ship_client_ids.find(&client_id) {
+            Some(index) => self.get_ship(index),
+            None => None,
+        }
     }
     
     pub fn apply_to_sim_elements(&self, f: |&mut SimElement|) {

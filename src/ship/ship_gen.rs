@@ -12,7 +12,17 @@ pub fn generate_ship(id: ShipId) -> Ship {
     weapon.get_base_mut().x = 1;
     weapon.get_base_mut().y = 1;
     
+    let mut weapon2 = ProjectileWeaponModule::new();
+    weapon2.get_base_mut().x = 2;
+    weapon2.get_base_mut().y = 1;
+    
+    let mut weapon3 = ProjectileWeaponModule::new();
+    weapon3.get_base_mut().x = 3;
+    weapon3.get_base_mut().y = 1;
+    
     ship.add_module(engine);
     ship.add_module(weapon);
+    ship.add_module(weapon2);
+    ship.add_module(weapon3);
     ship
 }
