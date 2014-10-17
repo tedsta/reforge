@@ -43,10 +43,16 @@ impl BattleScheduler {
             self.slot.transfer_client(client2, new_slot.id());
             
             spawn(proc() {
+                // Create ships
+                let mut ship1 = Ship::generate(client1 as u64);
+                ship1.client_id = Some(client1);
+                let mut ship2 = Ship::generate(client2 as u64);
+                ship2.client_id = Some(client2);
+            
                 // Map clients to their ships
                 let mut ships = HashMap::new();
-                ships.insert(client1, Ship::generate(client1 as u64));
-                ships.insert(client2, Ship::generate(client2 as u64));
+                ships.insert(client1, ship1);
+                ships.insert(client2, ship2);
             
                 let mut battle_state = ServerBattleState::new(new_slot, BattleContext::new(ships));
                 battle_state.run();
