@@ -1,26 +1,20 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::io::Timer;
-use std::time::Duration;
-
 use time;
 
-use rsfml::graphics::{RenderWindow, RenderTarget, Color};
+use rsfml::graphics::{RenderTarget, RenderTexture, RenderWindow, Color};
 
+use asset_store::AssetStore;
 use battle_state::{BattleContext, ClientPacketId, Plan, TICKS_PER_SECOND};
-use net::{Client, ClientId, InPacket, OutPacket};
-use render;
-use render::{Renderer};
+use net::{Client, OutPacket};
 use sfml_renderer::SfmlRenderer;
-use ship::Ship;
-use sim_element::SimElement;
+use ship::ShipRef;
+use sim::SimEvents;
 use space_gui::SpaceGui;
 use vec::{Vec2, Vec2f};
 
 pub struct ShipRenderArea {
-    render_target: render::RenderTarget,
+    ship: Option<ShipRef>,
     position: Vec2f,
+    target: RenderTexture,
 }
 
 pub struct ClientBattleState {
@@ -29,25 +23,30 @@ pub struct ClientBattleState {
     // Context holding all the things involved in this battle
     context: BattleContext,
     
+    // The player's ship
+    player_ship: ShipRef,
+    
     // The ships' render areas
     render_areas: Vec<ShipRenderArea>,
 }
 
 impl ClientBattleState {
     pub fn new(client: Client, context: BattleContext) -> ClientBattleState {
+        let player_ship = context.get_ship(client.get_id()).clone();
         ClientBattleState {
             client: client,
             context: context,
+            player_ship: player_ship,
             render_areas: vec!(),
         }
     }
     
-    pub fn run(&mut self, renderer: &mut SfmlRenderer) {
-        for ship in self.context.ships.iter_mut() {
-            let render_target = renderer.create_render_target(500, 500);
-            ship.render_target = render_target;
-            self.render_areas.push(ShipRenderArea{render_target: render_target, position: Vec2{x: (ship.index.id*512) as f32, y: 0f32}});
-        }
+    pub fn run(&mut self, window: &mut RenderWindow, asset_store: &AssetStore) {
+        self.render_areas.push(ShipRenderArea {
+            ship: None,
+            position: Vec2{x: 780.0, y: 0.0},
+            target: RenderTexture::new(500, 500, false).expect("Failed to create render texture"),
+        });
         
         let mut gui = SpaceGui::new();
     
@@ -56,7 +55,7 @@ impl ClientBattleState {
             // Plan
             
             let start_time = time::now().to_timespec();
-            while renderer.window.is_open() {
+            while window.is_open() {
                 let current_time = time::now().to_timespec();
                 let elapsed_time = current_time - start_time;
                 if elapsed_time.num_seconds() >= 10 {
@@ -64,25 +63,15 @@ impl ClientBattleState {
                 }
                 
                 // Update gui
-                gui.update(&mut renderer.window);
+                gui.update(window);
                 
                 // Do planning stuff
                 self.plan();
                 
                 // Render
-                (&mut renderer.window as &mut RenderTarget).clear(&Color::black());
-                renderer.clear_render_targets();
-                
-                self.draw(renderer, true, 0f32);
-                renderer.display_render_targets();
-                
-                for render_area in self.render_areas.iter() {
-                    renderer.draw_texture_vec(render_area.render_target.texture, &render_area.position);
-                }
-                
-                gui.draw(renderer, self.context.get_ship_by_client_id(self.client.get_id()).expect("Failed to get my ship"));
-                
-                renderer.window.display();
+                window.clear(&Color::transparent());
+                self.draw_planning(window, asset_store, &gui);
+                window.display();
             }
         
             // Send plans
@@ -95,16 +84,16 @@ impl ClientBattleState {
             ////////////////////////////////
             // Simulate
             
+            let mut sim_events = SimEvents::new();
+            
             // Before simulation
-            self.context.apply_to_sim_elements(|sim_element| {
-                sim_element.before_simulation(&self.context);
-            });
+            self.context.before_simulation(&mut sim_events);
             
             // Simulation
             let start_time = time::now().to_timespec();
             let mut last_time = time::now().to_timespec();
             let mut next_tick = 0;
-            while renderer.window.is_open() {
+            while window.is_open() {
                 // Cap the framerate
                 while (time::now().to_timespec()-start_time).num_milliseconds() < 1 {}
             
@@ -119,7 +108,7 @@ impl ClientBattleState {
                     break;
                 }
                 
-                // 20 ticks per second
+                // Calculate current tick
                 let tick = (elapsed_time.num_milliseconds() as u32)/(1000/TICKS_PER_SECOND);
                 
                 // Calculate elapsed time in seconds as f32
@@ -129,34 +118,22 @@ impl ClientBattleState {
                 last_time = current_time;
                 
                 // Update gui
-                gui.update(&mut renderer.window);
+                gui.update(window);
                 
                 // Simulate any new ticks
                 for t in range(next_tick, next_tick + tick-next_tick+1) {
-                    self.simulate(t);
+                    sim_events.apply_tick(t);
                 }
                 next_tick = tick+1;
                 
                 // Render
-                (&mut renderer.window as &mut RenderTarget).clear(&Color::black());
-                renderer.clear_render_targets();
-                
-                self.draw(renderer, true, elapsed_seconds);
-                renderer.display_render_targets();
-                
-                for render_area in self.render_areas.iter() {
-                    renderer.draw_texture_vec(render_area.render_target.texture, &render_area.position);
-                }
-                
-                gui.draw(renderer, self.context.get_ship_by_client_id(self.client.get_id()).expect("Failed to get my ship"));
-                
-                renderer.window.display();
+                window.clear(&Color::transparent());
+                self.draw_simulating(window, asset_store, &gui, elapsed_seconds);
+                window.display();
             }
             
             // After simulation
-            self.context.apply_to_sim_elements(|sim_element| {
-                sim_element.after_simulation(&self.context);
-            });
+            self.context.after_simulation();
         }
     }
     
@@ -170,9 +147,7 @@ impl ClientBattleState {
             Err(e) => fail!("Failed to write plan packet ID: {}", e),
         }
         
-        self.context.apply_to_sim_elements(|sim_element| {
-            sim_element.write_plans(&mut packet);
-        });
+        self.player_ship.borrow().write_plans(&mut packet);
 
         packet
     }
@@ -184,20 +159,26 @@ impl ClientBattleState {
             Err(e) => fail!("Failed to read simulation results packet ID: {}", e)
         };
         
-        self.context.apply_to_sim_elements(|sim_element| {
-            sim_element.read_results(&mut packet);
-        });
+        self.context.read_results(&mut packet);
     }
     
-    fn simulate(&mut self, time: u32) {
-        self.context.apply_to_sim_elements(|sim_element| {
-            sim_element.on_simulation_time(&self.context, time);
-        });
+    fn draw_planning<T: RenderTarget>(&self, target: &T, asset_store: &AssetStore, gui: &SpaceGui) {
+        let renderer = SfmlRenderer::new(target, asset_store);
+    
+        // Draw player ship
+        self.player_ship.borrow().draw(&renderer);
+        
+        // Draw GUI
+        gui.draw(&renderer, self.player_ship.borrow().deref());
     }
     
-    fn draw(&self, renderer: &mut Renderer, simulating: bool, time: f32) {
-        self.context.apply_to_sim_elements(|sim_element| {
-            sim_element.draw(renderer, &self.context, simulating, time);
-        });
+    fn draw_simulating<T: RenderTarget>(&self, target: &T, asset_store: &AssetStore, gui: &SpaceGui, time: f32) {
+        let renderer = SfmlRenderer::new(target, asset_store);
+    
+        // Draw player ship
+        self.player_ship.borrow().draw(&renderer);
+        
+        // Draw GUI
+        gui.draw(&renderer, self.player_ship.borrow().deref());
     }
 }

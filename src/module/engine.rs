@@ -1,11 +1,8 @@
-use std::collections::HashMap;
-use std::io::IoResult;
-
-use battle_state::BattleContext;
-use module::{Module, ModuleBase, Propulsion, Engine};
-use net::{ClientId, InPacket, OutPacket};
-use render::{Renderer, TextureId, ENGINE_TEXTURE};
-use sim_element::SimElement;
+use assets::ENGINE_TEXTURE;
+use module::{IModule, Module, ModuleBase, Propulsion, Engine};
+use net::{InPacket, OutPacket};
+use ship::ShipState;
+use sim::SimEventAdder;
 
 #[deriving(Encodable, Decodable)]
 pub struct EngineModule {
@@ -20,33 +17,25 @@ impl EngineModule {
     }
 }
 
-impl SimElement for EngineModule {
-    fn server_preprocess(&mut self, context: &BattleContext) {
+impl IModule for EngineModule {
+    fn server_preprocess(&mut self, ship_state: &mut ShipState) {
     }
     
-    fn before_simulation(&mut self, context: &BattleContext) {
+    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
     }
     
-    fn on_simulation_time(&mut self, context: &BattleContext, tick: u32) {
-    }
-    
-    fn after_simulation(&mut self, context: &BattleContext) {
-    }
-    
-    fn draw(&mut self, renderer: &mut Renderer, context: &BattleContext, simulating: bool, time: f32) {
-        let ship = self.base.get_ship(context);
-        self.base.draw(renderer, ship);
+    fn after_simulation(&mut self, ship_state: &mut ShipState) {
     }
     
     fn write_plans(&self, packet: &mut OutPacket) {
     }
     
-    fn read_plans(&self, packet: &mut InPacket) {
+    fn read_plans(&mut self, packet: &mut InPacket) {
     }
     
     fn write_results(&self, packet: &mut OutPacket) {
     }
     
-    fn read_results(&self, packet: &mut InPacket) {
+    fn read_results(&mut self, packet: &mut InPacket) {
     }
 }

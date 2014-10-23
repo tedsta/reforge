@@ -1,8 +1,9 @@
 use rsfml::window::{keyboard, mouse, event};
-use rsfml::graphics::RenderWindow;
+use rsfml::graphics::{RenderTarget, RenderWindow};
 
+use assets::LASER_TEXTURE;
 use module::{MODULE_CATEGORIES, ModuleCategory};
-use render::{LASER_TEXTURE, Renderer};
+use sfml_renderer::SfmlRenderer;
 use ship::Ship;
 
 pub struct SpaceGui {
@@ -21,8 +22,8 @@ impl SpaceGui {
             match window.poll_event() {
                 event::Closed => window.close(),
                 event::KeyPressed{code, ..} => match code {
-                    keyboard::Escape => {},
-                    _ => {},
+                    keyboard::Escape => { window.close(); },
+                    code => { self.on_key_pressed(code); },
                 },
                 event::KeyReleased{..} => {},
                 event::MouseButtonPressed{button, x, y} => {
@@ -31,15 +32,15 @@ impl SpaceGui {
                         _ => {},
                     }
                 }
-                event::MouseButtonReleased{button, x, y} => {
-                }
+                /*event::MouseButtonReleased{button, x, y} => {
+                }*/
                 event::NoEvent => break,
                 _ => {}
             };
         }
     }
     
-    pub fn draw(&self, renderer: &mut Renderer, client_ship: &Ship) {
+    pub fn draw<T: RenderTarget>(&self, renderer: &SfmlRenderer<T>, client_ship: &Ship) {
         for category in MODULE_CATEGORIES.iter() {
             let icon_y: f32 =
                 match self.module_category {
@@ -62,6 +63,9 @@ impl SpaceGui {
             },
             None => {},
         }
+    }
+    
+    pub fn on_key_pressed(&mut self, key: keyboard::Key) {
     }
     
     pub fn on_mouse_left_pressed(&mut self, x: i32, y: i32) {

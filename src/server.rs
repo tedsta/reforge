@@ -8,14 +8,14 @@ extern crate serialize;
 use net::Server;
 use battle_scheduler::BattleScheduler;
 
+pub mod assets;
 pub mod battle_scheduler;
 pub mod battle_state;
 pub mod module;
 pub mod net;
-pub mod render;
 pub mod server_battle_state;
 pub mod ship;
-pub mod sim_element;
+pub mod sim;
 pub mod vec;
 
 fn main() {

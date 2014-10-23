@@ -1,12 +1,9 @@
-use std::collections::HashMap;
-use std::io::{IoResult, IoError, OtherIoError};
-
-use battle_state::BattleContext;
+use assets::LASER_TEXTURE;
 use battle_state::TICKS_PER_SECOND;
-use module::{Module, ModuleRef, ModuleBase, ProjectileWeapon, Weapon};
+use module::{IModule, Module, ModuleRef, ModuleBase, ProjectileWeapon, Weapon};
 use net::{ClientId, InPacket, OutPacket};
-use render::{Renderer, TextureId, LASER_TEXTURE};
-use sim_element::SimElement;
+use ship::ShipState;
+use sim::SimEventAdder;
 use vec::{Vec2, Vec2f};
 
 #[deriving(Encodable, Decodable)]
@@ -21,7 +18,6 @@ pub struct ProjectileWeaponModule {
 impl ProjectileWeaponModule {
     pub fn new() -> Module {
         let projectile = Projectile {
-            texture: LASER_TEXTURE,
             phase: FireToOffscreen,
             damage: 1,
             hit: false,
@@ -44,21 +40,17 @@ impl ProjectileWeaponModule {
     }
 }
 
-impl SimElement for ProjectileWeaponModule {
-    fn server_preprocess(&mut self, context: &BattleContext) {
+impl IModule for ProjectileWeaponModule {
+    fn server_preprocess(&mut self, ship_state: &mut ShipState) {
         for projectile in self.projectiles.iter_mut() {
             projectile.hit = true;
         }
     }
 
-    fn before_simulation(&mut self, context: &BattleContext) {
-        /*'ship: for ship in ships.values() {
-            for module in ship.borrow().modules.iter() {
-                self.target = Some(module.clone());
-                break 'ship;
-            }
-        }
-        let target_pos = self.target.as_ref().unwrap().borrow().deref().get_base().get_render_position();*/
+    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
+        events.add(20, |module| {
+            println!("Hello from weapon {} {}", module.get_base().x, module.get_base().y);
+        });
     
         for projectile in self.projectiles.iter_mut() {
             projectile.phase = FireToOffscreen;
@@ -73,29 +65,10 @@ impl SimElement for ProjectileWeaponModule {
         }
     }
     
-    fn on_simulation_time(&mut self, context: &BattleContext, tick: u32) {
-        for projectile in self.projectiles.iter_mut() {
-            match projectile.phase {
-                FireToOffscreen => {
-                    if tick >= projectile.offscreen_tick {
-                        projectile.phase = OffscreenToTarget;
-                    }
-                },
-                OffscreenToTarget => {
-                    if tick >= projectile.hit_tick {
-                        projectile.phase = Detonate;
-                    }
-                },
-                Detonate => {
-                },
-            }
-        }
+    fn after_simulation(&mut self, ship_state: &mut ShipState) {
     }
     
-    fn after_simulation(&mut self, context: &BattleContext) {
-    }
-    
-    fn draw(&mut self, renderer: &mut Renderer, context: &BattleContext, simulating: bool, time: f32) {
+    /*fn draw(&mut self, renderer: &mut Renderer, context: &BattleContext, simulating: bool, time: f32) {
         let ship = self.base.get_ship(context);
         self.base.draw(renderer, ship);
         
@@ -117,18 +90,18 @@ impl SimElement for ProjectileWeaponModule {
                 },
             }
         }
-    }
+    }*/
     
     fn write_plans(&self, packet: &mut OutPacket) {
     }
     
-    fn read_plans(&self, packet: &mut InPacket) {
+    fn read_plans(&mut self, packet: &mut InPacket) {
     }
     
     fn write_results(&self, packet: &mut OutPacket) {
     }
     
-    fn read_results(&self, packet: &mut InPacket) {
+    fn read_results(&mut self, packet: &mut InPacket) {
     }
 }
 
@@ -143,7 +116,6 @@ enum ProjectilePhase {
 
 #[deriving(Encodable, Decodable)]
 struct Projectile {
-    texture: TextureId,
     phase: ProjectilePhase,
     damage: u8,
     hit: bool,
