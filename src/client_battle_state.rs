@@ -162,7 +162,7 @@ impl ClientBattleState {
         self.context.read_results(&mut packet);
     }
     
-    fn draw_planning<T: RenderTarget>(&self, target: &T, asset_store: &AssetStore, gui: &SpaceGui) {
+    fn draw_planning(&self, target: &RenderTarget, asset_store: &AssetStore, gui: &SpaceGui) {
         let renderer = SfmlRenderer::new(target, asset_store);
     
         // Draw player ship
@@ -172,7 +172,7 @@ impl ClientBattleState {
         gui.draw(&renderer, self.player_ship.borrow().deref());
     }
     
-    fn draw_simulating<T: RenderTarget>(&self, target: &T, asset_store: &AssetStore, gui: &SpaceGui, time: f32) {
+    fn draw_simulating(&self, target: &RenderTarget, asset_store: &AssetStore, gui: &SpaceGui, time: f32) {
         let renderer = SfmlRenderer::new(target, asset_store);
     
         // Draw player ship
