@@ -1,8 +1,11 @@
 use assets::ENGINE_TEXTURE;
 use module::{IModule, Module, ModuleBase, Propulsion, Engine};
 use net::{InPacket, OutPacket};
-use ship::ShipState;
+use ship::{ShipId, ShipState};
 use sim::SimEventAdder;
+
+#[cfg(client)]
+use sim::SimVisuals;
 
 #[deriving(Encodable, Decodable)]
 pub struct EngineModule {
@@ -22,6 +25,10 @@ impl IModule for EngineModule {
     }
     
     fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
+    }
+    
+    #[cfg(client)]
+    fn add_sim_visuals(&self, _: ShipId, _: &mut SimVisuals) {
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {
