@@ -1,6 +1,6 @@
 use time;
 
-use rsfml::graphics::{RenderTarget, RenderTexture, RenderWindow, Color};
+use rsfml::graphics::{Font, RenderTarget, RenderTexture, RenderWindow, Color};
 
 use asset_store::AssetStore;
 use battle_state::{BattleContext, ClientPacketId, Plan, TICKS_PER_SECOND};
@@ -31,7 +31,8 @@ impl ClientBattleState {
     }
     
     pub fn run(&mut self, window: &mut RenderWindow, asset_store: &AssetStore) {
-        let mut gui = SpaceGui::new(self.client.get_id(), &self.context);
+        let font = Font::new_from_file("content/fonts/8bit.ttf").expect("Failed to load font");
+        let mut gui = SpaceGui::new(&font, self.client.get_id(), &self.context);
     
         loop {
             ////////////////////////////////

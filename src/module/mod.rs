@@ -52,6 +52,12 @@ pub trait IModule {
     
     fn write_results(&self, packet: &mut OutPacket);
     fn read_results(&mut self, packet: &mut InPacket);
+    
+    ////////////////////
+    // GUI stuff
+    
+    fn on_icon_clicked(&mut self) -> bool;
+    fn on_module_clicked(&mut self, module: &ModuleRef) -> bool;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -135,6 +141,20 @@ impl IModule for Module {
         match *self {
             Engine(ref mut m) => m.read_results(packet),
             ProjectileWeapon(ref mut m) => m.read_results(packet),
+        }
+    }
+    
+    fn on_icon_clicked(&mut self) -> bool {
+        match *self {
+            Engine(ref mut m) => m.on_icon_clicked(),
+            ProjectileWeapon(ref mut m) => m.on_icon_clicked(),
+        }
+    }
+    
+    fn on_module_clicked(&mut self, module: &ModuleRef) -> bool {
+        match *self {
+            Engine(ref mut m) => m.on_module_clicked(module),
+            ProjectileWeapon(ref mut m) => m.on_module_clicked(module),
         }
     }
 }

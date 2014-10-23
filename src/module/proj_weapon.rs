@@ -15,7 +15,7 @@ pub struct ProjectileWeaponModule {
     
     projectiles: Vec<Projectile>,
     
-    target: Option<u32>,
+    target: Option<ModuleRef>,
 }
 
 impl ProjectileWeaponModule {
@@ -52,7 +52,6 @@ impl IModule for ProjectileWeaponModule {
 
     fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
         events.add(20, |module| {
-            println!("Hello from weapon {} {}", module.get_base().x, module.get_base().y);
         });
     
         for projectile in self.projectiles.iter_mut() {
@@ -112,6 +111,14 @@ impl IModule for ProjectileWeaponModule {
     }
     
     fn read_results(&mut self, packet: &mut InPacket) {
+    }
+    
+    fn on_icon_clicked(&mut self) -> bool {
+        true
+    }
+    
+    fn on_module_clicked(&mut self, module: &ModuleRef) -> bool {
+        false
     }
 }
 

@@ -1,6 +1,6 @@
 use std::string::String;
 
-use rsfml::graphics::{Color, RenderStates, RenderTarget, RenderWindow, Texture, Vertex, Quads};
+use rsfml::graphics::{Color, RenderStates, RenderTarget, RenderWindow, Text, Texture, Vertex, Quads};
 use rsfml::system::{Vector2f};
 
 use assets::TextureId;
@@ -18,6 +18,10 @@ impl<'a> SfmlRenderer<'a> {
             target: target,
             asset_store: asset_store,
         }
+    }
+    
+    pub fn draw_text(&self, text: &Text) {
+        self.target.draw_text(text);
     }
     
     pub fn draw_sf_texture(&self, texture: &Texture, x: f32, y: f32) {        

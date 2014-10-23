@@ -1,5 +1,5 @@
 use assets::ENGINE_TEXTURE;
-use module::{IModule, Module, ModuleBase, Propulsion, Engine};
+use module::{IModule, Module, ModuleBase, ModuleRef, Propulsion, Engine};
 use net::{InPacket, OutPacket};
 use ship::{ShipId, ShipState};
 use sim::SimEventAdder;
@@ -44,5 +44,13 @@ impl IModule for EngineModule {
     }
     
     fn read_results(&mut self, packet: &mut InPacket) {
+    }
+    
+    fn on_icon_clicked(&mut self) -> bool {
+        false
+    }
+    
+    fn on_module_clicked(&mut self, module: &ModuleRef) -> bool {
+        false
     }
 }
