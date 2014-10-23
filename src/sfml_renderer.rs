@@ -7,13 +7,13 @@ use assets::TextureId;
 use asset_store::AssetStore;
 use vec::Vec2f;
 
-pub struct SfmlRenderer<'a, T: 'a+RenderTarget> {
-    target: &'a T,
+pub struct SfmlRenderer<'a> {
+    target: &'a RenderTarget+'a,
     asset_store: &'a AssetStore,
 }
 
-impl<'a, T: RenderTarget> SfmlRenderer<'a, T> {
-    pub fn new(target: &'a T, asset_store: &'a AssetStore) -> SfmlRenderer<'a, T> {
+impl<'a> SfmlRenderer<'a> {
+    pub fn new(target: &'a RenderTarget, asset_store: &'a AssetStore) -> SfmlRenderer<'a> {
         SfmlRenderer {
             target: target,
             asset_store: asset_store,

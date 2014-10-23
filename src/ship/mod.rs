@@ -3,9 +3,6 @@ use std::cell::RefCell;
 
 use serialize::{Encodable, Encoder, Decodable, Decoder};
 
-#[cfg(client)]
-use rsfml::graphics::RenderTarget;
-
 use module::{IModule, ModuleRef, Module};
 use net::{ClientId, InPacket, OutPacket};
 use self::ship_gen::generate_ship;
@@ -106,7 +103,7 @@ impl Ship {
     }
     
     #[cfg(client)]
-    pub fn draw<T: RenderTarget>(&self, renderer: &SfmlRenderer<T>) {
+    pub fn draw(&self, renderer: &SfmlRenderer) {
         for module in self.modules.iter() {
             module.borrow().get_base().draw(renderer, self);
         }

@@ -1,9 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-#[cfg(client)]
-use rsfml::graphics::RenderTarget;
-
 use assets::TextureId;
 use net::{InPacket, OutPacket};
 use ship::{Ship, ShipState};
@@ -170,7 +167,7 @@ impl ModuleBase {
     }
     
     #[cfg(client)]
-    pub fn draw<T: RenderTarget>(&self, renderer: &SfmlRenderer<T>, ship: &Ship) {
+    pub fn draw(&self, renderer: &SfmlRenderer, ship: &Ship) {
         renderer.draw_texture_vec(self.texture, &self.get_render_position());
     }
     

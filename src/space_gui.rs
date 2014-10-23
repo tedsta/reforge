@@ -1,5 +1,5 @@
 use rsfml::window::{keyboard, mouse, event};
-use rsfml::graphics::{RenderTarget, RenderWindow};
+use rsfml::graphics::RenderWindow;
 
 use assets::LASER_TEXTURE;
 use module::{MODULE_CATEGORIES, ModuleCategory};
@@ -40,7 +40,7 @@ impl SpaceGui {
         }
     }
     
-    pub fn draw<T: RenderTarget>(&self, renderer: &SfmlRenderer<T>, client_ship: &Ship) {
+    pub fn draw(&self, renderer: &SfmlRenderer, client_ship: &Ship) {
         for category in MODULE_CATEGORIES.iter() {
             let icon_y: f32 =
                 match self.module_category {
