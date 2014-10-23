@@ -1,70 +1,58 @@
 use std::collections::HashMap;
 
-use net::ClientId;
-use ship::{Ship, ShipIndex};
-use module::ModuleIndex;
-use sim_element::SimElement;
+use net::{ClientId, InPacket, OutPacket};
+use ship::ShipRef;
+use sim::SimEvents;
 
 // Time value of 1 tick in seconds
 pub static TICKS_PER_SECOND: u32 = 20;
 
 #[deriving(Encodable, Decodable)]
 pub struct BattleContext {
-    pub ships: Vec<Ship>,
-    ship_client_ids: HashMap<ClientId, ShipIndex>,
+    pub ships: HashMap<ClientId, ShipRef>,
 }
 
 impl BattleContext {
-    pub fn new(ships: HashMap<ClientId, Ship>) -> BattleContext {
-        let mut context = BattleContext {
-            ships: vec!(),
-            ship_client_ids: HashMap::new(),
-        };
-        
-        for (client_id, ship) in ships.move_iter() {
-            context.add_ship(ship);
-        }
-        
-        context
-    }
-    
-    pub fn add_ship(&mut self, mut ship: Ship) {
-        ship.index.index = Some(self.ships.len() as u16);
-        
-        match ship.client_id {
-            Some(client_id) => { self.ship_client_ids.insert(client_id, ship.index); },
-            None => {},
-        }
-        
-        for (i, module) in ship.modules.iter().enumerate() {
-            module.borrow_mut().get_base_mut().index = Some(ModuleIndex{index: i as u8, ship: ship.index});
-        }
-        self.ships.push(ship);
-    }
-    
-    pub fn get_ship<'a>(&'a self, ship: &ShipIndex) -> Option<&'a Ship> {
-        let index = match ship.index {
-            Some(index) => index,
-            None => return None,
-        } as uint;
-        if index >= self.ships.len() {
-            return None;
-        }
-        Some(&self.ships[index])
-    }
-    
-    pub fn get_ship_by_client_id<'a>(&'a self, client_id: ClientId) -> Option<&'a Ship> {
-        match self.ship_client_ids.find(&client_id) {
-            Some(index) => self.get_ship(index),
-            None => None,
+    pub fn new(ships: HashMap<ClientId, ShipRef>) -> BattleContext {
+        BattleContext {
+            ships: ships,
         }
     }
     
-    pub fn apply_to_sim_elements(&self, f: |&mut SimElement|) {
-        for ship in self.ships.iter() {
-            for module in ship.modules.iter() {
-                f(module.borrow_mut().deref_mut() as &mut SimElement);
-            }
+    pub fn get_ship<'a>(&'a self, client_id: ClientId) -> &'a ShipRef {
+        match self.ships.find(&client_id) {
+            Some(ship) => ship,
+            None => fail!("No ship with client ID {}", client_id),
+        }
+    }
+    
+    pub fn server_preprocess(&mut self) {
+        for ship in self.ships.values() {
+            ship.borrow_mut().server_preprocess();
+        }
+    }
+    
+    pub fn before_simulation(&mut self, events: &mut SimEvents) {
+        for ship in self.ships.values() {
+            ship.borrow_mut().before_simulation(events);
+        }
+    }
+    
+    pub fn after_simulation(&mut self) {
+        for ship in self.ships.values() {
+            ship.borrow_mut().after_simulation();
+        }
+    }
+    
+    pub fn write_results(&self, packet: &mut OutPacket) {
+        for ship in self.ships.values() {
+            ship.borrow().write_results(packet);
+        }
+    }
+    
+    pub fn read_results(&self, packet: &mut InPacket) {
+        for ship in self.ships.values() {
+            ship.borrow().read_results(packet);
         }
     }
     

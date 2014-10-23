@@ -1,14 +1,17 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::HashMap;
-use std::io::{IoResult, IoError, InvalidInput};
 
-use battle_state::BattleContext;
-use net::{ClientId, InPacket, OutPacket};
-use render::{Renderer, RenderTarget, TextureId};
-use ship::{Ship, ShipIndex};
-use sim_element::SimElement;
+#[cfg(client)]
+use rsfml::graphics::RenderTarget;
+
+use assets::TextureId;
+use net::{InPacket, OutPacket};
+use ship::{Ship, ShipState};
+use sim::SimEventAdder;
 use vec::{Vec2, Vec2f};
+
+#[cfg(client)]
+use sfml_renderer::SfmlRenderer;
 
 // Use+reexport all of the modules
 pub use self::engine::EngineModule;
@@ -37,13 +40,22 @@ pub static MODULE_CATEGORIES: [ModuleCategoryData, .. 2] = [
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub type ModuleRef = Rc<RefCell<Module>>;
+pub trait IModule {
+    fn server_preprocess(&mut self, ship_state: &mut ShipState);
 
-#[deriving(Encodable, Decodable, Show)]
-pub struct ModuleIndex {
-    pub index: u8,
-    pub ship: ShipIndex,
+    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder);
+    fn after_simulation(&mut self, ship_state: &mut ShipState);
+
+    fn write_plans(&self, packet: &mut OutPacket);
+    fn read_plans(&mut self, packet: &mut InPacket);
+    
+    fn write_results(&self, packet: &mut OutPacket);
+    fn read_results(&mut self, packet: &mut InPacket);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub type ModuleRef = Rc<RefCell<Module>>;
 
 #[deriving(Encodable, Decodable)]
 pub enum Module {
@@ -67,46 +79,25 @@ impl Module {
     }
 }
 
-impl SimElement for Module {
-    fn server_preprocess(&mut self, context: &BattleContext) {
+impl IModule for Module {
+    fn server_preprocess(&mut self, ship_state: &mut ShipState) {
         match *self {
-            Engine(ref mut m) => m.server_preprocess(context),
-            ProjectileWeapon(ref mut m) => m.server_preprocess(context),
+            Engine(ref mut m) => m.server_preprocess(ship_state),
+            ProjectileWeapon(ref mut m) => m.server_preprocess(ship_state),
         }
     }
     
-    fn before_simulation(&mut self, context: &BattleContext) {
+    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
         match *self {
-            Engine(ref mut m) => m.before_simulation(context),
-            ProjectileWeapon(ref mut m) => m.before_simulation(context),
+            Engine(ref mut m) => m.before_simulation(ship_state, events),
+            ProjectileWeapon(ref mut m) => m.before_simulation(ship_state, events),
         }
     }
     
-    fn on_simulation_time(&mut self, context: &BattleContext, tick: u32) {
+    fn after_simulation(&mut self, ship_state: &mut ShipState) {
         match *self {
-            Engine(ref mut m) => m.on_simulation_time(context, tick),
-            ProjectileWeapon(ref mut m) => m.on_simulation_time(context, tick),
-        }
-    }
-    
-    fn after_simulation(&mut self, context: &BattleContext) {
-        match *self {
-            Engine(ref mut m) => m.after_simulation(context),
-            ProjectileWeapon(ref mut m) => m.after_simulation(context),
-        }
-    }
-    
-    fn get_critical_times(&self) -> Vec<u32> {
-        match *self {
-            Engine(ref m) => m.get_critical_times(),
-            ProjectileWeapon(ref m) => m.get_critical_times(),
-        }
-    }
-    
-    fn draw(&mut self, renderer: &mut Renderer, context: &BattleContext, simulating: bool, time: f32) {
-        match *self {
-            Engine(ref mut m) => m.draw(renderer, context, simulating, time),
-            ProjectileWeapon(ref mut m) => m.draw(renderer, context, simulating, time),
+            Engine(ref mut m) => m.after_simulation(ship_state),
+            ProjectileWeapon(ref mut m) => m.after_simulation(ship_state),
         }
     }
     
@@ -117,10 +108,10 @@ impl SimElement for Module {
         }
     }
     
-    fn read_plans(&self, packet: &mut InPacket) {
+    fn read_plans(&mut self, packet: &mut InPacket) {
         match *self {
-            Engine(ref m) => m.read_plans(packet),
-            ProjectileWeapon(ref m) => m.read_plans(packet),
+            Engine(ref mut m) => m.read_plans(packet),
+            ProjectileWeapon(ref mut m) => m.read_plans(packet),
         }
     }
     
@@ -131,10 +122,10 @@ impl SimElement for Module {
         }
     }
     
-    fn read_results(&self, packet: &mut InPacket) {
+    fn read_results(&mut self, packet: &mut InPacket) {
         match *self {
-            Engine(ref m) => m.read_results(packet),
-            ProjectileWeapon(ref m) => m.read_results(packet),
+            Engine(ref mut m) => m.read_results(packet),
+            ProjectileWeapon(ref mut m) => m.read_results(packet),
         }
     }
 }
@@ -143,9 +134,6 @@ impl SimElement for Module {
 
 #[deriving(Encodable, Decodable)]
 pub struct ModuleBase {
-    // Ship's index of this module, if it belongs to a ship
-    pub index: Option<ModuleIndex>,
-
     // Module position/size stuff
     pub x: u8,
     pub y: u8,
@@ -161,14 +149,13 @@ pub struct ModuleBase {
     // Category of this module
     pub category: ModuleCategory,
     
-    // Module rendering stuff
-    pub texture: TextureId,
+    // Module texture ID
+    texture: TextureId,
 }
 
 impl ModuleBase {
     pub fn new(category: ModuleCategory, texture: TextureId) -> ModuleBase {
         ModuleBase {
-            index: None,
             x: 0,
             y: 0,
             width: 1,
@@ -182,20 +169,9 @@ impl ModuleBase {
         }
     }
     
-    pub fn get_ship<'a>(&self, context: &'a BattleContext) -> &'a Ship {
-        match self.index {
-            Some(index) => {
-                match context.get_ship(&index.ship) {
-                    Some(ship) => ship,
-                    None => fail!("Failed to get ship {}", index),
-                }
-            },
-            None => fail!("Cannot draw module with no ship"),
-        }
-    }
-    
-    pub fn draw(&self, renderer: &Renderer, ship: &Ship) {
-        ship.render_target.draw_texture_vec(renderer, self.texture, &self.get_render_position());
+    #[cfg(client)]
+    pub fn draw<T: RenderTarget>(&self, renderer: &SfmlRenderer<T>, ship: &Ship) {
+        renderer.draw_texture_vec(self.texture, &self.get_render_position());
     }
     
     pub fn get_render_position(&self) -> Vec2f {

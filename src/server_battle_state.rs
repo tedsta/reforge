@@ -6,7 +6,7 @@ use battle_state::{BattleContext, Plan, ServerPacketId, SimResults};
 use module::Module;
 use net::{ClientId, ServerSlot, Joined, ReceivedPacket, InPacket, OutPacket};
 use ship::Ship;
-use sim_element::SimElement;
+use sim::SimEvents;
 
 pub struct ServerBattleState {
     slot: ServerSlot,
@@ -59,7 +59,7 @@ impl ServerBattleState {
                 self.received_plans.push(client_id);
                 
                 // Handle the plans
-                self.handle_plans_packet(packet);
+                self.handle_plans_packet(client_id, packet);
  
                 if self.received_plans.len() == self.context.get_num_ships() {
                     
@@ -73,65 +73,34 @@ impl ServerBattleState {
         }
     }
     
-    fn handle_plans_packet(&mut self, packet: &mut InPacket) {
-        self.context.apply_to_sim_elements(|sim_element| {
-            sim_element.read_plans(packet);
-        });
+    fn handle_plans_packet(&mut self, client_id: ClientId, packet: &mut InPacket) {
+        self.context.get_ship(client_id).borrow_mut().read_plans(packet);
     }
     
     fn do_simulation(&mut self) {
+        let mut sim_events = SimEvents::new();
+    
         // Pre simulation
-        self.context.apply_to_sim_elements(|sim_element| {
-            sim_element.before_simulation(&self.context);
-        });
+        self.context.before_simulation(&mut sim_events);
 
         // Write results packet
         let mut packet = OutPacket::new();
         packet.write(&SimResults).unwrap();
         
-        self.context.apply_to_sim_elements(|sim_element| {
-            sim_element.write_results(&mut packet);
-        });
+        self.context.write_results(&mut packet);
         
         self.slot.broadcast(packet);
         
         // Simulation!!!
-        self.simulate();
+        self.simulate(&mut sim_events);
         
         // Post simulation
-        self.context.apply_to_sim_elements(|sim_element| {
-            sim_element.after_simulation(&self.context);
-        });
+        self.context.after_simulation();
     }
     
-    fn simulate(&mut self) {
-        for i in range(0, 100) {
-            self.context.apply_to_sim_elements(|sim_element| {
-                sim_element.on_simulation_time(&self.context, i);
-            });
+    fn simulate(&mut self, sim_events: &mut SimEvents) {
+        for tick in range(0u32, 100) {
+            sim_events.apply_tick(tick);
         }
-    
-        /*let mut time_slots: TreeMap<u32, Vec<Rc<RefCell<Module>>>> = TreeMap::new();
-        
-        for (_, ship) in self.ships.iter() {
-            for module in ship.modules.iter() {
-                let times = module.borrow().get_critical_times();
-                let module_ref = module.clone();
-                
-                for time in times.iter() {                
-                    if time_slots.contains_key(time) {
-                        time_slots.find_mut(time).unwrap().push(module_ref.clone())
-                    } else {
-                        time_slots.insert(*time, vec![module_ref.clone()]);
-                    }
-                }
-            }
-        }
-        
-        for (time, sim_elements) in time_slots.iter() {
-            for sim_elements in sim_elements.iter() {
-                sim_elements.borrow_mut().on_simulation_time(&mut self.ships, *time);
-            }
-        }*/
     }
 }

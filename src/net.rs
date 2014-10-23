@@ -113,12 +113,12 @@ impl Server {
     pub fn listen(&mut self, port: u16) {
         let listener = match TcpListener::bind("0.0.0.0", port) {
             Ok(listener) => listener,
-            Err(e) => fail!("Server failed to bind port {}", port),
+            Err(e) => fail!("Server failed to bind port {}: {}", port, e),
         };
         
         let mut acceptor = match listener.listen() {
             Ok(acceptor) => acceptor,
-            Err(e) => fail!("Server failed to listen on port {}", port),
+            Err(e) => fail!("Server failed to listen on port {}: {}", port, e),
         };
         acceptor.set_timeout(Some(0));
         
@@ -147,7 +147,10 @@ impl Server {
                         next_client_id += 1;
                         
                         // Send back the client ID
-                        stream.write_le_u32(client_id);
+                        match stream.write_le_u32(client_id) {
+                            Ok(_) => {},
+                            Err(e) => fail!("Failed to send client ID to client: {}", e),
+                        }
                         
                         // Assign client to default slot
                         let (ref default_slot, _) = self.slots[0];
@@ -299,11 +302,11 @@ impl Client {
         let data = packet.writer.get_ref();
         match self.stream.write_le_u16(data.len() as u16) {
             Ok(()) => {},
-            Err(e) => fail!("Failed to send packet size to server: {}"),
+            Err(e) => fail!("Failed to send packet size to server: {}", e),
         };
         match self.stream.write(data) {
             Ok(()) => {},
-            Err(e) => fail!("Failed to send packet data to server: {}"),
+            Err(e) => fail!("Failed to send packet data to server: {}", e),
         };
     }
     

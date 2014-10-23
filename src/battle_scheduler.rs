@@ -1,3 +1,5 @@
+use std::rc::Rc;
+use std::cell::RefCell;
 use std::collections::{RingBuf, HashMap};
 
 use battle_state::BattleContext;
@@ -51,8 +53,8 @@ impl BattleScheduler {
             
                 // Map clients to their ships
                 let mut ships = HashMap::new();
-                ships.insert(client1, ship1);
-                ships.insert(client2, ship2);
+                ships.insert(client1, Rc::new(RefCell::new(ship1)));
+                ships.insert(client2, Rc::new(RefCell::new(ship2)));
             
                 let mut battle_state = ServerBattleState::new(new_slot, BattleContext::new(ships));
                 battle_state.run();
