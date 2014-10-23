@@ -1,19 +1,43 @@
 use rsfml::window::{keyboard, mouse, event};
-use rsfml::graphics::RenderWindow;
+use rsfml::graphics::{Color, RenderTarget, RenderTexture, RenderWindow, Texture};
 
 use assets::LASER_TEXTURE;
+use asset_store::AssetStore;
+use battle_state::BattleContext;
 use module::{MODULE_CATEGORIES, ModuleCategory};
+use net::ClientId;
 use sfml_renderer::SfmlRenderer;
-use ship::Ship;
+use ship::{Ship, ShipRef};
+use sim::SimVisuals;
+use vec::{Vec2, Vec2f};
 
 pub struct SpaceGui {
     module_category: Option<ModuleCategory>, // Selected module category
+    
+    // The target ships' render areas
+    render_areas: Vec<ShipRenderArea>,
 }
 
 impl SpaceGui {
-    pub fn new() -> SpaceGui {
+    pub fn new(my_client_id: ClientId, context: &BattleContext) -> SpaceGui {
+        let mut render_areas = vec!();
+        for (client_id, ship) in context.ships.iter() {
+            if *client_id != my_client_id {
+                let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
+                let texture = target.get_texture().expect("Failed to get render texture's texture");
+                render_areas.push(ShipRenderArea {
+                    ship: Some(ship.clone()),
+                    position: Vec2{x: 772.0, y: 8.0},
+                    target: target,
+                    texture: texture,
+                });
+                break;
+            }
+        }
+    
         SpaceGui {
             module_category: None,
+            render_areas: render_areas,
         }
     }
     
@@ -40,7 +64,42 @@ impl SpaceGui {
         }
     }
     
-    pub fn draw(&self, renderer: &SfmlRenderer, client_ship: &Ship) {
+    pub fn draw_planning(&mut self, renderer: &SfmlRenderer, asset_store: &AssetStore, client_ship: &Ship) {
+        for render_area in self.render_areas.iter_mut() {
+            (&mut render_area.target as &mut RenderTarget).clear(&Color::new_RGBA(255, 120, 0, 100));
+            
+            {
+                let ship_renderer = SfmlRenderer::new(&render_area.target, asset_store);
+                
+                render_area.ship.as_ref().unwrap().borrow().draw(&ship_renderer);
+            }
+            
+            render_area.target.display();
+            renderer.draw_sf_texture_vec(&render_area.texture, &render_area.position);
+        }
+    
+        self.draw_overlay(renderer, client_ship);
+    }
+    
+    pub fn draw_simulating(&mut self, renderer: &SfmlRenderer, asset_store: &AssetStore, client_ship: &Ship, sim_visuals: &mut SimVisuals, time: f32) {
+        for render_area in self.render_areas.iter_mut() {
+            (&mut render_area.target as &mut RenderTarget).clear(&Color::new_RGBA(255, 120, 0, 100));
+            
+            {
+                let ship_renderer = SfmlRenderer::new(&render_area.target, asset_store);
+                
+                render_area.ship.as_ref().unwrap().borrow().draw(&ship_renderer);
+                sim_visuals.draw(&ship_renderer, render_area.ship.as_ref().unwrap().borrow().id, time);
+            }
+            
+            render_area.target.display();
+            renderer.draw_sf_texture_vec(&render_area.texture, &render_area.position);
+        }
+    
+        self.draw_overlay(renderer, client_ship);
+    }
+    
+    fn draw_overlay(&self, renderer: &SfmlRenderer, client_ship: &Ship) {
         for category in MODULE_CATEGORIES.iter() {
             let icon_y: f32 =
                 match self.module_category {
@@ -65,10 +124,10 @@ impl SpaceGui {
         }
     }
     
-    pub fn on_key_pressed(&mut self, key: keyboard::Key) {
+    fn on_key_pressed(&mut self, key: keyboard::Key) {
     }
     
-    pub fn on_mouse_left_pressed(&mut self, x: i32, y: i32) {
+    fn on_mouse_left_pressed(&mut self, x: i32, y: i32) {
         for category in MODULE_CATEGORIES.iter() {
             let icon_x = 10 + (64*(category.id as i32));
             let icon_y: i32 =
@@ -86,8 +145,17 @@ impl SpaceGui {
                     // Selected a new module category
                     _ => self.module_category = Some(category.id),
                 }
-                break;
+                return;
             }
         }
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct ShipRenderArea {
+    ship: Option<ShipRef>,
+    position: Vec2f,
+    target: RenderTexture,
+    texture: Texture,
 }
