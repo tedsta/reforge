@@ -3,12 +3,14 @@ use std::cell::RefCell;
 
 use assets::TextureId;
 use net::{InPacket, OutPacket};
-use ship::{Ship, ShipState};
-use sim::SimEventAdder;
+use ship::{ShipId, ShipState};
+use sim::{SimEventAdder, SimEvents};
 use vec::{Vec2, Vec2f};
 
 #[cfg(client)]
 use sfml_renderer::SfmlRenderer;
+#[cfg(client)]
+use sim::SimVisuals;
 
 // Use+reexport all of the modules
 pub use self::engine::EngineModule;
@@ -41,6 +43,8 @@ pub trait IModule {
     fn server_preprocess(&mut self, ship_state: &mut ShipState);
 
     fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder);
+    #[cfg(client)]
+    fn add_sim_visuals(&self, ship_id: ShipId, visuals: &mut SimVisuals);
     fn after_simulation(&mut self, ship_state: &mut ShipState);
 
     fn write_plans(&self, packet: &mut OutPacket);
@@ -88,6 +92,14 @@ impl IModule for Module {
         match *self {
             Engine(ref mut m) => m.before_simulation(ship_state, events),
             ProjectileWeapon(ref mut m) => m.before_simulation(ship_state, events),
+        }
+    }
+    
+    #[cfg(client)]
+    fn add_sim_visuals(&self, ship_id: ShipId, visuals: &mut SimVisuals) {
+        match *self {
+            Engine(ref m) => m.add_sim_visuals(ship_id, visuals),
+            ProjectileWeapon(ref m) => m.add_sim_visuals(ship_id, visuals),
         }
     }
     
@@ -167,7 +179,7 @@ impl ModuleBase {
     }
     
     #[cfg(client)]
-    pub fn draw(&self, renderer: &SfmlRenderer, ship: &Ship) {
+    pub fn draw(&self, renderer: &SfmlRenderer) {
         renderer.draw_texture_vec(self.texture, &self.get_render_position());
     }
     

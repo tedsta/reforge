@@ -2,9 +2,12 @@ use assets::LASER_TEXTURE;
 use battle_state::TICKS_PER_SECOND;
 use module::{IModule, Module, ModuleRef, ModuleBase, ProjectileWeapon, Weapon};
 use net::{ClientId, InPacket, OutPacket};
-use ship::ShipState;
+use ship::{ShipId, ShipState};
 use sim::SimEventAdder;
 use vec::{Vec2, Vec2f};
+
+#[cfg(client)]
+use sim::SimVisuals;
 
 #[deriving(Encodable, Decodable)]
 pub struct ProjectileWeaponModule {
@@ -63,6 +66,13 @@ impl IModule for ProjectileWeaponModule {
             projectile.from_offscreen_pos = Vec2{x: 1500f32, y: 0f32};
             projectile.hit_pos = Vec2{x: 0f32, y: 0f32};
         }
+    }
+    
+    #[cfg(client)]
+    fn add_sim_visuals(&self, ship_id: ShipId, visuals: &mut SimVisuals) {
+        visuals.add(ship_id, |renderer, time| {
+            println!("Hello from visual");
+        });
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {

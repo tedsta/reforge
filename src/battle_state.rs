@@ -4,6 +4,9 @@ use net::{ClientId, InPacket, OutPacket};
 use ship::ShipRef;
 use sim::SimEvents;
 
+#[cfg(client)]
+use sim::SimVisuals;
+
 // Time value of 1 tick in seconds
 pub static TICKS_PER_SECOND: u32 = 20;
 
@@ -35,6 +38,13 @@ impl BattleContext {
     pub fn before_simulation(&mut self, events: &mut SimEvents) {
         for ship in self.ships.values() {
             ship.borrow_mut().before_simulation(events);
+        }
+    }
+    
+    #[cfg(client)]
+    pub fn add_sim_visuals(&mut self, visuals: &mut SimVisuals) {
+        for ship in self.ships.values() {
+            ship.borrow().add_sim_visuals(visuals);
         }
     }
     

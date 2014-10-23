@@ -10,6 +10,8 @@ use sim::SimEvents;
 
 #[cfg(client)]
 use sfml_renderer::SfmlRenderer;
+#[cfg(client)]
+use sim::SimVisuals;
 
 // Use the ship_gen module privately here
 mod ship_gen;
@@ -72,6 +74,13 @@ impl Ship {
         }
     }
     
+    #[cfg(client)]
+    pub fn add_sim_visuals(&self, visuals: &mut SimVisuals) {
+        for module in self.modules.iter() {
+            module.borrow().add_sim_visuals(self.id, visuals);
+        }
+    }
+    
     pub fn after_simulation(&mut self) {
         for module in self.modules.iter() {
             module.borrow_mut().after_simulation(&mut self.state);
@@ -105,7 +114,7 @@ impl Ship {
     #[cfg(client)]
     pub fn draw(&self, renderer: &SfmlRenderer) {
         for module in self.modules.iter() {
-            module.borrow().get_base().draw(renderer, self);
+            module.borrow().get_base().draw(renderer);
         }
     }
 }

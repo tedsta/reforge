@@ -7,7 +7,7 @@ use battle_state::{BattleContext, ClientPacketId, Plan, TICKS_PER_SECOND};
 use net::{Client, OutPacket};
 use sfml_renderer::SfmlRenderer;
 use ship::ShipRef;
-use sim::SimEvents;
+use sim::{SimEvents, SimVisuals};
 use space_gui::SpaceGui;
 use vec::{Vec2, Vec2f};
 
@@ -85,9 +85,11 @@ impl ClientBattleState {
             // Simulate
             
             let mut sim_events = SimEvents::new();
+            let mut sim_visuals = SimVisuals::new();
             
             // Before simulation
             self.context.before_simulation(&mut sim_events);
+            self.context.add_sim_visuals(&mut sim_visuals);
             
             // Simulation
             let start_time = time::now().to_timespec();
@@ -128,7 +130,7 @@ impl ClientBattleState {
                 
                 // Render
                 window.clear(&Color::transparent());
-                self.draw_simulating(window, asset_store, &gui, elapsed_seconds);
+                self.draw_simulating(window, asset_store, &mut sim_visuals, &gui, elapsed_seconds);
                 window.display();
             }
             
@@ -172,11 +174,14 @@ impl ClientBattleState {
         gui.draw(&renderer, self.player_ship.borrow().deref());
     }
     
-    fn draw_simulating(&self, target: &RenderTarget, asset_store: &AssetStore, gui: &SpaceGui, time: f32) {
+    fn draw_simulating(&self, target: &RenderTarget, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, gui: &SpaceGui, time: f32) {
         let renderer = SfmlRenderer::new(target, asset_store);
     
         // Draw player ship
         self.player_ship.borrow().draw(&renderer);
+        
+        // Draw sim visuals for player ship
+        sim_visuals.draw(&renderer, self.player_ship.borrow().id, time);
         
         // Draw GUI
         gui.draw(&renderer, self.player_ship.borrow().deref());
