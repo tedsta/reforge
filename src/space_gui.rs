@@ -1,5 +1,5 @@
 use rsfml::window::{keyboard, mouse, event};
-use rsfml::graphics::{Color, RenderTarget, RenderTexture, RenderWindow, Texture};
+use rsfml::graphics::{Color, Font, RenderTarget, RenderTexture, RenderWindow, Text, Texture};
 
 use assets::LASER_TEXTURE;
 use asset_store::AssetStore;
@@ -11,15 +11,21 @@ use ship::{Ship, ShipRef};
 use sim::SimVisuals;
 use vec::{Vec2, Vec2f};
 
-pub struct SpaceGui {
+pub struct SpaceGui<'a> {
     module_category: Option<ModuleCategory>, // Selected module category
     
     // The target ships' render areas
     render_areas: Vec<ShipRenderArea>,
+    
+    // GUI font
+    font: &'a Font,
+    
+    // Timer text
+    timer_text: Text<'a>,
 }
 
-impl SpaceGui {
-    pub fn new(my_client_id: ClientId, context: &BattleContext) -> SpaceGui {
+impl<'a> SpaceGui<'a> {
+    pub fn new(font: &'a Font, my_client_id: ClientId, context: &BattleContext) -> SpaceGui<'a> {
         let mut render_areas = vec!();
         for (client_id, ship) in context.ships.iter() {
             if *client_id != my_client_id {
@@ -38,6 +44,8 @@ impl SpaceGui {
         SpaceGui {
             module_category: None,
             render_areas: render_areas,
+            font: font,
+            timer_text: Text::new_init("0", font, 30).expect("Failed to create timer text"),
         }
     }
     
@@ -79,6 +87,10 @@ impl SpaceGui {
         }
     
         self.draw_overlay(renderer, client_ship);
+        
+        self.timer_text.set_position2f(600.0, 8.0);
+        self.timer_text.set_string("Planning");
+        renderer.draw_text(&self.timer_text);
     }
     
     pub fn draw_simulating(&mut self, renderer: &SfmlRenderer, asset_store: &AssetStore, client_ship: &Ship, sim_visuals: &mut SimVisuals, time: f32) {
@@ -97,6 +109,10 @@ impl SpaceGui {
         }
     
         self.draw_overlay(renderer, client_ship);
+        
+        self.timer_text.set_position2f(600.0, 8.0);
+        self.timer_text.set_string("Simulating");
+        renderer.draw_text(&self.timer_text);
     }
     
     fn draw_overlay(&self, renderer: &SfmlRenderer, client_ship: &Ship) {
