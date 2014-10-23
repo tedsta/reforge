@@ -9,13 +9,6 @@ use sfml_renderer::SfmlRenderer;
 use ship::ShipRef;
 use sim::{SimEvents, SimVisuals};
 use space_gui::SpaceGui;
-use vec::{Vec2, Vec2f};
-
-pub struct ShipRenderArea {
-    ship: Option<ShipRef>,
-    position: Vec2f,
-    target: RenderTexture,
-}
 
 pub struct ClientBattleState {
     client: Client,
@@ -25,9 +18,6 @@ pub struct ClientBattleState {
     
     // The player's ship
     player_ship: ShipRef,
-    
-    // The ships' render areas
-    render_areas: Vec<ShipRenderArea>,
 }
 
 impl ClientBattleState {
@@ -37,18 +27,11 @@ impl ClientBattleState {
             client: client,
             context: context,
             player_ship: player_ship,
-            render_areas: vec!(),
         }
     }
     
     pub fn run(&mut self, window: &mut RenderWindow, asset_store: &AssetStore) {
-        self.render_areas.push(ShipRenderArea {
-            ship: None,
-            position: Vec2{x: 780.0, y: 0.0},
-            target: RenderTexture::new(500, 500, false).expect("Failed to create render texture"),
-        });
-        
-        let mut gui = SpaceGui::new();
+        let mut gui = SpaceGui::new(self.client.get_id(), &self.context);
     
         loop {
             ////////////////////////////////
@@ -70,7 +53,7 @@ impl ClientBattleState {
                 
                 // Render
                 window.clear(&Color::transparent());
-                self.draw_planning(window, asset_store, &gui);
+                self.draw_planning(window, asset_store, &mut gui);
                 window.display();
             }
         
@@ -130,7 +113,7 @@ impl ClientBattleState {
                 
                 // Render
                 window.clear(&Color::transparent());
-                self.draw_simulating(window, asset_store, &mut sim_visuals, &gui, elapsed_seconds);
+                self.draw_simulating(window, asset_store, &mut sim_visuals, &mut gui, elapsed_seconds);
                 window.display();
             }
             
@@ -164,17 +147,17 @@ impl ClientBattleState {
         self.context.read_results(&mut packet);
     }
     
-    fn draw_planning(&self, target: &RenderTarget, asset_store: &AssetStore, gui: &SpaceGui) {
+    fn draw_planning(&self, target: &RenderTarget, asset_store: &AssetStore, gui: &mut SpaceGui) {
         let renderer = SfmlRenderer::new(target, asset_store);
     
         // Draw player ship
         self.player_ship.borrow().draw(&renderer);
         
         // Draw GUI
-        gui.draw(&renderer, self.player_ship.borrow().deref());
+        gui.draw_planning(&renderer, asset_store, self.player_ship.borrow().deref());
     }
     
-    fn draw_simulating(&self, target: &RenderTarget, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, gui: &SpaceGui, time: f32) {
+    fn draw_simulating(&self, target: &RenderTarget, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, gui: &mut SpaceGui, time: f32) {
         let renderer = SfmlRenderer::new(target, asset_store);
     
         // Draw player ship
@@ -184,6 +167,6 @@ impl ClientBattleState {
         sim_visuals.draw(&renderer, self.player_ship.borrow().id, time);
         
         // Draw GUI
-        gui.draw(&renderer, self.player_ship.borrow().deref());
+        gui.draw_simulating(&renderer, asset_store, self.player_ship.borrow().deref(), sim_visuals, time);
     }
 }

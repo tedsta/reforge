@@ -20,9 +20,7 @@ impl<'a> SfmlRenderer<'a> {
         }
     }
     
-    pub fn draw_texture(&self, texture_id: TextureId, x: f32, y: f32) {
-        let texture = self.asset_store.get_texture(texture_id);
-        
+    pub fn draw_sf_texture(&self, texture: &Texture, x: f32, y: f32) {        
         let size = texture.get_size();
         let (width, height) = (size.x as f32, size.y as f32);
 
@@ -37,6 +35,14 @@ impl<'a> SfmlRenderer<'a> {
         rs.texture = Some(texture);
         
         self.target.draw_primitives_rs(&vertices, Quads, &mut rs);
+    }
+    
+    pub fn draw_sf_texture_vec(&self, texture: &Texture, pos: &Vec2f) {
+        self.draw_sf_texture(texture, pos.x, pos.y);
+    }
+    
+    pub fn draw_texture(&self, texture_id: TextureId, x: f32, y: f32) {
+        self.draw_sf_texture(self.asset_store.get_texture(texture_id), x, y);
     }
     
     pub fn draw_texture_vec(&self, texture_id: TextureId, pos: &Vec2f) {

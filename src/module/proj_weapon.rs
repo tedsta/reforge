@@ -71,7 +71,7 @@ impl IModule for ProjectileWeaponModule {
     #[cfg(client)]
     fn add_sim_visuals(&self, ship_id: ShipId, visuals: &mut SimVisuals) {
         visuals.add(ship_id, |renderer, time| {
-            println!("Hello from visual");
+            renderer.draw_texture(LASER_TEXTURE, 1000.0*time, 300.0);
         });
     }
     
