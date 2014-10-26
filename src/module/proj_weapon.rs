@@ -114,10 +114,13 @@ impl IModule for ProjectileWeaponModule {
     }
     
     fn on_icon_clicked(&mut self) -> bool {
+        println!("Clicked a weapon");
         true
     }
     
     fn on_module_clicked(&mut self, module: &ModuleRef) -> bool {
+        self.target = Some(module.clone());
+        println!("Selected module");
         false
     }
 }

@@ -47,7 +47,7 @@ impl ClientBattleState {
                 }
                 
                 // Update gui
-                gui.update(window);
+                gui.update(window, self.player_ship.borrow().deref());
                 
                 // Do planning stuff
                 self.plan();
@@ -104,7 +104,7 @@ impl ClientBattleState {
                 last_time = current_time;
                 
                 // Update gui
-                gui.update(window);
+                gui.update(window, self.player_ship.borrow().deref());
                 
                 // Simulate any new ticks
                 for t in range(next_tick, next_tick + tick-next_tick+1) {
