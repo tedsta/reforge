@@ -1,4 +1,4 @@
-use assets::LASER_TEXTURE;
+use assets::{LASER_TEXTURE, TextureId};
 use battle_state::TICKS_PER_SECOND;
 use module::{IModule, Module, ModuleRef, ModuleBase, ProjectileWeapon, Weapon};
 use net::{ClientId, InPacket, OutPacket};
@@ -7,7 +7,9 @@ use sim::SimEventAdder;
 use vec::{Vec2, Vec2f};
 
 #[cfg(client)]
-use sim::SimVisuals;
+use sim::{SimVisuals, SimVisual};
+#[cfg(client)]
+use sfml_renderer::SfmlRenderer;
 
 #[deriving(Encodable, Decodable)]
 pub struct ProjectileWeaponModule {
@@ -15,7 +17,7 @@ pub struct ProjectileWeaponModule {
     
     projectiles: Vec<Projectile>,
     
-    target: Option<ModuleRef>,
+    target: Option<(ShipId, ModuleRef)>,
 }
 
 impl ProjectileWeaponModule {
@@ -69,37 +71,46 @@ impl IModule for ProjectileWeaponModule {
     
     #[cfg(client)]
     fn add_sim_visuals(&self, ship_id: ShipId, visuals: &mut SimVisuals) {
-        visuals.add(ship_id, |renderer, time| {
-            renderer.draw_texture(LASER_TEXTURE, 1000.0*time, 300.0);
-        });
+        match self.target {
+            Some((target_ship_id, ref target_module)) => {
+                for projectile in self.projectiles.iter() {
+                    // Set up interpolation stuff to send projectile from weapon to offscreen
+                    let start_time = (projectile.fire_tick as f32)/(TICKS_PER_SECOND as f32);
+                    let end_time = (projectile.offscreen_tick as f32)/(TICKS_PER_SECOND as f32);
+                    let start_pos = projectile.fire_pos.clone();
+                    let end_pos = projectile.to_offscreen_pos.clone();
+                    let laser_texture = LASER_TEXTURE;
+                
+                    visuals.add(ship_id, box LerpVisual {
+                        start_time: start_time,
+                        end_time: end_time,
+                        start_pos: start_pos,
+                        end_pos: end_pos,
+                        texture: laser_texture,
+                    });
+                    
+                    // Set up interpolation stuff to send projectile from offscreen to target
+                    let start_time = (projectile.offscreen_tick as f32)/(TICKS_PER_SECOND as f32);
+                    let end_time = (projectile.hit_tick as f32)/(TICKS_PER_SECOND as f32);
+                    let start_pos = projectile.from_offscreen_pos.clone();
+                    let end_pos = projectile.hit_pos.clone();
+                    let laser_texture = LASER_TEXTURE;
+                    
+                    visuals.add(target_ship_id, box LerpVisual {
+                        start_time: start_time,
+                        end_time: end_time,
+                        start_pos: start_pos,
+                        end_pos: end_pos,
+                        texture: laser_texture,
+                    });
+                }
+            },
+            None => {},
+        }
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {
     }
-    
-    /*fn draw(&mut self, renderer: &mut Renderer, context: &BattleContext, simulating: bool, time: f32) {
-        let ship = self.base.get_ship(context);
-        self.base.draw(renderer, ship);
-        
-        for projectile in self.projectiles.iter() {
-            match projectile.phase {
-                FireToOffscreen => {
-                    let start_time = (projectile.fire_tick as f32)/(TICKS_PER_SECOND as f32);
-                    let stop_time = (projectile.offscreen_tick as f32)/(TICKS_PER_SECOND as f32);
-                    let interp = (time-start_time)/(stop_time-start_time);
-                    ship.render_target.draw_texture_vec(renderer, projectile.texture, &(projectile.fire_pos + (projectile.to_offscreen_pos-projectile.fire_pos)*interp));
-                },
-                OffscreenToTarget => {
-                    let start_time = (projectile.offscreen_tick as f32)/(TICKS_PER_SECOND as f32);
-                    let stop_time = (projectile.hit_tick as f32)/(TICKS_PER_SECOND as f32);
-                    let interp = (time-start_time)/(stop_time-start_time);
-                    ship.render_target.draw_texture_vec(renderer, projectile.texture, &(projectile.from_offscreen_pos + (projectile.hit_pos-projectile.from_offscreen_pos)*interp));
-                },
-                Detonate => {
-                },
-            }
-        }
-    }*/
     
     fn write_plans(&self, packet: &mut OutPacket) {
     }
@@ -118,9 +129,9 @@ impl IModule for ProjectileWeaponModule {
         true
     }
     
-    fn on_module_clicked(&mut self, module: &ModuleRef) -> bool {
-        self.target = Some(module.clone());
-        println!("Selected module");
+    fn on_module_clicked(&mut self, ship_id: ShipId, module: &ModuleRef) -> bool {
+        self.target = Some((ship_id, module.clone()));
+        println!("Targeted module");
         false
     }
 }
@@ -152,4 +163,26 @@ struct Projectile {
     to_offscreen_pos: Vec2f,
     from_offscreen_pos: Vec2f,
     hit_pos: Vec2f,
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Basic linear interpolation sim visual
+#[cfg(client)]
+pub struct LerpVisual {
+    start_time: f32,
+    end_time: f32,
+    start_pos: Vec2f,
+    end_pos: Vec2f,
+    texture: TextureId,
+}
+
+#[cfg(client)]
+impl SimVisual for LerpVisual {
+    fn draw(&mut self, renderer: &SfmlRenderer, time: f32) {
+        if time <= self.end_time {
+            let interp = (time-self.start_time)/(self.end_time-self.start_time);
+            renderer.draw_texture_vec(self.texture, &(self.start_pos + (self.end_pos-self.start_pos)*interp));
+        }
+    }
 }
