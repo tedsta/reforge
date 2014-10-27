@@ -211,7 +211,7 @@ impl<'a> SpaceGui<'a> {
             let y = y - render_area.y;
             match render_area.ship.as_ref() {
                 Some(ref ship) => {
-                    for module in client_ship.modules.iter() {
+                    for module in ship.borrow().modules.iter() {
                         // Get module position and size on screen
                         let Vec2{x: module_x, y: module_y} = module.borrow().get_base().get_render_position();
                         let Vec2{x: module_w, y: module_h} = module.borrow().get_base().get_render_size();
@@ -224,7 +224,7 @@ impl<'a> SpaceGui<'a> {
                                 {
                                     // Inner scope for module ref so we can clear it after
                                     let module = self.module.as_ref().unwrap();
-                                    module.borrow_mut().on_module_clicked(module);
+                                    module.borrow_mut().on_module_clicked(ship.borrow().id, module);
                                 }
                                 self.module = None;
                                 return;

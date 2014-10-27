@@ -52,9 +52,16 @@ impl<'a, 'b> SimEventAdder<'a, 'b> {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// TODO: Replace the SimVisual struct impl trait model with unboxed closures once they are stable
+
+#[cfg(client)]
+pub trait SimVisual {
+    fn draw(&mut self, renderer: &SfmlRenderer, time: f32);
+}
+
 #[cfg(client)]
 pub struct SimVisuals<'a> {
-    visuals: Vec<(ShipId, |&SfmlRenderer, f32|: 'a)>,
+    visuals: Vec<(ShipId, Box<SimVisual+'a>)>,
 }
 
 #[cfg(client)]
@@ -63,14 +70,14 @@ impl<'a> SimVisuals<'a> {
         SimVisuals{visuals: vec!()}
     }
     
-    pub fn add(&mut self, ship: ShipId, visual: |&SfmlRenderer, f32|: 'a) {
+    pub fn add(&mut self, ship: ShipId, visual: Box<SimVisual+'a>) {
         self.visuals.push((ship, visual));
     }
     
     pub fn draw(&mut self, renderer: &SfmlRenderer, ship: ShipId, time: f32) {
         for &(v_ship, ref mut visual) in self.visuals.iter_mut() {
-            if v_ship == ship { 
-                (*visual)(renderer, time);
+            if v_ship == ship {
+                visual.draw(renderer, time);
             }
         }
     }

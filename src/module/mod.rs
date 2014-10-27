@@ -57,7 +57,7 @@ pub trait IModule {
     // GUI stuff
     
     fn on_icon_clicked(&mut self) -> bool;
-    fn on_module_clicked(&mut self, module: &ModuleRef) -> bool;
+    fn on_module_clicked(&mut self, ship_id: ShipId, module: &ModuleRef) -> bool;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -151,10 +151,10 @@ impl IModule for Module {
         }
     }
     
-    fn on_module_clicked(&mut self, module: &ModuleRef) -> bool {
+    fn on_module_clicked(&mut self, ship_id: ShipId, module: &ModuleRef) -> bool {
         match *self {
-            Engine(ref mut m) => m.on_module_clicked(module),
-            ProjectileWeapon(ref mut m) => m.on_module_clicked(module),
+            Engine(ref mut m) => m.on_module_clicked(ship_id, module),
+            ProjectileWeapon(ref mut m) => m.on_module_clicked(ship_id, module),
         }
     }
 }

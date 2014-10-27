@@ -50,7 +50,7 @@ impl IModule for EngineModule {
         false
     }
     
-    fn on_module_clicked(&mut self, module: &ModuleRef) -> bool {
+    fn on_module_clicked(&mut self, ship_id: ShipId, module: &ModuleRef) -> bool {
         false
     }
 }
