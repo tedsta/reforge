@@ -42,7 +42,7 @@ impl ClientBattleState {
             while window.is_open() {
                 let current_time = time::now().to_timespec();
                 let elapsed_time = current_time - start_time;
-                if elapsed_time.num_seconds() >= 10 {
+                if elapsed_time.num_seconds() >= 5 {
                     break;
                 }
                 
