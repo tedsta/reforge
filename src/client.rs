@@ -41,7 +41,7 @@ fn main () {
     let setting: ContextSettings = ContextSettings::default();
     let mut window: RenderWindow =
         match RenderWindow::new(VideoMode::new_init(1280, 720, 32),
-                                "spacegame",
+                                "reForge",
                                 Close,
                                 &setting) {
             Some(window) => window,

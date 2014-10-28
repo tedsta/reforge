@@ -86,6 +86,7 @@ impl IModule for ProjectileWeaponModule {
                     let end_pos = projectile.to_offscreen_pos.clone();
                     let laser_texture = LASER_TEXTURE;
                 
+                    // Add the simulation visual for projectile leaving
                     visuals.add(ship_id, box LerpVisual {
                         start_time: start_time,
                         end_time: end_time,
@@ -101,6 +102,7 @@ impl IModule for ProjectileWeaponModule {
                     let end_pos = projectile.hit_pos.clone();
                     let laser_texture = LASER_TEXTURE;
                     
+                    // Add the simulation visual for projectile entering target screen
                     visuals.add(target_ship_id, box LerpVisual {
                         start_time: start_time,
                         end_time: end_time,
