@@ -223,8 +223,8 @@ impl<'a> SpaceGui<'a> {
                             if self.module.is_some() {
                                 {
                                     // Inner scope for module ref so we can clear it after
-                                    let module = self.module.as_ref().unwrap();
-                                    module.borrow_mut().on_module_clicked(ship.borrow().id, module);
+                                    let selected_module = self.module.as_ref().unwrap();
+                                    selected_module.borrow_mut().on_module_clicked(ship.borrow().id, module);
                                 }
                                 self.module = None;
                                 return;

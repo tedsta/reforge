@@ -212,6 +212,6 @@ impl ModuleBase {
     }
     
     pub fn get_render_center(&self) -> Vec2f {
-        self.get_render_position() + (self.get_render_size()/2f32)
+        self.get_render_position() + (self.get_render_size()/2.0)
     }
 }

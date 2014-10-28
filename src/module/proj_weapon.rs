@@ -56,16 +56,21 @@ impl IModule for ProjectileWeaponModule {
         events.add(20, |module| {
         });
     
-        for projectile in self.projectiles.iter_mut() {
-            projectile.phase = FireToOffscreen;
-            projectile.fire_tick = 0;
-            projectile.offscreen_tick = 20;
-            projectile.hit_tick = 40;
-            
-            projectile.fire_pos = self.base.get_render_position();
-            projectile.to_offscreen_pos = projectile.fire_pos + Vec2{x: 1500f32, y: 0f32};
-            projectile.from_offscreen_pos = Vec2{x: 1500f32, y: 0f32};
-            projectile.hit_pos = Vec2{x: 0f32, y: 0f32};
+        match self.target {
+            Some((_, ref target_module)) => {
+                for projectile in self.projectiles.iter_mut() {
+                    projectile.phase = FireToOffscreen;
+                    projectile.fire_tick = 0;
+                    projectile.offscreen_tick = 20;
+                    projectile.hit_tick = 40;
+                    
+                    projectile.fire_pos = self.base.get_render_position();
+                    projectile.to_offscreen_pos = projectile.fire_pos + Vec2{x: 1500.0, y: 0.0};
+                    projectile.from_offscreen_pos = Vec2{x: 1500.0, y: 0.0};
+                    projectile.hit_pos = target_module.borrow().get_base().get_render_position();
+                }
+            }
+            None => { },
         }
     }
     
