@@ -11,13 +11,17 @@ use vec::{Vec2, Vec2f};
 use sfml_renderer::SfmlRenderer;
 #[cfg(client)]
 use sim::SimVisuals;
+#[cfg(client)]
+use asset_store::AssetStore;
 
 // Use+reexport all of the modules
 pub use self::engine::EngineModule;
 pub use self::proj_weapon::ProjectileWeaponModule;
+pub use self::mod_type::{ModuleType, ModuleTypeInfo, ModuleTypeStore};
 
 pub mod engine;
 pub mod proj_weapon;
+pub mod mod_type;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -44,7 +48,9 @@ pub trait IModule {
 
     fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder);
     #[cfg(client)]
-    fn add_sim_visuals(&self, ship_id: ShipId, visuals: &mut SimVisuals);
+    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId);
+    #[cfg(client)]
+    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId);
     fn after_simulation(&mut self, ship_state: &mut ShipState);
 
     fn write_plans(&self, packet: &mut OutPacket);
@@ -102,10 +108,18 @@ impl IModule for Module {
     }
     
     #[cfg(client)]
-    fn add_sim_visuals(&self, ship_id: ShipId, visuals: &mut SimVisuals) {
+    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
         match *self {
-            Engine(ref m) => m.add_sim_visuals(ship_id, visuals),
-            ProjectileWeapon(ref m) => m.add_sim_visuals(ship_id, visuals),
+            Engine(ref m) => m.add_plan_visuals(asset_store, visuals, ship_id),
+            ProjectileWeapon(ref m) => m.add_plan_visuals(asset_store, visuals, ship_id),
+        }
+    }
+    
+    #[cfg(client)]
+    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
+        match *self {
+            Engine(ref m) => m.add_simulation_visuals(asset_store, visuals, ship_id),
+            ProjectileWeapon(ref m) => m.add_simulation_visuals(asset_store, visuals, ship_id),
         }
     }
     
@@ -175,15 +189,15 @@ pub struct ModuleBase {
     pub damage: u32,
     pub hull: u32,
     
+    // Module type
+    pub mod_type: ModuleType,
+    
     // Category of this module
     pub category: ModuleCategory,
-    
-    // Module texture ID
-    texture: TextureId,
 }
 
 impl ModuleBase {
-    pub fn new(category: ModuleCategory, texture: TextureId) -> ModuleBase {
+    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> ModuleBase {
         ModuleBase {
             x: 0,
             y: 0,
@@ -193,14 +207,9 @@ impl ModuleBase {
             max_power: 1,
             damage: 0,
             hull: 0,
-            category: category,
-            texture: texture,
+            mod_type: mod_type,
+            category: mod_store.get_module_type(mod_type).category,
         }
-    }
-    
-    #[cfg(client)]
-    pub fn draw(&self, renderer: &SfmlRenderer) {
-        renderer.draw_texture_vec(self.texture, &self.get_render_position());
     }
     
     pub fn get_render_position(&self) -> Vec2f {

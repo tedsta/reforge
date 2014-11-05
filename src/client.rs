@@ -1,6 +1,8 @@
 #![crate_name = "spacegame_client"]
 #![desc = "spacegame awesome mmo client"]
 #![crate_type = "bin"]
+#![feature(macro_rules)]
+#![feature(default_type_params)]
 
 extern crate binary_encode;
 extern crate native;
@@ -15,6 +17,9 @@ use asset_store::AssetStore;
 use client_battle_state::ClientBattleState;
 use net::Client;
 
+#[macro_escape]
+pub mod util;
+
 pub mod assets;
 pub mod asset_store;
 pub mod battle_state;
@@ -25,6 +30,7 @@ pub mod sfml_renderer;
 pub mod ship;
 pub mod sim;
 pub mod space_gui;
+pub mod sprite_sheet;
 pub mod vec;
 
 #[cfg(target_os="macos")]

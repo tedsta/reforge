@@ -2,7 +2,7 @@ all: server client
 
 server:
 	mkdir -p bin
-	rustc -o bin/server -L ./lib src/server.rs
+	rustc -o bin/server -L ./lib src/server.rs --cfg server
 
 client:
 	mkdir -p bin

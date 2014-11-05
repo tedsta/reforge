@@ -81,4 +81,8 @@ impl<'a> SimVisuals<'a> {
             }
         }
     }
+    
+    pub fn clear(&mut self) {
+        self.visuals.clear();
+    }
 }

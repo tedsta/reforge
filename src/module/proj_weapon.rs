@@ -1,6 +1,6 @@
-use assets::{LASER_TEXTURE, TextureId};
+use assets::{WEAPON_TEXTURE, LASER_TEXTURE, EXPLOSION_TEXTURE, TextureId};
 use battle_state::TICKS_PER_SECOND;
-use module::{IModule, Module, ModuleRef, ModuleBase, ProjectileWeapon, Weapon};
+use module::{IModule, Module, ModuleRef, ModuleBase, ModuleType, ModuleTypeStore, ProjectileWeapon, Weapon};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipState};
 use sim::SimEventAdder;
@@ -10,6 +10,10 @@ use vec::{Vec2, Vec2f};
 use sim::{SimVisuals, SimVisual};
 #[cfg(client)]
 use sfml_renderer::SfmlRenderer;
+#[cfg(client)]
+use sprite_sheet::{SpriteSheet, Loop, PlayOnce};
+#[cfg(client)]
+use asset_store::AssetStore;
 
 #[deriving(Encodable, Decodable)]
 pub struct ProjectileWeaponModule {
@@ -21,7 +25,7 @@ pub struct ProjectileWeaponModule {
 }
 
 impl ProjectileWeaponModule {
-    pub fn new() -> Module {
+    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
         let projectile = Projectile {
             phase: FireToOffscreen,
             damage: 1,
@@ -38,7 +42,7 @@ impl ProjectileWeaponModule {
         };
     
         ProjectileWeapon(ProjectileWeaponModule {
-            base: ModuleBase::new(Weapon, LASER_TEXTURE),
+            base: ModuleBase::new(mod_store, mod_type),
             projectiles: vec![projectile],
             target: None,
         })
@@ -75,7 +79,20 @@ impl IModule for ProjectileWeaponModule {
     }
     
     #[cfg(client)]
-    fn add_sim_visuals(&self, ship_id: ShipId, visuals: &mut SimVisuals) {
+    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
+        let mut weapon_sprite =  SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
+        weapon_sprite.add_animation(Loop(0.0, 5.0, 0, 5, 0.05));
+    
+        visuals.add(ship_id, box SpriteVisual {
+            position: self.base.get_render_position().clone(),
+            sprite_sheet: weapon_sprite,
+        });
+    }
+    
+    #[cfg(client)]
+    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
+        self.add_plan_visuals(asset_store, visuals, ship_id);
+    
         match self.target {
             Some((target_ship_id, ref target_module)) => {
                 for projectile in self.projectiles.iter() {
@@ -84,7 +101,9 @@ impl IModule for ProjectileWeaponModule {
                     let end_time = (projectile.offscreen_tick as f32)/(TICKS_PER_SECOND as f32);
                     let start_pos = projectile.fire_pos.clone();
                     let end_pos = projectile.to_offscreen_pos.clone();
-                    let laser_texture = LASER_TEXTURE;
+                    
+                    let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
+                    laser_sprite.add_animation(Loop(0.0, 5.0, 0, 4, 0.05));
                 
                     // Add the simulation visual for projectile leaving
                     visuals.add(ship_id, box LerpVisual {
@@ -92,7 +111,7 @@ impl IModule for ProjectileWeaponModule {
                         end_time: end_time,
                         start_pos: start_pos,
                         end_pos: end_pos,
-                        texture: laser_texture,
+                        sprite_sheet: laser_sprite,
                     });
                     
                     // Set up interpolation stuff to send projectile from offscreen to target
@@ -100,7 +119,9 @@ impl IModule for ProjectileWeaponModule {
                     let end_time = (projectile.hit_tick as f32)/(TICKS_PER_SECOND as f32);
                     let start_pos = projectile.from_offscreen_pos.clone();
                     let end_pos = projectile.hit_pos.clone();
-                    let laser_texture = LASER_TEXTURE;
+
+                    let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
+                    laser_sprite.add_animation(Loop(0.0, 5.0, 0, 4, 0.05));
                     
                     // Add the simulation visual for projectile entering target screen
                     visuals.add(target_ship_id, box LerpVisual {
@@ -108,7 +129,19 @@ impl IModule for ProjectileWeaponModule {
                         end_time: end_time,
                         start_pos: start_pos,
                         end_pos: end_pos,
-                        texture: laser_texture,
+                        sprite_sheet: laser_sprite,
+                    });
+                    
+                    // Set up explosion visual
+                    let start_time = (projectile.hit_tick as f32)/(TICKS_PER_SECOND as f32);
+                    let end_time = start_time + 0.7;
+                    
+                    let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info(EXPLOSION_TEXTURE));
+                    explosion_sprite.add_animation(PlayOnce(start_time, end_time, 0, 10));
+                    
+                    visuals.add(target_ship_id, box SpriteVisual {
+                        position: projectile.hit_pos.clone(),
+                        sprite_sheet: explosion_sprite,
                     });
                 }
             },
@@ -181,7 +214,7 @@ pub struct LerpVisual {
     end_time: f32,
     start_pos: Vec2f,
     end_pos: Vec2f,
-    texture: TextureId,
+    sprite_sheet: SpriteSheet,
 }
 
 #[cfg(client)]
@@ -189,7 +222,22 @@ impl SimVisual for LerpVisual {
     fn draw(&mut self, renderer: &SfmlRenderer, time: f32) {
         if time <= self.end_time {
             let interp = (time-self.start_time)/(self.end_time-self.start_time);
-            renderer.draw_texture_vec(self.texture, &(self.start_pos + (self.end_pos-self.start_pos)*interp));
+            let pos = self.start_pos + (self.end_pos-self.start_pos)*interp;
+            self.sprite_sheet.draw(renderer, pos.x, pos.y, time);
         }
+    }
+}
+
+// Sprite sheet sim visual
+#[cfg(client)]
+pub struct SpriteVisual {
+    position: Vec2f,
+    sprite_sheet: SpriteSheet,
+}
+
+#[cfg(client)]
+impl SimVisual for SpriteVisual {
+    fn draw(&mut self, renderer: &SfmlRenderer, time: f32) {
+        self.sprite_sheet.draw(renderer, self.position.x, self.position.y, time);
     }
 }

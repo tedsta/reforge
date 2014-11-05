@@ -6,6 +6,8 @@ use sim::SimEvents;
 
 #[cfg(client)]
 use sim::SimVisuals;
+#[cfg(client)]
+use asset_store::AssetStore;
 
 // Time value of 1 tick in seconds
 pub static TICKS_PER_SECOND: u32 = 20;
@@ -42,9 +44,16 @@ impl BattleContext {
     }
     
     #[cfg(client)]
-    pub fn add_sim_visuals(&mut self, visuals: &mut SimVisuals) {
+    pub fn add_plan_visuals(&mut self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
         for ship in self.ships.values() {
-            ship.borrow().add_sim_visuals(visuals);
+            ship.borrow().add_plan_visuals(asset_store, visuals);
+        }
+    }
+    
+    #[cfg(client)]
+    pub fn add_simulation_visuals(&mut self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
+        for ship in self.ships.values() {
+            ship.borrow().add_simulation_visuals(asset_store, visuals);
         }
     }
     

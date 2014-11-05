@@ -1,7 +1,7 @@
 use rsfml::window::{keyboard, mouse, event};
 use rsfml::graphics::{Color, Font, RenderTarget, RenderTexture, RenderWindow, Text, Texture};
 
-use assets::LASER_TEXTURE;
+use assets::GUI_TEXTURE;
 use asset_store::AssetStore;
 use battle_state::BattleContext;
 use module::{IModule, MODULE_CATEGORIES, ModuleCategory, ModuleRef};
@@ -77,14 +77,14 @@ impl<'a> SpaceGui<'a> {
         }
     }
     
-    pub fn draw_planning(&mut self, renderer: &SfmlRenderer, asset_store: &AssetStore, client_ship: &Ship) {
+    pub fn draw_planning(&mut self, renderer: &SfmlRenderer, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship) {
         for render_area in self.render_areas.iter_mut() {
             (&mut render_area.target as &mut RenderTarget).clear(&Color::new_RGBA(255, 120, 0, 100));
             
             {
                 let ship_renderer = SfmlRenderer::new(&render_area.target, asset_store);
                 
-                render_area.ship.as_ref().unwrap().borrow().draw(&ship_renderer);
+                sim_visuals.draw(&ship_renderer, render_area.ship.as_ref().unwrap().borrow().id, 0.0);
             }
             
             render_area.target.display();
@@ -98,14 +98,13 @@ impl<'a> SpaceGui<'a> {
         renderer.draw_text(&self.timer_text);
     }
     
-    pub fn draw_simulating(&mut self, renderer: &SfmlRenderer, asset_store: &AssetStore, client_ship: &Ship, sim_visuals: &mut SimVisuals, time: f32) {
+    pub fn draw_simulating(&mut self, renderer: &SfmlRenderer, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f32) {
         for render_area in self.render_areas.iter_mut() {
             (&mut render_area.target as &mut RenderTarget).clear(&Color::new_RGBA(255, 120, 0, 100));
             
             {
                 let ship_renderer = SfmlRenderer::new(&render_area.target, asset_store);
                 
-                render_area.ship.as_ref().unwrap().borrow().draw(&ship_renderer);
                 sim_visuals.draw(&ship_renderer, render_area.ship.as_ref().unwrap().borrow().id, time);
             }
             
@@ -128,7 +127,7 @@ impl<'a> SpaceGui<'a> {
                     _ => { 600.0 },
                 };
             
-            renderer.draw_texture(LASER_TEXTURE, 10.0 + (64.0*(category.id as u8 as f32)), icon_y);
+            renderer.draw_texture(GUI_TEXTURE, 10.0 + (64.0*(category.id as u8 as f32)), icon_y);
         }
         
         match self.module_category {
@@ -136,7 +135,7 @@ impl<'a> SpaceGui<'a> {
                 let mut i = 0u8;
                 for module in client_ship.modules.iter() {
                     if module.borrow().get_base().category == category {                    
-                        renderer.draw_texture(LASER_TEXTURE, 10.0 + (64.0*(i as f32)), 500.0);
+                        renderer.draw_texture(GUI_TEXTURE, 10.0 + (64.0*(i as f32)), 500.0);
                         
                         /*match self.module {
                             Some(selected_module) => {
