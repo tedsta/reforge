@@ -373,6 +373,10 @@ impl InPacket {
     }
     
     pub fn read<'a, T: Decodable<DecoderReader<'a, MemReader>, IoError>>(&mut self) -> IoResult<T> {
-        decode_from(&mut self.reader)
+        decode_from(&mut self.reader, &())
     }
+    
+    /*pub fn read_context<'a, C: 'a, T: Decodable<DecoderReader<'a, MemReader, C>, IoError>>(&mut self, context: &C) -> IoResult<T> {
+        decode_from(&mut self.reader, context)
+    }*/
 }

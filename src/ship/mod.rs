@@ -1,9 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use serialize::{Encodable, Encoder, Decodable, Decoder};
-
-use module::{IModule, ModuleRef, Module};
+use module::{IModule, ModuleRef, Module, ModuleType, ModuleTypeStore};
 use net::{ClientId, InPacket, OutPacket};
 use self::ship_gen::generate_ship;
 use sim::SimEvents;
@@ -12,6 +10,8 @@ use sim::SimEvents;
 use sfml_renderer::SfmlRenderer;
 #[cfg(client)]
 use sim::SimVisuals;
+#[cfg(client)]
+use asset_store::AssetStore;
 
 // Use the ship_gen module privately here
 mod ship_gen;
@@ -35,6 +35,7 @@ pub type ShipRef = Rc<RefCell<Ship>>;
 // Type for the ID of a ship
 pub type ShipId = u64;
 
+#[deriving(Encodable, Decodable)]
 pub struct Ship {
     pub id: ShipId,
     pub client_id: Option<ClientId>,
@@ -52,8 +53,8 @@ impl Ship {
         }
     }
     
-    pub fn generate(id: ShipId) -> Ship {
-        generate_ship(id)
+    pub fn generate(mod_store: &ModuleTypeStore, id: ShipId) -> Ship {
+        generate_ship(mod_store, id)
     }
     
     // Returns true if adding the module was successful, false if it failed.
@@ -75,9 +76,16 @@ impl Ship {
     }
     
     #[cfg(client)]
-    pub fn add_sim_visuals(&self, visuals: &mut SimVisuals) {
+    pub fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
         for module in self.modules.iter() {
-            module.borrow().add_sim_visuals(self.id, visuals);
+            module.borrow().add_plan_visuals(asset_store, visuals, self.id);
+        }
+    }
+    
+    #[cfg(client)]
+    pub fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
+        for module in self.modules.iter() {
+            module.borrow().add_simulation_visuals(asset_store, visuals, self.id);
         }
     }
     
@@ -110,37 +118,4 @@ impl Ship {
             module.borrow_mut().read_results(packet);
         }
     }
-    
-    #[cfg(client)]
-    pub fn draw(&self, renderer: &SfmlRenderer) {
-        for module in self.modules.iter() {
-            module.borrow().get_base().draw(renderer);
-        }
-    }
-}
-
-impl <S: Encoder<E>, E> Encodable<S, E> for Ship {
-  fn encode(&self, encoder: &mut S) -> Result<(), E> {
-        encoder.emit_struct("Ship", 0, |encoder| {
-            try!(encoder.emit_struct_field("id", 0, |encoder|self.id.encode(encoder)));
-            try!(encoder.emit_struct_field("client_id", 1, |encoder|self.client_id.encode(encoder)));
-            try!(encoder.emit_struct_field("state", 2, |encoder| self.state.encode(encoder)));
-            try!(encoder.emit_struct_field("modules", 3, |encoder| self.modules.encode(encoder)));
-            Ok(())
-        })
-    }
-}
-
-impl<S: Decoder<E>, E> Decodable<S, E> for Ship {
-  fn decode(decoder: &mut S) -> Result<Ship, E> {
-    decoder.read_struct("root", 0, |decoder| {
-        let ship = Ship{
-            id: try!(decoder.read_struct_field("id", 0, |decoder| Decodable::decode(decoder))),
-            client_id: try!(decoder.read_struct_field("client_id", 0, |decoder| Decodable::decode(decoder))),
-            state: try!(decoder.read_struct_field("state", 0, |decoder| Decodable::decode(decoder))),
-            modules: try!(decoder.read_struct_field("modules", 0, |decoder| Decodable::decode(decoder))),
-        };
-        Ok(ship)
-    })
-  }
 }

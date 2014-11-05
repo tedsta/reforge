@@ -41,6 +41,23 @@ impl<'a> SfmlRenderer<'a> {
         self.target.draw_primitives_rs(&vertices, Quads, &mut rs);
     }
     
+    pub fn draw_sf_texture_source(&self, texture: &Texture, x: f32, y: f32, source_x: f32, source_y: f32, source_w: f32, source_h: f32) {        
+        let size = texture.get_size();
+        let (width, height) = (size.x as f32, size.y as f32);
+
+        let vertices = [
+            Vertex::new(&Vector2f{x: x, y: y}, &Color::white(), &Vector2f{x: source_x, y: source_y}),
+            Vertex::new(&Vector2f{x: x, y: y + source_h}, &Color::white(), &Vector2f{x: source_x, y: source_y+source_h}),
+            Vertex::new(&Vector2f{x: x + source_w, y: y + source_h}, &Color::white(), &Vector2f{x: source_x+source_w, y: source_y+source_h}),
+            Vertex::new(&Vector2f{x: x + source_w, y: y}, &Color::white(), &Vector2f{x: source_x+source_w, y: source_y})
+        ];
+        
+        let mut rs = RenderStates::default();
+        rs.texture = Some(texture);
+        
+        self.target.draw_primitives_rs(&vertices, Quads, &mut rs);
+    }
+    
     pub fn draw_sf_texture_vec(&self, texture: &Texture, pos: &Vec2f) {
         self.draw_sf_texture(texture, pos.x, pos.y);
     }
@@ -51,5 +68,9 @@ impl<'a> SfmlRenderer<'a> {
     
     pub fn draw_texture_vec(&self, texture_id: TextureId, pos: &Vec2f) {
         self.draw_texture(texture_id, pos.x, pos.y);
+    }
+    
+    pub fn draw_texture_source(&self, texture_id: TextureId, x: f32, y: f32, source_x: f32, source_y: f32, source_w: f32, source_h: f32) {
+        self.draw_sf_texture_source(self.asset_store.get_texture(texture_id), x, y, source_x, source_y, source_w, source_h);
     }
 }

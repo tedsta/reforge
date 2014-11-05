@@ -1,11 +1,18 @@
 use assets::ENGINE_TEXTURE;
-use module::{IModule, Module, ModuleBase, ModuleRef, Propulsion, Engine};
+use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore, Propulsion, Engine};
 use net::{InPacket, OutPacket};
 use ship::{ShipId, ShipState};
 use sim::SimEventAdder;
+use vec::{Vec2, Vec2f};
 
 #[cfg(client)]
-use sim::SimVisuals;
+use sim::{SimVisuals, SimVisual};
+#[cfg(client)]
+use sfml_renderer::SfmlRenderer;
+#[cfg(client)]
+use sprite_sheet::SpriteSheet;
+#[cfg(client)]
+use asset_store::AssetStore;
 
 #[deriving(Encodable, Decodable)]
 pub struct EngineModule {
@@ -13,9 +20,9 @@ pub struct EngineModule {
 }
 
 impl EngineModule {
-    pub fn new() -> Module {
+    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
         Engine(EngineModule {
-            base: ModuleBase::new(Propulsion, ENGINE_TEXTURE),
+            base: ModuleBase::new(mod_store, mod_type),
         })
     }
 }
@@ -28,7 +35,15 @@ impl IModule for EngineModule {
     }
     
     #[cfg(client)]
-    fn add_sim_visuals(&self, _: ShipId, _: &mut SimVisuals) {
+    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
+        visuals.add(ship_id, box SpriteVisual {
+            position: self.base.get_render_position().clone(),
+            sprite_sheet: SpriteSheet::new(asset_store.get_sprite_info(ENGINE_TEXTURE)),
+        });
+    }
+    
+    #[cfg(client)]
+    fn add_simulation_visuals(&self, _: &AssetStore, _: &mut SimVisuals, _: ShipId) {
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {
@@ -52,5 +67,19 @@ impl IModule for EngineModule {
     
     fn on_module_clicked(&mut self, ship_id: ShipId, module: &ModuleRef) -> bool {
         false
+    }
+}
+
+// Sprite sheet sim visual
+#[cfg(client)]
+pub struct SpriteVisual {
+    position: Vec2f,
+    sprite_sheet: SpriteSheet,
+}
+
+#[cfg(client)]
+impl SimVisual for SpriteVisual {
+    fn draw(&mut self, renderer: &SfmlRenderer, time: f32) {
+        self.sprite_sheet.draw(renderer, self.position.x, self.position.y, time);
     }
 }

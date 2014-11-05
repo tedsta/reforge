@@ -5,8 +5,11 @@
 extern crate binary_encode;
 extern crate serialize;
 
+use std::sync::Arc;
+
 use net::Server;
 use battle_scheduler::BattleScheduler;
+use module::ModuleTypeStore;
 
 pub mod assets;
 pub mod battle_scheduler;
@@ -26,6 +29,8 @@ fn main() {
             server.listen(30000);
         });
 
-    let mut scheduler = BattleScheduler::new(slot);
+    let mod_store = Arc::new(ModuleTypeStore::new());
+        
+    let mut scheduler = BattleScheduler::new(slot, mod_store);
     scheduler.run();
 }

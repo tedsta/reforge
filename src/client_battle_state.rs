@@ -34,9 +34,14 @@ impl ClientBattleState {
         let font = Font::new_from_file("content/fonts/8bit.ttf").expect("Failed to load font");
         let mut gui = SpaceGui::new(&font, self.client.get_id(), &self.context);
     
+        let mut sim_visuals = SimVisuals::new();
+    
         loop {
             ////////////////////////////////
             // Plan
+            
+            // Add planning visuals
+            self.context.add_plan_visuals(asset_store, &mut sim_visuals);
             
             let start_time = time::now().to_timespec();
             while window.is_open() {
@@ -54,7 +59,7 @@ impl ClientBattleState {
                 
                 // Render
                 window.clear(&Color::transparent());
-                self.draw_planning(window, asset_store, &mut gui);
+                self.draw_planning(window, asset_store, &mut sim_visuals, &mut gui);
                 window.display();
             }
         
@@ -69,11 +74,10 @@ impl ClientBattleState {
             // Simulate
             
             let mut sim_events = SimEvents::new();
-            let mut sim_visuals = SimVisuals::new();
             
             // Before simulation
             self.context.before_simulation(&mut sim_events);
-            self.context.add_sim_visuals(&mut sim_visuals);
+            self.context.add_simulation_visuals(asset_store, &mut sim_visuals);
             
             // Simulation
             let start_time = time::now().to_timespec();
@@ -120,6 +124,9 @@ impl ClientBattleState {
             
             // After simulation
             self.context.after_simulation();
+            
+            // Clear the visuals
+            sim_visuals.clear();
         }
     }
     
@@ -148,26 +155,23 @@ impl ClientBattleState {
         self.context.read_results(&mut packet);
     }
     
-    fn draw_planning(&self, target: &RenderTarget, asset_store: &AssetStore, gui: &mut SpaceGui) {
+    fn draw_planning(&self, target: &RenderTarget, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, gui: &mut SpaceGui) {
         let renderer = SfmlRenderer::new(target, asset_store);
-    
-        // Draw player ship
-        self.player_ship.borrow().draw(&renderer);
+        
+        // Draw sim visuals for player ship
+        sim_visuals.draw(&renderer, self.player_ship.borrow().id, 0.0);
         
         // Draw GUI
-        gui.draw_planning(&renderer, asset_store, self.player_ship.borrow().deref());
+        gui.draw_planning(&renderer, asset_store, sim_visuals, self.player_ship.borrow().deref());
     }
     
     fn draw_simulating(&self, target: &RenderTarget, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, gui: &mut SpaceGui, time: f32) {
         let renderer = SfmlRenderer::new(target, asset_store);
-    
-        // Draw player ship
-        self.player_ship.borrow().draw(&renderer);
         
         // Draw sim visuals for player ship
         sim_visuals.draw(&renderer, self.player_ship.borrow().id, time);
         
         // Draw GUI
-        gui.draw_simulating(&renderer, asset_store, self.player_ship.borrow().deref(), sim_visuals, time);
+        gui.draw_simulating(&renderer, asset_store, sim_visuals, self.player_ship.borrow().deref(), time);
     }
 }

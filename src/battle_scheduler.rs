@@ -1,8 +1,10 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{RingBuf, HashMap};
+use std::sync::Arc;
 
 use battle_state::BattleContext;
+use module::ModuleTypeStore;
 use net::{ClientId, ServerSlot, Joined, ReceivedPacket};
 use server_battle_state::ServerBattleState;
 use ship::Ship;
@@ -10,11 +12,13 @@ use ship::Ship;
 pub struct BattleScheduler {
     slot: Box<ServerSlot>,
     waiting: RingBuf<ClientId>, // Clients still waiting for a battle
+    
+    mod_store: Arc<ModuleTypeStore>,
 }
 
 impl BattleScheduler {
-    pub fn new(slot: Box<ServerSlot>) -> BattleScheduler {
-        BattleScheduler{slot: slot, waiting: RingBuf::new()}
+    pub fn new(slot: Box<ServerSlot>, mod_store: Arc<ModuleTypeStore>) -> BattleScheduler {
+        BattleScheduler{slot: slot, waiting: RingBuf::new(), mod_store: mod_store}
     }
 
     pub fn run(&mut self) {
@@ -44,11 +48,13 @@ impl BattleScheduler {
             self.slot.transfer_client(client1, new_slot.id());
             self.slot.transfer_client(client2, new_slot.id());
             
+            let mod_store = self.mod_store.clone();
+            
             spawn(proc() {
                 // Create ships
-                let mut ship1 = Ship::generate(client1 as u64);
+                let mut ship1 = Ship::generate(mod_store.deref(), client1 as u64);
                 ship1.client_id = Some(client1);
-                let mut ship2 = Ship::generate(client2 as u64);
+                let mut ship2 = Ship::generate(mod_store.deref(), client2 as u64);
                 ship2.client_id = Some(client2);
             
                 // Map clients to their ships
