@@ -13,6 +13,7 @@ use sfml_renderer::SfmlRenderer;
 pub enum SpriteAnimation {
     PlayOnce(f32, f32, u16, u16),
     Loop(f32, f32, u16, u16, f32),
+    Stay(f32, f32, u16),
 }
 
 pub struct SpriteSheet {
@@ -59,7 +60,7 @@ impl SpriteSheet {
         self.animations.push(animation);
     }
     
-    pub fn draw(&mut self, renderer: &SfmlRenderer, x: f32, y: f32, time: f32) {
+    pub fn draw(&mut self, renderer: &SfmlRenderer, x: f32, y: f32, rotation: f32, time: f32) {
         let mut anim_done = false;
         match (&self.animations as &Deque<SpriteAnimation>).front() {
             Some(animation) =>
@@ -69,8 +70,8 @@ impl SpriteSheet {
                             if time <= end_time {
                                 let mut frame = ((time-start_time)/(end_time-start_time) * ((end_frame - start_frame) as f32)).floor() as u16;
                                 self.current_frame = frame;
-                                self.draw_current_frame(renderer, x, y);
-                            } else {
+                                self.draw_current_frame(renderer, x, y, rotation);
+                            } else if end_time != 0.0 {
                                 anim_done = true;
                             }
                         }
@@ -82,8 +83,18 @@ impl SpriteSheet {
                                 frame = frame % (end_frame - start_frame + 1);
                                 frame += start_frame;
                                 self.current_frame = frame;
-                                self.draw_current_frame(renderer, x, y);
-                            } else {
+                                self.draw_current_frame(renderer, x, y, rotation);
+                            } else if end_time != 0.0 {
+                                anim_done = true;
+                            }
+                        }
+                    },
+                    Stay(start_time, end_time, frame) => {
+                        if time >= start_time {
+                            if time <= end_time {
+                                self.current_frame = frame;
+                                self.draw_current_frame(renderer, x, y, rotation);
+                            } else if end_time != 0.0 {
                                 anim_done = true;
                             }
                         }
@@ -97,10 +108,10 @@ impl SpriteSheet {
         }
     }
     
-    fn draw_current_frame(&self, renderer: &SfmlRenderer, x: f32, y: f32) {
+    fn draw_current_frame(&self, renderer: &SfmlRenderer, x: f32, y: f32, rotation: f32) {
         let source_x = ((self.current_frame % (self.columns as u16)) as f32) * (self.frame_width as f32);
         let source_y = ((self.current_frame / (self.columns as u16)) as f32) * (self.frame_height as f32);
-        renderer.draw_texture_source(self.texture, x, y, source_x, source_y, self.frame_width as f32, self.frame_height as f32);
+        renderer.draw_texture_source(self.texture, x, y, rotation, source_x, source_y, self.frame_width as f32, self.frame_height as f32);
     }
     
     pub fn set_frame(&mut self, frame: u16) {

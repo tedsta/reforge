@@ -88,7 +88,7 @@ impl<'a> SpaceGui<'a> {
             }
             
             render_area.target.display();
-            renderer.draw_sf_texture(&render_area.texture, render_area.x as f32, render_area.y as f32);
+            renderer.draw_sf_texture(&render_area.texture, render_area.x as f32, render_area.y as f32, 0.0);
         }
     
         self.draw_overlay(renderer, client_ship);
@@ -109,7 +109,7 @@ impl<'a> SpaceGui<'a> {
             }
             
             render_area.target.display();
-            renderer.draw_sf_texture(&render_area.texture, render_area.x as f32, render_area.y as f32);
+            renderer.draw_sf_texture(&render_area.texture, render_area.x as f32, render_area.y as f32, 0.0);
         }
     
         self.draw_overlay(renderer, client_ship);
@@ -127,7 +127,7 @@ impl<'a> SpaceGui<'a> {
                     _ => { 600.0 },
                 };
             
-            renderer.draw_texture(GUI_TEXTURE, 10.0 + (64.0*(category.id as u8 as f32)), icon_y);
+            renderer.draw_texture(GUI_TEXTURE, 10.0 + (64.0*(category.id as u8 as f32)), icon_y, 0.0);
         }
         
         match self.module_category {
@@ -135,7 +135,7 @@ impl<'a> SpaceGui<'a> {
                 let mut i = 0u8;
                 for module in client_ship.modules.iter() {
                     if module.borrow().get_base().category == category {                    
-                        renderer.draw_texture(GUI_TEXTURE, 10.0 + (64.0*(i as f32)), 500.0);
+                        renderer.draw_texture(GUI_TEXTURE, 10.0 + (64.0*(i as f32)), 500.0, 0.0);
                         
                         /*match self.module {
                             Some(selected_module) => {

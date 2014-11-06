@@ -55,34 +55,44 @@ impl<'a, 'b> SimEventAdder<'a, 'b> {
 // TODO: Replace the SimVisual struct impl trait model with unboxed closures once they are stable
 
 #[cfg(client)]
+static NUM_LAYERS: u8 = 2;
+
+#[cfg(client)]
 pub trait SimVisual {
     fn draw(&mut self, renderer: &SfmlRenderer, time: f32);
 }
 
 #[cfg(client)]
 pub struct SimVisuals<'a> {
-    visuals: Vec<(ShipId, Box<SimVisual+'a>)>,
+    visuals: [Vec<(ShipId, Box<SimVisual+'a>)>, ..NUM_LAYERS as uint],
 }
 
 #[cfg(client)]
 impl<'a> SimVisuals<'a> {
     pub fn new() -> SimVisuals<'a> {
-        SimVisuals{visuals: vec!()}
+        SimVisuals{visuals: [vec!(), vec!()]}
     }
     
-    pub fn add(&mut self, ship: ShipId, visual: Box<SimVisual+'a>) {
-        self.visuals.push((ship, visual));
+    pub fn add(&mut self, ship: ShipId, layer: u8, visual: Box<SimVisual+'a>) {
+        if layer >= NUM_LAYERS {
+            fail!("Tried to add visual to layer {} when only {} layers exist", layer, NUM_LAYERS);
+        }
+        self.visuals[layer as uint].push((ship, visual));
     }
     
     pub fn draw(&mut self, renderer: &SfmlRenderer, ship: ShipId, time: f32) {
-        for &(v_ship, ref mut visual) in self.visuals.iter_mut() {
-            if v_ship == ship {
-                visual.draw(renderer, time);
+        for layer in self.visuals.iter_mut() {
+            for &(v_ship, ref mut visual) in layer.iter_mut() {
+                if v_ship == ship {
+                    visual.draw(renderer, time);
+                }
             }
         }
     }
     
     pub fn clear(&mut self) {
-        self.visuals.clear();
+        for visual_vec in self.visuals.iter_mut() {
+            visual_vec.clear();
+        }
     }
 }
