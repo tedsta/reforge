@@ -80,10 +80,10 @@ impl IModule for ProjectileWeaponModule {
     
     #[cfg(client)]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
-        let mut weapon_sprite =  SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
         weapon_sprite.add_animation(Loop(0.0, 5.0, 0, 5, 0.05));
     
-        visuals.add(ship_id, box SpriteVisual {
+        visuals.add(ship_id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),
             sprite_sheet: weapon_sprite,
         });
@@ -106,11 +106,13 @@ impl IModule for ProjectileWeaponModule {
                     laser_sprite.add_animation(Loop(0.0, 5.0, 0, 4, 0.05));
                 
                     // Add the simulation visual for projectile leaving
-                    visuals.add(ship_id, box LerpVisual {
+                    visuals.add(ship_id, 1, box LerpVisual {
                         start_time: start_time,
                         end_time: end_time,
                         start_pos: start_pos,
                         end_pos: end_pos,
+                        start_rot: 0.0,
+                        end_rot: 0.0,
                         sprite_sheet: laser_sprite,
                     });
                     
@@ -124,11 +126,13 @@ impl IModule for ProjectileWeaponModule {
                     laser_sprite.add_animation(Loop(0.0, 5.0, 0, 4, 0.05));
                     
                     // Add the simulation visual for projectile entering target screen
-                    visuals.add(target_ship_id, box LerpVisual {
+                    visuals.add(target_ship_id, 1, box LerpVisual {
                         start_time: start_time,
                         end_time: end_time,
                         start_pos: start_pos,
                         end_pos: end_pos,
+                        start_rot: 0.0,
+                        end_rot: 0.0,
                         sprite_sheet: laser_sprite,
                     });
                     
@@ -139,7 +143,7 @@ impl IModule for ProjectileWeaponModule {
                     let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info(EXPLOSION_TEXTURE));
                     explosion_sprite.add_animation(PlayOnce(start_time, end_time, 0, 10));
                     
-                    visuals.add(target_ship_id, box SpriteVisual {
+                    visuals.add(target_ship_id, 1, box SpriteVisual {
                         position: projectile.hit_pos.clone(),
                         sprite_sheet: explosion_sprite,
                     });
@@ -214,6 +218,8 @@ pub struct LerpVisual {
     end_time: f32,
     start_pos: Vec2f,
     end_pos: Vec2f,
+    start_rot: f32,
+    end_rot: f32,
     sprite_sheet: SpriteSheet,
 }
 
@@ -223,7 +229,8 @@ impl SimVisual for LerpVisual {
         if time <= self.end_time {
             let interp = (time-self.start_time)/(self.end_time-self.start_time);
             let pos = self.start_pos + (self.end_pos-self.start_pos)*interp;
-            self.sprite_sheet.draw(renderer, pos.x, pos.y, time);
+            let rot = self.start_rot + (self.start_rot-self.end_rot)*interp;
+            self.sprite_sheet.draw(renderer, pos.x, pos.y, rot, time);
         }
     }
 }
@@ -238,6 +245,6 @@ pub struct SpriteVisual {
 #[cfg(client)]
 impl SimVisual for SpriteVisual {
     fn draw(&mut self, renderer: &SfmlRenderer, time: f32) {
-        self.sprite_sheet.draw(renderer, self.position.x, self.position.y, time);
+        self.sprite_sheet.draw(renderer, self.position.x, self.position.y, 0.0, time);
     }
 }

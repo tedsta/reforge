@@ -10,7 +10,7 @@ use sim::{SimVisuals, SimVisual};
 #[cfg(client)]
 use sfml_renderer::SfmlRenderer;
 #[cfg(client)]
-use sprite_sheet::SpriteSheet;
+use sprite_sheet::{SpriteSheet, Stay};
 #[cfg(client)]
 use asset_store::AssetStore;
 
@@ -36,14 +36,18 @@ impl IModule for EngineModule {
     
     #[cfg(client)]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
-        visuals.add(ship_id, box SpriteVisual {
+        let mut engine_sprite = SpriteSheet::new(asset_store.get_sprite_info(ENGINE_TEXTURE));
+        engine_sprite.add_animation(Stay(0.0, 5.0, 0));
+    
+        visuals.add(ship_id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),
-            sprite_sheet: SpriteSheet::new(asset_store.get_sprite_info(ENGINE_TEXTURE)),
+            sprite_sheet: engine_sprite,
         });
     }
     
     #[cfg(client)]
-    fn add_simulation_visuals(&self, _: &AssetStore, _: &mut SimVisuals, _: ShipId) {
+    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
+        self.add_plan_visuals(asset_store, visuals, ship_id);
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {
@@ -80,6 +84,6 @@ pub struct SpriteVisual {
 #[cfg(client)]
 impl SimVisual for SpriteVisual {
     fn draw(&mut self, renderer: &SfmlRenderer, time: f32) {
-        self.sprite_sheet.draw(renderer, self.position.x, self.position.y, time);
+        self.sprite_sheet.draw(renderer, self.position.x, self.position.y, 0.0, time);
     }
 }
