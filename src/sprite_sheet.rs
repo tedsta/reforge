@@ -71,7 +71,7 @@ impl SpriteSheet {
                                 let mut frame = ((time-start_time)/(end_time-start_time) * ((end_frame - start_frame) as f32)).floor() as u16;
                                 self.current_frame = frame;
                                 self.draw_current_frame(renderer, x, y, rotation);
-                            } else if end_time != 0.0 {
+                            } else {
                                 anim_done = true;
                             }
                         }
@@ -84,7 +84,7 @@ impl SpriteSheet {
                                 frame += start_frame;
                                 self.current_frame = frame;
                                 self.draw_current_frame(renderer, x, y, rotation);
-                            } else if end_time != 0.0 {
+                            } else {
                                 anim_done = true;
                             }
                         }
@@ -94,7 +94,7 @@ impl SpriteSheet {
                             if time <= end_time {
                                 self.current_frame = frame;
                                 self.draw_current_frame(renderer, x, y, rotation);
-                            } else if end_time != 0.0 {
+                            } else {
                                 anim_done = true;
                             }
                         }

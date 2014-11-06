@@ -11,7 +11,7 @@ use sim::{SimVisuals, SimVisual};
 #[cfg(client)]
 use sfml_renderer::SfmlRenderer;
 #[cfg(client)]
-use sprite_sheet::{SpriteSheet, Loop, PlayOnce};
+use sprite_sheet::{SpriteSheet, Loop, PlayOnce, Stay};
 #[cfg(client)]
 use asset_store::AssetStore;
 
@@ -81,7 +81,7 @@ impl IModule for ProjectileWeaponModule {
     #[cfg(client)]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
-        weapon_sprite.add_animation(Loop(0.0, 5.0, 0, 5, 0.05));
+        weapon_sprite.add_animation(Stay(0.0, 5.0, 0));
     
         visuals.add(ship_id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),
@@ -91,7 +91,9 @@ impl IModule for ProjectileWeaponModule {
     
     #[cfg(client)]
     fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
-        self.add_plan_visuals(asset_store, visuals, ship_id);
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
+        
+        let mut last_weapon_anim_end = 0.0;
     
         match self.target {
             Some((target_ship_id, ref target_module)) => {
@@ -104,6 +106,16 @@ impl IModule for ProjectileWeaponModule {
                     
                     let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
                     laser_sprite.add_animation(Loop(0.0, 5.0, 0, 4, 0.05));
+                    
+                    let weapon_anim_start = start_time;
+                    let weapon_anim_end = start_time+0.3;
+                    
+                    // Add weapon fire animations for this projectile
+                    weapon_sprite.add_animation(Stay(last_weapon_anim_end, weapon_anim_start, 0));
+                    weapon_sprite.add_animation(PlayOnce(weapon_anim_start, weapon_anim_end, 0, 5));
+                    
+                    // Set the last end for the next projectile
+                    last_weapon_anim_end = weapon_anim_end;
                 
                     // Add the simulation visual for projectile leaving
                     visuals.add(ship_id, 1, box LerpVisual {
@@ -151,6 +163,14 @@ impl IModule for ProjectileWeaponModule {
             },
             None => {},
         }
+        
+        // Add last stay animation
+        weapon_sprite.add_animation(Stay(last_weapon_anim_end, 5.0, 0));
+        
+        visuals.add(ship_id, 0, box SpriteVisual {
+            position: self.base.get_render_position().clone(),
+            sprite_sheet: weapon_sprite,
+        });
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {
