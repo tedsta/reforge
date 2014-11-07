@@ -1,5 +1,5 @@
 use assets::{WEAPON_TEXTURE, LASER_TEXTURE, EXPLOSION_TEXTURE, TextureId};
-use battle_state::TICKS_PER_SECOND;
+use battle_state::{BattleContext, TICKS_PER_SECOND};
 use module::{IModule, Module, ModuleRef, ModuleBase, ModuleType, ModuleTypeStore, ProjectileWeapon, Weapon};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipState};
@@ -43,7 +43,7 @@ impl ProjectileWeaponModule {
     
         ProjectileWeapon(ProjectileWeaponModule {
             base: ModuleBase::new(mod_store, mod_type),
-            projectiles: vec![projectile],
+            projectiles: Vec::from_elem(4, projectile),
             target: None,
         })
     }
@@ -62,11 +62,14 @@ impl IModule for ProjectileWeaponModule {
     
         match self.target {
             Some((_, ref target_module)) => {
-                for projectile in self.projectiles.iter_mut() {
+                for (i, projectile) in self.projectiles.iter_mut().enumerate() {
                     projectile.phase = FireToOffscreen;
-                    projectile.fire_tick = 0;
-                    projectile.offscreen_tick = 20;
-                    projectile.hit_tick = 40;
+                    
+                    let start = (i*10) as u32;
+                    
+                    projectile.fire_tick = start;
+                    projectile.offscreen_tick = start + 20;
+                    projectile.hit_tick = start + 40;
                     
                     projectile.fire_pos = self.base.get_render_position();
                     projectile.to_offscreen_pos = projectile.fire_pos + Vec2{x: 1500.0, y: 0.0};
@@ -108,7 +111,7 @@ impl IModule for ProjectileWeaponModule {
                     laser_sprite.add_animation(Loop(0.0, 5.0, 0, 4, 0.05));
                     
                     let weapon_anim_start = start_time;
-                    let weapon_anim_end = start_time+0.3;
+                    let weapon_anim_end = start_time+0.15;
                     
                     // Add weapon fire animations for this projectile
                     weapon_sprite.add_animation(Stay(last_weapon_anim_end, weapon_anim_start, 0));
@@ -179,7 +182,7 @@ impl IModule for ProjectileWeaponModule {
     fn write_plans(&self, packet: &mut OutPacket) {
     }
     
-    fn read_plans(&mut self, packet: &mut InPacket) {
+    fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
     }
     
     fn write_results(&self, packet: &mut OutPacket) {
@@ -202,14 +205,14 @@ impl IModule for ProjectileWeaponModule {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[deriving(Encodable, Decodable)]
+#[deriving(Encodable, Decodable, Clone)]
 enum ProjectilePhase {
     FireToOffscreen,
     OffscreenToTarget,
     Detonate
 }
 
-#[deriving(Encodable, Decodable)]
+#[deriving(Encodable, Decodable, Clone)]
 struct Projectile {
     phase: ProjectilePhase,
     damage: u8,

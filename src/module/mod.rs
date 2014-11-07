@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use assets::TextureId;
+use battle_state::BattleContext;
 use net::{InPacket, OutPacket};
 use ship::{ShipId, ShipState};
 use sim::{SimEventAdder, SimEvents};
@@ -54,7 +55,7 @@ pub trait IModule {
     fn after_simulation(&mut self, ship_state: &mut ShipState);
 
     fn write_plans(&self, packet: &mut OutPacket);
-    fn read_plans(&mut self, packet: &mut InPacket);
+    fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket);
     
     fn write_results(&self, packet: &mut OutPacket);
     fn read_results(&mut self, packet: &mut InPacket);
@@ -137,10 +138,10 @@ impl IModule for Module {
         }
     }
     
-    fn read_plans(&mut self, packet: &mut InPacket) {
+    fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
         match *self {
-            Engine(ref mut m) => m.read_plans(packet),
-            ProjectileWeapon(ref mut m) => m.read_plans(packet),
+            Engine(ref mut m) => m.read_plans(context, packet),
+            ProjectileWeapon(ref mut m) => m.read_plans(context, packet),
         }
     }
     

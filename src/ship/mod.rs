@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
+use battle_state::BattleContext;
 use module::{IModule, ModuleRef, Module, ModuleType, ModuleTypeStore};
 use net::{ClientId, InPacket, OutPacket};
 use self::ship_gen::generate_ship;
@@ -19,14 +20,18 @@ mod ship_gen;
 // Holds everything about the ship's damage, capabilities, etc.
 #[deriving(Encodable, Decodable)]
 pub struct ShipState {
-    pub engines: uint,
-    pub shields: uint,
-    pub max_shields: uint,
+    pub thrust: u8,
+    pub shields: u8,
+    pub max_shields: u8,
 }
 
 impl ShipState {
     pub fn new() -> ShipState {
-        ShipState{engines: 0, shields: 0, max_shields: 0}
+        ShipState {
+            thrust: 0,
+            shields: 0,
+            max_shields: 0
+        }
     }
 }
 
@@ -101,9 +106,9 @@ impl Ship {
         }
     }
     
-    pub fn read_plans(&self, packet: &mut InPacket) {
+    pub fn read_plans(&self, context: &BattleContext, packet: &mut InPacket) {
         for module in self.modules.iter() {
-            module.borrow_mut().read_plans(packet);
+            module.borrow_mut().read_plans(context, packet);
         }
     }
     
