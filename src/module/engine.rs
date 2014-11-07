@@ -1,3 +1,4 @@
+use battle_state::BattleContext;
 use assets::ENGINE_TEXTURE;
 use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore, Propulsion, Engine};
 use net::{InPacket, OutPacket};
@@ -56,7 +57,7 @@ impl IModule for EngineModule {
     fn write_plans(&self, packet: &mut OutPacket) {
     }
     
-    fn read_plans(&mut self, packet: &mut InPacket) {
+    fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
     }
     
     fn write_results(&self, packet: &mut OutPacket) {

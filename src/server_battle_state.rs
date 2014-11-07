@@ -74,7 +74,7 @@ impl ServerBattleState {
     }
     
     fn handle_plans_packet(&mut self, client_id: ClientId, packet: &mut InPacket) {
-        self.context.get_ship(client_id).borrow_mut().read_plans(packet);
+        self.context.get_ship(client_id).borrow_mut().read_plans(&self.context, packet);
     }
     
     fn do_simulation(&mut self) {
