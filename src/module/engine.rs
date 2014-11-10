@@ -84,7 +84,7 @@ pub struct SpriteVisual {
 
 #[cfg(client)]
 impl SimVisual for SpriteVisual {
-    fn draw(&mut self, renderer: &SfmlRenderer, time: f32) {
+    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f32) {
         self.sprite_sheet.draw(renderer, self.position.x, self.position.y, 0.0, time);
     }
 }

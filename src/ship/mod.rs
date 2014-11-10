@@ -8,8 +8,6 @@ use self::ship_gen::generate_ship;
 use sim::SimEvents;
 
 #[cfg(client)]
-use sfml_renderer::SfmlRenderer;
-#[cfg(client)]
 use sim::SimVisuals;
 #[cfg(client)]
 use asset_store::AssetStore;

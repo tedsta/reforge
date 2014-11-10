@@ -1,5 +1,7 @@
-use rsfml::window::{keyboard, mouse, event};
-use rsfml::graphics::{Color, Font, RenderTarget, RenderTexture, RenderWindow, Text, Texture};
+use graphics::{Context};
+use input::{keyboard, mouse};
+use opengl_graphics::{Gl, Texture}
+use piston::Window;
 
 use assets::GUI_TEXTURE;
 use asset_store::AssetStore;
@@ -17,18 +19,18 @@ pub struct SpaceGui<'a> {
     // The target ships' render areas
     render_areas: Vec<ShipRenderArea>,
     
-    // GUI font
-    font: &'a Font,
-    
-    // Timer text
-    timer_text: Text<'a>,
-    
     // Selected module
     module: Option<ModuleRef>,
+    
+    mouse_x: u32,
+    mouse_y: u32,
+    
+    // Textures
+    category_textures: Vec<Rc<Texture>>,
 }
 
 impl<'a> SpaceGui<'a> {
-    pub fn new(font: &'a Font, my_client_id: ClientId, context: &BattleContext) -> SpaceGui<'a> {
+    pub fn new(asset_store: &AssetStore, context: &BattleContext, my_client_id: ClientId) -> SpaceGui<'a> {
         let mut render_areas = vec!();
         for (client_id, ship) in context.ships.iter() {
             if *client_id != my_client_id {
@@ -48,88 +50,85 @@ impl<'a> SpaceGui<'a> {
         SpaceGui {
             module_category: None,
             render_areas: render_areas,
-            font: font,
-            timer_text: Text::new_init("0", font, 30).expect("Failed to create timer text"),
             module: None,
+            mouse_x: 0,
+            mouse_y: 0,
+            
+            category_textures: vec![asset_store.get_texture(GUI_TEXTURE), asset_store.get_texture(GUI_TEXTURE)],
         }
     }
     
-    pub fn update(&mut self, window: &mut RenderWindow, client_ship: &Ship) {
-        loop {
-            match window.poll_event() {
-                event::Closed => window.close(),
-                event::KeyPressed{code, ..} => match code {
-                    keyboard::Escape => { window.close(); },
-                    code => { self.on_key_pressed(code); },
-                },
-                event::KeyReleased{..} => {},
-                event::MouseButtonPressed{button, x, y} => {
-                    match button {
-                        mouse::MouseLeft => self.on_mouse_left_pressed(x, y, client_ship),
-                        _ => {},
-                    }
+    pub fn event<E: GenericEvent>(&mut self, e: &E, client_ship: &Ship) {
+        for e in Events::new(window) {
+            e.mouse_cursor(|x, y| (self.mouse_x, self.mouse_y) = (x, y));
+            e.press(|button| {
+                match button {
+                    Keyboard(key) => self.on_key_pressed(key), 
+                    Mouse(button) => {
+                        match button {
+                            mouse::Left => self.on_mouse_left_pressed(self.mouse_x, self.mouse_y, client_ship),
+                            _ => {},
+                        }
+                    },
                 }
-                /*event::MouseButtonReleased{button, x, y} => {
-                }*/
-                event::NoEvent => break,
-                _ => {}
-            };
+            });
         }
     }
     
-    pub fn draw_planning(&mut self, renderer: &SfmlRenderer, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship) {
+    pub fn draw_planning(&mut self, r_args: &RenderArgs, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship) {
+        let context = Context::abs(r_args.width as f64, r_args.height as f64);
+        
+        // Clear the screen
+        context.rgb(0.0, 0.0, 0.0);
+    
         for render_area in self.render_areas.iter_mut() {
-            (&mut render_area.target as &mut RenderTarget).clear(&Color::new_RGBA(255, 120, 0, 100));
-            
+            // TODO clear render texture
+        
             {
-                let mut ship_renderer = SfmlRenderer::new(&render_area.target, asset_store);
-                ship_renderer.translate(100.0, 100.0);
+                let context = context.trans(100.0, 100.0);
                 
-                sim_visuals.draw(&ship_renderer, render_area.ship.as_ref().unwrap().borrow().id, 0.0);
+                sim_visuals.draw(&context, gl, render_area.ship.as_ref().unwrap().borrow().id, 0.0);
             }
             
-            render_area.target.display();
-            renderer.draw_sf_texture(&render_area.texture, render_area.x as f32, render_area.y as f32, 0.0);
+            // TODO draw render texture
         }
     
-        self.draw_overlay(renderer, client_ship);
-        
-        self.timer_text.set_position2f(600.0, 8.0);
-        self.timer_text.set_string("Planning");
-        renderer.draw_text(&self.timer_text);
+        self.draw_overlay(&context, gl, client_ship);
     }
     
-    pub fn draw_simulating(&mut self, renderer: &SfmlRenderer, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f32) {
+    pub fn draw_simulating(&mut self, r_args: &RenderArgs, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f32) {
+        let context = Context::abs(r_args.width as f64, r_args.height as f64);
+        
+        // Clear the screen
+        context.rgb(0.0, 0.0, 0.0);
+    
         for render_area in self.render_areas.iter_mut() {
-            (&mut render_area.target as &mut RenderTarget).clear(&Color::new_RGBA(255, 120, 0, 100));
-            
+            // TODO clear render texture
+        
             {
-                let mut ship_renderer = SfmlRenderer::new(&render_area.target, asset_store);
-                ship_renderer.translate(100.0, 100.0);
+                let context = context.trans(100.0, 100.0);
                 
-                sim_visuals.draw(&ship_renderer, render_area.ship.as_ref().unwrap().borrow().id, time);
+                sim_visuals.draw(&context, gl, render_area.ship.as_ref().unwrap().borrow().id, time);
             }
             
-            render_area.target.display();
-            renderer.draw_sf_texture(&render_area.texture, render_area.x as f32, render_area.y as f32, 0.0);
+            // TODO draw render texture
         }
     
-        self.draw_overlay(renderer, client_ship);
-        
-        self.timer_text.set_position2f(600.0, 8.0);
-        self.timer_text.set_string("Simulating");
-        renderer.draw_text(&self.timer_text);
+        self.draw_overlay(&context, gl, client_ship);
     }
     
-    fn draw_overlay(&self, renderer: &SfmlRenderer, client_ship: &Ship) {
+    fn draw_overlay(&self, context: &Context, gl: &mut Gl, client_ship: &Ship) {
         for category in MODULE_CATEGORIES.iter() {
-            let icon_y: f32 =
+            let icon_y: f64 =
                 match self.module_category {
                     Some(c) if c == category.id => 584.0,
                     _ => { 600.0 },
                 };
             
-            renderer.draw_texture(GUI_TEXTURE, 10.0 + (64.0*(category.id as u8 as f32)), icon_y, 0.0);
+            context
+                .image(self.category_textures[category.id as uint].deref())
+                .trans(10.0 + (64.0*(category.id as u8 as f64)), icon_y)
+                .draw(gl);
         }
         
         match self.module_category {
@@ -137,16 +136,10 @@ impl<'a> SpaceGui<'a> {
                 let mut i = 0u8;
                 for module in client_ship.modules.iter() {
                     if module.borrow().get_base().category == category {                    
-                        renderer.draw_texture(GUI_TEXTURE, 10.0 + (64.0*(i as f32)), 500.0, 0.0);
-                        
-                        /*match self.module {
-                            Some(selected_module) => {
-                                if module == selected_module {
-                                    
-                                }
-                            },
-                            None => {},
-                        }*/
+                        context
+                            .image(self.category_textures[category.id as uint].deref())
+                            .trans(10.0 + (64.0*(i as f64)), 500.0)
+                            .draw(gl);
                         
                         i += 1;
                     }
@@ -247,6 +240,6 @@ pub struct ShipRenderArea {
     ship: Option<ShipRef>,
     x: i32,
     y: i32,
-    target: RenderTexture,
-    texture: Texture,
+    //target: RenderTexture,
+    //texture: Texture,
 }
