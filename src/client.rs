@@ -5,13 +5,34 @@
 #![feature(default_type_params)]
 
 extern crate bincode;
-extern crate native;
 extern crate time;
 extern crate serialize;
-extern crate rsfml;
 
-use rsfml::graphics::{RenderWindow};
-use rsfml::window::{VideoMode, ContextSettings, Close};
+// Piston stuff
+extern crate graphics;
+extern crate piston;
+extern crate sdl2_window;
+extern crate opengl_graphics;
+extern crate shader_version;
+extern crate event;
+
+use sdl2_window::Sdl2Window;
+use opengl_graphics::Gl;
+use shader_version::opengl::OpenGL_3_0;
+
+use std::cell::RefCell;
+use piston::{
+    RenderArgs,
+    UpdateArgs
+};
+
+use graphics::{
+    Context,
+    AddRectangle,
+    AddColor,
+    Draw,
+    RelativeTransform2d,
+};
 
 use asset_store::AssetStore;
 use client_battle_state::ClientBattleState;
@@ -33,26 +54,26 @@ pub mod space_gui;
 pub mod sprite_sheet;
 pub mod vec;
 
-#[cfg(target_os="macos")]
-#[start]
-fn start(argc: int, argv: *const *const u8) -> int {
-    native::start(argc, argv, main)
-}
-
 fn main () {
     // https://github.com/jeremyletang/rust-sfml/issues/37
-    unsafe { ::std::rt::stack::record_sp_limit(0); }
+    //unsafe { ::std::rt::stack::record_sp_limit(0); }
     
-    // Create the window of the application
-    let setting: ContextSettings = ContextSettings::default();
-    let mut window: RenderWindow =
-        match RenderWindow::new(VideoMode::new_init(1280, 720, 32),
-                                "reForge",
-                                Close,
-                                &setting) {
-            Some(window) => window,
-            None => panic!("Cannot create a new Render Window.")
-        };
+    let opengl = pistion::shader_version::opengl::OpenGL_3_0;
+    
+    // Create an SDL window.
+    let window = Sdl2Window::new(
+        opengl,
+        piston::WindowSettings {
+            title: "reForge".to_string(),
+            size: [1280, 720],
+            samples: 0,
+            fullscreen: false,
+            exit_on_esc: true,
+        }
+    );
+    
+    // Create GL device
+    let mut gl = Gl::new(opengl);
     
     // Create the asset store
     let asset_store = AssetStore::new();
@@ -70,5 +91,5 @@ fn main () {
     // Create the battle state
     let mut battle = ClientBattleState::new(client, context);
 
-    battle.run(&mut window, &asset_store);
+    battle.run(&mut window, &mut gl, &asset_store);
 }

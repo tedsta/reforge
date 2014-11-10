@@ -9,8 +9,6 @@ use sim::{SimEventAdder, SimEvents};
 use vec::{Vec2, Vec2f};
 
 #[cfg(client)]
-use sfml_renderer::SfmlRenderer;
-#[cfg(client)]
 use sim::SimVisuals;
 #[cfg(client)]
 use asset_store::AssetStore;

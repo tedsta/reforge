@@ -2,7 +2,9 @@ use module::{Module, ModuleRef};
 
 // SimVisual imports
 #[cfg(client)]
-use sfml_renderer::SfmlRenderer;
+use graphics::Context;
+#[cfg(client)]
+use opengl_graphics::Gl;
 #[cfg(client)]
 use ship::ShipId;
 
@@ -59,7 +61,7 @@ static NUM_LAYERS: u8 = 2;
 
 #[cfg(client)]
 pub trait SimVisual {
-    fn draw(&mut self, renderer: &SfmlRenderer, time: f32);
+    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f32);
 }
 
 #[cfg(client)]
@@ -80,11 +82,11 @@ impl<'a> SimVisuals<'a> {
         self.visuals[layer as uint].push((ship, visual));
     }
     
-    pub fn draw(&mut self, renderer: &SfmlRenderer, ship: ShipId, time: f32) {
+    pub fn draw(&mut self, context: &Context, gl: &mut Gl, ship: ShipId, time: f32) {
         for layer in self.visuals.iter_mut() {
             for &(v_ship, ref mut visual) in layer.iter_mut() {
                 if v_ship == ship {
-                    visual.draw(renderer, time);
+                    visual.draw(context, gl, time);
                 }
             }
         }
