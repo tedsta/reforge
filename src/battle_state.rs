@@ -27,7 +27,7 @@ impl BattleContext {
     pub fn get_ship<'a>(&'a self, client_id: ClientId) -> &'a ShipRef {
         match self.ships.find(&client_id) {
             Some(ship) => ship,
-            None => fail!("No ship with client ID {}", client_id),
+            None => panic!("No ship with client ID {}", client_id),
         }
     }
     
