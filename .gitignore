@@ -1,6 +1,9 @@
 *~
 *.swp
+Cargo.lock
 
 # Binaries
+*.dll
 bin/*
 lib/*
+target/*

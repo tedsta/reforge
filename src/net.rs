@@ -5,7 +5,7 @@ use std::io::{MemReader, MemWriter, IoResult, IoError, TimedOut};
 use serialize::Encodable;
 use serialize::Decodable;
 
-use binary_encode::{EncoderWriter, DecoderReader, encode_into, decode_from};
+use bincode::{EncoderWriter, DecoderReader, encode_into, decode_from};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Some basic types
@@ -110,15 +110,15 @@ impl Server {
         ServerSlot::new(slot_id, self.slot_channel_t.clone(), slot_in_r, create_slot_r)
     }
     
-    pub fn listen(&mut self, port: u16) {
-        let listener = match TcpListener::bind("0.0.0.0", port) {
+    pub fn listen(&mut self, address: &str) {
+        let listener = match TcpListener::bind(address) {
             Ok(listener) => listener,
-            Err(e) => fail!("Server failed to bind port {}: {}", port, e),
+            Err(e) => panic!("Server failed to listen on address {}: {}", address, e),
         };
         
         let mut acceptor = match listener.listen() {
             Ok(acceptor) => acceptor,
-            Err(e) => fail!("Server failed to listen on port {}: {}", port, e),
+            Err(e) => panic!("Server failed to listen on address {}: {}", address, e),
         };
         acceptor.set_timeout(Some(0));
         
@@ -149,7 +149,7 @@ impl Server {
                         // Send back the client ID
                         match stream.write_le_u32(client_id) {
                             Ok(_) => {},
-                            Err(e) => fail!("Failed to send client ID to client: {}", e),
+                            Err(e) => panic!("Failed to send client ID to client: {}", e),
                         }
                         
                         // Assign client to default slot
@@ -229,10 +229,10 @@ impl Server {
                                 match self.slots.find(&slot_id) {
                                     Some(slot) => {
                                         let &(ref slot_in_t, _) = slot;
-                                        client_slots.get_mut(&client_id).clone_from(slot_in_t);
+                                        client_slots[client_id].clone_from(slot_in_t);
                                         slot_in_t.send(Joined(client_id));
                                     },
-                                    None => fail!("Failed to transfer client {} to non-existant slot {}", client_id, slot_id)
+                                    None => panic!("Failed to transfer client {} to non-existant slot {}", client_id, slot_id)
                                 }
                             },
                         }
@@ -265,11 +265,11 @@ fn handle_client_out(mut stream: TcpStream, out_r: Receiver<OutPacket>) {
         // Write the packet size, then the actual packet data
         match stream.write_le_u16(data.len() as u16) {
             Ok(()) => {},
-            Err(e) => fail!("Failed to write packet length: {}", e),
+            Err(e) => panic!("Failed to write packet length: {}", e),
         }
         match stream.write(data) {
             Ok(()) => {},
-            Err(e) => fail!("Failed to write packet data: {}", e),
+            Err(e) => panic!("Failed to write packet data: {}", e),
         }
     }
 }
@@ -283,16 +283,16 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new(host: &str, port: u16) -> Client {
-        let mut stream = match TcpStream::connect(host, port) {
+    pub fn new(host: &str) -> Client {
+        let mut stream = match TcpStream::connect(host) {
             Ok(stream) => stream,
-            Err(e) => fail!("Failed to connect to server: {}", e),
+            Err(e) => panic!("Failed to connect to server: {}", e),
         };
 
         let id = 
             match stream.read_le_u32() {
                 Ok(id) => id,
-                Err(e) => fail!("Couldn't connect to server because client ID failed to receive: {}", e),
+                Err(e) => panic!("Couldn't connect to server because client ID failed to receive: {}", e),
             };
     
         Client{id: id, stream: stream}
@@ -302,11 +302,11 @@ impl Client {
         let data = packet.writer.get_ref();
         match self.stream.write_le_u16(data.len() as u16) {
             Ok(()) => {},
-            Err(e) => fail!("Failed to send packet size to server: {}", e),
+            Err(e) => panic!("Failed to send packet size to server: {}", e),
         };
         match self.stream.write(data) {
             Ok(()) => {},
-            Err(e) => fail!("Failed to send packet data to server: {}", e),
+            Err(e) => panic!("Failed to send packet data to server: {}", e),
         };
     }
     
@@ -354,13 +354,13 @@ impl InPacket {
     pub fn new_from_reader<T: Reader>(reader: &mut T) -> InPacket {
         // Get next packet size
         let packet_size = match reader.read_le_u16() {
-                Err(e) => fail!("Failed to receive packet size: {}", e),
+                Err(e) => panic!("Failed to receive packet size: {}", e),
                 Ok(packet_size) => packet_size
             };
         
         // Get data
         let data = match reader.read_exact(packet_size as uint) {
-                Err(e) => fail!("Failed to receive data: {}", e),
+                Err(e) => panic!("Failed to receive data: {}", e),
                 Ok(data) => data
             };
         
@@ -373,10 +373,6 @@ impl InPacket {
     }
     
     pub fn read<'a, T: Decodable<DecoderReader<'a, MemReader>, IoError>>(&mut self) -> IoResult<T> {
-        decode_from(&mut self.reader, &())
+        decode_from(&mut self.reader)
     }
-    
-    /*pub fn read_context<'a, C: 'a, T: Decodable<DecoderReader<'a, MemReader, C>, IoError>>(&mut self, context: &C) -> IoResult<T> {
-        decode_from(&mut self.reader, context)
-    }*/
 }

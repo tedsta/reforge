@@ -137,7 +137,7 @@ impl ClientBattleState {
         let mut packet = OutPacket::new();
         match packet.write(&Plan) {
             Ok(()) => {},
-            Err(e) => fail!("Failed to write plan packet ID: {}", e),
+            Err(e) => panic!("Failed to write plan packet ID: {}", e),
         }
         
         self.player_ship.borrow().write_plans(&mut packet);
@@ -149,27 +149,37 @@ impl ClientBattleState {
         let mut packet = self.client.receive();
         let id: ClientPacketId = match (packet.read()) {
             Ok(id) => id,
-            Err(e) => fail!("Failed to read simulation results packet ID: {}", e)
+            Err(e) => panic!("Failed to read simulation results packet ID: {}", e)
         };
         
         self.context.read_results(&mut packet);
     }
     
     fn draw_planning(&self, target: &RenderTarget, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, gui: &mut SpaceGui) {
-        let renderer = SfmlRenderer::new(target, asset_store);
+        {
+            let mut renderer = SfmlRenderer::new(target, asset_store);
+            renderer.translate(100.0, 100.0);
+            
+            // Draw sim visuals for player ship
+            sim_visuals.draw(&renderer, self.player_ship.borrow().id, 0.0);
+        }
         
-        // Draw sim visuals for player ship
-        sim_visuals.draw(&renderer, self.player_ship.borrow().id, 0.0);
+        let renderer = SfmlRenderer::new(target, asset_store);
         
         // Draw GUI
         gui.draw_planning(&renderer, asset_store, sim_visuals, self.player_ship.borrow().deref());
     }
     
     fn draw_simulating(&self, target: &RenderTarget, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, gui: &mut SpaceGui, time: f32) {
-        let renderer = SfmlRenderer::new(target, asset_store);
+        {
+            let mut renderer = SfmlRenderer::new(target, asset_store);
+            renderer.translate(100.0, 100.0);
         
-        // Draw sim visuals for player ship
-        sim_visuals.draw(&renderer, self.player_ship.borrow().id, time);
+            // Draw sim visuals for player ship
+            sim_visuals.draw(&renderer, self.player_ship.borrow().id, time);
+        }
+        
+        let renderer = SfmlRenderer::new(target, asset_store);
         
         // Draw GUI
         gui.draw_simulating(&renderer, asset_store, sim_visuals, self.player_ship.borrow().deref(), time);

@@ -1,8 +1,8 @@
-#![crate_name = "spacegame_server"]
-#![desc = "spacegame awesome mmo server"]
+#![crate_name = "reforge_server"]
+#![desc = "reforge awesome mmo server"]
 #![crate_type = "bin"]
 
-extern crate binary_encode;
+extern crate bincode;
 extern crate serialize;
 
 use std::sync::Arc;
@@ -26,7 +26,7 @@ fn main() {
     let slot = box server.create_slot();
     
     spawn(proc() {
-            server.listen(30000);
+            server.listen("0.0.0.0:30000");
         });
 
     let mod_store = Arc::new(ModuleTypeStore::new());

@@ -185,10 +185,10 @@ pub struct ModuleBase {
     pub height: u8,
 
     // Module stats
-    pub power: u32,
-    pub max_power: u32,
-    pub damage: u32,
-    pub hull: u32,
+    power: u8,
+    max_power: u8,
+    hp: u8,
+    max_hp: u8,
     
     // Module type
     pub mod_type: ModuleType,
@@ -206,10 +206,34 @@ impl ModuleBase {
             height: 1,
             power: 0,
             max_power: 1,
-            damage: 0,
-            hull: 0,
+            hp: 0,
+            max_hp: 0,
             mod_type: mod_type,
             category: mod_store.get_module_type(mod_type).category,
+        }
+    }
+    
+    pub fn get_power(&self) -> u8 {
+        self.power
+    }
+    
+    pub fn get_max_power(&self) -> u8 {
+        self.max_power
+    }
+    
+    pub fn get_hp(&self) -> u8 {
+        self.hp
+    }
+    
+    pub fn get_max_hp(&self) -> u8 {
+        self.max_hp
+    }
+    
+    pub fn deal_damage(&mut self, damage: u8) {
+        if self.hp >= damage {
+            self.hp -= damage;
+        } else {
+            self.hp = 0;
         }
     }
     

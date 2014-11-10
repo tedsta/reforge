@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use battle_state::BattleContext;
-use module::{IModule, ModuleRef, Module, ModuleType, ModuleTypeStore};
+use module::{IModule, ModuleBase, ModuleRef, Module, ModuleType, ModuleTypeStore};
 use net::{ClientId, InPacket, OutPacket};
 use self::ship_gen::generate_ship;
 use sim::SimEvents;
@@ -20,6 +20,8 @@ mod ship_gen;
 // Holds everything about the ship's damage, capabilities, etc.
 #[deriving(Encodable, Decodable)]
 pub struct ShipState {
+    hp: u8,
+    total_module_hp: u8, // Sum of HP of all modules, used to recalculate HP when damaged
     pub thrust: u8,
     pub shields: u8,
     pub max_shields: u8,
@@ -28,10 +30,22 @@ pub struct ShipState {
 impl ShipState {
     pub fn new() -> ShipState {
         ShipState {
+            hp: 0,
+            total_module_hp: 0,
             thrust: 0,
             shields: 0,
-            max_shields: 0
+            max_shields: 0,
         }
+    }
+    
+    pub fn deal_damage(&mut self, module: &mut ModuleBase, damage: u8) {
+        self.total_module_hp -= damage;
+        self.hp = self.total_module_hp/2;
+        module.deal_damage(damage);
+    }
+    
+    pub fn get_hp(&self) -> u8 {
+        self.hp
     }
 }
 

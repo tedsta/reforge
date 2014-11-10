@@ -249,7 +249,7 @@ pub struct LerpVisual {
 #[cfg(client)]
 impl SimVisual for LerpVisual {
     fn draw(&mut self, renderer: &SfmlRenderer, time: f32) {
-        if time <= self.end_time {
+        if time >= self.start_time && time <= self.end_time {
             let interp = (time-self.start_time)/(self.end_time-self.start_time);
             let pos = self.start_pos + (self.end_pos-self.start_pos)*interp;
             let rot = self.start_rot + (self.start_rot-self.end_rot)*interp;

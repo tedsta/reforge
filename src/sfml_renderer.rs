@@ -10,6 +10,7 @@ use vec::Vec2f;
 pub struct SfmlRenderer<'a> {
     target: &'a RenderTarget+'a,
     asset_store: &'a AssetStore,
+    render_states: RenderStates<'a>,
 }
 
 impl<'a> SfmlRenderer<'a> {
@@ -17,14 +18,19 @@ impl<'a> SfmlRenderer<'a> {
         SfmlRenderer {
             target: target,
             asset_store: asset_store,
+            render_states: RenderStates::default(),
         }
+    }
+    
+    pub fn translate(&mut self, x: f32, y: f32) {
+        self.render_states.transform.translate(x, y);
     }
     
     pub fn draw_text(&self, text: &Text) {
         self.target.draw_text(text);
     }
     
-    pub fn draw_sf_texture(&self, texture: &Texture, x: f32, y: f32, rotation: f32) {        
+    pub fn draw_sf_texture(&self, texture: &'a Texture, x: f32, y: f32, rotation: f32) {        
         let size = texture.get_size();
         let (width, height) = (size.x as f32, size.y as f32);
 
@@ -35,14 +41,13 @@ impl<'a> SfmlRenderer<'a> {
             Vertex::new(&Vector2f{x: x + width, y: y}, &Color::white(), &Vector2f{x: width, y: 0f32})
         ];
         
-        let mut rs = RenderStates::default();
-        rs.texture = Some(texture);
+        let mut rs = RenderStates::new(self.render_states.blendMode, self.render_states.transform, Some(texture), self.render_states.shader);
         rs.transform.rotate(rotation);
         
         self.target.draw_primitives_rs(&vertices, Quads, &mut rs);
     }
     
-    pub fn draw_sf_texture_source(&self, texture: &Texture, x: f32, y: f32, rotation: f32, source_x: f32, source_y: f32, source_w: f32, source_h: f32) {        
+    pub fn draw_sf_texture_source(&self, texture: &'a Texture, x: f32, y: f32, rotation: f32, source_x: f32, source_y: f32, source_w: f32, source_h: f32) {        
         let size = texture.get_size();
         let (width, height) = (size.x as f32, size.y as f32);
 
@@ -52,9 +57,8 @@ impl<'a> SfmlRenderer<'a> {
             Vertex::new(&Vector2f{x: x + source_w, y: y + source_h}, &Color::white(), &Vector2f{x: source_x+source_w, y: source_y+source_h}),
             Vertex::new(&Vector2f{x: x + source_w, y: y}, &Color::white(), &Vector2f{x: source_x+source_w, y: source_y})
         ];
-        
-        let mut rs = RenderStates::default();
-        rs.texture = Some(texture);
+
+        let mut rs = RenderStates::new(self.render_states.blendMode, self.render_states.transform, Some(texture), self.render_states.shader);
         rs.transform.rotate(rotation);
         
         self.target.draw_primitives_rs(&vertices, Quads, &mut rs);

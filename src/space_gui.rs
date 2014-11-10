@@ -82,7 +82,8 @@ impl<'a> SpaceGui<'a> {
             (&mut render_area.target as &mut RenderTarget).clear(&Color::new_RGBA(255, 120, 0, 100));
             
             {
-                let ship_renderer = SfmlRenderer::new(&render_area.target, asset_store);
+                let mut ship_renderer = SfmlRenderer::new(&render_area.target, asset_store);
+                ship_renderer.translate(100.0, 100.0);
                 
                 sim_visuals.draw(&ship_renderer, render_area.ship.as_ref().unwrap().borrow().id, 0.0);
             }
@@ -103,7 +104,8 @@ impl<'a> SpaceGui<'a> {
             (&mut render_area.target as &mut RenderTarget).clear(&Color::new_RGBA(255, 120, 0, 100));
             
             {
-                let ship_renderer = SfmlRenderer::new(&render_area.target, asset_store);
+                let mut ship_renderer = SfmlRenderer::new(&render_area.target, asset_store);
+                ship_renderer.translate(100.0, 100.0);
                 
                 sim_visuals.draw(&ship_renderer, render_area.ship.as_ref().unwrap().borrow().id, time);
             }
@@ -206,8 +208,10 @@ impl<'a> SpaceGui<'a> {
         }
         
         for render_area in self.render_areas.iter() {
-            let x = x - render_area.x;
-            let y = y - render_area.y;
+            let ship_offset_x = 100;
+            let ship_offset_y = 100;
+            let x = x - render_area.x - ship_offset_x;
+            let y = y - render_area.y - ship_offset_y;
             match render_area.ship.as_ref() {
                 Some(ref ship) => {
                     for module in ship.borrow().modules.iter() {

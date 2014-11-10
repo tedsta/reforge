@@ -1,10 +1,10 @@
-#![crate_name = "spacegame_client"]
-#![desc = "spacegame awesome mmo client"]
+#![crate_name = "reforge_client"]
+#![desc = "reforge awesome mmo client"]
 #![crate_type = "bin"]
 #![feature(macro_rules)]
 #![feature(default_type_params)]
 
-extern crate binary_encode;
+extern crate bincode;
 extern crate native;
 extern crate time;
 extern crate serialize;
@@ -51,20 +51,20 @@ fn main () {
                                 Close,
                                 &setting) {
             Some(window) => window,
-            None => fail!("Cannot create a new Render Window.")
+            None => panic!("Cannot create a new Render Window.")
         };
     
     // Create the asset store
     let asset_store = AssetStore::new();
     
     // Connect to server
-    let mut client = Client::new("127.0.0.1", 30000);
+    let mut client = Client::new("127.0.0.1:30000");
     
     // Receive the battle context from the server
     let mut packet = client.receive();
     let context = match packet.read() {
         Ok(context) => context,
-        Err(e) => fail!("Unable to receive battle context froms server: {}", e),
+        Err(e) => panic!("Unable to receive battle context froms server: {}", e),
     };
     
     // Create the battle state
