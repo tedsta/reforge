@@ -16,10 +16,12 @@ use asset_store::AssetStore;
 // Use+reexport all of the modules
 pub use self::engine::EngineModule;
 pub use self::proj_weapon::ProjectileWeaponModule;
+pub use self::shield::ShieldModule;
 pub use self::mod_type::{ModuleType, ModuleTypeInfo, ModuleTypeStore};
 
 pub mod engine;
 pub mod proj_weapon;
+pub mod shield;
 pub mod mod_type;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -28,6 +30,7 @@ pub mod mod_type;
 pub enum ModuleCategory {
     Weapon = 0,
     Propulsion,
+    Defense,
 }
 
 pub struct ModuleCategoryData {
@@ -35,9 +38,10 @@ pub struct ModuleCategoryData {
     pub id: ModuleCategory,
 }
 
-pub static MODULE_CATEGORIES: [ModuleCategoryData, .. 2] = [
+pub static MODULE_CATEGORIES: [ModuleCategoryData, .. 3] = [
     ModuleCategoryData{name: "Weapon", id: Weapon},
     ModuleCategoryData{name: "Propulsion", id: Propulsion},
+    ModuleCategoryData{name: "Defense", id: Defense},
 ];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,6 +77,7 @@ pub type ModuleRef = Rc<RefCell<Module>>;
 pub enum Module {
     Engine(EngineModule),
     ProjectileWeapon(ProjectileWeaponModule),
+    Shield(ShieldModule),
 }
 
 impl Module {
@@ -80,6 +85,7 @@ impl Module {
         match (*self) {
             Engine(ref m) => &m.base,
             ProjectileWeapon(ref m) => &m.base,
+            Shield(ref m) => &m.base,
         }
     }
     
@@ -87,6 +93,7 @@ impl Module {
         match (*self) {
             Engine(ref mut m) => &mut m.base,
             ProjectileWeapon(ref mut m) => &mut m.base,
+            Shield(ref mut m) => &mut m.base,
         }
     }
 }
@@ -96,6 +103,7 @@ impl IModule for Module {
         match *self {
             Engine(ref mut m) => m.server_preprocess(ship_state),
             ProjectileWeapon(ref mut m) => m.server_preprocess(ship_state),
+            Shield(ref mut m) => m.server_preprocess(ship_state),
         }
     }
     
@@ -103,7 +111,8 @@ impl IModule for Module {
         match *self {
             Engine(ref mut m) => m.before_simulation(ship_state, events),
             ProjectileWeapon(ref mut m) => m.before_simulation(ship_state, events),
-        }
+            Shield(ref mut m) => m.before_simulation(ship_state, events),
+            }
     }
     
     #[cfg(client)]
@@ -111,6 +120,7 @@ impl IModule for Module {
         match *self {
             Engine(ref m) => m.add_plan_visuals(asset_store, visuals, ship_id),
             ProjectileWeapon(ref m) => m.add_plan_visuals(asset_store, visuals, ship_id),
+            Shield(ref m) => m.add_plan_visuals(asset_store, visuals, ship_id),
         }
     }
     
@@ -119,6 +129,7 @@ impl IModule for Module {
         match *self {
             Engine(ref m) => m.add_simulation_visuals(asset_store, visuals, ship_id),
             ProjectileWeapon(ref m) => m.add_simulation_visuals(asset_store, visuals, ship_id),
+            Shield(ref m) => m.add_simulation_visuals(asset_store, visuals, ship_id),
         }
     }
     
@@ -126,6 +137,7 @@ impl IModule for Module {
         match *self {
             Engine(ref mut m) => m.after_simulation(ship_state),
             ProjectileWeapon(ref mut m) => m.after_simulation(ship_state),
+            Shield(ref mut m) => m.after_simulation(ship_state),
         }
     }
     
@@ -133,6 +145,7 @@ impl IModule for Module {
         match *self {
             Engine(ref m) => m.write_plans(packet),
             ProjectileWeapon(ref m) => m.write_plans(packet),
+            Shield(ref m) => m.write_plans(packet),
         }
     }
     
@@ -140,6 +153,7 @@ impl IModule for Module {
         match *self {
             Engine(ref mut m) => m.read_plans(context, packet),
             ProjectileWeapon(ref mut m) => m.read_plans(context, packet),
+            Shield(ref mut m) => m.read_plans(context, packet),
         }
     }
     
@@ -147,6 +161,7 @@ impl IModule for Module {
         match *self {
             Engine(ref m) => m.write_results(packet),
             ProjectileWeapon(ref m) => m.write_results(packet),
+            Shield(ref m) => m.write_results(packet),
         }
     }
     
@@ -154,6 +169,7 @@ impl IModule for Module {
         match *self {
             Engine(ref mut m) => m.read_results(packet),
             ProjectileWeapon(ref mut m) => m.read_results(packet),
+            Shield(ref mut m) => m.read_results(packet),
         }
     }
     
@@ -161,6 +177,7 @@ impl IModule for Module {
         match *self {
             Engine(ref mut m) => m.on_icon_clicked(),
             ProjectileWeapon(ref mut m) => m.on_icon_clicked(),
+            Shield(ref mut m) => m.on_icon_clicked(),
         }
     }
     
@@ -168,6 +185,7 @@ impl IModule for Module {
         match *self {
             Engine(ref mut m) => m.on_module_clicked(ship_id, module),
             ProjectileWeapon(ref mut m) => m.on_module_clicked(ship_id, module),
+            Shield(ref mut m) => m.on_module_clicked(ship_id, module),
         }
     }
 }
