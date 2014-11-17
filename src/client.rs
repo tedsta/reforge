@@ -3,24 +3,27 @@
 #![crate_type = "bin"]
 #![feature(macro_rules)]
 #![feature(default_type_params)]
+#![feature(globs)]
 
 extern crate bincode;
 extern crate time;
 extern crate serialize;
 
 // Piston stuff
+extern crate event;
 extern crate graphics;
+extern crate input;
 extern crate piston;
 extern crate sdl2_window;
 extern crate opengl_graphics;
 extern crate shader_version;
-extern crate event;
+
+use std::cell::RefCell;
 
 use sdl2_window::Sdl2Window;
 use opengl_graphics::Gl;
 use shader_version::opengl::OpenGL_3_0;
 
-use std::cell::RefCell;
 use piston::{
     RenderArgs,
     UpdateArgs
@@ -47,7 +50,6 @@ pub mod battle_state;
 pub mod client_battle_state;
 pub mod module;
 pub mod net;
-pub mod sfml_renderer;
 pub mod ship;
 pub mod sim;
 pub mod space_gui;
@@ -58,7 +60,7 @@ fn main () {
     // https://github.com/jeremyletang/rust-sfml/issues/37
     //unsafe { ::std::rt::stack::record_sp_limit(0); }
     
-    let opengl = pistion::shader_version::opengl::OpenGL_3_0;
+    let opengl = shader_version::opengl::OpenGL_3_0;
     
     // Create an SDL window.
     let window = Sdl2Window::new(
@@ -88,8 +90,11 @@ fn main () {
         Err(e) => panic!("Unable to receive battle context froms server: {}", e),
     };
     
+    // Wrap window in RefCell
+    let window = RefCell::new(window);
+    
     // Create the battle state
     let mut battle = ClientBattleState::new(client, context);
 
-    battle.run(&mut window, &mut gl, &asset_store);
+    battle.run(&window, &mut gl, &asset_store);
 }

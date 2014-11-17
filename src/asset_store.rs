@@ -13,46 +13,36 @@ pub struct AssetStore {
 impl AssetStore {
     pub fn new() -> AssetStore {
         let textures = vec![
-            Rc::new(Texture::from_path(&Path::new("content/textures/modules/engine1.png")).expect("Failed to load texture")),
-            Rc::new(Texture::from_path(&Path::new("content/textures/modules/weapon_sprite.png")).expect("Failed to load texture")),
-            Rc::new(Texture::from_path(&Path::new("content/textures/effects/laser1.png")).expect("Failed to load texture")),
-            Rc::new(Texture::from_path(&Path::new("content/textures/effects/explosion1.png")).expect("Failed to load texture")),
-            Rc::new(Texture::from_path(&Path::new("content/textures/gui/module_button.png")).expect("Failed to load texture")),
+            Rc::new(Texture::from_path(&Path::new("content/textures/modules/engine1.png")).unwrap()),
+            Rc::new(Texture::from_path(&Path::new("content/textures/modules/weapon_sprite.png")).unwrap()),
+            Rc::new(Texture::from_path(&Path::new("content/textures/effects/laser1.png")).unwrap()),
+            Rc::new(Texture::from_path(&Path::new("content/textures/effects/explosion1.png")).unwrap()),
+            Rc::new(Texture::from_path(&Path::new("content/textures/gui/module_button.png")).unwrap()),
         ];
         
         let sprite_info = vec![
             SpriteInfo {
-                texture: ENGINE_TEXTURE,
-                texture_width: textures[ENGINE_TEXTURE as uint].get_width() as u16,
-                texture_height: textures[ENGINE_TEXTURE as uint].get_height() as u16,
+                texture: textures[ENGINE_TEXTURE as uint].clone(),
                 columns: 1,
                 rows: 1,
             },
             SpriteInfo {
-                texture: WEAPON_TEXTURE,
-                texture_width: textures[WEAPON_TEXTURE as uint].get_width() as u16,
-                texture_height: textures[WEAPON_TEXTURE as uint].get_height() as u16,
+                texture: textures[WEAPON_TEXTURE as uint].clone(),
                 columns: 6,
                 rows: 1,
             },
             SpriteInfo {
-                texture: LASER_TEXTURE,
-                texture_width: textures[LASER_TEXTURE as uint].get_width() as u16,
-                texture_height: textures[LASER_TEXTURE as uint].get_height() as u16,
+                texture: textures[LASER_TEXTURE as uint].clone(),
                 columns: 1,
                 rows: 4,
             },
             SpriteInfo {
-                texture: EXPLOSION_TEXTURE,
-                texture_width: textures[EXPLOSION_TEXTURE as uint].get_width() as u16,
-                texture_height: textures[EXPLOSION_TEXTURE as uint].get_height() as u16,
+                texture: textures[EXPLOSION_TEXTURE as uint].clone(),
                 columns: 1,
                 rows: 10,
             },
             SpriteInfo {
-                texture: GUI_TEXTURE,
-                texture_width: textures[GUI_TEXTURE as uint].get_width() as u16,
-                texture_height: textures[GUI_TEXTURE as uint].get_height() as u16,
+                texture: textures[GUI_TEXTURE as uint].clone(),
                 columns: 1,
                 rows: 1,
             },
@@ -64,7 +54,7 @@ impl AssetStore {
         }
     }
     
-    pub fn get_texture<'a>(&'a self, texture: TextureId) -> &'a Texture {
+    pub fn get_texture<'a>(&'a self, texture: TextureId) -> &'a Rc<Texture> {
         &self.textures[texture as uint]
     }
     
