@@ -105,6 +105,7 @@ impl SpriteSheet {
         
         context
             .image(self.texture.deref())
+            .src_rect(source_x as i32, source_y as i32, self.frame_width as i32, self.frame_height as i32)
             .trans(x, y)
             .draw(gl);
     }
