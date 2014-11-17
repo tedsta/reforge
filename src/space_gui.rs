@@ -117,7 +117,7 @@ impl<'a> SpaceGui<'a> {
         context.rgb(0.0, 0.0, 0.0).draw(gl);
         
         // Draw player ship
-        sim_visuals.draw(&context.trans(100.0, 100.0), gl, client_ship.id, 0.0);
+        sim_visuals.draw(&context.trans(100.0, 100.0), gl, client_ship.id, time);
     
         for render_area in self.render_areas.iter_mut() {
             // TODO clear render texture
