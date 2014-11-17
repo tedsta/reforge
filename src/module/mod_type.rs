@@ -1,5 +1,5 @@
 use assets::{TextureId, ENGINE_TEXTURE, LASER_TEXTURE};
-use module::{ModuleCategory, Weapon, Propulsion};
+use module::{ModuleCategory, Weapon, Propulsion, Defense};
 
 pub type ModuleType = u16;
 
@@ -19,6 +19,7 @@ impl ModuleTypeStore {
         let module_info = vec![
             ModuleTypeInfo{category: Propulsion, texture: ENGINE_TEXTURE},
             ModuleTypeInfo{category: Weapon, texture: LASER_TEXTURE},
+            ModuleTypeInfo{category: Defense, texture: LASER_TEXTURE},
         ];
     
         ModuleTypeStore {

@@ -56,7 +56,7 @@ impl<'a> SpaceGui<'a> {
             mouse_x: 0.0,
             mouse_y: 0.0,
             
-            category_textures: vec![asset_store.get_texture(GUI_TEXTURE).clone(), asset_store.get_texture(GUI_TEXTURE).clone()],
+            category_textures: vec![asset_store.get_texture(GUI_TEXTURE).clone(), asset_store.get_texture(GUI_TEXTURE).clone(), asset_store.get_texture(GUI_TEXTURE).clone()],
         }
     }
     
