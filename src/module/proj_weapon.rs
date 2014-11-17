@@ -1,3 +1,8 @@
+#[cfg(client)]
+use graphics::Context;
+#[cfg(client)]
+use opengl_graphics::Gl;
+
 use assets::{WEAPON_TEXTURE, LASER_TEXTURE, EXPLOSION_TEXTURE, TextureId};
 use battle_state::{BattleContext, TICKS_PER_SECOND};
 use module::{IModule, Module, ModuleRef, ModuleBase, ModuleType, ModuleTypeStore, ProjectileWeapon, Weapon};
@@ -8,8 +13,6 @@ use vec::{Vec2, Vec2f};
 
 #[cfg(client)]
 use sim::{SimVisuals, SimVisual};
-#[cfg(client)]
-use sfml_renderer::SfmlRenderer;
 #[cfg(client)]
 use sprite_sheet::{SpriteSheet, Loop, PlayOnce, Stay};
 #[cfg(client)]
@@ -35,10 +38,10 @@ impl ProjectileWeaponModule {
             offscreen_tick: 0,
             hit_tick: 0,
             
-            fire_pos: Vec2{x: 0f32, y: 0f32},
-            to_offscreen_pos: Vec2{x: 0f32, y: 0f32},
-            from_offscreen_pos: Vec2{x: 0f32, y: 0f32},
-            hit_pos: Vec2{x: 0f32, y: 0f32},
+            fire_pos: Vec2{x: 0f64, y: 0f64},
+            to_offscreen_pos: Vec2{x: 0f64, y: 0f64},
+            from_offscreen_pos: Vec2{x: 0f64, y: 0f64},
+            hit_pos: Vec2{x: 0f64, y: 0f64},
         };
     
         ProjectileWeapon(ProjectileWeaponModule {
@@ -102,8 +105,8 @@ impl IModule for ProjectileWeaponModule {
             Some((target_ship_id, ref target_module)) => {
                 for projectile in self.projectiles.iter() {
                     // Set up interpolation stuff to send projectile from weapon to offscreen
-                    let start_time = (projectile.fire_tick as f32)/(TICKS_PER_SECOND as f32);
-                    let end_time = (projectile.offscreen_tick as f32)/(TICKS_PER_SECOND as f32);
+                    let start_time = (projectile.fire_tick as f64)/(TICKS_PER_SECOND as f64);
+                    let end_time = (projectile.offscreen_tick as f64)/(TICKS_PER_SECOND as f64);
                     let start_pos = projectile.fire_pos.clone();
                     let end_pos = projectile.to_offscreen_pos.clone();
                     
@@ -132,8 +135,8 @@ impl IModule for ProjectileWeaponModule {
                     });
                     
                     // Set up interpolation stuff to send projectile from offscreen to target
-                    let start_time = (projectile.offscreen_tick as f32)/(TICKS_PER_SECOND as f32);
-                    let end_time = (projectile.hit_tick as f32)/(TICKS_PER_SECOND as f32);
+                    let start_time = (projectile.offscreen_tick as f64)/(TICKS_PER_SECOND as f64);
+                    let end_time = (projectile.hit_tick as f64)/(TICKS_PER_SECOND as f64);
                     let start_pos = projectile.from_offscreen_pos.clone();
                     let end_pos = projectile.hit_pos.clone();
 
@@ -152,7 +155,7 @@ impl IModule for ProjectileWeaponModule {
                     });
                     
                     // Set up explosion visual
-                    let start_time = (projectile.hit_tick as f32)/(TICKS_PER_SECOND as f32);
+                    let start_time = (projectile.hit_tick as f64)/(TICKS_PER_SECOND as f64);
                     let end_time = start_time + 0.7;
                     
                     let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info(EXPLOSION_TEXTURE));
@@ -237,23 +240,23 @@ struct Projectile {
 // Basic linear interpolation sim visual
 #[cfg(client)]
 pub struct LerpVisual {
-    start_time: f32,
-    end_time: f32,
+    start_time: f64,
+    end_time: f64,
     start_pos: Vec2f,
     end_pos: Vec2f,
-    start_rot: f32,
-    end_rot: f32,
+    start_rot: f64,
+    end_rot: f64,
     sprite_sheet: SpriteSheet,
 }
 
 #[cfg(client)]
 impl SimVisual for LerpVisual {
-    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f32) {
+    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
         if time >= self.start_time && time <= self.end_time {
             let interp = (time-self.start_time)/(self.end_time-self.start_time);
             let pos = self.start_pos + (self.end_pos-self.start_pos)*interp;
             let rot = self.start_rot + (self.start_rot-self.end_rot)*interp;
-            self.sprite_sheet.draw(renderer, pos.x, pos.y, rot, time);
+            self.sprite_sheet.draw(context, gl, pos.x, pos.y, rot, time);
         }
     }
 }
@@ -267,7 +270,7 @@ pub struct SpriteVisual {
 
 #[cfg(client)]
 impl SimVisual for SpriteVisual {
-    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f32) {
-        self.sprite_sheet.draw(renderer, self.position.x, self.position.y, 0.0, time);
+    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
+        self.sprite_sheet.draw(context, gl, self.position.x, self.position.y, 0.0, time);
     }
 }

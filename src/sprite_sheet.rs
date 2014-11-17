@@ -1,25 +1,28 @@
-use std::collections::{Deque, RingBuf};
+use std::collections::RingBuf;
+use std::rc::Rc;
+
+use graphics::{Context, ImageSize};
+use opengl_graphics::{Gl, Texture};
 
 use assets::{TextureId, SpriteInfo};
-use sfml_renderer::SfmlRenderer;
 
 pub enum SpriteAnimation {
-    PlayOnce(f32, f32, u16, u16),
-    Loop(f32, f32, u16, u16, f32),
-    Stay(f32, f32, u16),
+    PlayOnce(f64, f64, u32, u32),
+    Loop(f64, f64, u32, u32, f64),
+    Stay(f64, f64, u32),
 }
 
 pub struct SpriteSheet {
     // Texture
-    texture: TextureId,
+    texture: Rc<Texture>,
     
     // Sprite sheet info
     columns: u8,
-    frame_width: u16,
-    frame_height: u16,
+    frame_width: u32,
+    frame_height: u32,
     
     // Sprite sheet state
-    current_frame: u16,
+    current_frame: u32,
     
     // Time stuff
     animations: RingBuf<SpriteAnimation>,
@@ -27,17 +30,16 @@ pub struct SpriteSheet {
 
 impl SpriteSheet {
     pub fn new(sprite_info: &SpriteInfo) -> SpriteSheet {
-        let texture_width = sprite_info.texture_width as u16;
-        let texture_height = sprite_info.texture_height as u16;
+        let (texture_width, texture_height) = sprite_info.texture.get_size();
         
         let columns = sprite_info.columns;
         let rows = sprite_info.rows;
         
         SpriteSheet {
-            texture: sprite_info.texture,
+            texture: sprite_info.texture.clone(),
             columns: columns,
-            frame_width: texture_width/(columns as u16),
-            frame_height: texture_height/(rows as u16),
+            frame_width: texture_width/(columns as u32),
+            frame_height: texture_height/(rows as u32),
             current_frame: 0,
             animations: RingBuf::new(),
         }
@@ -49,13 +51,13 @@ impl SpriteSheet {
     
     pub fn draw(&mut self, context: &Context, gl: &mut Gl, x: f64, y: f64, rotation: f64, time: f64) {
         let mut anim_done = false;
-        match (&self.animations as &Deque<SpriteAnimation>).front() {
+        match self.animations.front() {
             Some(animation) =>
                 match *animation {
                     PlayOnce(start_time, end_time, start_frame, end_frame) => {
                         if time >= start_time {
                             if time <= end_time {
-                                let frame = ((time-start_time)/(end_time-start_time) * ((end_frame - start_frame) as f64)).floor() as u16;
+                                let frame = ((time-start_time)/(end_time-start_time) * ((end_frame - start_frame) as f64)).floor() as u32;
                                 self.current_frame = frame;
                                 self.draw_current_frame(context, gl, x, y, rotation);
                             } else {
@@ -66,7 +68,7 @@ impl SpriteSheet {
                     Loop(start_time, end_time, start_frame, end_frame, interval) => {
                         if time >= start_time {
                             if time <= end_time {
-                                let mut frame = ((time-start_time) / interval).floor() as u16;
+                                let mut frame = ((time-start_time) / interval).floor() as u32;
                                 frame = frame % (end_frame - start_frame + 1);
                                 frame += start_frame;
                                 self.current_frame = frame;
@@ -91,21 +93,23 @@ impl SpriteSheet {
         }
         
         if anim_done {
-            (&mut self.animations as &mut Deque<SpriteAnimation>).pop_front();
+            self.animations.pop_front();
         }
     }
     
     fn draw_current_frame(&self, context: &Context, gl: &mut Gl, x: f64, y: f64, rotation: f64) {
-        let source_x = ((self.current_frame % (self.columns as u16)) as f64) * (self.frame_width as f64);
-        let source_y = ((self.current_frame / (self.columns as u16)) as f64) * (self.frame_height as f64);
-        renderer.draw_texture_source(self.texture, x, y, rotation, source_x, source_y, self.frame_width as f64, self.frame_height as f64);
+        use graphics::*;
+    
+        let source_x = ((self.current_frame % (self.columns as u32)) as f64) * (self.frame_width as f64);
+        let source_y = ((self.current_frame / (self.columns as u32)) as f64) * (self.frame_height as f64);
+        
+        context
+            .image(self.texture.deref())
+            .trans(x, y)
+            .draw(gl);
     }
     
-    pub fn set_frame(&mut self, frame: u16) {
+    pub fn set_frame(&mut self, frame: u32) {
         self.current_frame = frame;
-    }
-    
-    pub fn get_texture(&self) -> TextureId {
-        self.texture
     }
 }

@@ -1,7 +1,10 @@
 use time;
+use std::cell::RefCell;
 
+use event::Events;
 use opengl_graphics::Gl;
 use piston::Window;
+use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
 use battle_state::{BattleContext, ClientPacketId, Plan, TICKS_PER_SECOND};
@@ -30,7 +33,7 @@ impl ClientBattleState {
         }
     }
     
-    pub fn run<W: Window>(&mut self, window: &mut W, gl: &mut Gl, asset_store: &AssetStore) {
+    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore) {
         let mut gui = SpaceGui::new(asset_store, &self.context, self.client.get_id());
     
         let mut sim_visuals = SimVisuals::new();
@@ -43,13 +46,15 @@ impl ClientBattleState {
             self.context.add_plan_visuals(asset_store, &mut sim_visuals);
             
             // Store mouse coordinates
-            let mut (mouse_x, mouse_y) = (0, 0);
+            let (mut mouse_x, mut mouse_y) = (0f64, 0f64);
             
             // Record start time
             let start_time = time::now().to_timespec();
             
             // Run planning loop
             for e in Events::new(window) {
+                use event::*;
+            
                 // Keep track of time, break when planning is done
                 let current_time = time::now().to_timespec();
                 let elapsed_time = current_time - start_time;
@@ -85,6 +90,8 @@ impl ClientBattleState {
             let mut last_time = time::now().to_timespec();
             let mut next_tick = 0;
             for e in Events::new(window) {
+                use event::*;
+            
                 // Keep track of time, break when simulation is done
                 let current_time = time::now().to_timespec();
                 let elapsed_time = current_time - start_time;
@@ -95,8 +102,8 @@ impl ClientBattleState {
                 // Calculate current tick
                 let tick = (elapsed_time.num_milliseconds() as u32)/(1000/TICKS_PER_SECOND);
                 
-                // Calculate elapsed time in seconds as f32
-                let elapsed_seconds = (elapsed_time.num_milliseconds() as f32)/1000f32;
+                // Calculate elapsed time in seconds as f64
+                let elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000f64;
                 
                 // Prepare last_time for next frame
                 last_time = current_time;

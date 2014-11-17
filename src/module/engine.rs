@@ -1,3 +1,8 @@
+#[cfg(client)]
+use graphics::Context;
+#[cfg(client)]
+use opengl_graphics::Gl;
+
 use battle_state::BattleContext;
 use assets::ENGINE_TEXTURE;
 use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore, Propulsion, Engine};
@@ -8,8 +13,6 @@ use vec::{Vec2, Vec2f};
 
 #[cfg(client)]
 use sim::{SimVisuals, SimVisual};
-#[cfg(client)]
-use sfml_renderer::SfmlRenderer;
 #[cfg(client)]
 use sprite_sheet::{SpriteSheet, Stay};
 #[cfg(client)]
@@ -84,7 +87,7 @@ pub struct SpriteVisual {
 
 #[cfg(client)]
 impl SimVisual for SpriteVisual {
-    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f32) {
-        self.sprite_sheet.draw(renderer, self.position.x, self.position.y, 0.0, time);
+    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
+        self.sprite_sheet.draw(context, gl, self.position.x, self.position.y, 0.0, time);
     }
 }
