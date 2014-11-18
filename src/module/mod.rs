@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use assets::TextureId;
 use battle_state::BattleContext;
 use net::{InPacket, OutPacket};
-use ship::{ShipId, ShipState};
+use ship::{ShipRef, ShipState};
 use sim::{SimEventAdder, SimEvents};
 use vec::{Vec2, Vec2f};
 
@@ -51,9 +51,9 @@ pub trait IModule {
 
     fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder);
     #[cfg(client)]
-    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId);
+    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef);
     #[cfg(client)]
-    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId);
+    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef);
     fn after_simulation(&mut self, ship_state: &mut ShipState);
 
     fn write_plans(&self, packet: &mut OutPacket);
@@ -66,7 +66,7 @@ pub trait IModule {
     // GUI stuff
     
     fn on_icon_clicked(&mut self) -> bool;
-    fn on_module_clicked(&mut self, ship_id: ShipId, module: &ModuleRef) -> bool;
+    fn on_module_clicked(&mut self, ship: &ShipRef, module: &ModuleRef) -> bool;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -116,20 +116,20 @@ impl IModule for Module {
     }
     
     #[cfg(client)]
-    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
+    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         match *self {
-            Engine(ref m) => m.add_plan_visuals(asset_store, visuals, ship_id),
-            ProjectileWeapon(ref m) => m.add_plan_visuals(asset_store, visuals, ship_id),
-            Shield(ref m) => m.add_plan_visuals(asset_store, visuals, ship_id),
+            Engine(ref m) => m.add_plan_visuals(asset_store, visuals, ship),
+            ProjectileWeapon(ref m) => m.add_plan_visuals(asset_store, visuals, ship),
+            Shield(ref m) => m.add_plan_visuals(asset_store, visuals, ship),
         }
     }
     
     #[cfg(client)]
-    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
+    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         match *self {
-            Engine(ref m) => m.add_simulation_visuals(asset_store, visuals, ship_id),
-            ProjectileWeapon(ref m) => m.add_simulation_visuals(asset_store, visuals, ship_id),
-            Shield(ref m) => m.add_simulation_visuals(asset_store, visuals, ship_id),
+            Engine(ref m) => m.add_simulation_visuals(asset_store, visuals, ship),
+            ProjectileWeapon(ref m) => m.add_simulation_visuals(asset_store, visuals, ship),
+            Shield(ref m) => m.add_simulation_visuals(asset_store, visuals, ship),
         }
     }
     
@@ -181,11 +181,11 @@ impl IModule for Module {
         }
     }
     
-    fn on_module_clicked(&mut self, ship_id: ShipId, module: &ModuleRef) -> bool {
+    fn on_module_clicked(&mut self, ship: &ShipRef, module: &ModuleRef) -> bool {
         match *self {
-            Engine(ref mut m) => m.on_module_clicked(ship_id, module),
-            ProjectileWeapon(ref mut m) => m.on_module_clicked(ship_id, module),
-            Shield(ref mut m) => m.on_module_clicked(ship_id, module),
+            Engine(ref mut m) => m.on_module_clicked(ship, module),
+            ProjectileWeapon(ref mut m) => m.on_module_clicked(ship, module),
+            Shield(ref mut m) => m.on_module_clicked(ship, module),
         }
     }
 }

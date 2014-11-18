@@ -28,8 +28,8 @@ pub struct ShipState {
 impl ShipState {
     pub fn new() -> ShipState {
         ShipState {
-            hp: 0,
-            total_module_hp: 0,
+            hp: 10,
+            total_module_hp: 10,
             thrust: 0,
             shields: 0,
             max_shields: 0,
@@ -37,8 +37,8 @@ impl ShipState {
     }
     
     pub fn deal_damage(&mut self, module: &mut ModuleBase, damage: u8) {
-        self.total_module_hp -= damage;
-        self.hp = self.total_module_hp/2;
+        self.hp -= damage;
+        //self.hp = self.total_module_hp/2;
         module.deal_damage(damage);
     }
     
@@ -93,16 +93,16 @@ impl Ship {
     }
     
     #[cfg(client)]
-    pub fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
+    pub fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_ref: &ShipRef) {
         for module in self.modules.iter() {
-            module.borrow().add_plan_visuals(asset_store, visuals, self.id);
+            module.borrow().add_plan_visuals(asset_store, visuals, ship_ref);
         }
     }
     
     #[cfg(client)]
-    pub fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
+    pub fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_ref: &ShipRef) {
         for module in self.modules.iter() {
-            module.borrow().add_simulation_visuals(asset_store, visuals, self.id);
+            module.borrow().add_simulation_visuals(asset_store, visuals, ship_ref);
         }
     }
     

@@ -7,7 +7,7 @@ use battle_state::BattleContext;
 use assets::ENGINE_TEXTURE;
 use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore, Propulsion, Engine};
 use net::{InPacket, OutPacket};
-use ship::{ShipId, ShipState};
+use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
 use vec::{Vec2, Vec2f};
 
@@ -39,19 +39,19 @@ impl IModule for EngineModule {
     }
     
     #[cfg(client)]
-    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
+    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut engine_sprite = SpriteSheet::new(asset_store.get_sprite_info(ENGINE_TEXTURE));
         engine_sprite.add_animation(Stay(0.0, 5.0, 0));
     
-        visuals.add(ship_id, 0, box SpriteVisual {
+        visuals.add(ship.borrow().id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),
             sprite_sheet: engine_sprite,
         });
     }
     
     #[cfg(client)]
-    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
-        self.add_plan_visuals(asset_store, visuals, ship_id);
+    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
+        self.add_plan_visuals(asset_store, visuals, ship);
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {
@@ -73,7 +73,7 @@ impl IModule for EngineModule {
         false
     }
     
-    fn on_module_clicked(&mut self, ship_id: ShipId, module: &ModuleRef) -> bool {
+    fn on_module_clicked(&mut self, ship: &ShipRef, module: &ModuleRef) -> bool {
         false
     }
 }
