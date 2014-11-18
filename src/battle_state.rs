@@ -46,14 +46,14 @@ impl BattleContext {
     #[cfg(client)]
     pub fn add_plan_visuals(&mut self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
         for ship in self.ships.values() {
-            ship.borrow().add_plan_visuals(asset_store, visuals);
+            ship.borrow().add_plan_visuals(asset_store, visuals, ship);
         }
     }
     
     #[cfg(client)]
     pub fn add_simulation_visuals(&mut self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
         for ship in self.ships.values() {
-            ship.borrow().add_simulation_visuals(asset_store, visuals);
+            ship.borrow().add_simulation_visuals(asset_store, visuals, ship);
         }
     }
     

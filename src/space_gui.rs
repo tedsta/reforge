@@ -90,16 +90,31 @@ impl<'a> SpaceGui<'a> {
         context.rgb(0.0, 0.0, 0.0).draw(gl);
         
         // Draw player ship
-        sim_visuals.draw(&context.trans(100.0, 100.0), gl, client_ship.id, 0.0);
+        let player_context = context.trans(100.0, 100.0);
+        sim_visuals.draw(&player_context, gl, client_ship.id, 0.0);
+        for i in range(0, client_ship.state.get_hp()) {
+            player_context
+                .trans(-95.0, -95.0)
+                .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
+                .rgb(0.0, 1.0, 0.0)
+                .draw(gl);
+        }
     
         for render_area in self.render_areas.iter_mut() {
             // TODO clear render texture
         
             {
-                let context = context.trans(render_area.x, render_area.y);
-                let context = context.trans(100.0, 100.0);
+                let ship_context = context.trans(render_area.x, render_area.y).trans(100.0, 100.0);
+                let ship = render_area.ship.as_ref().unwrap().borrow();
                 
-                sim_visuals.draw(&context, gl, render_area.ship.as_ref().unwrap().borrow().id, 0.0);
+                sim_visuals.draw(&ship_context, gl, ship.id, 0.0);
+                for i in range(0, ship.state.get_hp()) {
+                    ship_context
+                        .trans(-95.0, -95.0)
+                        .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
+                        .rgb(0.0, 1.0, 0.0)
+                        .draw(gl);
+                }
             }
             
             // TODO draw render texture
@@ -117,16 +132,31 @@ impl<'a> SpaceGui<'a> {
         context.rgb(0.0, 0.0, 0.0).draw(gl);
         
         // Draw player ship
-        sim_visuals.draw(&context.trans(100.0, 100.0), gl, client_ship.id, time);
+        let player_context = context.trans(100.0, 100.0);
+        sim_visuals.draw(&player_context, gl, client_ship.id, time);
+        for i in range(0, client_ship.state.get_hp()) {
+            player_context
+                .trans(-95.0, -95.0)
+                .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
+                .rgb(0.0, 1.0, 0.0)
+                .draw(gl);
+        }
     
         for render_area in self.render_areas.iter_mut() {
             // TODO clear render texture
         
             {
-                let context = context.trans(render_area.x, render_area.y);
-                let context = context.trans(100.0, 100.0);
+                let ship_context = context.trans(render_area.x, render_area.y).trans(100.0, 100.0);
+                let ship = render_area.ship.as_ref().unwrap().borrow();
                 
-                sim_visuals.draw(&context, gl, render_area.ship.as_ref().unwrap().borrow().id, time);
+                sim_visuals.draw(&ship_context, gl, ship.id, time);
+                for i in range(0, ship.state.get_hp()) {
+                    ship_context
+                        .trans(-95.0, -95.0)
+                        .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
+                        .rgb(0.0, 1.0, 0.0)
+                        .draw(gl);
+                }
             }
             
             // TODO draw render texture
@@ -226,7 +256,7 @@ impl<'a> SpaceGui<'a> {
             let x = x - render_area.x - ship_offset_x;
             let y = y - render_area.y - ship_offset_y;
             match render_area.ship.as_ref() {
-                Some(ref ship) => {
+                Some(ship) => {
                     for module in ship.borrow().modules.iter() {
                         // Get module position and size on screen
                         let Vec2{x: module_x, y: module_y} = module.borrow().get_base().get_render_position();
@@ -240,7 +270,7 @@ impl<'a> SpaceGui<'a> {
                                 {
                                     // Inner scope for module ref so we can clear it after
                                     let selected_module = self.module.as_ref().unwrap();
-                                    selected_module.borrow_mut().on_module_clicked(ship.borrow().id, module);
+                                    selected_module.borrow_mut().on_module_clicked(ship, module);
                                 }
                                 self.module = None;
                                 return;

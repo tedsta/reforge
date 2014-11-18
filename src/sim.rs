@@ -10,8 +10,12 @@ use ship::ShipId;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+pub trait SimEvent {
+    fn apply(&mut self, &mut Module);
+}
+
 pub struct SimEvents<'a> {
-    events: Vec<Vec<(ModuleRef, |&mut Module|: 'a)>>,
+    events: Vec<Vec<(ModuleRef, Box<SimEvent+'a>)>>,
 }
 
 impl<'a> SimEvents<'a> {
@@ -28,8 +32,8 @@ impl<'a> SimEvents<'a> {
     pub fn apply_tick(&mut self, tick: u32) {
         let tick = tick as uint;
         while self.events[tick].len() > 0 {
-            let (module, event) = self.events[tick].pop().unwrap();
-            event(module.borrow_mut().deref_mut());
+            let (module, mut event) = self.events[tick].pop().unwrap();
+            event.apply(module.borrow_mut().deref_mut());
         }
     }
     
@@ -47,7 +51,7 @@ pub struct SimEventAdder<'a: 'b, 'b> {
 }
 
 impl<'a, 'b> SimEventAdder<'a, 'b> {
-    pub fn add(&mut self, tick: u32, event: |&mut Module|: 'a) {
+    pub fn add(&mut self, tick: u32, event: Box<SimEvent+'a>) {
         self.sim_events.events[tick as uint].push((self.module.clone(), event));
     }
 }

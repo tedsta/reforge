@@ -7,8 +7,8 @@ use assets::{WEAPON_TEXTURE, LASER_TEXTURE, EXPLOSION_TEXTURE, TextureId};
 use battle_state::{BattleContext, TICKS_PER_SECOND};
 use module::{IModule, Module, ModuleRef, ModuleBase, ModuleType, ModuleTypeStore, ProjectileWeapon, Weapon};
 use net::{ClientId, InPacket, OutPacket};
-use ship::{ShipId, ShipState};
-use sim::SimEventAdder;
+use ship::{ShipRef, ShipState};
+use sim::{SimEvent, SimEventAdder};
 use vec::{Vec2, Vec2f};
 
 #[cfg(client)]
@@ -24,7 +24,7 @@ pub struct ProjectileWeaponModule {
     
     projectiles: Vec<Projectile>,
     
-    target: Option<(ShipId, ModuleRef)>,
+    target: Option<(ShipRef, ModuleRef)>,
 }
 
 impl ProjectileWeaponModule {
@@ -59,12 +59,9 @@ impl IModule for ProjectileWeaponModule {
         }
     }
 
-    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
-        events.add(20, |module| {
-        });
-    
+    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {    
         match self.target {
-            Some((_, ref target_module)) => {
+            Some((ref target_ship, ref target_module)) => {
                 for (i, projectile) in self.projectiles.iter_mut().enumerate() {
                     projectile.phase = FireToOffscreen;
                     
@@ -78,6 +75,8 @@ impl IModule for ProjectileWeaponModule {
                     projectile.to_offscreen_pos = projectile.fire_pos + Vec2{x: 1500.0, y: 0.0};
                     projectile.from_offscreen_pos = Vec2{x: 1500.0, y: 0.0};
                     projectile.hit_pos = target_module.borrow().get_base().get_render_position();
+                    
+                    events.add(projectile.hit_tick, box DamageEvent::new(target_ship.clone(), target_module.clone(), 1));
                 }
             }
             None => { },
@@ -85,24 +84,28 @@ impl IModule for ProjectileWeaponModule {
     }
     
     #[cfg(client)]
-    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
+    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
         weapon_sprite.add_animation(Stay(0.0, 5.0, 0));
     
-        visuals.add(ship_id, 0, box SpriteVisual {
+        visuals.add(ship.borrow().id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),
             sprite_sheet: weapon_sprite,
         });
     }
     
     #[cfg(client)]
-    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_id: ShipId) {
+    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
+        let ship_id = ship.borrow().id;
+    
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
         
         let mut last_weapon_anim_end = 0.0;
     
         match self.target {
-            Some((target_ship_id, ref target_module)) => {
+            Some((ref target_ship, ref target_module)) => {
+                let target_ship_id = target_ship.borrow().id;
+            
                 for projectile in self.projectiles.iter() {
                     // Set up interpolation stuff to send projectile from weapon to offscreen
                     let start_time = (projectile.fire_tick as f64)/(TICKS_PER_SECOND as f64);
@@ -199,8 +202,8 @@ impl IModule for ProjectileWeaponModule {
         true
     }
     
-    fn on_module_clicked(&mut self, ship_id: ShipId, module: &ModuleRef) -> bool {
-        self.target = Some((ship_id, module.clone()));
+    fn on_module_clicked(&mut self, ship: &ShipRef, module: &ModuleRef) -> bool {
+        self.target = Some((ship.clone(), module.clone()));
         println!("Targeted module");
         false
     }
@@ -233,6 +236,30 @@ struct Projectile {
     to_offscreen_pos: Vec2f,
     from_offscreen_pos: Vec2f,
     hit_pos: Vec2f,
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct DamageEvent {
+    ship: ShipRef,
+    module: ModuleRef,
+    damage: u8,
+}
+
+impl DamageEvent {
+    pub fn new(ship: ShipRef, module: ModuleRef, damage: u8) -> DamageEvent {
+        DamageEvent {
+            ship: ship,
+            module: module,
+            damage: damage,
+        }
+    }
+}
+
+impl SimEvent for DamageEvent {
+    fn apply(&mut self, module: &mut Module) {
+        self.ship.borrow_mut().state.deal_damage(self.module.borrow_mut().get_base_mut(), self.damage);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
