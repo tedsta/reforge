@@ -206,6 +206,9 @@ pub struct ModuleBase {
     hp: u8,
     max_hp: u8,
     
+    // Array index in ship. Used for referencing modules across network.
+    pub index: u32,
+    
     // Module type
     pub mod_type: ModuleType,
     
@@ -220,10 +223,14 @@ impl ModuleBase {
             y: 0,
             width: 1,
             height: 1,
+            
             power: 0,
             max_power: 1,
             hp: 0,
             max_hp: 0,
+            
+            index: -1,
+            
             mod_type: mod_type,
             category: mod_store.get_module_type(mod_type).category,
         }

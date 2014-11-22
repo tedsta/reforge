@@ -186,9 +186,27 @@ impl IModule for ProjectileWeaponModule {
     }
     
     fn write_plans(&self, packet: &mut OutPacket) {
+        match self.target.as_ref() {
+            Some(&(ref ship, ref module)) => {
+                packet.write(&true).unwrap();
+                packet.write(&ship.borrow().id).unwrap();
+                packet.write(&module.borrow().get_base().index).unwrap();
+            },
+            None => {packet.write(&false).unwrap()},
+        }
     }
     
     fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
+        let some: bool = packet.read().unwrap();
+        if some {
+            let ship_id = packet.read().unwrap();
+            let module_index: u32 = packet.read().unwrap();
+            
+            let ship = context.get_ship(ship_id);
+            let module = ship.borrow().modules[module_index as uint].clone();
+            
+            self.target = Some((ship.clone(), module.clone()));
+        }
     }
     
     fn write_results(&self, packet: &mut OutPacket) {

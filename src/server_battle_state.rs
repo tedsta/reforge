@@ -36,7 +36,7 @@ impl ServerBattleState {
                     
                     // Send the player all the ships
                     let mut packet = OutPacket::new();
-                    packet.write(&self.context);
+                    packet.write(&self.context.ships_client_id);
                     self.slot.send(client_id, packet);
                 },
                 ReceivedPacket(client_id, mut packet) => { self.handle_packet(client_id, &mut packet); },
@@ -62,7 +62,14 @@ impl ServerBattleState {
                 self.handle_plans_packet(client_id, packet);
  
                 if self.received_plans.len() == self.context.get_num_ships() {
+                    // Do server-side precalculations
+                    self.context.server_preprocess();
                     
+                    // Build the results packet
+                    let results_packet = self.build_results_packet();
+                    self.slot.broadcast(results_packet);
+                    
+                    // Run the simulation
                     self.do_simulation();
                     
                     // Reset everything for the next turn
@@ -74,7 +81,7 @@ impl ServerBattleState {
     }
     
     fn handle_plans_packet(&mut self, client_id: ClientId, packet: &mut InPacket) {
-        self.context.get_ship(client_id).borrow_mut().read_plans(&self.context, packet);
+        self.context.get_ship_by_client_id(client_id).borrow_mut().read_plans(&self.context, packet);
     }
     
     fn do_simulation(&mut self) {
@@ -82,14 +89,6 @@ impl ServerBattleState {
     
         // Pre simulation
         self.context.before_simulation(&mut sim_events);
-
-        // Write results packet
-        let mut packet = OutPacket::new();
-        packet.write(&SimResults).unwrap();
-        
-        self.context.write_results(&mut packet);
-        
-        self.slot.broadcast(packet);
         
         // Simulation!!!
         self.simulate(&mut sim_events);
@@ -102,5 +101,19 @@ impl ServerBattleState {
         for tick in range(0u32, 100) {
             sim_events.apply_tick(tick);
         }
+    }
+    
+    fn build_results_packet(&mut self) -> OutPacket {
+        let mut packet = OutPacket::new();
+        match packet.write(&SimResults) {
+            Ok(()) => {},
+            Err(e) => panic!("Failed to write results packet ID: {}", e),
+        }
+        
+        // The results packet has both the plans and the results, because clients need both
+        self.context.write_plans(&mut packet);
+        self.context.write_results(&mut packet);
+
+        packet
     }
 }

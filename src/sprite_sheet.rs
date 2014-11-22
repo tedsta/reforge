@@ -46,7 +46,7 @@ impl SpriteSheet {
     }
     
     pub fn add_animation(&mut self, animation: SpriteAnimation) {
-        self.animations.push(animation);
+        self.animations.push_back(animation);
     }
     
     pub fn draw(&mut self, context: &Context, gl: &mut Gl, x: f64, y: f64, rotation: f64, time: f64) {
