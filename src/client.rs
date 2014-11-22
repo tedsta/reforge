@@ -38,6 +38,7 @@ use graphics::{
 };
 
 use asset_store::AssetStore;
+use battle_state::BattleContext;
 use client_battle_state::ClientBattleState;
 use net::Client;
 
@@ -83,18 +84,18 @@ fn main () {
     // Connect to server
     let mut client = Client::new("127.0.0.1:30000");
     
-    // Receive the battle context from the server
+    // Receive the ships from the server
     let mut packet = client.receive();
-    let context = match packet.read() {
-        Ok(context) => context,
-        Err(e) => panic!("Unable to receive battle context froms server: {}", e),
+    let ships = match packet.read() {
+        Ok(ships) => ships,
+        Err(e) => panic!("Unable to receive ships froms server: {}", e),
     };
     
     // Wrap window in RefCell
     let window = RefCell::new(window);
     
     // Create the battle state
-    let mut battle = ClientBattleState::new(client, context);
+    let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
 
     battle.run(&window, &mut gl, &asset_store);
 }

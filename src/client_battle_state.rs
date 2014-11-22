@@ -7,7 +7,7 @@ use piston::Window;
 use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
-use battle_state::{BattleContext, ClientPacketId, Plan, TICKS_PER_SECOND};
+use battle_state::{BattleContext, ClientPacketId, Plan, SimResults, TICKS_PER_SECOND};
 use net::{Client, OutPacket};
 use ship::ShipRef;
 use sim::{SimEvents, SimVisuals};
@@ -25,7 +25,7 @@ pub struct ClientBattleState {
 
 impl ClientBattleState {
     pub fn new(client: Client, context: BattleContext) -> ClientBattleState {
-        let player_ship = context.get_ship(client.get_id()).clone();
+        let player_ship = context.get_ship_by_client_id(client.get_id()).clone();
         ClientBattleState {
             client: client,
             context: context,
@@ -143,11 +143,14 @@ impl ClientBattleState {
     
     fn receive_simulation_results(&mut self) {
         let mut packet = self.client.receive();
-        let id: ClientPacketId = match (packet.read()) {
-            Ok(id) => id,
-            Err(e) => panic!("Failed to read simulation results packet ID: {}", e)
+        match (packet.read::<ClientPacketId>()) {
+            Ok(id) if id != SimResults => panic!("Expected SimResults, got {}", id),
+            Err(e) => panic!("Failed to read simulation results packet ID: {}", e),
+            _ => {}, // All good!
         };
         
+        // Results packet has both plans and results
+        self.context.read_plans(&mut packet);
         self.context.read_results(&mut packet);
     }
 }

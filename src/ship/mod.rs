@@ -75,7 +75,8 @@ impl Ship {
     }
     
     // Returns true if adding the module was successful, false if it failed.
-    pub fn add_module(&mut self, module: Module) -> bool {
+    pub fn add_module(&mut self, mut module: Module) -> bool {
+        module.get_base_mut().index = self.modules.len() as u32;
         self.modules.push(Rc::new(RefCell::new(module)));
         true
     }
