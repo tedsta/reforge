@@ -1,5 +1,5 @@
 use assets::{TextureId, ENGINE_TEXTURE, LASER_TEXTURE};
-use module::{ModuleCategory, Weapon, Propulsion, Defense};
+use module::{ModuleCategory, Weapon, Propulsion, Defense, Power};
 
 pub type ModuleType = u16;
 
@@ -20,6 +20,7 @@ impl ModuleTypeStore {
             ModuleTypeInfo{category: Propulsion, texture: ENGINE_TEXTURE},
             ModuleTypeInfo{category: Weapon, texture: LASER_TEXTURE},
             ModuleTypeInfo{category: Defense, texture: LASER_TEXTURE},
+            ModuleTypeInfo{category: Power, texture: LASER_TEXTURE},
         ];
     
         ModuleTypeStore {
