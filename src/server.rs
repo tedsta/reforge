@@ -26,8 +26,8 @@ fn main() {
     let slot = box server.create_slot();
     
     spawn(proc() {
-            server.listen("0.0.0.0:30000");
-        });
+        server.listen("0.0.0.0:30000");
+    });
 
     let mod_store = Arc::new(ModuleTypeStore::new());
         

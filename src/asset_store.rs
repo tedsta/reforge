@@ -3,7 +3,17 @@ use std::rc::Rc;
 use graphics::ImageSize;
 use opengl_graphics::Texture;
 
-use assets::{SpriteInfo, TextureId, ENGINE_TEXTURE, WEAPON_TEXTURE, SHIELD_TEXTURE, LASER_TEXTURE, EXPLOSION_TEXTURE, GUI_TEXTURE};
+use assets::{
+    SpriteInfo,
+    TextureId,
+    ENGINE_TEXTURE,
+    WEAPON_TEXTURE,
+    SHIELD_TEXTURE,
+    SOLAR_TEXTURE,
+    LASER_TEXTURE,
+    EXPLOSION_TEXTURE,
+    GUI_TEXTURE,
+};
 
 pub struct AssetStore {
     textures: Vec<Rc<Texture>>,
@@ -16,6 +26,7 @@ impl AssetStore {
             Rc::new(Texture::from_path(&Path::new("content/textures/modules/engine1.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/modules/weapon_sprite.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/modules/shield_sprite.png")).unwrap()),
+            Rc::new(Texture::from_path(&Path::new("content/textures/modules/solar_panel_sprite.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/effects/laser1.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/effects/explosion1.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/gui/module_button.png")).unwrap()),
@@ -36,6 +47,11 @@ impl AssetStore {
                 texture: textures[SHIELD_TEXTURE as uint].clone(),
                 columns: 5,
                 rows: 2,
+            },
+            SpriteInfo {
+                texture: textures[SOLAR_TEXTURE as uint].clone(),
+                columns: 5,
+                rows: 3,
             },
             SpriteInfo {
                 texture: textures[LASER_TEXTURE as uint].clone(),
