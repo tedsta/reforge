@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::cmp;
 
 use battle_state::BattleContext;
 use module::{IModule, ModuleBase, ModuleRef, Module, ModuleType, ModuleTypeStore};
@@ -36,10 +37,13 @@ impl ShipState {
         }
     }
     
-    pub fn deal_damage(&mut self, module: &mut ModuleBase, damage: u8) {
-        self.hp -= damage;
-        //self.hp = self.total_module_hp/2;
-        module.deal_damage(damage);
+    pub fn deal_damage(&mut self, module: &mut ModuleBase, mut damage: u8) {
+        if self.hp > 0 {
+            damage = cmp::min(self.hp, damage);
+            self.hp -= damage;
+            //self.hp = self.total_module_hp/2;
+            module.deal_damage(damage);
+        }
     }
     
     pub fn get_hp(&self) -> u8 {
