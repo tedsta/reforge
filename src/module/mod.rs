@@ -235,7 +235,7 @@ pub struct ModuleBase {
 }
 
 impl ModuleBase {
-    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> ModuleBase {
+    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType, hp: u8) -> ModuleBase {
         ModuleBase {
             x: 0,
             y: 0,
@@ -244,8 +244,8 @@ impl ModuleBase {
             
             power: 0,
             max_power: 1,
-            hp: 0,
-            max_hp: 0,
+            hp: hp,
+            max_hp: hp,
             
             index: -1,
             

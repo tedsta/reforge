@@ -1,6 +1,7 @@
 #![crate_name = "reforge_server"]
 #![desc = "reforge awesome mmo server"]
 #![crate_type = "bin"]
+#![feature(globs)]
 
 extern crate bincode;
 extern crate serialize;
