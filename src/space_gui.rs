@@ -97,6 +97,7 @@ impl<'a> SpaceGui<'a> {
         // Draw player ship
         let player_context = context.trans(100.0, 100.0);
         sim_visuals.draw(&player_context, gl, client_ship.id, 0.0);
+        client_ship.draw_module_hp(&player_context, gl);
         for i in range(0, client_ship.state.get_hp()) {
             player_context
                 .trans(-95.0, -95.0)
@@ -113,6 +114,7 @@ impl<'a> SpaceGui<'a> {
                 let ship = render_area.ship.as_ref().unwrap().borrow();
                 
                 sim_visuals.draw(&ship_context, gl, ship.id, 0.0);
+                ship.draw_module_hp(&ship_context, gl);
                 for i in range(0, ship.state.get_hp()) {
                     ship_context
                         .trans(-95.0, -95.0)
@@ -139,6 +141,7 @@ impl<'a> SpaceGui<'a> {
         // Draw player ship
         let player_context = context.trans(100.0, 100.0);
         sim_visuals.draw(&player_context, gl, client_ship.id, time);
+        client_ship.draw_module_hp(&player_context, gl);
         for i in range(0, client_ship.state.get_hp()) {
             player_context
                 .trans(-95.0, -95.0)
@@ -155,6 +158,7 @@ impl<'a> SpaceGui<'a> {
                 let ship = render_area.ship.as_ref().unwrap().borrow();
                 
                 sim_visuals.draw(&ship_context, gl, ship.id, time);
+                ship.draw_module_hp(&ship_context, gl);
                 for i in range(0, ship.state.get_hp()) {
                     ship_context
                         .trans(-95.0, -95.0)

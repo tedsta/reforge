@@ -9,6 +9,11 @@ use self::ship_gen::generate_ship;
 use sim::SimEvents;
 
 #[cfg(client)]
+use graphics::Context;
+#[cfg(client)]
+use opengl_graphics::Gl;
+
+#[cfg(client)]
 use sim::SimVisuals;
 #[cfg(client)]
 use asset_store::AssetStore;
@@ -35,6 +40,10 @@ impl ShipState {
             shields: 0,
             max_shields: 0,
         }
+    }
+    
+    fn before_simulation(&mut self) {
+        self.shields = 0;
     }
     
     pub fn deal_damage(&mut self, module: &mut ModuleBase, mut damage: u8) {
@@ -138,6 +147,32 @@ impl Ship {
     pub fn read_results(&self, packet: &mut InPacket) {
         for module in self.modules.iter() {
             module.borrow_mut().read_results(packet);
+        }
+    }
+    
+    #[cfg(client)]
+    pub fn draw_module_hp(&self, context: &Context, gl: &mut Gl) {
+        use graphics::*;
+    
+        for module in self.modules.iter() {
+            let m = module.borrow();
+        
+            for i in range(0, m.get_base().get_hp()) {
+                context
+                    .trans((m.get_base().x*48) as f64, (m.get_base().y*48) as f64)
+                    .rect(0.0, 4.0 * (i as f64), 8.0, 2.0)
+                    .rgb(0.0, 1.0, 0.0)
+                    .draw(gl);
+            }
+            
+            for i in range(m.get_base().get_hp(), m.get_base().get_max_hp()) {
+                context
+                    .trans((m.get_base().x*48) as f64, (m.get_base().y*48) as f64)
+                    .rect(0.0, 4.0 * (i as f64), 8.0, 2.0)
+                    .border_width(1.0)
+                    .rgb(1.0, 0.3, 0.3)
+                    .draw(gl);
+            }
         }
     }
 }
