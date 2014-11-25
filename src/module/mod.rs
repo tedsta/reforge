@@ -219,8 +219,7 @@ pub struct ModuleBase {
     pub height: u8,
 
     // Module stats
-    power: u8,
-    max_power: u8,
+    power: u8, // power consumption
     hp: u8,
     max_hp: u8,
     
@@ -235,15 +234,14 @@ pub struct ModuleBase {
 }
 
 impl ModuleBase {
-    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType, hp: u8) -> ModuleBase {
+    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType, power: u8, hp: u8) -> ModuleBase {
         ModuleBase {
             x: 0,
             y: 0,
             width: 1,
             height: 1,
             
-            power: 0,
-            max_power: 1,
+            power: power,
             hp: hp,
             max_hp: hp,
             
@@ -258,10 +256,6 @@ impl ModuleBase {
         self.power
     }
     
-    pub fn get_max_power(&self) -> u8 {
-        self.max_power
-    }
-    
     pub fn get_hp(&self) -> u8 {
         self.hp
     }
@@ -270,11 +264,15 @@ impl ModuleBase {
         self.max_hp
     }
     
-    pub fn deal_damage(&mut self, damage: u8) {
+    // Returns the amount of damage dealt
+    pub fn deal_damage(&mut self, damage: u8) -> u8 {
         if self.hp >= damage {
             self.hp -= damage;
+            return damage;
         } else {
+            let dealt_damage = self.hp;
             self.hp = 0;
+            return dealt_damage;
         }
     }
     
