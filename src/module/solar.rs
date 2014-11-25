@@ -26,7 +26,7 @@ pub struct SolarModule {
 impl SolarModule {
     pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
         Solar(SolarModule {
-            base: ModuleBase::new(mod_store, mod_type, 3),
+            base: ModuleBase::new(mod_store, mod_type, 2, 3),
         })
     }
 }
