@@ -26,7 +26,7 @@ pub struct SolarModule {
 impl SolarModule {
     pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
         Solar(SolarModule {
-            base: ModuleBase::new(mod_store, mod_type, 2, 3),
+            base: ModuleBase::new(mod_store, mod_type, 0, 2, 3),
         })
     }
 }
@@ -67,6 +67,14 @@ impl IModule for SolarModule {
     }
     
     fn read_results(&mut self, packet: &mut InPacket) {
+    }
+    
+    fn on_activated(&mut self, ship_state: &mut ShipState) {
+        ship_state.power += 5;
+    }
+    
+    fn on_deactivated(&mut self, ship_state: &mut ShipState) {
+        ship_state.power -= 5;
     }
     
     fn on_icon_clicked(&mut self) -> bool {

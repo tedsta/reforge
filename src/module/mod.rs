@@ -66,6 +66,9 @@ pub trait IModule {
     fn write_results(&self, packet: &mut OutPacket);
     fn read_results(&mut self, packet: &mut InPacket);
     
+    fn on_activated(&mut self, ship_state: &mut ShipState);
+    fn on_deactivated(&mut self, ship_state: &mut ShipState);
+    
     ////////////////////
     // GUI stuff
     
@@ -189,6 +192,24 @@ impl IModule for Module {
         }
     }
     
+    fn on_activated(&mut self, ship_state: &mut ShipState) {
+        match *self {
+            Engine(ref mut m) => m.on_activated(ship_state),
+            ProjectileWeapon(ref mut m) => m.on_activated(ship_state),
+            Shield(ref mut m) => m.on_activated(ship_state),
+            Solar(ref mut m) => m.on_activated(ship_state),
+        }
+    }
+    
+    fn on_deactivated(&mut self, ship_state: &mut ShipState) {
+        match *self {
+            Engine(ref mut m) => m.on_deactivated(ship_state),
+            ProjectileWeapon(ref mut m) => m.on_deactivated(ship_state),
+            Shield(ref mut m) => m.on_deactivated(ship_state),
+            Solar(ref mut m) => m.on_deactivated(ship_state),
+        }
+    }
+    
     fn on_icon_clicked(&mut self) -> bool {
         match *self {
             Engine(ref mut m) => m.on_icon_clicked(),
@@ -219,9 +240,11 @@ pub struct ModuleBase {
     pub height: u8,
 
     // Module stats
-    power: u8, // power consumption
-    hp: u8,
-    max_hp: u8,
+    power: u8,     // power consumption
+    powered: bool, // if the module consumes power, whether or not it's currently powered (useless otherwise)
+    hp: u8,        // total current HP of module, including armor
+    min_hp: u8,    // minimum HP for the module to still operate
+    max_hp: u8,    // maximum HP of module, including armor
     
     // Array index in ship. Used for referencing modules across network.
     pub index: u32,
@@ -234,7 +257,7 @@ pub struct ModuleBase {
 }
 
 impl ModuleBase {
-    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType, power: u8, hp: u8) -> ModuleBase {
+    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType, power: u8, min_hp: u8, hp: u8) -> ModuleBase {
         ModuleBase {
             x: 0,
             y: 0,
@@ -242,7 +265,9 @@ impl ModuleBase {
             height: 1,
             
             power: power,
+            powered: false,
             hp: hp,
+            min_hp: min_hp,
             max_hp: hp,
             
             index: -1,
@@ -260,8 +285,20 @@ impl ModuleBase {
         self.hp
     }
     
+    pub fn get_min_hp(&self) -> u8 {
+        self.min_hp
+    }
+    
     pub fn get_max_hp(&self) -> u8 {
         self.max_hp
+    }
+    
+    pub fn is_active(&self) -> bool {
+        if self.hp >= self.min_hp && (self.powered || self.power == 0) {
+            true
+        } else {
+            false
+        }
     }
     
     // Returns the amount of damage dealt

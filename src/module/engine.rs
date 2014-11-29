@@ -26,7 +26,7 @@ pub struct EngineModule {
 impl EngineModule {
     pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
         Engine(EngineModule {
-            base: ModuleBase::new(mod_store, mod_type, 2, 3),
+            base: ModuleBase::new(mod_store, mod_type, 2, 2, 3),
         })
     }
 }
@@ -67,6 +67,12 @@ impl IModule for EngineModule {
     }
     
     fn read_results(&mut self, packet: &mut InPacket) {
+    }
+    
+    fn on_activated(&mut self, ship_state: &mut ShipState) {
+    }
+    
+    fn on_deactivated(&mut self, ship_state: &mut ShipState) {
     }
     
     fn on_icon_clicked(&mut self) -> bool {

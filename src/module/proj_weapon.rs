@@ -45,7 +45,7 @@ impl ProjectileWeaponModule {
         };
     
         ProjectileWeapon(ProjectileWeaponModule {
-            base: ModuleBase::new(mod_store, mod_type, 2, 3),
+            base: ModuleBase::new(mod_store, mod_type, 2, 2, 3),
             projectiles: Vec::from_elem(4, projectile),
             target: None,
         })
@@ -215,6 +215,13 @@ impl IModule for ProjectileWeaponModule {
     fn read_results(&mut self, packet: &mut InPacket) {
     }
     
+    fn on_activated(&mut self, ship_state: &mut ShipState) {
+    }
+    
+    fn on_deactivated(&mut self, ship_state: &mut ShipState) {
+        println!("weapon deactivated");
+    }
+    
     fn on_icon_clicked(&mut self) -> bool {
         println!("Clicked a weapon");
         true
@@ -276,7 +283,7 @@ impl DamageEvent {
 
 impl SimEvent for DamageEvent {
     fn apply(&mut self, module: &mut Module) {
-        self.ship.borrow_mut().state.deal_damage(self.module.borrow_mut().get_base_mut(), self.damage);
+        self.ship.borrow_mut().state.deal_damage(self.module.borrow_mut().deref_mut(), self.damage);
     }
 }
 

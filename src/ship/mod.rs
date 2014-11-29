@@ -26,6 +26,7 @@ mod ship_gen;
 pub struct ShipState {
     hp: u8,
     total_module_hp: u8, // Sum of HP of all modules, used to recalculate HP when damaged
+    pub power: u8,
     pub thrust: u8,
     pub shields: u8,
     pub max_shields: u8,
@@ -36,26 +37,35 @@ impl ShipState {
         ShipState {
             hp: 0,
             total_module_hp: 0,
+            power: 0,
             thrust: 0,
             shields: 0,
             max_shields: 0,
         }
     }
     
-    fn before_simulation(&mut self) {
+    fn pre_before_simulation(&mut self) {
         self.shields = 0;
     }
     
-    pub fn deal_damage(&mut self, module: &mut ModuleBase, damage: u8) {
+    pub fn deal_damage(&mut self, module: &mut Module, damage: u8) {
         // Can't deal more damage than there is HP
         let damage = cmp::min(self.total_module_hp, damage);
         
+        // Get if module was active before damage
+        let was_active = module.get_base().is_active();
+        
         // Get the amount of damage dealt to the module
-        let damage = module.deal_damage(damage);
+        let damage = module.get_base_mut().deal_damage(damage);
         
         // Adjust the ship's HP state
         self.total_module_hp -= damage;
         self.hp = self.total_module_hp/2;
+        
+        // If the module was active and can no longer be active, deactivate
+        if was_active && !module.get_base().is_active() {
+            module.on_deactivated(self);
+        }
     }
     
     pub fn get_hp(&self) -> u8 {
@@ -98,6 +108,11 @@ impl Ship {
         
         // Setup module's index
         module.get_base_mut().index = self.modules.len() as u32;
+        
+        // Activate module if can
+        if module.get_base().is_active() {
+            module.on_activated(&mut self.state);
+        }
         
         // Add the module
         self.modules.push(Rc::new(RefCell::new(module)));
@@ -171,7 +186,7 @@ impl Ship {
             let context = context
                 .trans((module.x*48) as f64, (module.y*48) as f64);
         
-            for i in range(0, module.get_power()) {
+            for i in range(0, module.get_min_hp()) {
                 let context = context
                     .rect(0.0, 4.0 * (i as f64), 8.0, 2.0);
                 
@@ -187,14 +202,14 @@ impl Ship {
                 }
             }
             
-            for i in range(module.get_power(), module.get_hp()) {
+            for i in range(module.get_min_hp(), module.get_hp()) {
                 context
                     .rect(0.0, 4.0 * (i as f64), 8.0, 2.0)
                     .rgb(1.0, 1.0, 0.0)
                     .draw(gl);
             }
             
-            for i in range(cmp::max(module.get_power(), module.get_hp()), module.get_max_hp()) {
+            for i in range(cmp::max(module.get_min_hp(), module.get_hp()), module.get_max_hp()) {
                 context
                     .rect(0.0, 4.0 * (i as f64), 8.0, 2.0)
                     .border_width(1.0)
