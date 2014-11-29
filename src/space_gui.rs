@@ -95,33 +95,15 @@ impl<'a> SpaceGui<'a> {
         context.rgb(0.0, 0.0, 0.0).draw(gl);
         
         // Draw player ship
-        let player_context = context.trans(100.0, 100.0);
-        sim_visuals.draw(&player_context, gl, client_ship.id, 0.0);
-        client_ship.draw_module_hp(&player_context, gl);
-        for i in range(0, client_ship.state.get_hp()) {
-            player_context
-                .trans(-95.0, -95.0)
-                .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
-                .rgb(0.0, 1.0, 0.0)
-                .draw(gl);
-        }
+        draw_ship(context.trans(150.0, 150.0), gl, sim_visuals, client_ship, 0.0);
     
         for render_area in self.render_areas.iter_mut() {
             // TODO clear render texture
         
             {
-                let ship_context = context.trans(render_area.x, render_area.y).trans(100.0, 100.0);
-                let ship = render_area.ship.as_ref().unwrap().borrow();
+                let context = context.trans(render_area.x, render_area.y).trans(150.0, 150.0);
                 
-                sim_visuals.draw(&ship_context, gl, ship.id, 0.0);
-                ship.draw_module_hp(&ship_context, gl);
-                for i in range(0, ship.state.get_hp()) {
-                    ship_context
-                        .trans(-95.0, -95.0)
-                        .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
-                        .rgb(0.0, 1.0, 0.0)
-                        .draw(gl);
-                }
+                draw_ship(context, gl, sim_visuals, render_area.ship.as_ref().unwrap().borrow().deref(), 0.0);
             }
             
             // TODO draw render texture
@@ -139,33 +121,15 @@ impl<'a> SpaceGui<'a> {
         context.rgb(0.0, 0.0, 0.0).draw(gl);
         
         // Draw player ship
-        let player_context = context.trans(100.0, 100.0);
-        sim_visuals.draw(&player_context, gl, client_ship.id, time);
-        client_ship.draw_module_hp(&player_context, gl);
-        for i in range(0, client_ship.state.get_hp()) {
-            player_context
-                .trans(-95.0, -95.0)
-                .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
-                .rgb(0.0, 1.0, 0.0)
-                .draw(gl);
-        }
+        draw_ship(context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
     
         for render_area in self.render_areas.iter_mut() {
             // TODO clear render texture
         
             {
-                let ship_context = context.trans(render_area.x, render_area.y).trans(100.0, 100.0);
-                let ship = render_area.ship.as_ref().unwrap().borrow();
+                let context = context.trans(render_area.x, render_area.y).trans(150.0, 150.0);
                 
-                sim_visuals.draw(&ship_context, gl, ship.id, time);
-                ship.draw_module_hp(&ship_context, gl);
-                for i in range(0, ship.state.get_hp()) {
-                    ship_context
-                        .trans(-95.0, -95.0)
-                        .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
-                        .rgb(0.0, 1.0, 0.0)
-                        .draw(gl);
-                }
+                draw_ship(context, gl, sim_visuals, render_area.ship.as_ref().unwrap().borrow().deref(), time);
             }
             
             // TODO draw render texture
@@ -260,8 +224,8 @@ impl<'a> SpaceGui<'a> {
         }
         
         for render_area in self.render_areas.iter() {
-            let ship_offset_x = 100.0;
-            let ship_offset_y = 100.0;
+            let ship_offset_x = 150.0;
+            let ship_offset_y = 150.0;
             let x = x - render_area.x - ship_offset_x;
             let y = y - render_area.y - ship_offset_y;
             match render_area.ship.as_ref() {
@@ -301,4 +265,28 @@ pub struct ShipRenderArea {
     y: f64,
     //target: RenderTexture,
     //texture: Texture,
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+fn draw_ship(context: Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship: &Ship, time: f64) {
+    use graphics::*;
+
+    sim_visuals.draw(&context, gl, ship.id, time);
+    ship.draw_module_hp(&context, gl);
+    for i in range(0, ship.state.get_hp()) {
+        context
+            .trans(-145.0, -145.0)
+            .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
+            .rgb(0.0, 1.0, 0.0)
+            .draw(gl);
+    }
+    
+    for i in range(0, ship.state.power) {
+        context
+            .trans(-145.0, -145.0 + 34.0)
+            .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
+            .rgb(1.0, 1.0, 0.0)
+            .draw(gl);
+    }
 }
