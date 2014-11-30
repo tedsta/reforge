@@ -108,8 +108,6 @@ impl<'a> SpaceGui<'a> {
             
             // TODO draw render texture
         }
-    
-        self.draw_overlay(&context, gl, client_ship);
     }
     
     pub fn draw_simulating(&mut self, r_args: &RenderArgs, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64) {
@@ -134,42 +132,6 @@ impl<'a> SpaceGui<'a> {
             
             // TODO draw render texture
         }
-    
-        self.draw_overlay(&context, gl, client_ship);
-    }
-    
-    fn draw_overlay(&self, context: &Context, gl: &mut Gl, client_ship: &Ship) {
-        use graphics::*;
-    
-        for category in MODULE_CATEGORIES.iter() {
-            let icon_y: f64 =
-                match self.module_category {
-                    Some(c) if c == category.id => 584.0,
-                    _ => { 600.0 },
-                };
-            
-            context
-                .image(self.category_textures[category.id as uint].deref())
-                .trans(10.0 + (64.0*(category.id as u8 as f64)), icon_y)
-                .draw(gl);
-        }
-        
-        match self.module_category {
-            Some(category) => {
-                let mut i = 0u8;
-                for module in client_ship.modules.iter() {
-                    if module.borrow().get_base().category == category {
-                        context
-                            .image(self.category_textures[category as uint].deref())
-                            .trans(10.0 + (64.0*(i as f64)), 500.0)
-                            .draw(gl);
-                        
-                        i += 1;
-                    }
-                }
-            },
-            None => {},
-        }
     }
     
     fn on_key_pressed(&mut self, key: keyboard::Key) {
@@ -177,48 +139,21 @@ impl<'a> SpaceGui<'a> {
     
     fn on_mouse_left_pressed(&mut self, x: f64, y: f64, client_ship: &Ship) {
         if self.module.is_none() {
-            match self.module_category {
-                Some(category) => {
-                    let mut i = 0u8;
-                    for module in client_ship.modules.iter() {
-                        if module.borrow_mut().get_base().category == category {
-                            let icon_x = 10.0 + (64.0*(i as f64));
-                            let icon_y: f64 = 500.0;
-                            let icon_w = 48.0;
-                            let icon_h = 48.0;
-                            if x >= icon_x && x <= icon_x+icon_w && y >= icon_y && y <= icon_y+icon_h {
-                                // If the player doesn't already have a selected module, and the module
-                                // wants to be selected, select this module
-                                if self.module.is_none() && module.borrow_mut().on_icon_clicked() {
-                                    self.module = Some(module.clone());
-                                    return;
-                                }
-                            }
-                            i += 1;
-                        }
-                    }
-                },
-                None => {},
-            }
-        
-            for category in MODULE_CATEGORIES.iter() {
-                let icon_x = 10.0 + (64.0*(category.id as u32 as f64));
-                let icon_y: f64 =
-                    match self.module_category {
-                        Some(c) if c == category.id => 584.0,
-                        _ => { 600.0 },
-                    };
-                let icon_w = 48.0;
-                let icon_h = 48.0;
-                
-                if x >= icon_x && x <= icon_x+icon_w && y >= icon_y && y <= icon_y+icon_h {
-                    match self.module_category {
-                        // Reclicked selected module category: deselect it
-                        Some(c) if c == category.id => self.module_category = None,
-                        // Selected a new module category
-                        _ => self.module_category = Some(category.id),
-                    }
-                    return;
+            let ship_offset_x = 150.0;
+            let ship_offset_y = 150.0;
+            let x = x - ship_offset_x;
+            let y = y - ship_offset_y;
+
+            for module in client_ship.modules.iter() {
+                // Get module position and size on screen
+                let Vec2{x: module_x, y: module_y} = module.borrow().get_base().get_render_position();
+                let Vec2{x: module_w, y: module_h} = module.borrow().get_base().get_render_size();
+                let module_x = module_x as f64;
+                let module_y = module_y as f64;
+                let module_w = module_w as f64;
+                let module_h = module_h as f64;
+                if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
+                    self.module = Some(module.clone());
                 }
             }
         }
@@ -282,9 +217,17 @@ fn draw_ship(context: Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship: 
             .draw(gl);
     }
     
-    for i in range(0, ship.state.power) {
+    for i in range(0, ship.state.shields) {
         context
             .trans(-145.0, -145.0 + 34.0)
+            .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
+            .rgb(0.0, 0.0, 1.0)
+            .draw(gl);
+    }
+    
+    for i in range(0, ship.state.power) {
+        context
+            .trans(-145.0, -145.0 + 68.0)
             .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
             .rgb(1.0, 1.0, 0.0)
             .draw(gl);
