@@ -63,7 +63,7 @@ impl ClientBattleState {
                 }
             
                 // Forward events to GUI
-                gui.event(&e, self.player_ship.borrow().deref());
+                gui.event(&e, self.player_ship.borrow_mut().deref_mut());
                 
                 // Render GUI
                 e.render(|r_args| gui.draw_planning(r_args, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref()));
@@ -115,7 +115,7 @@ impl ClientBattleState {
                 next_tick = tick+1;
             
                 // Forward events to GUI
-                gui.event(&e, self.player_ship.borrow().deref());
+                gui.event(&e, self.player_ship.borrow_mut().deref_mut());
                 
                 // Render GUI
                 e.render(|r_args| gui.draw_simulating(r_args, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref(), elapsed_seconds));
