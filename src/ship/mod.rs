@@ -153,13 +153,35 @@ impl Ship {
     
     pub fn write_plans(&self, packet: &mut OutPacket) {
         for module in self.modules.iter() {
-            module.borrow().write_plans(packet);
+            let module = module.borrow();
+        
+            module.write_plans(packet);
+            
+            // TODO: fix this ugliness when inheritance is a thing in Rust
+            // Write the base plans
+            packet.write(&module.get_base().powered);
         }
     }
     
-    pub fn read_plans(&self, context: &BattleContext, packet: &mut InPacket) {
+    pub fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
         for module in self.modules.iter() {
-            module.borrow_mut().read_plans(context, packet);
+            let mut module = module.borrow_mut();
+            
+            module.read_plans(context, packet);
+            
+            // TODO: fix this ugliness when inheritance is a thing in Rust
+            // Read the base plans
+            let was_powered = module.get_base().powered;
+            module.get_base_mut().powered = packet.read().ok().expect("Failed to read ModuleBase powered");
+            if !was_powered && module.get_base().powered {
+                // Module was powered on
+                self.state.power -= module.get_base().get_power();
+                module.on_activated(&mut self.state);
+            } else if was_powered && !module.get_base().powered {
+                // Module was powered off
+                self.state.power += module.get_base().get_power();
+                module.on_deactivated(&mut self.state);
+            }
         }
     }
     
