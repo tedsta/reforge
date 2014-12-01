@@ -65,7 +65,7 @@ impl<'a> SpaceGui<'a> {
         }
     }
     
-    pub fn event<E: GenericEvent>(&mut self, e: &E, client_ship: &Ship) {
+    pub fn event<E: GenericEvent>(&mut self, e: &E, client_ship: &mut Ship) {
         use event::*;
     
         e.mouse_cursor(|x, y| {
@@ -137,7 +137,7 @@ impl<'a> SpaceGui<'a> {
     fn on_key_pressed(&mut self, key: keyboard::Key) {
     }
     
-    fn on_mouse_left_pressed(&mut self, x: f64, y: f64, client_ship: &Ship) {
+    fn on_mouse_left_pressed(&mut self, x: f64, y: f64, client_ship: &mut Ship) {
         if self.module.is_none() {
             let ship_offset_x = 150.0;
             let ship_offset_y = 150.0;
@@ -145,15 +145,24 @@ impl<'a> SpaceGui<'a> {
             let y = y - ship_offset_y;
 
             for module in client_ship.modules.iter() {
+                let mut module_borrowed = module.borrow_mut();
+            
                 // Get module position and size on screen
-                let Vec2{x: module_x, y: module_y} = module.borrow().get_base().get_render_position();
-                let Vec2{x: module_w, y: module_h} = module.borrow().get_base().get_render_size();
+                let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
+                let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
                 let module_x = module_x as f64;
                 let module_y = module_y as f64;
                 let module_w = module_w as f64;
                 let module_h = module_h as f64;
                 if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-                    self.module = Some(module.clone());
+                    let module_power = module_borrowed.get_base().get_power();
+                    if module_borrowed.get_base().powered {
+                        self.module = Some(module.clone());
+                    } else if module_power > 0 && client_ship.state.power >= module_power {
+                        client_ship.state.power -= module_power;
+                        module_borrowed.get_base_mut().powered = true;
+                        module_borrowed.on_activated(&mut client_ship.state);
+                    }
                 }
             }
         }
