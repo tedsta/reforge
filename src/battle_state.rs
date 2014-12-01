@@ -91,7 +91,7 @@ impl BattleContext {
             let ship_id = packet.read().unwrap();
             let ship = self.get_ship(ship_id);
             
-            ship.borrow().read_plans(self, packet);
+            ship.borrow_mut().read_plans(self, packet);
         }
     }
     
