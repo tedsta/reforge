@@ -86,6 +86,10 @@ impl<'a> SpaceGui<'a> {
         });
     }
     
+    pub fn before_planning(&mut self, client_ship: &mut Ship) {
+        client_ship.state.plan_power = client_ship.state.power;
+    }
+    
     pub fn draw_planning(&mut self, r_args: &RenderArgs, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship) {
         use graphics::*;
         
@@ -156,12 +160,11 @@ impl<'a> SpaceGui<'a> {
                 let module_h = module_h as f64;
                 if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
                     let module_power = module_borrowed.get_base().get_power();
-                    if module_borrowed.get_base().powered {
+                    if module_borrowed.get_base().plan_powered {
                         self.module = Some(module.clone());
-                    } else if module_power > 0 && client_ship.state.power >= module_power {
-                        client_ship.state.power -= module_power;
-                        module_borrowed.get_base_mut().powered = true;
-                        module_borrowed.on_activated(&mut client_ship.state);
+                    } else if module_power > 0 && client_ship.state.plan_power >= module_power {
+                        client_ship.state.plan_power -= module_power;
+                        module_borrowed.get_base_mut().plan_powered = true;
                     }
                 }
             }
@@ -234,11 +237,19 @@ fn draw_ship(context: Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship: 
             .draw(gl);
     }
     
-    for i in range(0, ship.state.power) {
+    for i in range(0, ship.state.plan_power) {
         context
             .trans(-145.0, -145.0 + 68.0)
             .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
             .rgb(1.0, 1.0, 0.0)
+            .draw(gl);
+    }
+    
+    for i in range(ship.state.plan_power, ship.state.power) {
+        context
+            .trans(-145.0, -145.0 + 68.0)
+            .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
+            .rgba(1.0, 1.0, 0.0, 0.5)
             .draw(gl);
     }
 }

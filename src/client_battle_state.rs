@@ -37,6 +37,8 @@ impl ClientBattleState {
         let mut gui = SpaceGui::new(asset_store, &self.context, self.client.get_id());
     
         let mut sim_visuals = SimVisuals::new();
+        
+        gui.before_planning(self.player_ship.borrow_mut().deref_mut());
     
         loop {
             ////////////////////////////////
@@ -68,6 +70,8 @@ impl ClientBattleState {
                 // Render GUI
                 e.render(|r_args| gui.draw_planning(r_args, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref()));
             }
+            
+            self.player_ship.borrow_mut().apply_module_plans();
         
             // Send plans
             let packet = self.build_plans_packet();
