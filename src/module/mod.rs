@@ -241,10 +241,12 @@ pub struct ModuleBase {
 
     // Module stats
     power: u8,     // power consumption
-    pub powered: bool, // if the module consumes power, whether or not it's currently powered (useless otherwise)
     hp: u8,        // total current HP of module, including armor
     min_hp: u8,    // minimum HP for the module to still operate
     max_hp: u8,    // maximum HP of module, including armor
+    
+    pub powered: bool, // if the module consumes power, whether or not it's currently powered (useless otherwise)
+    pub plan_powered: bool, // plan to power
     
     // Array index in ship. Used for referencing modules across network.
     pub index: u32,
@@ -265,10 +267,12 @@ impl ModuleBase {
             height: 1,
             
             power: power,
-            powered: false,
             hp: hp,
             min_hp: min_hp,
             max_hp: hp,
+            
+            powered: false,
+            plan_powered: false,
             
             index: -1,
             

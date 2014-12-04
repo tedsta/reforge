@@ -27,6 +27,7 @@ pub struct ShipState {
     hp: u8,
     total_module_hp: u8, // Sum of HP of all modules, used to recalculate HP when damaged
     pub power: u8,
+    pub plan_power: u8, // Keeps track of power for planning
     pub thrust: u8,
     pub shields: u8,
     pub max_shields: u8,
@@ -38,6 +39,7 @@ impl ShipState {
             hp: 0,
             total_module_hp: 0,
             power: 0,
+            plan_power: 0,
             thrust: 0,
             shields: 0,
             max_shields: 0,
@@ -148,6 +150,28 @@ impl Ship {
     pub fn after_simulation(&mut self) {
         for module in self.modules.iter() {
             module.borrow_mut().after_simulation(&mut self.state);
+        }
+    }
+    
+    pub fn apply_module_plans(&mut self) {
+        for module in self.modules.iter() {
+            let mut module = module.borrow_mut();
+            
+            if module.get_base().plan_powered != module.get_base().powered {
+                if !module.get_base().powered {
+                    if self.state.power >= module.get_base().get_power() {
+                        module.get_base_mut().powered = true;
+                        self.state.power -= module.get_base().get_power();
+                        module.on_activated(&mut self.state);
+                    }
+                } else {
+                    module.get_base_mut().powered = false;
+                    self.state.power += module.get_base().get_power();
+                    module.on_deactivated(&mut self.state);
+                }
+                
+                module.get_base_mut().plan_powered = module.get_base().powered;
+            }
         }
     }
     
