@@ -59,27 +59,29 @@ impl IModule for ProjectileWeaponModule {
         }
     }
 
-    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {    
-        match self.target {
-            Some((ref target_ship, ref target_module)) => {
-                for (i, projectile) in self.projectiles.iter_mut().enumerate() {
-                    projectile.phase = FireToOffscreen;
-                    
-                    let start = (i*10) as u32;
-                    
-                    projectile.fire_tick = start;
-                    projectile.offscreen_tick = start + 20;
-                    projectile.hit_tick = start + 40;
-                    
-                    projectile.fire_pos = self.base.get_render_position();
-                    projectile.to_offscreen_pos = projectile.fire_pos + Vec2{x: 1500.0, y: 0.0};
-                    projectile.from_offscreen_pos = Vec2{x: 1500.0, y: 0.0};
-                    projectile.hit_pos = target_module.borrow().get_base().get_render_position();
-                    
-                    events.add(projectile.hit_tick, box DamageEvent::new(target_ship.clone(), target_module.clone(), 1));
+    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
+        if self.base.powered {
+            match self.target {
+                Some((ref target_ship, ref target_module)) => {
+                    for (i, projectile) in self.projectiles.iter_mut().enumerate() {
+                        projectile.phase = FireToOffscreen;
+                        
+                        let start = (i*10) as u32;
+                        
+                        projectile.fire_tick = start;
+                        projectile.offscreen_tick = start + 20;
+                        projectile.hit_tick = start + 40;
+                        
+                        projectile.fire_pos = self.base.get_render_position();
+                        projectile.to_offscreen_pos = projectile.fire_pos + Vec2{x: 1500.0, y: 0.0};
+                        projectile.from_offscreen_pos = Vec2{x: 1500.0, y: 0.0};
+                        projectile.hit_pos = target_module.borrow().get_base().get_render_position();
+                        
+                        events.add(projectile.hit_tick, box DamageEvent::new(target_ship.clone(), target_module.clone(), 1));
+                    }
                 }
+                None => { },
             }
-            None => { },
         }
     }
     
@@ -101,76 +103,78 @@ impl IModule for ProjectileWeaponModule {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
         
         let mut last_weapon_anim_end = 0.0;
-    
-        match self.target {
-            Some((ref target_ship, ref target_module)) => {
-                let target_ship_id = target_ship.borrow().id;
-            
-                for projectile in self.projectiles.iter() {
-                    // Set up interpolation stuff to send projectile from weapon to offscreen
-                    let start_time = (projectile.fire_tick as f64)/(TICKS_PER_SECOND as f64);
-                    let end_time = (projectile.offscreen_tick as f64)/(TICKS_PER_SECOND as f64);
-                    let start_pos = projectile.fire_pos.clone();
-                    let end_pos = projectile.to_offscreen_pos.clone();
-                    
-                    let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
-                    laser_sprite.add_animation(Loop(0.0, 5.0, 0, 4, 0.05));
-                    
-                    let weapon_anim_start = start_time;
-                    let weapon_anim_end = start_time+0.15;
-                    
-                    // Add weapon fire animations for this projectile
-                    weapon_sprite.add_animation(Stay(last_weapon_anim_end, weapon_anim_start, 0));
-                    weapon_sprite.add_animation(PlayOnce(weapon_anim_start, weapon_anim_end, 0, 5));
-                    
-                    // Set the last end for the next projectile
-                    last_weapon_anim_end = weapon_anim_end;
+        
+        if self.base.powered {
+            match self.target {
+                Some((ref target_ship, ref target_module)) => {
+                    let target_ship_id = target_ship.borrow().id;
                 
-                    // Add the simulation visual for projectile leaving
-                    visuals.add(ship_id, 1, box LerpVisual {
-                        start_time: start_time,
-                        end_time: end_time,
-                        start_pos: start_pos,
-                        end_pos: end_pos,
-                        start_rot: 0.0,
-                        end_rot: 0.0,
-                        sprite_sheet: laser_sprite,
-                    });
+                    for projectile in self.projectiles.iter() {
+                        // Set up interpolation stuff to send projectile from weapon to offscreen
+                        let start_time = (projectile.fire_tick as f64)/(TICKS_PER_SECOND as f64);
+                        let end_time = (projectile.offscreen_tick as f64)/(TICKS_PER_SECOND as f64);
+                        let start_pos = projectile.fire_pos.clone();
+                        let end_pos = projectile.to_offscreen_pos.clone();
+                        
+                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
+                        laser_sprite.add_animation(Loop(0.0, 5.0, 0, 4, 0.05));
+                        
+                        let weapon_anim_start = start_time;
+                        let weapon_anim_end = start_time+0.15;
+                        
+                        // Add weapon fire animations for this projectile
+                        weapon_sprite.add_animation(Stay(last_weapon_anim_end, weapon_anim_start, 0));
+                        weapon_sprite.add_animation(PlayOnce(weapon_anim_start, weapon_anim_end, 0, 5));
+                        
+                        // Set the last end for the next projectile
+                        last_weapon_anim_end = weapon_anim_end;
                     
-                    // Set up interpolation stuff to send projectile from offscreen to target
-                    let start_time = (projectile.offscreen_tick as f64)/(TICKS_PER_SECOND as f64);
-                    let end_time = (projectile.hit_tick as f64)/(TICKS_PER_SECOND as f64);
-                    let start_pos = projectile.from_offscreen_pos.clone();
-                    let end_pos = projectile.hit_pos.clone();
+                        // Add the simulation visual for projectile leaving
+                        visuals.add(ship_id, 1, box LerpVisual {
+                            start_time: start_time,
+                            end_time: end_time,
+                            start_pos: start_pos,
+                            end_pos: end_pos,
+                            start_rot: 0.0,
+                            end_rot: 0.0,
+                            sprite_sheet: laser_sprite,
+                        });
+                        
+                        // Set up interpolation stuff to send projectile from offscreen to target
+                        let start_time = (projectile.offscreen_tick as f64)/(TICKS_PER_SECOND as f64);
+                        let end_time = (projectile.hit_tick as f64)/(TICKS_PER_SECOND as f64);
+                        let start_pos = projectile.from_offscreen_pos.clone();
+                        let end_pos = projectile.hit_pos.clone();
 
-                    let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
-                    laser_sprite.add_animation(Loop(0.0, 5.0, 0, 4, 0.05));
-                    
-                    // Add the simulation visual for projectile entering target screen
-                    visuals.add(target_ship_id, 1, box LerpVisual {
-                        start_time: start_time,
-                        end_time: end_time,
-                        start_pos: start_pos,
-                        end_pos: end_pos,
-                        start_rot: 0.0,
-                        end_rot: 0.0,
-                        sprite_sheet: laser_sprite,
-                    });
-                    
-                    // Set up explosion visual
-                    let start_time = (projectile.hit_tick as f64)/(TICKS_PER_SECOND as f64);
-                    let end_time = start_time + 0.7;
-                    
-                    let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info(EXPLOSION_TEXTURE));
-                    explosion_sprite.add_animation(PlayOnce(start_time, end_time, 0, 10));
-                    
-                    visuals.add(target_ship_id, 1, box SpriteVisual {
-                        position: projectile.hit_pos.clone(),
-                        sprite_sheet: explosion_sprite,
-                    });
-                }
-            },
-            None => {},
+                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
+                        laser_sprite.add_animation(Loop(0.0, 5.0, 0, 4, 0.05));
+                        
+                        // Add the simulation visual for projectile entering target screen
+                        visuals.add(target_ship_id, 1, box LerpVisual {
+                            start_time: start_time,
+                            end_time: end_time,
+                            start_pos: start_pos,
+                            end_pos: end_pos,
+                            start_rot: 0.0,
+                            end_rot: 0.0,
+                            sprite_sheet: laser_sprite,
+                        });
+                        
+                        // Set up explosion visual
+                        let start_time = (projectile.hit_tick as f64)/(TICKS_PER_SECOND as f64);
+                        let end_time = start_time + 0.7;
+                        
+                        let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info(EXPLOSION_TEXTURE));
+                        explosion_sprite.add_animation(PlayOnce(start_time, end_time, 0, 10));
+                        
+                        visuals.add(target_ship_id, 1, box SpriteVisual {
+                            position: projectile.hit_pos.clone(),
+                            sprite_sheet: explosion_sprite,
+                        });
+                    }
+                },
+                None => {},
+            }
         }
         
         // Add last stay animation

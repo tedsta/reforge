@@ -70,11 +70,11 @@ impl IModule for SolarModule {
     }
     
     fn on_activated(&mut self, ship_state: &mut ShipState) {
-        ship_state.power += 5;
+        ship_state.add_power(5);
     }
     
     fn on_deactivated(&mut self, ship_state: &mut ShipState) {
-        ship_state.power -= 5;
+        ship_state.remove_power(5);
     }
     
     fn on_icon_clicked(&mut self) -> bool {

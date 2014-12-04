@@ -70,11 +70,11 @@ impl IModule for ShieldModule {
     }
     
     fn on_activated(&mut self, ship_state: &mut ShipState) {
-        ship_state.shields += 2;
+        ship_state.add_shields(2);
     }
     
     fn on_deactivated(&mut self, ship_state: &mut ShipState) {
-        ship_state.shields -= 2;
+        ship_state.remove_shields(2);
     }
     
     fn on_icon_clicked(&mut self) -> bool {

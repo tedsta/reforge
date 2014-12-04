@@ -57,17 +57,43 @@ impl ShipState {
         // Get if module was active before damage
         let was_active = module.get_base().is_active();
         
-        // Get the amount of damage dealt to the module
-        let damage = module.get_base_mut().deal_damage(damage);
-        
-        // Adjust the ship's HP state
-        self.total_module_hp -= damage;
-        self.hp = self.total_module_hp/2;
-        
-        // If the module was active and can no longer be active, deactivate
-        if was_active && !module.get_base().is_active() {
-            module.on_deactivated(self);
+        if self.shields > 0 {
+            self.shields -= cmp::min(self.shields, damage);
+        } else {
+            // Get the amount of damage dealt to the module
+            let damage = module.get_base_mut().deal_damage(damage);
+            
+            // Adjust the ship's HP state
+            self.total_module_hp -= damage;
+            self.hp = self.total_module_hp/2;
+            
+            // If the module was active and can no longer be active, deactivate
+            if was_active && !module.get_base().is_active() {
+                self.add_power(module.get_base().get_power());
+                module.get_base_mut().powered = false;
+                module.on_deactivated(self);
+            }
         }
+    }
+    
+    pub fn add_power(&mut self, power: u8) {
+        self.power += power;
+        self.plan_power += power;
+    }
+    
+    pub fn remove_power(&mut self, power: u8) {
+        self.power -= power;
+        self.plan_power -= power;
+    }
+    
+    pub fn add_shields(&mut self, shields: u8) {
+        self.max_shields += shields;
+        self.shields += shields;
+    }
+    
+    pub fn remove_shields(&mut self, shields: u8) {
+        self.max_shields -= shields;
+        self.shields = cmp::min(self.shields, self.max_shields);
     }
     
     pub fn get_hp(&self) -> u8 {
@@ -159,7 +185,7 @@ impl Ship {
             
             if module.get_base().plan_powered != module.get_base().powered {
                 if !module.get_base().powered {
-                    if self.state.power >= module.get_base().get_power() {
+                    if module.get_base().can_activate() && self.state.power >= module.get_base().get_power() {
                         module.get_base_mut().powered = true;
                         self.state.power -= module.get_base().get_power();
                         module.on_activated(&mut self.state);
@@ -199,11 +225,11 @@ impl Ship {
             module.get_base_mut().powered = packet.read().ok().expect("Failed to read ModuleBase powered");
             if !was_powered && module.get_base().powered {
                 // Module was powered on
-                self.state.power -= module.get_base().get_power();
+                self.state.remove_power(module.get_base().get_power());
                 module.on_activated(&mut self.state);
             } else if was_powered && !module.get_base().powered {
                 // Module was powered off
-                self.state.power += module.get_base().get_power();
+                self.state.add_power(module.get_base().get_power());
                 module.on_deactivated(&mut self.state);
             }
         }

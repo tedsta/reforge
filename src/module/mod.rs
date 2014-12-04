@@ -297,23 +297,23 @@ impl ModuleBase {
         self.max_hp
     }
     
+    pub fn can_activate(&self) -> bool {
+        self.power > 0 && !self.powered && self.hp >= self.min_hp
+    }
+    
     pub fn is_active(&self) -> bool {
-        if self.hp >= self.min_hp && (self.powered || self.power == 0) {
-            true
-        } else {
-            false
-        }
+        self.hp >= self.min_hp && (self.powered || self.power == 0)
     }
     
     // Returns the amount of damage dealt
     pub fn deal_damage(&mut self, damage: u8) -> u8 {
         if self.hp >= damage {
             self.hp -= damage;
-            return damage;
+            damage
         } else {
             let dealt_damage = self.hp;
             self.hp = 0;
-            return dealt_damage;
+            dealt_damage
         }
     }
     

@@ -86,7 +86,7 @@ impl<'a> SpaceGui<'a> {
         });
     }
     
-    pub fn before_planning(&mut self, client_ship: &mut Ship) {
+    pub fn reset_plan_stats(&mut self, client_ship: &mut Ship) {
         client_ship.state.plan_power = client_ship.state.power;
     }
     
@@ -162,7 +162,7 @@ impl<'a> SpaceGui<'a> {
                     let module_power = module_borrowed.get_base().get_power();
                     if module_borrowed.get_base().plan_powered {
                         self.module = Some(module.clone());
-                    } else if module_power > 0 && client_ship.state.plan_power >= module_power {
+                    } else if module_borrowed.get_base().can_activate() && client_ship.state.plan_power >= module_power {
                         client_ship.state.plan_power -= module_power;
                         module_borrowed.get_base_mut().plan_powered = true;
                     }
