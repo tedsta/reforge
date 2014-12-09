@@ -84,6 +84,7 @@ impl<'a> SpaceGui<'a> {
                     let (mouse_x, mouse_y) = (self.mouse_x, self.mouse_y);
                     match button {
                         mouse::Left => self.on_mouse_left_pressed(mouse_x, mouse_y, client_ship),
+                        mouse::Right => self.on_mouse_right_pressed(mouse_x, mouse_y, client_ship),
                         _ => {},
                     }
                 },
@@ -216,6 +217,37 @@ impl<'a> SpaceGui<'a> {
                 None => {},
             }
         }
+    }
+    
+    fn on_mouse_right_pressed(&mut self, x: f64, y: f64, client_ship: &mut Ship) {
+        if self.module.is_none() {
+            let ship_offset_x = 150.0;
+            let ship_offset_y = 150.0;
+            let x = x - ship_offset_x;
+            let y = y - ship_offset_y;
+
+            for module in client_ship.modules.iter() {
+                let mut module_borrowed = module.borrow_mut();
+            
+                // Get module position and size on screen
+                let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
+                let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
+                let module_x = module_x as f64;
+                let module_y = module_y as f64;
+                let module_w = module_w as f64;
+                let module_h = module_h as f64;
+                if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
+                    let module_power = module_borrowed.get_base().get_power();
+                    if module_borrowed.get_base().plan_powered {
+                        client_ship.state.plan_power += module_power;
+                        module_borrowed.get_base_mut().plan_powered = false;
+                    }
+                    return;
+                }
+            }
+        }
+        
+        self.module = None;
     }
 }
 
