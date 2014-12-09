@@ -18,7 +18,8 @@ extern crate sdl2_window;
 extern crate opengl_graphics;
 extern crate shader_version;
 
-use std::io::Command;
+use std::io;
+use std::os;
 use std::cell::RefCell;
 
 use sdl2_window::Sdl2Window;
@@ -62,6 +63,19 @@ fn main () {
     // https://github.com/jeremyletang/rust-sfml/issues/37
     //unsafe { ::std::rt::stack::record_sp_limit(0); }
     
+    // Check for IP address in args
+    let mut ip_address =
+        if os::args().len() > 1 {
+            os::args()[1].clone()
+        } else {
+            print!("IP Address: ");
+            let mut ip_address = io::stdin().read_line().unwrap();
+            ip_address.pop().unwrap(); // Remove newline at end
+            ip_address.pop().unwrap(); // Remove newline at end
+            ip_address
+        };
+    ip_address.push_str(":30000"); // Add the port to the end of the address
+    
     let opengl = shader_version::opengl::OpenGL_3_0;
     
     // Create an SDL window.
@@ -83,7 +97,7 @@ fn main () {
     let asset_store = AssetStore::new();
     
     // Connect to server
-    let mut client = Client::new("127.0.0.1:30000");
+    let mut client = Client::new(ip_address.as_slice());
     
     // Receive the ships from the server
     let mut packet = client.receive();

@@ -61,12 +61,15 @@ impl ClientBattleState {
                 if elapsed_time.num_seconds() >= 5 {
                     break;
                 }
+                
+                // Calculate elapsed time in seconds as f64
+                let elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000f64;
             
                 // Forward events to GUI
                 gui.event(&e, self.player_ship.borrow_mut().deref_mut());
                 
                 // Render GUI
-                e.render(|r_args| gui.draw_planning(r_args, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref()));
+                e.render(|r_args| gui.draw_planning(r_args, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref(), elapsed_seconds));
             }
             
             self.player_ship.borrow_mut().apply_module_plans();

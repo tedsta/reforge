@@ -14,7 +14,7 @@ use vec::{Vec2, Vec2f};
 #[cfg(client)]
 use sim::{SimVisuals, SimVisual};
 #[cfg(client)]
-use sprite_sheet::{SpriteSheet, Loop};
+use sprite_sheet::{SpriteSheet, Loop, Stay};
 #[cfg(client)]
 use asset_store::AssetStore;
 
@@ -41,7 +41,12 @@ impl IModule for ShieldModule {
     #[cfg(client)]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info(SHIELD_TEXTURE));
-        shield_sprite.add_animation(Loop(0.0, 5.0, 0, 9, 0.05));
+        
+        if self.base.is_active() {
+            shield_sprite.add_animation(Loop(0.0, 5.0, 0, 9, 0.05));
+        } else {
+            shield_sprite.add_animation(Stay(0.0, 5.0, 0));
+        }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),

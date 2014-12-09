@@ -90,7 +90,7 @@ impl<'a> SpaceGui<'a> {
         client_ship.state.plan_power = client_ship.state.power;
     }
     
-    pub fn draw_planning(&mut self, r_args: &RenderArgs, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship) {
+    pub fn draw_planning(&mut self, r_args: &RenderArgs, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64) {
         use graphics::*;
         
         let context = Context::abs(r_args.width as f64, r_args.height as f64);
@@ -99,7 +99,7 @@ impl<'a> SpaceGui<'a> {
         context.rgb(0.0, 0.0, 0.0).draw(gl);
         
         // Draw player ship
-        draw_ship(context.trans(150.0, 150.0), gl, sim_visuals, client_ship, 0.0);
+        draw_ship(context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
     
         for render_area in self.render_areas.iter_mut() {
             // TODO clear render texture
@@ -107,7 +107,7 @@ impl<'a> SpaceGui<'a> {
             {
                 let context = context.trans(render_area.x, render_area.y).trans(150.0, 150.0);
                 
-                draw_ship(context, gl, sim_visuals, render_area.ship.as_ref().unwrap().borrow().deref(), 0.0);
+                draw_ship(context, gl, sim_visuals, render_area.ship.as_ref().unwrap().borrow().deref(), time);
             }
             
             // TODO draw render texture
