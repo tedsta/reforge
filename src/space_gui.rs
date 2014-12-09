@@ -29,6 +29,8 @@ pub struct SpaceGui<'a> {
     
     // Textures
     category_textures: Vec<Rc<Texture>>,
+    plan_texture: Texture,
+    simulate_texture: Texture,
 }
 
 impl<'a> SpaceGui<'a> {
@@ -62,6 +64,9 @@ impl<'a> SpaceGui<'a> {
                 asset_store.get_texture(GUI_TEXTURE).clone(),
                 asset_store.get_texture(GUI_TEXTURE).clone(),
             ],
+            
+            plan_texture: Texture::from_path(&Path::new("content/textures/gui/planning.png")).unwrap(),
+            simulate_texture: Texture::from_path(&Path::new("content/textures/gui/simulating.png")).unwrap(),
         }
     }
     
@@ -112,6 +117,11 @@ impl<'a> SpaceGui<'a> {
             
             // TODO draw render texture
         }
+        
+        context
+            .trans(550.0, 10.0)
+            .image(&self.plan_texture)
+            .draw(gl);
     }
     
     pub fn draw_simulating(&mut self, r_args: &RenderArgs, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64) {
@@ -136,6 +146,11 @@ impl<'a> SpaceGui<'a> {
             
             // TODO draw render texture
         }
+        
+        context
+            .trans(550.0, 10.0)
+            .image(&self.simulate_texture)
+            .draw(gl);
     }
     
     fn on_key_pressed(&mut self, key: keyboard::Key) {
