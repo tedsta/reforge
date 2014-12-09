@@ -2,10 +2,10 @@ echo "Starting server ..."
 bin/server &
 sleep 3
 echo "Starting first client ..."
-bin/client &
+bin/client localhost &
 sleep 1
 echo "Starting second client ..."
-bin/client &
+bin/client localhost &
 
 sleep 1
 read -p "Press enter to terminate. " answer

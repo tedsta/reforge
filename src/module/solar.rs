@@ -14,7 +14,7 @@ use vec::{Vec2, Vec2f};
 #[cfg(client)]
 use sim::{SimVisuals, SimVisual};
 #[cfg(client)]
-use sprite_sheet::{SpriteSheet, Loop};
+use sprite_sheet::{SpriteSheet, Loop, Stay};
 #[cfg(client)]
 use asset_store::AssetStore;
 
@@ -41,7 +41,12 @@ impl IModule for SolarModule {
     #[cfg(client)]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut solar_sprite = SpriteSheet::new(asset_store.get_sprite_info(SOLAR_TEXTURE));
-        solar_sprite.add_animation(Loop(0.0, 5.0, 1, 4, 0.1));
+        
+        if self.base.is_active() {
+            solar_sprite.add_animation(Loop(0.0, 5.0, 1, 4, 0.1));
+        } else {
+            solar_sprite.add_animation(Stay(0.0, 5.0, 0));
+        }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),
