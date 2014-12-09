@@ -1,3 +1,6 @@
+use std::rand::Rng;
+use std::rand;
+
 #[cfg(client)]
 use graphics::Context;
 #[cfg(client)]
@@ -46,7 +49,7 @@ impl ProjectileWeaponModule {
     
         ProjectileWeapon(ProjectileWeaponModule {
             base: ModuleBase::new(mod_store, mod_type, 2, 2, 3),
-            projectiles: Vec::from_elem(4, projectile),
+            projectiles: Vec::from_elem(2, projectile),
             target: None,
         })
     }
@@ -54,8 +57,24 @@ impl ProjectileWeaponModule {
 
 impl IModule for ProjectileWeaponModule {
     fn server_preprocess(&mut self, ship_state: &mut ShipState) {
-        for projectile in self.projectiles.iter_mut() {
-            projectile.hit = true;
+        if self.base.powered {
+            match self.target {
+                Some((ref target_ship, ref target_module)) => {
+                    // Random number generater
+                    let mut rng = rand::task_rng();
+                    
+                    let target_ship = target_ship.borrow();
+                    
+                    for projectile in self.projectiles.iter_mut() {
+                        if rng.gen::<f64>() > 0.3 * (target_ship.state.thrust as f64) {
+                            projectile.hit = true;
+                        } else {
+                            projectile.hit = false;
+                        }
+                    }
+                },
+                None => {}
+            }
         }
     }
 
@@ -63,7 +82,7 @@ impl IModule for ProjectileWeaponModule {
         if self.base.powered {
             match self.target {
                 Some((ref target_ship, ref target_module)) => {
-                    for (i, projectile) in self.projectiles.iter_mut().enumerate() {
+                    for (i, projectile) in self.projectiles.iter_mut().enumerate() {                    
                         projectile.phase = FireToOffscreen;
                         
                         let start = (i*10) as u32;
@@ -75,9 +94,14 @@ impl IModule for ProjectileWeaponModule {
                         projectile.fire_pos = self.base.get_render_position();
                         projectile.to_offscreen_pos = projectile.fire_pos + Vec2{x: 1500.0, y: 0.0};
                         projectile.from_offscreen_pos = Vec2{x: 1500.0, y: 0.0};
-                        projectile.hit_pos = target_module.borrow().get_base().get_render_position();
                         
-                        events.add(projectile.hit_tick, box DamageEvent::new(target_ship.clone(), target_module.clone(), 1));
+                        if projectile.hit {
+                            projectile.hit_pos = target_module.borrow().get_base().get_render_position();
+                        
+                            events.add(projectile.hit_tick, box DamageEvent::new(target_ship.clone(), target_module.clone(), 1));
+                        } else {
+                            projectile.hit_pos = Vec2{x: 200.0, y: 300.0};
+                        }
                     }
                 }
                 None => { },
@@ -109,7 +133,7 @@ impl IModule for ProjectileWeaponModule {
                 Some((ref target_ship, ref target_module)) => {
                     let target_ship_id = target_ship.borrow().id;
                 
-                    for projectile in self.projectiles.iter() {
+                    for projectile in self.projectiles.iter() {                    
                         // Set up interpolation stuff to send projectile from weapon to offscreen
                         let start_time = (projectile.fire_tick as f64)/(TICKS_PER_SECOND as f64);
                         let end_time = (projectile.offscreen_tick as f64)/(TICKS_PER_SECOND as f64);
@@ -214,9 +238,15 @@ impl IModule for ProjectileWeaponModule {
     }
     
     fn write_results(&self, packet: &mut OutPacket) {
+        for projectile in self.projectiles.iter() {
+            packet.write(&projectile.hit).unwrap();
+        }
     }
     
     fn read_results(&mut self, packet: &mut InPacket) {
+        for projectile in self.projectiles.iter_mut() {
+            projectile.hit = packet.read().unwrap();
+        }
     }
     
     fn on_activated(&mut self, ship_state: &mut ShipState) {

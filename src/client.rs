@@ -18,6 +18,7 @@ extern crate sdl2_window;
 extern crate opengl_graphics;
 extern crate shader_version;
 
+use std::io::Command;
 use std::cell::RefCell;
 
 use sdl2_window::Sdl2Window;

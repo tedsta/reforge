@@ -4,8 +4,8 @@ use graphics::Context;
 use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
-use assets::SHIELD_TEXTURE;
-use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore, Shield};
+use assets::COMMAND_TEXTURE;
+use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore, Propulsion, Command};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
@@ -19,19 +19,19 @@ use sprite_sheet::{SpriteSheet, Loop};
 use asset_store::AssetStore;
 
 #[deriving(Encodable, Decodable)]
-pub struct ShieldModule {
+pub struct CommandModule {
     pub base: ModuleBase,
 }
 
-impl ShieldModule {
+impl CommandModule {
     pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
-        Shield(ShieldModule {
+        Command(CommandModule {
             base: ModuleBase::new(mod_store, mod_type, 2, 2, 3),
         })
     }
 }
 
-impl IModule for ShieldModule {
+impl IModule for CommandModule {
     fn server_preprocess(&mut self, ship_state: &mut ShipState) {
     }
     
@@ -40,12 +40,12 @@ impl IModule for ShieldModule {
     
     #[cfg(client)]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
-        let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info(SHIELD_TEXTURE));
-        shield_sprite.add_animation(Loop(0.0, 5.0, 0, 9, 0.05));
+        let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info(COMMAND_TEXTURE));
+        command_sprite.add_animation(Loop(0.0, 5.0, 0, 7, 0.2));
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),
-            sprite_sheet: shield_sprite,
+            sprite_sheet: command_sprite,
         });
     }
     
@@ -55,9 +55,6 @@ impl IModule for ShieldModule {
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {
-        if self.base.powered && ship_state.shields < ship_state.max_shields {
-            ship_state.shields += 1; // charge shield
-        }
     }
     
     fn write_plans(&self, packet: &mut OutPacket) {
@@ -73,11 +70,11 @@ impl IModule for ShieldModule {
     }
     
     fn on_activated(&mut self, ship_state: &mut ShipState) {
-        ship_state.add_shields(2);
+        ship_state.thrust += 1;
     }
     
     fn on_deactivated(&mut self, ship_state: &mut ShipState) {
-        ship_state.remove_shields(2);
+        ship_state.thrust -= 1;
     }
     
     fn on_icon_clicked(&mut self) -> bool {

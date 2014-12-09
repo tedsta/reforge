@@ -1,5 +1,5 @@
 use ship::{Ship, ShipId};
-use module::{EngineModule, ProjectileWeaponModule, ShieldModule, SolarModule, ModuleType, ModuleTypeStore};
+use module::{EngineModule, ProjectileWeaponModule, ShieldModule, SolarModule, CommandModule, ModuleType, ModuleTypeStore};
 
 pub fn generate_ship(mod_store: &ModuleTypeStore, id: ShipId) -> Ship {
     let mut ship = Ship::new(id);
@@ -32,6 +32,10 @@ pub fn generate_ship(mod_store: &ModuleTypeStore, id: ShipId) -> Ship {
     solar2.get_base_mut().x = 1;
     solar2.get_base_mut().y = 2;
     
+    let mut command = CommandModule::new(mod_store, 4);
+    command.get_base_mut().x = 4;
+    command.get_base_mut().y = 1;
+    
     ship.add_module(engine);
     ship.add_module(weapon1);
     ship.add_module(weapon2);
@@ -39,5 +43,6 @@ pub fn generate_ship(mod_store: &ModuleTypeStore, id: ShipId) -> Ship {
     ship.add_module(shield2);
     ship.add_module(solar1);
     ship.add_module(solar2);
+    ship.add_module(command);
     ship
 }
