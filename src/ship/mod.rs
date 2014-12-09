@@ -88,7 +88,6 @@ impl ShipState {
     
     pub fn add_shields(&mut self, shields: u8) {
         self.max_shields += shields;
-        self.shields += shields;
     }
     
     pub fn remove_shields(&mut self, shields: u8) {
@@ -205,19 +204,18 @@ impl Ship {
         for module in self.modules.iter() {
             let module = module.borrow();
         
-            module.write_plans(packet);
-            
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Write the base plans
             packet.write(&module.get_base().powered);
+        
+            // Write the module plans
+            module.write_plans(packet);
         }
     }
     
     pub fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
         for module in self.modules.iter() {
             let mut module = module.borrow_mut();
-            
-            module.read_plans(context, packet);
             
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Read the base plans
@@ -232,6 +230,9 @@ impl Ship {
                 self.state.add_power(module.get_base().get_power());
                 module.on_deactivated(&mut self.state);
             }
+            
+            // Read the module plans
+            module.read_plans(context, packet);
         }
     }
     
