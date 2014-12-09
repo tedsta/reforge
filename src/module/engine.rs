@@ -4,7 +4,7 @@ use graphics::Context;
 use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
-use assets::ENGINE_TEXTURE;
+use assets::{ENGINE_TEXTURE, PROPULSION_TEXTURE};
 use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore, Propulsion, Engine};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
@@ -14,7 +14,7 @@ use vec::{Vec2, Vec2f};
 #[cfg(client)]
 use sim::{SimVisuals, SimVisual};
 #[cfg(client)]
-use sprite_sheet::{SpriteSheet, Stay};
+use sprite_sheet::{SpriteSheet, Loop, Stay};
 #[cfg(client)]
 use asset_store::AssetStore;
 
@@ -47,6 +47,17 @@ impl IModule for EngineModule {
             position: self.base.get_render_position().clone(),
             sprite_sheet: engine_sprite,
         });
+        
+        // Propulsion sprite
+        if self.base.is_active() {
+            let mut prop_sprite = SpriteSheet::new(asset_store.get_sprite_info(PROPULSION_TEXTURE));
+            prop_sprite.add_animation(Loop(0.0, 5.0, 0, 7, 0.05));
+        
+            visuals.add(ship.borrow().id, 0, box SpriteVisual {
+                position: self.base.get_render_position().clone() + Vec2{x: -48.0, y: 2.0},
+                sprite_sheet: prop_sprite,
+            });
+        }
     }
     
     #[cfg(client)]

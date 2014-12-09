@@ -14,7 +14,7 @@ use vec::{Vec2, Vec2f};
 #[cfg(client)]
 use sim::{SimVisuals, SimVisual};
 #[cfg(client)]
-use sprite_sheet::{SpriteSheet, Loop};
+use sprite_sheet::{SpriteSheet, Loop, Stay};
 #[cfg(client)]
 use asset_store::AssetStore;
 
@@ -26,7 +26,7 @@ pub struct CommandModule {
 impl CommandModule {
     pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
         Command(CommandModule {
-            base: ModuleBase::new(mod_store, mod_type, 2, 2, 3),
+            base: ModuleBase::new(mod_store, mod_type, 0, 2, 4),
         })
     }
 }
@@ -41,7 +41,12 @@ impl IModule for CommandModule {
     #[cfg(client)]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info(COMMAND_TEXTURE));
-        command_sprite.add_animation(Loop(0.0, 5.0, 0, 7, 0.2));
+
+        if self.base.is_active() {
+            command_sprite.add_animation(Loop(0.0, 5.0, 0, 7, 0.2));
+        } else {
+            command_sprite.add_animation(Stay(0.0, 5.0, 0));
+        }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),

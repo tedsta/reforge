@@ -12,7 +12,8 @@ pub static SOLAR_TEXTURE: u16 = 3;
 pub static COMMAND_TEXTURE: u16 = 4;
 pub static LASER_TEXTURE: u16 = 5;
 pub static EXPLOSION_TEXTURE: u16 = 6;
-pub static GUI_TEXTURE: u16 = 7;
+pub static PROPULSION_TEXTURE: u16 = 7;
+pub static GUI_TEXTURE: u16 = 8;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

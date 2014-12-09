@@ -13,6 +13,7 @@ use assets::{
     COMMAND_TEXTURE,
     LASER_TEXTURE,
     EXPLOSION_TEXTURE,
+    PROPULSION_TEXTURE,
     GUI_TEXTURE,
 };
 
@@ -31,6 +32,7 @@ impl AssetStore {
             Rc::new(Texture::from_path(&Path::new("content/textures/modules/big_command_sprite.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/effects/laser1.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/effects/explosion1.png")).unwrap()),
+            Rc::new(Texture::from_path(&Path::new("content/textures/effects/propulsion_sprite.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/gui/module_button.png")).unwrap()),
         ];
         
@@ -69,6 +71,11 @@ impl AssetStore {
                 texture: textures[EXPLOSION_TEXTURE as uint].clone(),
                 columns: 1,
                 rows: 10,
+            },
+            SpriteInfo {
+                texture: textures[PROPULSION_TEXTURE as uint].clone(),
+                columns: 1,
+                rows: 7,
             },
             SpriteInfo {
                 texture: textures[GUI_TEXTURE as uint].clone(),
