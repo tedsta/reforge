@@ -52,7 +52,7 @@ impl ShipState {
     
     pub fn deal_damage(&mut self, module: &mut Module, damage: u8) {
         // Can't deal more damage than there is HP
-        let damage = cmp::min(self.total_module_hp, damage);
+        let damage = cmp::min(self.hp, damage);
         
         // Get if module was active before damage
         let was_active = module.get_base().is_active();
@@ -64,8 +64,7 @@ impl ShipState {
             let damage = module.get_base_mut().deal_damage(damage);
             
             // Adjust the ship's HP state
-            self.total_module_hp -= damage;
-            self.hp = self.total_module_hp/2;
+            self.hp -= damage;
             
             // If the module was active and can no longer be active, deactivate
             if was_active && !module.get_base().is_active() {

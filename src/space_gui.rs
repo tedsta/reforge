@@ -31,6 +31,8 @@ pub struct SpaceGui<'a> {
     category_textures: Vec<Rc<Texture>>,
     plan_texture: Texture,
     simulate_texture: Texture,
+    win_texture: Texture,
+    lose_texture: Texture,
 }
 
 impl<'a> SpaceGui<'a> {
@@ -67,11 +69,17 @@ impl<'a> SpaceGui<'a> {
             
             plan_texture: Texture::from_path(&Path::new("content/textures/gui/planning.png")).unwrap(),
             simulate_texture: Texture::from_path(&Path::new("content/textures/gui/simulating.png")).unwrap(),
+            win_texture: Texture::from_path(&Path::new("content/textures/gui/win.png")).unwrap(),
+            lose_texture: Texture::from_path(&Path::new("content/textures/gui/lose.png")).unwrap(),
         }
     }
     
     pub fn event<E: GenericEvent>(&mut self, e: &E, client_ship: &mut Ship) {
         use event::*;
+        
+        if client_ship.state.get_hp() == 0 {
+            return;
+        }
     
         e.mouse_cursor(|x, y| {
             self.mouse_x = x;
@@ -107,6 +115,7 @@ impl<'a> SpaceGui<'a> {
         // Draw player ship
         draw_ship(context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
     
+        let mut win = false;
         for render_area in self.render_areas.iter_mut() {
             // TODO clear render texture
         
@@ -117,12 +126,28 @@ impl<'a> SpaceGui<'a> {
             }
             
             // TODO draw render texture
+        
+            if render_area.ship.as_ref().unwrap().borrow().state.get_hp() == 0 {
+                win = true;
+            }
         }
         
         context
             .trans(550.0, 10.0)
             .image(&self.plan_texture)
             .draw(gl);
+        
+        if client_ship.state.get_hp() == 0 {
+            context
+            .trans(550.0, 100.0)
+            .image(&self.lose_texture)
+            .draw(gl);
+        } else if win {
+            context
+            .trans(550.0, 100.0)
+            .image(&self.win_texture)
+            .draw(gl);
+        }
     }
     
     pub fn draw_simulating(&mut self, r_args: &RenderArgs, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64) {
@@ -136,6 +161,7 @@ impl<'a> SpaceGui<'a> {
         // Draw player ship
         draw_ship(context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
     
+        let mut win = false;
         for render_area in self.render_areas.iter_mut() {
             // TODO clear render texture
         
@@ -146,12 +172,28 @@ impl<'a> SpaceGui<'a> {
             }
             
             // TODO draw render texture
+            
+            if render_area.ship.as_ref().unwrap().borrow().state.get_hp() == 0 {
+                win = true;
+            }
         }
         
         context
             .trans(550.0, 10.0)
             .image(&self.simulate_texture)
             .draw(gl);
+        
+        if client_ship.state.get_hp() == 0 {
+            context
+            .trans(550.0, 100.0)
+            .image(&self.lose_texture)
+            .draw(gl);
+        } else if win {
+            context
+            .trans(550.0, 100.0)
+            .image(&self.win_texture)
+            .draw(gl);
+        }
     }
     
     fn on_key_pressed(&mut self, key: keyboard::Key) {
