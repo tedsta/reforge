@@ -26,10 +26,10 @@ pub enum SlotInMsg {
 
 // Messages outgoing from slots
 pub enum SlotOutMsg {
-    SendPacket(ClientId, OutPacket), // Send a packet to a client (client_id, packet)
-    BroadcastPacket(OutPacket), // Send packet to all clients in slot (packet)
+    SendPacket(ServerSlotId, ClientId, OutPacket), // Send a packet to a client (my_slot_id, client_id, packet)
+    BroadcastPacket(ServerSlotId, OutPacket), // Send packet to all clients in slot (my_slot_id, packet)
     CreateSlot(ServerSlotId),            // Tell the server to make a new ServerSlot (slot_id)
-    TransferClient(ClientId, ServerSlotId), // Tell the server to transfer a client to a different slot
+    TransferClient(ServerSlotId, ClientId, ServerSlotId), // Tell the server to transfer a client to a different slot
 }
 
 pub struct ServerSlot {
@@ -47,11 +47,11 @@ impl ServerSlot {
     }
     
     pub fn send(&self, client_id: ClientId, packet: OutPacket) {
-        self.sender.send(SendPacket(client_id, packet));
+        self.sender.send(SendPacket(self.id, client_id, packet));
     }
     
     pub fn broadcast(&self, packet: OutPacket) {
-        self.sender.send(BroadcastPacket(packet));
+        self.sender.send(BroadcastPacket(self.id, packet));
     }
     
     pub fn receive(&self) -> SlotInMsg {
@@ -65,10 +65,10 @@ impl ServerSlot {
     
     // Transfer a client to a different slot
     pub fn transfer_client(&self, client_id: ClientId, to_slot: ServerSlotId) {
-        self.sender.send(TransferClient(client_id, to_slot));
+        self.sender.send(TransferClient(self.id, client_id, to_slot));
     }
     
-    pub fn id(&self) -> ServerSlotId {
+    pub fn get_id(&self) -> ServerSlotId {
         self.id
     }
 }
@@ -125,8 +125,9 @@ impl Server {
         // Maps clients to their server slots
         let mut client_slots: HashMap<ClientId, Sender<SlotInMsg>> = HashMap::new();
         
-        // Maps clients to their out packet channels
-        let mut client_outs: HashMap<ClientId, Sender<OutPacket>> = HashMap::new();
+        // Maps clients to their out packet channels. Also store client's server slot ID so we can verify it when
+        // sending packets from server slots.
+        let mut client_outs: HashMap<ClientId, (ServerSlotId, Sender<OutPacket>)> = HashMap::new();
         
         // Client task to master: packet channel
         let (packet_in_t, packet_in_r): (Sender<(ClientId, InPacket)>, Receiver<(ClientId, InPacket)>) = channel();
@@ -158,7 +159,7 @@ impl Server {
                         
                         // Create client packet output channel
                         let (client_out_t, client_out_r) = channel();
-                        client_outs.insert(client_id, client_out_t);
+                        client_outs.insert(client_id, (0, client_out_t)); // Zero is the slot ID of the default slot
                         
                         // Clone packet in channel
                         let packet_in_t = packet_in_t.clone();
@@ -213,24 +214,36 @@ impl Server {
                     Ok(msg) => {
                         received_messages += 1;
                         match msg {
-                            SendPacket(client_id, packet) => match client_outs.find(&client_id) {
-                                Some(c) => c.send(packet),
-                                None => println!("Failed to send packet to invalid client ID {}", client_id)
+                            SendPacket(slot_id, client_id, packet) => match client_outs.find(&client_id) {
+                                Some(&(ref client_slot_id, ref c)) => {
+                                    if slot_id == *client_slot_id {
+                                        c.send(packet);
+                                    } else {
+                                        println!("Failed to send packet to client {} from server slot {} because the client's server slot is {}", client_id, slot_id, client_slot_id);
+                                    }
+                                },
+                                None => { println!("Failed to send packet to invalid client ID {}", client_id); }
                             },
-                            BroadcastPacket(packet) => for c in client_outs.values() {
-                                c.send(packet.clone());
+                            BroadcastPacket(slot_id, packet) => for &(ref client_slot_id, ref c) in client_outs.values() {
+                                if slot_id == *client_slot_id {
+                                    c.send(packet.clone());
+                                }
                             },
                             CreateSlot(slot_id) =>  {
                                 let new_slot = self.create_slot();
                                 let (_, ref create_slot_t) = self.slots[slot_id];
                                 create_slot_t.send(new_slot);
                             },
-                            TransferClient(client_id, slot_id) => {
-                                match self.slots.find(&slot_id) {
+                            TransferClient(slot_id, client_id, new_slot_id) => {
+                                match self.slots.find(&new_slot_id) {
                                     Some(slot) => {
-                                        let &(ref slot_in_t, _) = slot;
-                                        client_slots[client_id].clone_from(slot_in_t);
-                                        slot_in_t.send(Joined(client_id));
+                                        let &(ref mut client_slot_id, _) = &mut client_outs[client_id];
+                                        if *client_slot_id == slot_id {
+                                            let &(ref slot_in_t, _) = slot;
+                                            *client_slot_id = new_slot_id; // set the client's new slot ID
+                                            client_slots[client_id].clone_from(slot_in_t);
+                                            slot_in_t.send(Joined(client_id));
+                                        }
                                     },
                                     None => panic!("Failed to transfer client {} to non-existant slot {}", client_id, slot_id)
                                 }

@@ -7,10 +7,15 @@ sleep 1
 echo "Starting second client ..."
 bin/client localhost &
 
+bin/client localhost &
+bin/client localhost &
+
 sleep 1
 read -p "Press enter to terminate. " answer
 
 kill %1
 kill %2
 kill %3
+kill %4
+kill %5
 
