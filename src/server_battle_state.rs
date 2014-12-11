@@ -32,7 +32,7 @@ impl ServerBattleState {
         loop {
             match self.slot.receive() {
                 Joined(client_id) => {
-                    println!("Client {} joined battle {}", client_id, self.slot.id());
+                    println!("Client {} joined battle {}", client_id, self.slot.get_id());
                     
                     // Send the player all the ships
                     let mut packet = OutPacket::new();
