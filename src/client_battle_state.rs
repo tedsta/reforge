@@ -7,7 +7,7 @@ use piston::Window;
 use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
-use battle_state::{BattleContext, ClientPacketId, Plan, SimResults, TICKS_PER_SECOND};
+use battle_state::{BattleContext, ClientPacketId, ServerPacketId, TICKS_PER_SECOND};
 use net::{Client, OutPacket};
 use ship::ShipRef;
 use sim::{SimEvents, SimVisuals};
@@ -69,7 +69,11 @@ impl ClientBattleState {
                 gui.event(&e, self.player_ship.borrow_mut().deref_mut());
                 
                 // Render GUI
-                e.render(|r_args| gui.draw_planning(r_args, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref(), elapsed_seconds));
+                e.render(|args| {
+                    gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+                        gui.draw_planning(&c, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref(), elapsed_seconds);
+                    });
+                });
             }
             
             self.player_ship.borrow_mut().apply_module_plans();
@@ -123,7 +127,11 @@ impl ClientBattleState {
                 gui.event(&e, self.player_ship.borrow_mut().deref_mut());
                 
                 // Render GUI
-                e.render(|r_args| gui.draw_simulating(r_args, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref(), elapsed_seconds));
+                e.render(|args| {
+                    gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+                        gui.draw_simulating(&c, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref(), elapsed_seconds);
+                    });
+                });
             }
             
             // After simulation
@@ -136,7 +144,7 @@ impl ClientBattleState {
     
     fn build_plans_packet(&mut self) -> OutPacket {
         let mut packet = OutPacket::new();
-        match packet.write(&Plan) {
+        match packet.write(&ServerPacketId::Plan) {
             Ok(()) => {},
             Err(e) => panic!("Failed to write plan packet ID: {}", e),
         }
@@ -149,7 +157,7 @@ impl ClientBattleState {
     fn receive_simulation_results(&mut self) {
         let mut packet = self.client.receive();
         match (packet.read::<ClientPacketId>()) {
-            Ok(id) if id != SimResults => panic!("Expected SimResults, got {}", id),
+            Ok(ref id) if *id != ClientPacketId::SimResults => panic!("Expected SimResults, got {}", id),
             Err(e) => panic!("Failed to read simulation results packet ID: {}", e),
             _ => {}, // All good!
         };

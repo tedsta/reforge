@@ -1,5 +1,6 @@
 use std::collections::RingBuf;
 use std::rc::Rc;
+use std::num::Float;
 
 use graphics::{Context, ImageSize};
 use opengl_graphics::{Gl, Texture};
@@ -54,7 +55,7 @@ impl SpriteSheet {
         match self.animations.front() {
             Some(animation) =>
                 match *animation {
-                    PlayOnce(start_time, end_time, start_frame, end_frame) => {
+                    SpriteAnimation::PlayOnce(start_time, end_time, start_frame, end_frame) => {
                         if time >= start_time {
                             if time <= end_time {
                                 let frame = ((time-start_time)/(end_time-start_time) * ((end_frame - start_frame) as f64)).floor() as u32;
@@ -65,7 +66,7 @@ impl SpriteSheet {
                             }
                         }
                     },
-                    Loop(start_time, end_time, start_frame, end_frame, interval) => {
+                    SpriteAnimation::Loop(start_time, end_time, start_frame, end_frame, interval) => {
                         if time >= start_time {
                             if time <= end_time {
                                 let mut frame = ((time-start_time) / interval).floor() as u32;
@@ -78,7 +79,7 @@ impl SpriteSheet {
                             }
                         }
                     },
-                    Stay(start_time, end_time, frame) => {
+                    SpriteAnimation::Stay(start_time, end_time, frame) => {
                         if time >= start_time {
                             if time <= end_time {
                                 self.current_frame = frame;
@@ -98,16 +99,15 @@ impl SpriteSheet {
     }
     
     fn draw_current_frame(&self, context: &Context, gl: &mut Gl, x: f64, y: f64, rotation: f64) {
+        use current::Set;
         use graphics::*;
     
         let source_x = ((self.current_frame % (self.columns as u32)) as f64) * (self.frame_width as f64);
         let source_y = ((self.current_frame / (self.columns as u32)) as f64) * (self.frame_height as f64);
-        
-        context
-            .image(self.texture.deref())
-            .src_rect(source_x as i32, source_y as i32, self.frame_width as i32, self.frame_height as i32)
-            .trans(x, y)
-            .draw(gl);
+
+        Image::new()
+            .set(SrcRect([source_x as i32, source_y as i32, self.frame_width as i32, self.frame_height as i32]))
+            .draw(self.texture.deref(), context, gl);
     }
     
     pub fn set_frame(&mut self, frame: u32) {

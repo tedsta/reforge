@@ -8,7 +8,7 @@ use opengl_graphics::Gl;
 
 use assets::{WEAPON_TEXTURE, LASER_TEXTURE, EXPLOSION_TEXTURE, TextureId};
 use battle_state::{BattleContext, TICKS_PER_SECOND};
-use module::{IModule, Module, ModuleRef, ModuleBase, ModuleType, ModuleTypeStore, ProjectileWeapon, Weapon};
+use module::{IModule, Module, ModuleRef, ModuleBase, ModuleType, ModuleTypeStore};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::{SimEvent, SimEventAdder};
@@ -17,7 +17,7 @@ use vec::{Vec2, Vec2f};
 #[cfg(client)]
 use sim::{SimVisuals, SimVisual};
 #[cfg(client)]
-use sprite_sheet::{SpriteSheet, Loop, PlayOnce, Stay};
+use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(client)]
 use asset_store::AssetStore;
 
@@ -33,7 +33,6 @@ pub struct ProjectileWeaponModule {
 impl ProjectileWeaponModule {
     pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
         let projectile = Projectile {
-            phase: FireToOffscreen,
             damage: 1,
             hit: false,
             
@@ -47,7 +46,7 @@ impl ProjectileWeaponModule {
             hit_pos: Vec2{x: 0f64, y: 0f64},
         };
     
-        ProjectileWeapon(ProjectileWeaponModule {
+        Module::ProjectileWeapon(ProjectileWeaponModule {
             base: ModuleBase::new(mod_store, mod_type, 2, 2, 3),
             projectiles: Vec::from_elem(2, projectile),
             target: None,
@@ -82,9 +81,7 @@ impl IModule for ProjectileWeaponModule {
         if self.base.powered {
             match self.target {
                 Some((ref target_ship, ref target_module)) => {
-                    for (i, projectile) in self.projectiles.iter_mut().enumerate() {                    
-                        projectile.phase = FireToOffscreen;
-                        
+                    for (i, projectile) in self.projectiles.iter_mut().enumerate() {                                            
                         let start = (i*10) as u32;
                         
                         projectile.fire_tick = start;
@@ -112,7 +109,7 @@ impl IModule for ProjectileWeaponModule {
     #[cfg(client)]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
-        weapon_sprite.add_animation(Stay(0.0, 5.0, 0));
+        weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),
@@ -141,14 +138,14 @@ impl IModule for ProjectileWeaponModule {
                         let end_pos = projectile.to_offscreen_pos.clone();
                         
                         let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
-                        laser_sprite.add_animation(Loop(0.0, 5.0, 0, 4, 0.05));
+                        laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 4, 0.05));
                         
                         let weapon_anim_start = start_time;
                         let weapon_anim_end = start_time+0.15;
                         
                         // Add weapon fire animations for this projectile
-                        weapon_sprite.add_animation(Stay(last_weapon_anim_end, weapon_anim_start, 0));
-                        weapon_sprite.add_animation(PlayOnce(weapon_anim_start, weapon_anim_end, 0, 5));
+                        weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, weapon_anim_start, 0));
+                        weapon_sprite.add_animation(SpriteAnimation::PlayOnce(weapon_anim_start, weapon_anim_end, 0, 5));
                         
                         // Set the last end for the next projectile
                         last_weapon_anim_end = weapon_anim_end;
@@ -171,7 +168,7 @@ impl IModule for ProjectileWeaponModule {
                         let end_pos = projectile.hit_pos.clone();
 
                         let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
-                        laser_sprite.add_animation(Loop(0.0, 5.0, 0, 4, 0.05));
+                        laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 4, 0.05));
                         
                         // Add the simulation visual for projectile entering target screen
                         visuals.add(target_ship_id, 1, box LerpVisual {
@@ -189,7 +186,7 @@ impl IModule for ProjectileWeaponModule {
                         let end_time = start_time + 0.7;
                         
                         let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info(EXPLOSION_TEXTURE));
-                        explosion_sprite.add_animation(PlayOnce(start_time, end_time, 0, 10));
+                        explosion_sprite.add_animation(SpriteAnimation::PlayOnce(start_time, end_time, 0, 10));
                         
                         visuals.add(target_ship_id, 1, box SpriteVisual {
                             position: projectile.hit_pos.clone(),
@@ -202,7 +199,7 @@ impl IModule for ProjectileWeaponModule {
         }
         
         // Add last stay animation
-        weapon_sprite.add_animation(Stay(last_weapon_anim_end, 5.0, 0));
+        weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, 5.0, 0));
         
         visuals.add(ship_id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),
@@ -271,15 +268,7 @@ impl IModule for ProjectileWeaponModule {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[deriving(Encodable, Decodable, Clone)]
-enum ProjectilePhase {
-    FireToOffscreen,
-    OffscreenToTarget,
-    Detonate
-}
-
-#[deriving(Encodable, Decodable, Clone)]
 struct Projectile {
-    phase: ProjectilePhase,
     damage: u8,
     hit: bool,
     
@@ -288,8 +277,6 @@ struct Projectile {
     offscreen_tick: u32,  // Tick that the projectile starts travelling from offscreen to target at
     hit_tick: u32,        // Tick that projectile hits target at
     
-    // Render stuff
-
     // Interpolation points for drawing
     fire_pos: Vec2f,
     to_offscreen_pos: Vec2f,

@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use battle_state::BattleContext;
 use module::ModuleTypeStore;
-use net::{ClientId, ServerSlot, Joined, ReceivedPacket};
+use net::{ClientId, ServerSlot, SlotInMsg};
 use server_battle_state::ServerBattleState;
 use ship::{Ship, ShipId};
 
@@ -24,12 +24,12 @@ impl BattleScheduler {
     pub fn run(&mut self) {
         loop {
             match self.slot.receive() {
-                Joined(client_id) => {
+                SlotInMsg::Joined(client_id) => {
                     println!("Client {} joined the scheduler", client_id);
                     self.waiting.push(client_id);
                     self.try_schedule();
                 },
-                ReceivedPacket(client_id, packet) => {
+                SlotInMsg::ReceivedPacket(client_id, packet) => {
                     println!("Received packet from {} of length {}", client_id, packet.len());
                 },
                 _ => {}
@@ -50,7 +50,7 @@ impl BattleScheduler {
             
             let mod_store = self.mod_store.clone();
             
-            spawn(proc() {
+            spawn(move || {
                 // Create ships
                 let mut ship1 = Ship::generate(mod_store.deref(), client1 as ShipId);
                 ship1.client_id = Some(client1);

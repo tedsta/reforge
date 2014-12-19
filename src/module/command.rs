@@ -5,7 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
 use assets::COMMAND_TEXTURE;
-use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore, Propulsion, Command};
+use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
@@ -14,7 +14,7 @@ use vec::{Vec2, Vec2f};
 #[cfg(client)]
 use sim::{SimVisuals, SimVisual};
 #[cfg(client)]
-use sprite_sheet::{SpriteSheet, Loop, Stay};
+use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(client)]
 use asset_store::AssetStore;
 
@@ -25,7 +25,7 @@ pub struct CommandModule {
 
 impl CommandModule {
     pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
-        Command(CommandModule {
+        Module::Command(CommandModule {
             base: ModuleBase::new(mod_store, mod_type, 0, 2, 4),
         })
     }
@@ -43,9 +43,9 @@ impl IModule for CommandModule {
         let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info(COMMAND_TEXTURE));
 
         if self.base.is_active() {
-            command_sprite.add_animation(Loop(0.0, 5.0, 0, 7, 0.2));
+            command_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 7, 0.2));
         } else {
-            command_sprite.add_animation(Stay(0.0, 5.0, 0));
+            command_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
         }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {

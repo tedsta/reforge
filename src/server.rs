@@ -26,7 +26,7 @@ fn main() {
     let mut server = Server::new();
     let slot = box server.create_slot();
     
-    spawn(proc() {
+    spawn(move || {
         server.listen("0.0.0.0:30000");
     });
 

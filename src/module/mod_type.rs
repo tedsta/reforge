@@ -1,5 +1,6 @@
 use assets::{TextureId, ENGINE_TEXTURE, LASER_TEXTURE};
-use module::{ModuleCategory, Weapon, Propulsion, Defense, Power, Control};
+use module::ModuleCategory;
+use module::ModuleCategory::*;
 
 pub type ModuleType = u16;
 
