@@ -5,7 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
 use assets::{ENGINE_TEXTURE, PROPULSION_TEXTURE};
-use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore, Propulsion, Engine};
+use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
@@ -14,7 +14,7 @@ use vec::{Vec2, Vec2f};
 #[cfg(client)]
 use sim::{SimVisuals, SimVisual};
 #[cfg(client)]
-use sprite_sheet::{SpriteSheet, Loop, Stay};
+use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(client)]
 use asset_store::AssetStore;
 
@@ -25,7 +25,7 @@ pub struct EngineModule {
 
 impl EngineModule {
     pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
-        Engine(EngineModule {
+        Module::Engine(EngineModule {
             base: ModuleBase::new(mod_store, mod_type, 2, 2, 3),
         })
     }
@@ -41,7 +41,7 @@ impl IModule for EngineModule {
     #[cfg(client)]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut engine_sprite = SpriteSheet::new(asset_store.get_sprite_info(ENGINE_TEXTURE));
-        engine_sprite.add_animation(Stay(0.0, 5.0, 0));
+        engine_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),
@@ -51,7 +51,7 @@ impl IModule for EngineModule {
         // Propulsion sprite
         if self.base.is_active() {
             let mut prop_sprite = SpriteSheet::new(asset_store.get_sprite_info(PROPULSION_TEXTURE));
-            prop_sprite.add_animation(Loop(0.0, 5.0, 0, 7, 0.05));
+            prop_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 7, 0.05));
         
             visuals.add(ship.borrow().id, 0, box SpriteVisual {
                 position: self.base.get_render_position().clone() + Vec2{x: -48.0, y: 2.0},

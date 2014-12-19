@@ -2,22 +2,20 @@ use std::rc::Rc;
 
 use event::{Events, GenericEvent, RenderArgs};
 use graphics::Context;
-use input::{keyboard, mouse, Keyboard, Mouse};
+use input::{keyboard, mouse, Button};
 use opengl_graphics::{Gl, Texture};
 use piston::Window;
 
 use assets::GUI_TEXTURE;
 use asset_store::AssetStore;
 use battle_state::BattleContext;
-use module::{IModule, MODULE_CATEGORIES, ModuleCategory, ModuleRef};
+use module::{IModule, ModuleRef};
 use net::ClientId;
 use ship::{Ship, ShipRef};
 use sim::SimVisuals;
 use vec::{Vec2, Vec2f};
 
 pub struct SpaceGui<'a> {
-    module_category: Option<ModuleCategory>, // Selected module category
-    
     // The target ships' render areas
     render_areas: Vec<ShipRenderArea>,
     
@@ -28,7 +26,6 @@ pub struct SpaceGui<'a> {
     mouse_y: f64,
     
     // Textures
-    category_textures: Vec<Rc<Texture>>,
     plan_texture: Texture,
     simulate_texture: Texture,
     win_texture: Texture,
@@ -54,18 +51,10 @@ impl<'a> SpaceGui<'a> {
         }
     
         SpaceGui {
-            module_category: None,
             render_areas: render_areas,
             module: None,
             mouse_x: 0.0,
             mouse_y: 0.0,
-            
-            category_textures: vec![
-                asset_store.get_texture(GUI_TEXTURE).clone(),
-                asset_store.get_texture(GUI_TEXTURE).clone(),
-                asset_store.get_texture(GUI_TEXTURE).clone(),
-                asset_store.get_texture(GUI_TEXTURE).clone(),
-            ],
             
             plan_texture: Texture::from_path(&Path::new("content/textures/gui/planning.png")).unwrap(),
             simulate_texture: Texture::from_path(&Path::new("content/textures/gui/simulating.png")).unwrap(),
@@ -87,12 +76,12 @@ impl<'a> SpaceGui<'a> {
         });
         e.press(|button| {
             match button {
-                Keyboard(key) => self.on_key_pressed(key), 
-                Mouse(button) => {
+                Button::Keyboard(key) => self.on_key_pressed(key), 
+                Button::Mouse(button) => {
                     let (mouse_x, mouse_y) = (self.mouse_x, self.mouse_y);
                     match button {
-                        mouse::Left => self.on_mouse_left_pressed(mouse_x, mouse_y, client_ship),
-                        mouse::Right => self.on_mouse_right_pressed(mouse_x, mouse_y, client_ship),
+                        mouse::MouseButton::Left => self.on_mouse_left_pressed(mouse_x, mouse_y, client_ship),
+                        mouse::MouseButton::Right => self.on_mouse_right_pressed(mouse_x, mouse_y, client_ship),
                         _ => {},
                     }
                 },
@@ -104,16 +93,14 @@ impl<'a> SpaceGui<'a> {
         client_ship.state.plan_power = client_ship.state.power;
     }
     
-    pub fn draw_planning(&mut self, r_args: &RenderArgs, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64) {
+    pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64) {
         use graphics::*;
         
-        let context = Context::abs(r_args.width as f64, r_args.height as f64);
-        
         // Clear the screen
-        context.rgb(0.0, 0.0, 0.0).draw(gl);
+        clear([0.0, ..4], gl);
         
         // Draw player ship
-        draw_ship(context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
+        draw_ship(&context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
     
         let mut win = false;
         for render_area in self.render_areas.iter_mut() {
@@ -122,7 +109,7 @@ impl<'a> SpaceGui<'a> {
             {
                 let context = context.trans(render_area.x, render_area.y).trans(150.0, 150.0);
                 
-                draw_ship(context, gl, sim_visuals, render_area.ship.as_ref().unwrap().borrow().deref(), time);
+                draw_ship(&context, gl, sim_visuals, render_area.ship.as_ref().unwrap().borrow().deref(), time);
             }
             
             // TODO draw render texture
@@ -132,34 +119,23 @@ impl<'a> SpaceGui<'a> {
             }
         }
         
-        context
-            .trans(550.0, 10.0)
-            .image(&self.plan_texture)
-            .draw(gl);
+        image(&self.plan_texture, &context.trans(550.0, 10.0), gl);
         
         if client_ship.state.get_hp() == 0 {
-            context
-            .trans(550.0, 100.0)
-            .image(&self.lose_texture)
-            .draw(gl);
+            image(&self.lose_texture, &context.trans(550.0, 100.0), gl);
         } else if win {
-            context
-            .trans(550.0, 100.0)
-            .image(&self.win_texture)
-            .draw(gl);
+            image(&self.win_texture, &context.trans(550.0, 100.0), gl);
         }
     }
     
-    pub fn draw_simulating(&mut self, r_args: &RenderArgs, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64) {
+    pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64) {
         use graphics::*;
         
-        let context = Context::abs(r_args.width as f64, r_args.height as f64);
-        
         // Clear the screen
-        context.rgb(0.0, 0.0, 0.0).draw(gl);
+        clear([0.0, ..4], gl);
         
         // Draw player ship
-        draw_ship(context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
+        draw_ship(&context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
     
         let mut win = false;
         for render_area in self.render_areas.iter_mut() {
@@ -168,7 +144,7 @@ impl<'a> SpaceGui<'a> {
             {
                 let context = context.trans(render_area.x, render_area.y).trans(150.0, 150.0);
                 
-                draw_ship(context, gl, sim_visuals, render_area.ship.as_ref().unwrap().borrow().deref(), time);
+                draw_ship(&context, gl, sim_visuals, render_area.ship.as_ref().unwrap().borrow().deref(), time);
             }
             
             // TODO draw render texture
@@ -178,21 +154,12 @@ impl<'a> SpaceGui<'a> {
             }
         }
         
-        context
-            .trans(550.0, 10.0)
-            .image(&self.simulate_texture)
-            .draw(gl);
+        image(&self.plan_texture, &context.trans(550.0, 10.0), gl);
         
         if client_ship.state.get_hp() == 0 {
-            context
-            .trans(550.0, 100.0)
-            .image(&self.lose_texture)
-            .draw(gl);
+            image(&self.lose_texture, &context.trans(550.0, 100.0), gl);
         } else if win {
-            context
-            .trans(550.0, 100.0)
-            .image(&self.win_texture)
-            .draw(gl);
+            image(&self.win_texture, &context.trans(550.0, 100.0), gl);
         }
     }
     
@@ -305,40 +272,31 @@ pub struct ShipRenderArea {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-fn draw_ship(context: Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship: &Ship, time: f64) {
+fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship: &Ship, time: f64) {
+    use current::Set;
     use graphics::*;
 
-    sim_visuals.draw(&context, gl, ship.id, time);
-    ship.draw_module_hp(&context, gl);
+    sim_visuals.draw(context, gl, ship.id, time);
+    ship.draw_module_hp(context, gl);
+    
+    let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 0.0]);
+    let shield_rect = Rectangle::new([0.0, 1.0, 0.0, 0.0]);
+    let power_rect = Rectangle::new([0.0, 1.0, 0.0, 0.0]);
+    let used_power_rect = Rectangle::new([0.0, 1.0, 0.0, 0.5]);
+    
     for i in range(0, ship.state.get_hp()) {
-        context
-            .trans(-145.0, -145.0)
-            .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
-            .rgb(0.0, 1.0, 0.0)
-            .draw(gl);
+        hp_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0), gl);
     }
     
     for i in range(0, ship.state.shields) {
-        context
-            .trans(-145.0, -145.0 + 34.0)
-            .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
-            .rgb(0.0, 0.0, 1.0)
-            .draw(gl);
+        shield_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0 + 34.0), gl);
     }
     
     for i in range(0, ship.state.plan_power) {
-        context
-            .trans(-145.0, -145.0 + 68.0)
-            .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
-            .rgb(1.0, 1.0, 0.0)
-            .draw(gl);
+        power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0 + 68.0), gl);
     }
     
     for i in range(ship.state.plan_power, ship.state.power) {
-        context
-            .trans(-145.0, -145.0 + 68.0)
-            .rect((i as f64)*18.0, 0.0, 16.0, 32.0)
-            .rgba(1.0, 1.0, 0.0, 0.5)
-            .draw(gl);
+        used_power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0 + 68.0), gl);
     }
 }

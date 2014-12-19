@@ -47,11 +47,11 @@ impl ServerSlot {
     }
     
     pub fn send(&self, client_id: ClientId, packet: OutPacket) {
-        self.sender.send(SendPacket(self.id, client_id, packet));
+        self.sender.send(SlotOutMsg::SendPacket(self.id, client_id, packet));
     }
     
     pub fn broadcast(&self, packet: OutPacket) {
-        self.sender.send(BroadcastPacket(self.id, packet));
+        self.sender.send(SlotOutMsg::BroadcastPacket(self.id, packet));
     }
     
     pub fn receive(&self) -> SlotInMsg {
@@ -59,13 +59,13 @@ impl ServerSlot {
     }
     
     pub fn create_slot(&self) -> ServerSlot {
-        self.sender.send(CreateSlot(self.id));
+        self.sender.send(SlotOutMsg::CreateSlot(self.id));
         self.create_slot.recv()
     }
     
     // Transfer a client to a different slot
     pub fn transfer_client(&self, client_id: ClientId, to_slot: ServerSlotId) {
-        self.sender.send(TransferClient(self.id, client_id, to_slot));
+        self.sender.send(SlotOutMsg::TransferClient(self.id, client_id, to_slot));
     }
     
     pub fn get_id(&self) -> ServerSlotId {
@@ -168,17 +168,17 @@ impl Server {
                         let out_stream = stream.clone(); // Create copy of stream for output
                     
                         // Client input process
-                        spawn(proc() {
+                        spawn(move || {
                             handle_client_in(client_id, stream, packet_in_t);
                         });
                         
                         // Client output process
-                        spawn(proc() {
+                        spawn(move || {
                             handle_client_out(out_stream, client_out_r);
                         });
                         
                         // Tell the default channel that it's been joined
-                        default_slot.send(Joined(client_id));
+                        default_slot.send(SlotInMsg::Joined(client_id));
                         
                         accepted_connections += 1;
                     }
@@ -197,7 +197,7 @@ impl Server {
                         received_packets += 1;
                         
                         // Send the received packet to the slot the client is in
-                        client_slots[client_id].send(ReceivedPacket(client_id, packet));
+                        client_slots[client_id].send(SlotInMsg::ReceivedPacket(client_id, packet));
                     },
                     Err(_) => break
                 }
@@ -214,7 +214,7 @@ impl Server {
                     Ok(msg) => {
                         received_messages += 1;
                         match msg {
-                            SendPacket(slot_id, client_id, packet) => match client_outs.find(&client_id) {
+                            SlotOutMsg::SendPacket(slot_id, client_id, packet) => match client_outs.find(&client_id) {
                                 Some(&(ref client_slot_id, ref c)) => {
                                     if slot_id == *client_slot_id {
                                         c.send(packet);
@@ -224,17 +224,17 @@ impl Server {
                                 },
                                 None => { println!("Failed to send packet to invalid client ID {}", client_id); }
                             },
-                            BroadcastPacket(slot_id, packet) => for &(ref client_slot_id, ref c) in client_outs.values() {
+                            SlotOutMsg::BroadcastPacket(slot_id, packet) => for &(ref client_slot_id, ref c) in client_outs.values() {
                                 if slot_id == *client_slot_id {
                                     c.send(packet.clone());
                                 }
                             },
-                            CreateSlot(slot_id) =>  {
+                            SlotOutMsg::CreateSlot(slot_id) =>  {
                                 let new_slot = self.create_slot();
                                 let (_, ref create_slot_t) = self.slots[slot_id];
                                 create_slot_t.send(new_slot);
                             },
-                            TransferClient(slot_id, client_id, new_slot_id) => {
+                            SlotOutMsg::TransferClient(slot_id, client_id, new_slot_id) => {
                                 match self.slots.find(&new_slot_id) {
                                     Some(slot) => {
                                         let &(ref mut client_slot_id, _) = &mut client_outs[client_id];
@@ -242,7 +242,7 @@ impl Server {
                                             let &(ref slot_in_t, _) = slot;
                                             *client_slot_id = new_slot_id; // set the client's new slot ID
                                             client_slots[client_id].clone_from(slot_in_t);
-                                            slot_in_t.send(Joined(client_id));
+                                            slot_in_t.send(SlotInMsg::Joined(client_id));
                                         }
                                     },
                                     None => panic!("Failed to transfer client {} to non-existant slot {}", client_id, slot_id)

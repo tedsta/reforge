@@ -2,9 +2,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{HashMap, TreeMap};
 
-use battle_state::{BattleContext, Plan, ServerPacketId, SimResults};
+use battle_state::{BattleContext, ClientPacketId, ServerPacketId};
 use module::Module;
-use net::{ClientId, ServerSlot, Joined, ReceivedPacket, InPacket, OutPacket};
+use net::{ClientId, ServerSlot, SlotInMsg, InPacket, OutPacket};
 use ship::Ship;
 use sim::SimEvents;
 
@@ -31,7 +31,7 @@ impl ServerBattleState {
     pub fn run(&mut self) {
         loop {
             match self.slot.receive() {
-                Joined(client_id) => {
+                SlotInMsg::Joined(client_id) => {
                     println!("Client {} joined battle {}", client_id, self.slot.get_id());
                     
                     // Send the player all the ships
@@ -39,7 +39,7 @@ impl ServerBattleState {
                     packet.write(&self.context.ships_client_id);
                     self.slot.send(client_id, packet);
                 },
-                ReceivedPacket(client_id, mut packet) => { self.handle_packet(client_id, &mut packet); },
+                SlotInMsg::ReceivedPacket(client_id, mut packet) => { self.handle_packet(client_id, &mut packet); },
                 _ => {}
             }
         }
@@ -55,7 +55,7 @@ impl ServerBattleState {
         };
         
         match id {
-            Plan => {
+            ServerPacketId::Plan => {
                 self.received_plans.push(client_id);
                 
                 // Handle the plans
@@ -105,7 +105,7 @@ impl ServerBattleState {
     
     fn build_results_packet(&mut self) -> OutPacket {
         let mut packet = OutPacket::new();
-        match packet.write(&SimResults) {
+        match packet.write(&ClientPacketId::SimResults) {
             Ok(()) => {},
             Err(e) => panic!("Failed to write results packet ID: {}", e),
         }

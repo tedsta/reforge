@@ -5,7 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
 use assets::SHIELD_TEXTURE;
-use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore, Shield};
+use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
@@ -14,7 +14,7 @@ use vec::{Vec2, Vec2f};
 #[cfg(client)]
 use sim::{SimVisuals, SimVisual};
 #[cfg(client)]
-use sprite_sheet::{SpriteSheet, Loop, Stay};
+use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(client)]
 use asset_store::AssetStore;
 
@@ -25,7 +25,7 @@ pub struct ShieldModule {
 
 impl ShieldModule {
     pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
-        Shield(ShieldModule {
+        Module::Shield(ShieldModule {
             base: ModuleBase::new(mod_store, mod_type, 2, 2, 3),
         })
     }
@@ -43,9 +43,9 @@ impl IModule for ShieldModule {
         let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info(SHIELD_TEXTURE));
         
         if self.base.is_active() {
-            shield_sprite.add_animation(Loop(0.0, 5.0, 0, 9, 0.05));
+            shield_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 9, 0.05));
         } else {
-            shield_sprite.add_animation(Stay(0.0, 5.0, 0));
+            shield_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
         }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {

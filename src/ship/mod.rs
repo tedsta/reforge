@@ -249,44 +249,34 @@ impl Ship {
     
     #[cfg(client)]
     pub fn draw_module_hp(&self, context: &Context, gl: &mut Gl) {
+        use current::Set;
         use graphics::*;
     
         for module in self.modules.iter() {
             let module = module.borrow();
             let module = module.get_base();
             
-            let context = context
-                .trans((module.x*48) as f64, (module.y*48) as f64);
+            let context = context.trans((module.x*48) as f64, (module.y*48) as f64);
+            
+            let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 0.0]);
+            let hp_dmg_rect = Rectangle::new([0.8, 0.3, 0.3, 0.0]);
+            let armor_rect = Rectangle::new([1.0, 1.0, 0.0, 0.0]);
+            let armor_dmg_rect = Rectangle::new([0.8, 0.8, 0.3, 0.0]);
         
             for i in range(0, module.get_min_hp()) {
-                let context = context
-                    .rect(0.0, 4.0 * (i as f64), 8.0, 2.0);
-                
                 if i < module.get_hp() {
-                    context
-                        .rgb(0.0, 1.0, 0.0)
-                        .draw(gl);
+                    hp_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context, gl);
                 } else {
-                    context
-                        .border_width(1.0)
-                        .rgb(8.0, 0.3, 0.3)
-                        .draw(gl);
+                    hp_dmg_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context, gl);
                 }
             }
             
             for i in range(module.get_min_hp(), module.get_hp()) {
-                context
-                    .rect(0.0, 4.0 * (i as f64), 8.0, 2.0)
-                    .rgb(1.0, 1.0, 0.0)
-                    .draw(gl);
+                armor_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context, gl);
             }
             
             for i in range(cmp::max(module.get_min_hp(), module.get_hp()), module.get_max_hp()) {
-                context
-                    .rect(0.0, 4.0 * (i as f64), 8.0, 2.0)
-                    .border_width(1.0)
-                    .rgb(0.8, 0.8, 0.3)
-                    .draw(gl);
+                armor_dmg_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context, gl);
             }
         }
     }

@@ -10,6 +10,7 @@ extern crate time;
 extern crate serialize;
 
 // Piston stuff
+extern crate current;
 extern crate event;
 extern crate graphics;
 extern crate input;
@@ -24,20 +25,6 @@ use std::cell::RefCell;
 
 use sdl2_window::Sdl2Window;
 use opengl_graphics::Gl;
-use shader_version::opengl::OpenGL_3_0;
-
-use piston::{
-    RenderArgs,
-    UpdateArgs
-};
-
-use graphics::{
-    Context,
-    AddRectangle,
-    AddColor,
-    Draw,
-    RelativeTransform2d,
-};
 
 use asset_store::AssetStore;
 use battle_state::BattleContext;
@@ -60,9 +47,6 @@ pub mod sprite_sheet;
 pub mod vec;
 
 fn main () {
-    // https://github.com/jeremyletang/rust-sfml/issues/37
-    //unsafe { ::std::rt::stack::record_sp_limit(0); }
-    
     // Check for IP address in args
     let mut ip_address =
         if os::args().len() > 1 {
@@ -76,7 +60,7 @@ fn main () {
         };
     ip_address.push_str(":30000"); // Add the port to the end of the address
     
-    let opengl = shader_version::opengl::OpenGL_3_0;
+    let opengl = shader_version::OpenGL::_3_2;
     
     // Create an SDL window.
     let window = Sdl2Window::new(
