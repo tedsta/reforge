@@ -107,7 +107,7 @@ impl SpriteSheet {
 
         Image::new()
             .set(SrcRect([source_x as i32, source_y as i32, self.frame_width as i32, self.frame_height as i32]))
-            .draw(self.texture.deref(), context, gl);
+            .draw(self.texture.deref(), &context.trans(x, y), gl);
     }
     
     pub fn set_frame(&mut self, frame: u32) {
