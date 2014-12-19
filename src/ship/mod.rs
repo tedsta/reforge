@@ -258,10 +258,10 @@ impl Ship {
             
             let context = context.trans((module.x*48) as f64, (module.y*48) as f64);
             
-            let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 0.0]);
-            let hp_dmg_rect = Rectangle::new([0.8, 0.3, 0.3, 0.0]);
-            let armor_rect = Rectangle::new([1.0, 1.0, 0.0, 0.0]);
-            let armor_dmg_rect = Rectangle::new([0.8, 0.8, 0.3, 0.0]);
+            let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
+            let hp_dmg_rect = Rectangle::new([0.0, ..4]).set(rectangle::Border { color: [0.8, 0.3, 0.3, 1.0], radius: 1.0 });
+            let armor_rect = Rectangle::new([1.0, 1.0, 0.0, 1.0]);
+            let armor_dmg_rect = Rectangle::new([0.0, ..4]).set(rectangle::Border { color: [0.8, 0.8, 0.3, 1.0], radius: 1.0 });
         
             for i in range(0, module.get_min_hp()) {
                 if i < module.get_hp() {

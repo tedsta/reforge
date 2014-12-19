@@ -279,10 +279,10 @@ fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship:
     sim_visuals.draw(context, gl, ship.id, time);
     ship.draw_module_hp(context, gl);
     
-    let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 0.0]);
-    let shield_rect = Rectangle::new([0.0, 1.0, 0.0, 0.0]);
-    let power_rect = Rectangle::new([0.0, 1.0, 0.0, 0.0]);
-    let used_power_rect = Rectangle::new([0.0, 1.0, 0.0, 0.5]);
+    let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
+    let shield_rect = Rectangle::new([0.0, 0.0, 1.0, 1.0]);
+    let power_rect = Rectangle::new([1.0, 1.0, 0.0, 1.0]);
+    let used_power_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
     
     for i in range(0, ship.state.get_hp()) {
         hp_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0), gl);
