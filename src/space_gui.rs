@@ -154,7 +154,7 @@ impl<'a> SpaceGui<'a> {
             }
         }
         
-        image(&self.plan_texture, &context.trans(550.0, 10.0), gl);
+        image(&self.simulate_texture, &context.trans(550.0, 10.0), gl);
         
         if client_ship.state.get_hp() == 0 {
             image(&self.lose_texture, &context.trans(550.0, 100.0), gl);
