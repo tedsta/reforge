@@ -60,7 +60,7 @@ fn main () {
         };
     ip_address.push_str(":30000"); // Add the port to the end of the address
     
-    let opengl = shader_version::OpenGL::_3_2;
+    let opengl = shader_version::OpenGL::_3_0;
     
     // Create an SDL window.
     let window = Sdl2Window::new(
