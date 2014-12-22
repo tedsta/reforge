@@ -75,11 +75,9 @@ impl IModule for CommandModule {
     }
     
     fn on_activated(&mut self, ship_state: &mut ShipState) {
-        ship_state.thrust += 1;
     }
     
     fn on_deactivated(&mut self, ship_state: &mut ShipState) {
-        ship_state.thrust -= 1;
     }
     
     fn on_icon_clicked(&mut self) -> bool {
