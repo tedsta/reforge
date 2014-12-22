@@ -35,18 +35,17 @@ pub struct SpaceGui<'a> {
 impl<'a> SpaceGui<'a> {
     pub fn new(asset_store: &AssetStore, context: &BattleContext, my_client_id: ClientId) -> SpaceGui<'a> {
         let mut render_areas = vec!();
-        for (client_id, ship) in context.ships_client_id.iter() {
-            if *client_id != my_client_id {
+        for (i, (client_id, ship)) in context.ships_client_id.iter().filter(|s| *s.0 != my_client_id).enumerate() {
+            if i < 2 {
                 //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
                 //let texture = target.get_texture().expect("Failed to get render texture's texture");
                 render_areas.push(ShipRenderArea {
                     ship: Some(ship.clone()),
                     x: 772.0,
-                    y: 8.0,
+                    y: 8.0+(300.0 * (i as f64)),
                     //target: target,
                     //texture: texture,
                 });
-                break;
             }
         }
     
