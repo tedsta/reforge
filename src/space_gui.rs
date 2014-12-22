@@ -101,7 +101,7 @@ impl<'a> SpaceGui<'a> {
         // Draw player ship
         draw_ship(&context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
     
-        let mut win = false;
+        let mut enemy_alive = false;
         for render_area in self.render_areas.iter_mut() {
             // TODO clear render texture
         
@@ -113,8 +113,8 @@ impl<'a> SpaceGui<'a> {
             
             // TODO draw render texture
         
-            if render_area.ship.as_ref().unwrap().borrow().state.get_hp() == 0 {
-                win = true;
+            if render_area.ship.as_ref().unwrap().borrow().state.get_hp() > 0 {
+                enemy_alive = true;
             }
         }
         
@@ -122,7 +122,7 @@ impl<'a> SpaceGui<'a> {
         
         if client_ship.state.get_hp() == 0 {
             image(&self.lose_texture, &context.trans(550.0, 100.0), gl);
-        } else if win {
+        } else if !enemy_alive {
             image(&self.win_texture, &context.trans(550.0, 100.0), gl);
         }
     }
@@ -136,7 +136,7 @@ impl<'a> SpaceGui<'a> {
         // Draw player ship
         draw_ship(&context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
     
-        let mut win = false;
+        let mut enemy_alive = false;
         for render_area in self.render_areas.iter_mut() {
             // TODO clear render texture
         
@@ -147,9 +147,9 @@ impl<'a> SpaceGui<'a> {
             }
             
             // TODO draw render texture
-            
-            if render_area.ship.as_ref().unwrap().borrow().state.get_hp() == 0 {
-                win = true;
+        
+            if render_area.ship.as_ref().unwrap().borrow().state.get_hp() > 0 {
+                enemy_alive = true;
             }
         }
         
@@ -157,7 +157,7 @@ impl<'a> SpaceGui<'a> {
         
         if client_ship.state.get_hp() == 0 {
             image(&self.lose_texture, &context.trans(550.0, 100.0), gl);
-        } else if win {
+        } else if !enemy_alive {
             image(&self.win_texture, &context.trans(550.0, 100.0), gl);
         }
     }
