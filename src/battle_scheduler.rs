@@ -38,15 +38,17 @@ impl BattleScheduler {
     }
     
     pub fn try_schedule(&mut self) {
-        if self.waiting.len() >= 2 {
+        if self.waiting.len() >= 3 {
             let new_slot = self.slot.create_slot();
             
             let client1 = self.waiting.pop().expect("First client wasn't there somehow");
             let client2 = self.waiting.pop().expect("Second client wasn't there somehow");
+            let client3 = self.waiting.pop().expect("Second client wasn't there somehow");
             
             // Transfer clients to battle state
             self.slot.transfer_client(client1, new_slot.get_id());
             self.slot.transfer_client(client2, new_slot.get_id());
+            self.slot.transfer_client(client3, new_slot.get_id());
             
             let mod_store = self.mod_store.clone();
             
@@ -56,11 +58,14 @@ impl BattleScheduler {
                 ship1.client_id = Some(client1);
                 let mut ship2 = Ship::generate(mod_store.deref(), client2 as ShipId);
                 ship2.client_id = Some(client2);
+                let mut ship3 = Ship::generate(mod_store.deref(), client3 as ShipId);
+                ship3.client_id = Some(client3);
             
                 // Map clients to their ships
                 let mut ships = HashMap::new();
                 ships.insert(client1, Rc::new(RefCell::new(ship1)));
                 ships.insert(client2, Rc::new(RefCell::new(ship2)));
+                ships.insert(client3, Rc::new(RefCell::new(ship3)));
             
                 let mut battle_state = ServerBattleState::new(new_slot, BattleContext::new(ships));
                 battle_state.run();
