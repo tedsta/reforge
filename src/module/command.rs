@@ -26,7 +26,7 @@ pub struct CommandModule {
 impl CommandModule {
     pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
         Module::Command(CommandModule {
-            base: ModuleBase::new(mod_store, mod_type, 0, 2, 4),
+            base: ModuleBase::new(mod_store, mod_type, 1, 2, 0, 2, 4),
         })
     }
 }

@@ -26,7 +26,7 @@ pub struct ShieldModule {
 impl ShieldModule {
     pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
         Module::Shield(ShieldModule {
-            base: ModuleBase::new(mod_store, mod_type, 2, 2, 3),
+            base: ModuleBase::new(mod_store, mod_type, 1, 1, 2, 2, 3),
         })
     }
 }
