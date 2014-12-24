@@ -245,8 +245,7 @@ impl<'a> SpaceGui<'a> {
                 if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
                     let module_power = module_borrowed.get_base().get_power();
                     if module_borrowed.get_base().plan_powered {
-                        client_ship.state.plan_power += module_power;
-                        module_borrowed.get_base_mut().plan_powered = false;
+                        client_ship.state.deactivate_module(module_borrowed.get_base_mut());
                     }
                     return;
                 }
