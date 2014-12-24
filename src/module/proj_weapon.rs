@@ -47,7 +47,7 @@ impl ProjectileWeaponModule {
         };
     
         Module::ProjectileWeapon(ProjectileWeaponModule {
-            base: ModuleBase::new(mod_store, mod_type, 2, 2, 3),
+            base: ModuleBase::new(mod_store, mod_type, 1, 1, 2, 2, 3),
             projectiles: Vec::from_elem(3, projectile),
             target: None,
         })
