@@ -59,6 +59,11 @@ impl ShipState {
         module.plan_powered = true;
     }
     
+    pub fn deactivate_module(&mut self, module: &mut ModuleBase) {
+        self.plan_power += module.get_power();
+        module.plan_powered = false;
+    }
+    
     fn pre_before_simulation(&mut self) {
         self.shields = 0;
     }
