@@ -183,12 +183,10 @@ impl<'a> SpaceGui<'a> {
                 let module_w = module_w as f64;
                 let module_h = module_h as f64;
                 if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-                    let module_power = module_borrowed.get_base().get_power();
                     if module_borrowed.get_base().plan_powered {
                         self.module = Some(module.clone());
-                    } else if module_borrowed.get_base().can_activate() && client_ship.state.plan_power >= module_power {
-                        client_ship.state.plan_power -= module_power;
-                        module_borrowed.get_base_mut().plan_powered = true;
+                    } else if client_ship.state.can_activate_module(module_borrowed.get_base()) {
+                        client_ship.state.activate_module(module_borrowed.get_base_mut());
                     }
                 }
             }
