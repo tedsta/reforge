@@ -46,6 +46,19 @@ impl ShipState {
         }
     }
     
+    pub fn can_activate_module(&self, module: &ModuleBase) -> bool {
+        if module.can_activate() && self.plan_power >= module.get_power() {
+            true
+        } else {
+            false
+        }
+    }
+    
+    pub fn activate_module(&mut self, module: &mut ModuleBase) {
+        self.plan_power -= module.get_power();
+        module.plan_powered = true;
+    }
+    
     fn pre_before_simulation(&mut self) {
         self.shields = 0;
     }
@@ -144,8 +157,6 @@ impl Ship {
         self.modules.push(Rc::new(RefCell::new(module)));
         true
     }
-    
-    //pub fn 
     
     pub fn server_preprocess(&mut self) {
         for module in self.modules.iter() {
