@@ -1,5 +1,4 @@
 #![crate_name = "reforge_client"]
-#![desc = "reforge awesome mmo client"]
 #![crate_type = "bin"]
 #![feature(macro_rules)]
 #![feature(default_type_params)]
@@ -28,8 +27,9 @@ use opengl_graphics::Gl;
 
 use asset_store::AssetStore;
 use battle_state::BattleContext;
+use battle_type::BattleType;
 use client_battle_state::ClientBattleState;
-use net::Client;
+use net::{Client, OutPacket};
 
 #[macro_escape]
 pub mod util;
@@ -37,6 +37,7 @@ pub mod util;
 pub mod assets;
 pub mod asset_store;
 pub mod battle_state;
+pub mod battle_type;
 pub mod client_battle_state;
 pub mod module;
 pub mod net;
@@ -82,6 +83,10 @@ fn main () {
     
     // Connect to server
     let mut client = Client::new(ip_address.as_slice());
+    
+    let mut packet = OutPacket::new();
+    packet.write(&BattleType::Ai);
+    client.send(&packet);
     
     // Receive the ships from the server
     let mut packet = client.receive();

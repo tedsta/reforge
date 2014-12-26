@@ -1,5 +1,4 @@
 #![crate_name = "reforge_server"]
-#![desc = "reforge awesome mmo server"]
 #![crate_type = "bin"]
 #![feature(globs)]
 
@@ -15,6 +14,7 @@ use module::ModuleTypeStore;
 pub mod assets;
 pub mod battle_scheduler;
 pub mod battle_state;
+pub mod battle_type;
 pub mod module;
 pub mod net;
 pub mod server_battle_state;
@@ -24,7 +24,7 @@ pub mod vec;
 
 fn main() {
     let mut server = Server::new();
-    let slot = box server.create_slot();
+    let slot = server.create_slot();
     
     spawn(move || {
         server.listen("0.0.0.0:30000");

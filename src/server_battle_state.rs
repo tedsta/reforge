@@ -36,7 +36,7 @@ impl ServerBattleState {
                     
                     // Send the player all the ships
                     let mut packet = OutPacket::new();
-                    packet.write(&self.context.ships_client_id);
+                    packet.write(&self.context.ships_list);
                     self.slot.send(client_id, packet);
                 },
                 SlotInMsg::ReceivedPacket(client_id, mut packet) => { self.handle_packet(client_id, &mut packet); },
