@@ -16,30 +16,40 @@ pub static TICKS_PER_SECOND: u32 = 20;
 pub struct BattleContext {
     pub ships: HashMap<ShipId, ShipRef>,
     pub ships_client_id: HashMap<ClientId, ShipRef>,
+    pub ships_list: Vec<ShipRef>,
 }
 
 impl BattleContext {
-    pub fn new(ships_client_id: HashMap<ClientId, ShipRef>) -> BattleContext {
-        let mut ships = HashMap::new();
-        for (_, ship) in ships_client_id.iter() {
-            ships.insert(ship.borrow().id, ship.clone());
+    pub fn new(ships: Vec<ShipRef>) -> BattleContext {
+        let mut ships_map = HashMap::new();
+        for ship in ships.iter() {
+            ships_map.insert(ship.borrow().id, ship.clone());
+        }
+        
+        let mut ships_client_id_map = HashMap::new();
+        for ship in ships.iter() {
+            match ship.borrow().client_id {
+                Some(client_id) => { ships_client_id_map.insert(client_id, ship.clone()); },
+                None => {},
+            }
         }
     
         BattleContext {
-            ships: ships,
-            ships_client_id: ships_client_id,
+            ships: ships_map,
+            ships_client_id: ships_client_id_map,
+            ships_list: ships,
         }
     }
     
     pub fn get_ship<'a>(&'a self, ship_id: ShipId) -> &'a ShipRef {
-        match self.ships.find(&ship_id) {
+        match self.ships.get(&ship_id) {
             Some(ship) => ship,
             None => panic!("No ship with ID {}", ship_id),
         }
     }
     
     pub fn get_ship_by_client_id<'a>(&'a self, client_id: ClientId) -> &'a ShipRef {
-        match self.ships_client_id.find(&client_id) {
+        match self.ships_client_id.get(&client_id) {
             Some(ship) => ship,
             None => panic!("No ship with client ID {}", client_id),
         }

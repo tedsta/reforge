@@ -1,24 +1,29 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{RingBuf, HashMap};
+use std::collections::hash_map::Entry;
 use std::sync::Arc;
 
 use battle_state::BattleContext;
+use battle_type::BattleType;
 use module::ModuleTypeStore;
 use net::{ClientId, ServerSlot, SlotInMsg};
 use server_battle_state::ServerBattleState;
 use ship::{Ship, ShipId};
 
 pub struct BattleScheduler {
-    slot: Box<ServerSlot>,
-    waiting: RingBuf<ClientId>, // Clients still waiting for a battle
-    
+    slot: ServerSlot,
+    ffa_waiting: HashMap<u8, Vec<ClientId>>,
     mod_store: Arc<ModuleTypeStore>,
 }
 
 impl BattleScheduler {
-    pub fn new(slot: Box<ServerSlot>, mod_store: Arc<ModuleTypeStore>) -> BattleScheduler {
-        BattleScheduler{slot: slot, waiting: RingBuf::new(), mod_store: mod_store}
+    pub fn new(slot: ServerSlot, mod_store: Arc<ModuleTypeStore>) -> BattleScheduler {
+        BattleScheduler {
+            slot: slot,
+            ffa_waiting: HashMap::new(),
+            mod_store: mod_store,
+        }
     }
 
     pub fn run(&mut self) {
@@ -26,51 +31,76 @@ impl BattleScheduler {
             match self.slot.receive() {
                 SlotInMsg::Joined(client_id) => {
                     println!("Client {} joined the scheduler", client_id);
-                    self.waiting.push(client_id);
-                    self.try_schedule();
                 },
-                SlotInMsg::ReceivedPacket(client_id, packet) => {
-                    println!("Received packet from {} of length {}", client_id, packet.len());
+                SlotInMsg::ReceivedPacket(client_id, mut packet) => {
+                    let battle_type: BattleType = packet.read().ok().expect("Battle scheduler failed to read battle type from client.");
+                    match battle_type {
+                        BattleType::FreeForAll{num_players: num_players} => {
+                            match self.ffa_waiting.entry(num_players) {
+                                Entry::Vacant(entry) => { entry.set(vec![client_id]); },
+                                Entry::Occupied(mut entry) => {
+                                    let waiting = entry.get_mut();
+                                    
+                                    // Add the client to the waiting list
+                                    waiting.push(client_id);
+                                    
+                                    // Chech if we're ready to schedule
+                                    if waiting.len() == num_players as uint {
+                                        let new_slot = self.slot.create_slot_and_transfer_clients(waiting);
+                                        schedule_ffa(new_slot, self.mod_store.clone(), waiting.clone());
+                                        waiting.clear();
+                                    }
+                                },
+                            }
+                        },
+                        BattleType::Ai => {
+                            let new_slot = self.slot.create_slot_and_transfer_clients(&vec![client_id]);
+                            schedule_ai(new_slot, self.mod_store.clone(), client_id);
+                        },
+                    }
                 },
                 _ => {}
             }
         }
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Scheduling functions
+
+fn schedule_ai(new_slot: ServerSlot, mod_store: Arc<ModuleTypeStore>, client_id: ClientId) {
+    spawn(move || {
+        // Create ships
+        let mut ship1 = Ship::generate(mod_store.deref(), client_id as ShipId);
+        ship1.client_id = Some(client_id);
+        
+        // TODO: come up with better way to generate AI ship IDs
+        let mut ship2 = Ship::generate(mod_store.deref(), (100000000 - client_id) as ShipId);
+        ship2.client_id = None;
     
-    pub fn try_schedule(&mut self) {
-        if self.waiting.len() >= 3 {
-            let new_slot = self.slot.create_slot();
+        // Map clients to their ships
+        let mut ships = vec!();
+        ships.push(Rc::new(RefCell::new(ship1)));
+        ships.push(Rc::new(RefCell::new(ship2)));
+    
+        let mut battle_state = ServerBattleState::new(new_slot, BattleContext::new(ships));
+        battle_state.run();
+    });
+}
+
+fn schedule_ffa(new_slot: ServerSlot, mod_store: Arc<ModuleTypeStore>, clients: Vec<ClientId>) {
+    spawn(move || {
+        let mut ships = vec!();
+        for client_id in clients.iter() {
+            // Create player's ship
+            let mut ship = Ship::generate(mod_store.deref(), *client_id as ShipId);
+            ship.client_id = Some(*client_id);
             
-            let client1 = self.waiting.pop().expect("First client wasn't there somehow");
-            let client2 = self.waiting.pop().expect("Second client wasn't there somehow");
-            let client3 = self.waiting.pop().expect("Second client wasn't there somehow");
-            
-            // Transfer clients to battle state
-            self.slot.transfer_client(client1, new_slot.get_id());
-            self.slot.transfer_client(client2, new_slot.get_id());
-            self.slot.transfer_client(client3, new_slot.get_id());
-            
-            let mod_store = self.mod_store.clone();
-            
-            spawn(move || {
-                // Create ships
-                let mut ship1 = Ship::generate(mod_store.deref(), client1 as ShipId);
-                ship1.client_id = Some(client1);
-                let mut ship2 = Ship::generate(mod_store.deref(), client2 as ShipId);
-                ship2.client_id = Some(client2);
-                let mut ship3 = Ship::generate(mod_store.deref(), client3 as ShipId);
-                ship3.client_id = Some(client3);
-            
-                // Map clients to their ships
-                let mut ships = HashMap::new();
-                ships.insert(client1, Rc::new(RefCell::new(ship1)));
-                ships.insert(client2, Rc::new(RefCell::new(ship2)));
-                ships.insert(client3, Rc::new(RefCell::new(ship3)));
-            
-                let mut battle_state = ServerBattleState::new(new_slot, BattleContext::new(ships));
-                battle_state.run();
-            });
-            
+            // Add to the list of ships
+            ships.push(Rc::new(RefCell::new(ship)));
         }
-    }
+    
+        let mut battle_state = ServerBattleState::new(new_slot, BattleContext::new(ships));
+        battle_state.run();
+    });
 }

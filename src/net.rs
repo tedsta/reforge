@@ -68,6 +68,16 @@ impl ServerSlot {
         self.sender.send(SlotOutMsg::TransferClient(self.id, client_id, to_slot));
     }
     
+    pub fn create_slot_and_transfer_clients(&self, clients: &Vec<ClientId>) -> ServerSlot {
+        let new_slot = self.create_slot();
+        
+        for client_id in clients.iter() {
+            self.transfer_client(*client_id, new_slot.get_id());
+        }
+        
+        new_slot
+    }
+    
     pub fn get_id(&self) -> ServerSlotId {
         self.id
     }
