@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::{HashMap, TreeMap};
+use std::collections::{HashMap, HashSet, TreeMap};
 
 use battle_state::{BattleContext, ClientPacketId, ServerPacketId};
 use module::Module;
@@ -14,7 +14,10 @@ pub struct ServerBattleState {
     // Context holding all the things involved in this battle
     context: BattleContext,
     
-    received_plans: Vec<ClientId>,
+    received_plans: HashSet<ClientId>,
+    clients_waiting: HashSet<ClientId>,
+    clients_active: HashSet<ClientId>,
+    
     turn_number: u32,
 }
 
@@ -23,7 +26,9 @@ impl ServerBattleState {
         ServerBattleState {
             slot: slot,
             context: context,
-            received_plans: vec!(),
+            received_plans: HashSet::new(),
+            clients_waiting: HashSet::new(),
+            clients_active: HashSet::new(),
             turn_number: 0,
         }
     }
@@ -38,6 +43,12 @@ impl ServerBattleState {
                     let mut packet = OutPacket::new();
                     packet.write(&self.context.ships_list);
                     self.slot.send(client_id, packet);
+                    
+                    if self.turn_number != 0 {
+                        self.clients_waiting.insert(client_id);
+                    } else {
+                        self.clients_active.insert(client_id);
+                    }
                 },
                 SlotInMsg::ReceivedPacket(client_id, mut packet) => { self.handle_packet(client_id, &mut packet); },
                 _ => {}
@@ -56,12 +67,12 @@ impl ServerBattleState {
         
         match id {
             ServerPacketId::Plan => {
-                self.received_plans.push(client_id);
+                self.received_plans.insert(client_id);
                 
                 // Handle the plans
                 self.handle_plans_packet(client_id, packet);
  
-                if self.received_plans.len() == self.context.get_num_ships() {
+                if self.received_plans == self.clients_active {
                     // Do server-side precalculations
                     self.context.server_preprocess();
                     
@@ -75,6 +86,9 @@ impl ServerBattleState {
                     // Reset everything for the next turn
                     self.received_plans.clear();
                     self.turn_number += 1;
+                    
+                    // Transfer waiting clients to active clients
+                    self.clients_active = self.clients_active.union(&self.clients_waiting).map(|&x| x).collect()
                 }
             },
         }

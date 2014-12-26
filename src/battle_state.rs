@@ -122,10 +122,6 @@ impl BattleContext {
             ship.borrow().read_results(packet);
         }
     }
-    
-    pub fn get_num_ships(&self) -> uint {
-        self.ships.len()
-    }
 }
 
 // Packets sent from client to server
