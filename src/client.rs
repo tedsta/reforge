@@ -85,7 +85,7 @@ fn main () {
     let mut client = Client::new(ip_address.as_slice());
     
     let mut packet = OutPacket::new();
-    packet.write(&BattleType::Ai);
+    packet.write(&BattleType::FreeForAll{num_players: 2});
     client.send(&packet);
     
     // Receive the ships from the server

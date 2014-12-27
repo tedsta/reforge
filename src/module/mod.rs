@@ -70,8 +70,8 @@ pub trait IModule {
     fn write_results(&self, packet: &mut OutPacket);
     fn read_results(&mut self, packet: &mut InPacket);
     
-    fn on_activated(&mut self, ship_state: &mut ShipState);
-    fn on_deactivated(&mut self, ship_state: &mut ShipState);
+    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>);
+    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>);
     
     ////////////////////
     // GUI stuff
@@ -208,23 +208,23 @@ impl IModule for Module {
         }
     }
     
-    fn on_activated(&mut self, ship_state: &mut ShipState) {
+    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
         match *self {
-            Module::Engine(ref mut m) => m.on_activated(ship_state),
-            Module::ProjectileWeapon(ref mut m) => m.on_activated(ship_state),
-            Module::Shield(ref mut m) => m.on_activated(ship_state),
-            Module::Solar(ref mut m) => m.on_activated(ship_state),
-            Module::Command(ref mut m) => m.on_activated(ship_state),
+            Module::Engine(ref mut m) => m.on_activated(ship_state, modules),
+            Module::ProjectileWeapon(ref mut m) => m.on_activated(ship_state, modules),
+            Module::Shield(ref mut m) => m.on_activated(ship_state, modules),
+            Module::Solar(ref mut m) => m.on_activated(ship_state, modules),
+            Module::Command(ref mut m) => m.on_activated(ship_state, modules),
         }
     }
     
-    fn on_deactivated(&mut self, ship_state: &mut ShipState) {
+    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
         match *self {
-            Module::Engine(ref mut m) => m.on_deactivated(ship_state),
-            Module::ProjectileWeapon(ref mut m) => m.on_deactivated(ship_state),
-            Module::Shield(ref mut m) => m.on_deactivated(ship_state),
-            Module::Solar(ref mut m) => m.on_deactivated(ship_state),
-            Module::Command(ref mut m) => m.on_deactivated(ship_state),
+            Module::Engine(ref mut m) => m.on_deactivated(ship_state, modules),
+            Module::ProjectileWeapon(ref mut m) => m.on_deactivated(ship_state, modules),
+            Module::Shield(ref mut m) => m.on_deactivated(ship_state, modules),
+            Module::Solar(ref mut m) => m.on_deactivated(ship_state, modules),
+            Module::Command(ref mut m) => m.on_deactivated(ship_state, modules),
         }
     }
     

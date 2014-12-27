@@ -246,10 +246,10 @@ impl IModule for ProjectileWeaponModule {
         }
     }
     
-    fn on_activated(&mut self, ship_state: &mut ShipState) {
+    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
     }
     
-    fn on_deactivated(&mut self, ship_state: &mut ShipState) {
+    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
         println!("weapon deactivated");
     }
     
@@ -304,7 +304,8 @@ impl DamageEvent {
 
 impl SimEvent for DamageEvent {
     fn apply(&mut self, module: &mut Module) {
-        self.ship.borrow_mut().state.deal_damage(self.module.borrow_mut().deref_mut(), self.damage);
+        let mut ship = self.ship.borrow_mut();
+        ship.deal_damage(self.module.borrow_mut().deref_mut(), self.damage);
     }
 }
 
