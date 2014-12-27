@@ -74,11 +74,11 @@ impl IModule for SolarModule {
     fn read_results(&mut self, packet: &mut InPacket) {
     }
     
-    fn on_activated(&mut self, ship_state: &mut ShipState) {
+    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
         ship_state.add_power(5);
     }
     
-    fn on_deactivated(&mut self, ship_state: &mut ShipState) {
+    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
         ship_state.remove_power(5);
     }
     

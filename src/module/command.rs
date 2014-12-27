@@ -74,10 +74,10 @@ impl IModule for CommandModule {
     fn read_results(&mut self, packet: &mut InPacket) {
     }
     
-    fn on_activated(&mut self, ship_state: &mut ShipState) {
+    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
     }
     
-    fn on_deactivated(&mut self, ship_state: &mut ShipState) {
+    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
     }
     
     fn on_icon_clicked(&mut self) -> bool {
