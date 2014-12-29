@@ -79,7 +79,7 @@ impl IModule for SolarModule {
     }
     
     fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
-        ship_state.remove_power(5);
+        ship_state.remove_power(5, modules);
     }
     
     fn on_icon_clicked(&mut self) -> bool {
