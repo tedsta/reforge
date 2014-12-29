@@ -31,7 +31,7 @@ git = "https://github.com/pistondevelopers/piston"
 
 [dependencies.bincode]
 
-git = "https://github.com/crhino/bincode.git"
+git = "https://github.com/tyoverby/bincode.git"
 
 [dependencies.time]
 

@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet, TreeMap};
+use std::collections::{HashMap, HashSet};
 
 use battle_state::{BattleContext, ClientPacketId, ServerPacketId};
 use module::Module;
