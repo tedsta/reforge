@@ -99,11 +99,21 @@ impl ShipState {
     }
     
     pub fn remove_power(&mut self, power: u8, modules: &Vec<ModuleRef>) {
-        for m in modules.iter() {
+        for module in modules.iter() {
             if power <= self.power {
                 break;
             } else {
-                self.deactivate_module(m.borrow_mut().get_base_mut());
+                // Attempt to borrow the module
+                match module.try_borrow_mut() {
+                    Some(mut module) => {
+                        if module.get_base().get_power() > 0 && module.get_base().powered {
+                            self.add_power(module.get_base().get_power());
+                            module.get_base_mut().powered = false;
+                            module.on_deactivated(self, modules);
+                        }
+                    },
+                    None => {},
+                }
             }
         }
         
