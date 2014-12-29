@@ -4,7 +4,6 @@ use event::{Events, GenericEvent, RenderArgs};
 use graphics::Context;
 use input::{keyboard, mouse, Button};
 use opengl_graphics::{Gl, Texture};
-use piston::Window;
 
 use assets::GUI_TEXTURE;
 use asset_store::AssetStore;

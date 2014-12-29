@@ -6,7 +6,7 @@
 
 extern crate bincode;
 extern crate time;
-extern crate serialize;
+extern crate "rustc-serialize" as serialize;
 
 // Piston stuff
 extern crate current;

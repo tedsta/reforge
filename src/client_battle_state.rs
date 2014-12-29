@@ -3,7 +3,6 @@ use std::cell::RefCell;
 
 use event::Events;
 use opengl_graphics::Gl;
-use piston::Window;
 use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;

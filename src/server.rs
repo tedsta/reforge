@@ -3,7 +3,7 @@
 #![feature(globs)]
 
 extern crate bincode;
-extern crate serialize;
+extern crate "rustc-serialize" as serialize;
 
 use std::sync::Arc;
 
