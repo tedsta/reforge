@@ -98,7 +98,15 @@ impl ShipState {
         self.plan_power += power;
     }
     
-    pub fn remove_power(&mut self, power: u8) {
+    pub fn remove_power(&mut self, power: u8, modules: &Vec<ModuleRef>) {
+        for m in modules.iter() {
+            if power <= self.power {
+                break;
+            } else {
+                self.deactivate_module(m.borrow_mut().get_base_mut());
+            }
+        }
+        
         self.power -= power;
         self.plan_power -= power;
     }
@@ -244,7 +252,7 @@ impl Ship {
             module.get_base_mut().powered = packet.read().ok().expect("Failed to read ModuleBase powered");
             if !was_powered && module.get_base().powered {
                 // Module was powered on
-                self.state.remove_power(module.get_base().get_power());
+                self.state.remove_power(module.get_base().get_power(), &self.modules);
                 module.on_activated(&mut self.state, &self.modules);
             } else if was_powered && !module.get_base().powered {
                 // Module was powered off
