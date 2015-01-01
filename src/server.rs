@@ -1,6 +1,7 @@
 #![crate_name = "reforge_server"]
 #![crate_type = "bin"]
 #![feature(globs)]
+#![feature(macro_rules)]
 
 extern crate bincode;
 extern crate "rustc-serialize" as serialize;
@@ -11,6 +12,7 @@ use net::Server;
 use battle_scheduler::BattleScheduler;
 use module::ModuleTypeStore;
 
+pub mod ai;
 pub mod assets;
 pub mod battle_scheduler;
 pub mod battle_state;

@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
+use ai::run_ai;
 use battle_state::{BattleContext, ClientPacketId, ServerPacketId};
 use module::Module;
 use net::{ClientId, ServerSlot, SlotInMsg, InPacket, OutPacket};
@@ -73,6 +74,19 @@ impl ServerBattleState {
                 self.handle_plans_packet(client_id, packet);
  
                 if self.received_plans == self.clients_active {
+                    // Run AI on ships with no client
+                    for ship in self.context.ships_list.iter() {
+                        let ship_id = ship.borrow().id;
+                        let enemies = &self.context.ships_list.iter().filter(|s| s.borrow().id != ship_id).map(|s| s.clone()).collect();
+                        
+                        let mut ship = ship.borrow_mut();
+                        if ship.client_id.is_none() {
+                            // Run AI
+                            run_ai(ship.deref_mut(), enemies);
+                            ship.apply_module_plans();
+                        }
+                    }
+                
                     // Do server-side precalculations
                     self.context.server_preprocess();
                     
