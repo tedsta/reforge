@@ -250,17 +250,14 @@ impl IModule for ProjectileWeaponModule {
     }
     
     fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
-        println!("weapon deactivated");
     }
     
     fn on_icon_clicked(&mut self) -> bool {
-        println!("Clicked a weapon");
         true
     }
     
     fn on_module_clicked(&mut self, ship: &ShipRef, module: &ModuleRef) -> bool {
         self.target = Some((ship.clone(), module.clone()));
-        println!("Targeted module");
         false
     }
 }
