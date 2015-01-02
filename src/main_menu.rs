@@ -31,9 +31,9 @@ impl MainMenu {
         MainMenu {
             selected: 0,
             done: false,
-            single_player_texture: Texture::from_path(&Path::new("content/textures/gui/planning.png")).unwrap(),
-            multiplayer_texture: Texture::from_path(&Path::new("content/textures/gui/simulating.png")).unwrap(),
-            exit_texture: Texture::from_path(&Path::new("content/textures/gui/planning.png")).unwrap(),
+            single_player_texture: Texture::from_path(&Path::new("content/textures/gui/singleplayer.png")).unwrap(),
+            multiplayer_texture: Texture::from_path(&Path::new("content/textures/gui/multiplayer.png")).unwrap(),
+            exit_texture: Texture::from_path(&Path::new("content/textures/gui/exit.png")).unwrap(),
         }
     }
 
