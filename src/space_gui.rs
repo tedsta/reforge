@@ -1,7 +1,9 @@
+use std::rand::Rng;
+use std::rand;
 use std::rc::Rc;
 
 use event::{Events, GenericEvent, RenderArgs};
-use graphics::Context;
+use graphics::{Context, Rectangle};
 use input::{keyboard, mouse, Button};
 use opengl_graphics::{Gl, Texture};
 
@@ -29,6 +31,9 @@ pub struct SpaceGui<'a> {
     simulate_texture: Texture,
     win_texture: Texture,
     lose_texture: Texture,
+    
+    // Space background
+    space_bg: SpaceStars,
 }
 
 impl<'a> SpaceGui<'a> {
@@ -38,10 +43,14 @@ impl<'a> SpaceGui<'a> {
             if i < 2 {
                 //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
                 //let texture = target.get_texture().expect("Failed to get render texture's texture");
+                let x = 772.0;
+                let y = 8.0+(300.0 * (i as f64));
                 render_areas.push(ShipRenderArea {
                     ship: Some(ship.clone()),
-                    x: 772.0,
-                    y: 8.0+(300.0 * (i as f64)),
+                    x: x,
+                    y: y,
+                    width: 1280.0 - x,
+                    height: 300.0,
                     //target: target,
                     //texture: texture,
                 });
@@ -58,6 +67,8 @@ impl<'a> SpaceGui<'a> {
             simulate_texture: Texture::from_path(&Path::new("content/textures/gui/simulating.png")).unwrap(),
             win_texture: Texture::from_path(&Path::new("content/textures/gui/win.png")).unwrap(),
             lose_texture: Texture::from_path(&Path::new("content/textures/gui/lose.png")).unwrap(),
+            
+            space_bg: SpaceStars::new(),
         }
     }
     
@@ -91,11 +102,15 @@ impl<'a> SpaceGui<'a> {
         client_ship.state.plan_power = client_ship.state.power;
     }
     
-    pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64) {
+    pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64, dt: f64) {
         use graphics::*;
         
         // Clear the screen
         clear([0.0, ..4], gl);
+        
+        // Draw the space background
+        self.space_bg.update(dt);
+        self.space_bg.draw(context, gl);
         
         // Draw player ship
         draw_ship(&context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
@@ -103,6 +118,8 @@ impl<'a> SpaceGui<'a> {
         let mut enemy_alive = false;
         for render_area in self.render_areas.iter_mut() {
             // TODO clear render texture
+            
+            Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([render_area.x, render_area.y, render_area.width, render_area.height], context, gl);
         
             {
                 let context = context.trans(render_area.x, render_area.y).trans(150.0, 150.0);
@@ -126,11 +143,15 @@ impl<'a> SpaceGui<'a> {
         }
     }
     
-    pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64) {
+    pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64, dt: f64) {
         use graphics::*;
         
         // Clear the screen
         clear([0.0, ..4], gl);
+        
+        // Draw the space background
+        self.space_bg.update(dt);
+        self.space_bg.draw(context, gl);
         
         // Draw player ship
         draw_ship(&context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
@@ -138,6 +159,8 @@ impl<'a> SpaceGui<'a> {
         let mut enemy_alive = false;
         for render_area in self.render_areas.iter_mut() {
             // TODO clear render texture
+            
+            Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([render_area.x, render_area.y, render_area.width, render_area.height], context, gl);
         
             {
                 let context = context.trans(render_area.x, render_area.y).trans(150.0, 150.0);
@@ -261,6 +284,8 @@ pub struct ShipRenderArea {
     ship: Option<ShipRef>,
     x: f64,
     y: f64,
+    width: f64,
+    height: f64,
     //target: RenderTexture,
     //texture: Texture,
 }
@@ -293,5 +318,69 @@ fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship:
     
     for i in range(ship.state.plan_power, ship.state.power) {
         used_power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0 + 68.0), gl);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Yo dawk imma draw me some space stars
+
+struct Star {
+    position: [f64, .. 2],
+    size: f64,
+}
+
+struct SpaceStars {
+    stars: Vec<Vec<Star>>, // Layers of stars
+}
+
+impl SpaceStars {
+    pub fn new() -> SpaceStars {
+        // Random number generater
+        let mut rng = rand::task_rng();
+        
+        // Generate a bunch of stars
+        let mut stars = Vec::with_capacity(5); // Five layers of stars
+        for _ in range(0, stars.capacity()) {
+            let mut layer = Vec::with_capacity(50);
+            for _ in range(0u8, 20) {
+                layer.push(Star {
+                    position: [rng.gen::<f64>() * 1290.0, rng.gen::<f64>() * 730.0],
+                    size: (rng.gen::<u8>() % 5 + 1) as f64,
+                });
+            }
+            stars.push(layer);
+        }
+    
+        SpaceStars {
+            stars: stars,
+        }
+    }
+    
+    pub fn update(&mut self, dt: f64) {
+        for (i, stars) in self.stars.iter_mut().enumerate() {
+            let i = i as f64;
+            for star in stars.iter_mut() {
+                star.position[0] += 20.0*dt / i;
+                //star.position[1] += 10.0*dt / i;
+                
+                if star.position[0] > 1280.0 {
+                    star.position[0] -= 1290.0
+                }
+                /*if star.position[1] > 720.0 {
+                    star.position[1] -= 730.0
+                }*/
+            }
+        }
+    }
+    
+    pub fn draw(&self, context: &Context, gl: &mut Gl) {
+        use graphics::*;
+        
+        let star_rect = Rectangle::new([1.0, 1.0, 1.0, 1.0]);
+        for stars in self.stars.iter() {
+            for star in stars.iter() {
+                star_rect.draw([star.position[0], star.position[1], star.size, star.size], context, gl);
+            }
+        }
     }
 }
