@@ -21,6 +21,7 @@ pub struct MainMenu {
     done: bool,
 
     // Textures
+    logo_texture: Texture,
     single_player_texture: Texture,
     multiplayer_texture: Texture,
     exit_texture: Texture,
@@ -31,6 +32,7 @@ impl MainMenu {
         MainMenu {
             selected: 0,
             done: false,
+            logo_texture: Texture::from_path(&Path::new("content/textures/gui/logo.png")).unwrap(),
             single_player_texture: Texture::from_path(&Path::new("content/textures/gui/singleplayer.png")).unwrap(),
             multiplayer_texture: Texture::from_path(&Path::new("content/textures/gui/multiplayer.png")).unwrap(),
             exit_texture: Texture::from_path(&Path::new("content/textures/gui/exit.png")).unwrap(),
@@ -87,6 +89,7 @@ impl MainMenu {
         // Clear the screen
         clear([0.0, ..4], gl);
 
+        image(&self.logo_texture, &context.trans(350.0, 50.0), gl);
         image(&self.single_player_texture, &context.trans(550.0, 300.0), gl);
         image(&self.multiplayer_texture, &context.trans(550.0, 400.0), gl);
         image(&self.exit_texture, &context.trans(550.0, 500.0), gl);
