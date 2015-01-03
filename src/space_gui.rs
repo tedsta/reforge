@@ -31,6 +31,9 @@ pub struct SpaceGui<'a> {
     simulate_texture: Texture,
     win_texture: Texture,
     lose_texture: Texture,
+    hp_texture: Texture,
+    shield_texture: Texture,
+    power_texture: Texture,
     
     // Space background
     space_bg: SpaceStars,
@@ -67,6 +70,9 @@ impl<'a> SpaceGui<'a> {
             simulate_texture: Texture::from_path(&Path::new("content/textures/gui/simulating.png")).unwrap(),
             win_texture: Texture::from_path(&Path::new("content/textures/gui/win.png")).unwrap(),
             lose_texture: Texture::from_path(&Path::new("content/textures/gui/lose.png")).unwrap(),
+            hp_texture: Texture::from_path(&Path::new("content/textures/gui/hp_text.png")).unwrap(),
+            shield_texture: Texture::from_path(&Path::new("content/textures/gui/shield_text.png")).unwrap(),
+            power_texture: Texture::from_path(&Path::new("content/textures/gui/power_text.png")).unwrap(),
             
             space_bg: SpaceStars::new(),
         }
@@ -135,6 +141,11 @@ impl<'a> SpaceGui<'a> {
         }
         
         image(&self.plan_texture, &context.trans(550.0, 10.0), gl);
+
+        // Draw label for hp, shields and power meters
+        image(&self.hp_texture, &context.trans(5.0, 5.0), gl);
+        image(&self.shield_texture, &context.trans(5.0, 40.0), gl);
+        image(&self.power_texture, &context.trans(5.0, 75.0), gl);
         
         if client_ship.state.get_hp() == 0 {
             image(&self.lose_texture, &context.trans(550.0, 100.0), gl);
@@ -176,6 +187,11 @@ impl<'a> SpaceGui<'a> {
         }
         
         image(&self.simulate_texture, &context.trans(550.0, 10.0), gl);
+        
+        // Draw label for hp, shields and power meters
+        image(&self.hp_texture, &context.trans(5.0, 5.0), gl);
+        image(&self.shield_texture, &context.trans(5.0, 40.0), gl);
+        image(&self.power_texture, &context.trans(5.0, 75.0), gl);
         
         if client_ship.state.get_hp() == 0 {
             image(&self.lose_texture, &context.trans(550.0, 100.0), gl);
@@ -305,19 +321,19 @@ fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship:
     let used_power_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
     
     for i in range(0, ship.state.get_hp()) {
-        hp_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0), gl);
+        hp_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-110.0, -145.0), gl);
     }
     
     for i in range(0, ship.state.shields) {
-        shield_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0 + 34.0), gl);
+        shield_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-110.0, -145.0 + 34.0), gl);
     }
     
     for i in range(0, ship.state.plan_power) {
-        power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0 + 68.0), gl);
+        power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-110.0, -145.0 + 68.0), gl);
     }
     
     for i in range(ship.state.plan_power, ship.state.power) {
-        used_power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0 + 68.0), gl);
+        used_power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-110.0, -145.0 + 68.0), gl);
     }
 }
 
