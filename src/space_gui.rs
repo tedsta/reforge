@@ -16,6 +16,11 @@ use ship::{Ship, ShipRef};
 use sim::SimVisuals;
 use vec::{Vec2, Vec2f};
 
+pub struct ModuleIcons {
+    pub power_on_texture: Texture,
+    pub power_off_texture: Texture,
+}
+
 pub struct SpaceGui<'a> {
     // The target ships' render areas
     render_areas: Vec<ShipRenderArea>,
@@ -34,6 +39,8 @@ pub struct SpaceGui<'a> {
     hp_texture: Texture,
     shield_texture: Texture,
     power_texture: Texture,
+    
+    module_icons: ModuleIcons,
     
     // Space background
     space_bg: SpaceStars,
@@ -73,6 +80,11 @@ impl<'a> SpaceGui<'a> {
             hp_texture: Texture::from_path(&Path::new("content/textures/gui/hp_text.png")).unwrap(),
             shield_texture: Texture::from_path(&Path::new("content/textures/gui/shield_text.png")).unwrap(),
             power_texture: Texture::from_path(&Path::new("content/textures/gui/power_text.png")).unwrap(),
+            
+            module_icons: ModuleIcons {
+                power_on_texture: Texture::from_path(&Path::new("content/textures/gui/power_on_icon.png")).unwrap(),
+                power_off_texture: Texture::from_path(&Path::new("content/textures/gui/power_off_icon.png")).unwrap(),
+            },
             
             space_bg: SpaceStars::new(),
         }
@@ -120,6 +132,7 @@ impl<'a> SpaceGui<'a> {
         
         // Draw player ship
         draw_ship(&context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
+        client_ship.draw_module_powered_icons(&context.trans(150.0, 150.0), gl, &self.module_icons);
     
         let mut enemy_alive = false;
         for render_area in self.render_areas.iter_mut() {
@@ -166,6 +179,7 @@ impl<'a> SpaceGui<'a> {
         
         // Draw player ship
         draw_ship(&context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
+        client_ship.draw_module_powered_icons(&context.trans(150.0, 150.0), gl, &self.module_icons);
     
         let mut enemy_alive = false;
         for render_area in self.render_areas.iter_mut() {

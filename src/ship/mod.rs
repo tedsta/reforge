@@ -17,6 +17,8 @@ use opengl_graphics::Gl;
 use sim::SimVisuals;
 #[cfg(client)]
 use asset_store::AssetStore;
+#[cfg(client)]
+use space_gui::ModuleIcons;
 
 // Use the ship_gen module privately here
 mod ship_gen;
@@ -317,6 +319,32 @@ impl Ship {
             
             for i in range(cmp::max(module.get_min_hp(), module.get_hp()), module.get_max_hp()) {
                 armor_dmg_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context, gl);
+            }
+        }
+    }
+    
+    #[cfg(client)]
+    pub fn draw_module_powered_icons(&self, context: &Context, gl: &mut Gl, module_icons: &ModuleIcons) {
+        use graphics::*;
+    
+        for module in self.modules.iter() {
+            let module = module.borrow();
+            let module = module.get_base();
+            
+            // Skip modules that aren't powerable
+            if module.get_power() == 0 { continue; }
+            
+            // Skip modules that aren't changing powered states
+            if module.plan_powered == module.powered { continue; }
+            
+            let context = context.trans((module.x*48) as f64, (module.y*48) as f64).trans((module.width*48 - 20) as f64, 2.0);
+            
+            if module.plan_powered {
+                // Module is powering up, draw on icon
+                image(&module_icons.power_on_texture, &context, gl);
+            } else {
+                // Module is powering down, draw off icon
+                image(&module_icons.power_off_texture, &context, gl);
             }
         }
     }
