@@ -1,5 +1,6 @@
 use time;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 use event::Events;
 use opengl_graphics::Gl;
@@ -21,10 +22,7 @@ pub struct ClientBattleState {
     // The player's ship
     player_ship: ShipRef,
     
-    // Ships to add after simulation
     ships_to_add: Vec<Ship>,
-    
-    // Ships to remove after simulation
     ships_to_remove: Vec<ShipId>,
 }
 
@@ -148,6 +146,24 @@ impl ClientBattleState {
             
             // Clear the visuals
             sim_visuals.clear();
+            
+            // Handle ships to add and remove
+            for ship in self.ships_to_remove.drain() {
+                gui.remove_lock(ship);
+            
+                self.context.remove_ship(ship);
+            }
+        
+            for ship in self.ships_to_add.drain() {
+                let ship = Rc::new(RefCell::new(ship));
+                
+                if ship.borrow().client_id == Some(self.client.get_id()) {
+                    self.player_ship = ship.clone();
+                } else {
+                    gui.try_lock(&ship);
+                }
+                self.context.add_ship(ship);
+            }
         }
     }
     

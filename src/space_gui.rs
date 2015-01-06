@@ -12,7 +12,7 @@ use asset_store::AssetStore;
 use battle_state::BattleContext;
 use module::{IModule, ModuleRef};
 use net::ClientId;
-use ship::{Ship, ShipRef};
+use ship::{Ship, ShipId, ShipRef};
 use sim::SimVisuals;
 use vec::{Vec2, Vec2f};
 
@@ -139,20 +139,22 @@ impl<'a> SpaceGui<'a> {
     
         let mut enemy_alive = false;
         for render_area in self.render_areas.iter_mut() {
-            // TODO clear render texture
-            
-            Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([render_area.x, render_area.y, render_area.width, render_area.height], context, gl);
-        
-            {
-                let context = context.trans(render_area.x, render_area.y).trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
+            if let Some(ref ship) = render_area.ship {
+                // TODO clear render texture
                 
-                draw_ship(&context, gl, sim_visuals, render_area.ship.as_ref().unwrap().borrow().deref(), time);
-            }
+                Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([render_area.x, render_area.y, render_area.width, render_area.height], context, gl);
             
-            // TODO draw render texture
-        
-            if render_area.ship.as_ref().unwrap().borrow().state.get_hp() > 0 {
-                enemy_alive = true;
+                {
+                    let context = context.trans(render_area.x, render_area.y).trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
+                    
+                    draw_ship(&context, gl, sim_visuals, ship.borrow().deref(), time);
+                }
+                
+                // TODO draw render texture
+            
+                if ship.borrow().state.get_hp() > 0 {
+                    enemy_alive = true;
+                }
             }
         }
         
@@ -186,20 +188,22 @@ impl<'a> SpaceGui<'a> {
     
         let mut enemy_alive = false;
         for render_area in self.render_areas.iter_mut() {
-            // TODO clear render texture
-            
-            Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([render_area.x, render_area.y, render_area.width, render_area.height], context, gl);
-        
-            {
-                let context = context.trans(render_area.x, render_area.y).trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
+            if let Some(ref ship) = render_area.ship {
+                // TODO clear render texture
                 
-                draw_ship(&context, gl, sim_visuals, render_area.ship.as_ref().unwrap().borrow().deref(), time);
-            }
+                Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([render_area.x, render_area.y, render_area.width, render_area.height], context, gl);
             
-            // TODO draw render texture
-        
-            if render_area.ship.as_ref().unwrap().borrow().state.get_hp() > 0 {
-                enemy_alive = true;
+                {
+                    let context = context.trans(render_area.x, render_area.y).trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
+                    
+                    draw_ship(&context, gl, sim_visuals, ship.borrow().deref(), time);
+                }
+                
+                // TODO draw render texture
+            
+                if ship.borrow().state.get_hp() > 0 {
+                    enemy_alive = true;
+                }
             }
         }
         
@@ -302,6 +306,24 @@ impl<'a> SpaceGui<'a> {
         }
         
         self.module = None;
+    }
+    
+    pub fn try_lock(&mut self, ship: &ShipRef) {
+        for render_area in self.render_areas.iter_mut() {
+            if render_area.ship.is_none() {
+                render_area.ship = Some(ship.clone());
+                break;
+            }
+        }
+    }
+    
+    pub fn remove_lock(&mut self, ship_id: ShipId) {
+        for render_area in self.render_areas.iter_mut() {
+            if render_area.ship.is_some() && render_area.ship.as_ref().unwrap().borrow().id == ship_id {
+                render_area.ship = None;
+                break;
+            }
+        }
     }
 }
 

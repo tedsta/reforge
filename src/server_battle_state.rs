@@ -110,13 +110,25 @@ impl ServerBattleState {
                         
                         // Replace dead ships with better ships
                         if ship.state.get_hp() == 0 {
-                            //let better_ship = Ship::generate(ship.
+                            let mut better_ship = Ship::generate(ship.id, ship.level + 1);
+                            better_ship.client_id = ship.client_id;
+                            
+                            self.ships_to_add.push(better_ship);
+                            self.ships_to_remove.push(ship.id);
                         }
                     }
                     
                     results_packet.write(&self.ships_to_add);
                     results_packet.write(&self.ships_to_remove);
                     self.slot.broadcast(results_packet);
+                    
+                    for ship in self.ships_to_remove.drain() {
+                        self.context.remove_ship(ship);
+                    }
+                    
+                    for ship in self.ships_to_add.drain() {
+                        self.context.add_ship(Rc::new(RefCell::new(ship)));
+                    }
                     
                     // Reset everything for the next turn
                     self.received_plans.clear();

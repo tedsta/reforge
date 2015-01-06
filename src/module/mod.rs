@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use assets::TextureId;
 use battle_state::BattleContext;
 use net::{InPacket, OutPacket};
-use ship::{ShipRef, ShipState};
+use ship::{ShipId, ShipRef, ShipState};
 use sim::{SimEventAdder, SimEvents};
 use vec::{Vec2, Vec2f};
 
@@ -37,6 +37,8 @@ pub trait IModule {
     #[cfg(client)]
     fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef);
     fn after_simulation(&mut self, ship_state: &mut ShipState);
+    
+    fn on_ship_removed(&mut self, _: ShipId) {}
 
     fn write_plans(&self, packet: &mut OutPacket);
     fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket);
@@ -139,6 +141,16 @@ impl IModule for Module {
             Module::Shield(ref mut m) => m.after_simulation(ship_state),
             Module::Solar(ref mut m) => m.after_simulation(ship_state),
             Module::Command(ref mut m) => m.after_simulation(ship_state),
+        }
+    }
+    
+    fn on_ship_removed(&mut self, ship_id: ShipId) {
+        match *self {
+            Module::Engine(ref mut m) => m.on_ship_removed(ship_id),
+            Module::ProjectileWeapon(ref mut m) => m.on_ship_removed(ship_id),
+            Module::Shield(ref mut m) => m.on_ship_removed(ship_id),
+            Module::Solar(ref mut m) => m.on_ship_removed(ship_id),
+            Module::Command(ref mut m) => m.on_ship_removed(ship_id),
         }
     }
     

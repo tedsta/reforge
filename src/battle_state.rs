@@ -54,6 +54,36 @@ impl BattleContext {
             None => panic!("No ship with client ID {}", client_id),
         }
     }
+    
+    pub fn add_ship(&mut self, ship: ShipRef) {
+        self.ships_list.push(ship.clone());
+        self.ships.insert(ship.borrow().id, ship.clone());
+        if let Some(client_id) = ship.borrow().client_id {
+            self.ships_client_id.insert(client_id, ship);
+        }
+    }
+    
+    pub fn remove_ship(&mut self, ship_id: ShipId) {
+        self.on_ship_removed(ship_id);
+    
+        self.ships_list.retain(|ship| ship.borrow().id != ship_id);
+        
+        // TODO optimize this
+        
+        // Rebuild hash maps
+        self.ships = HashMap::new();
+        for ship in self.ships_list.iter() {
+            self.ships.insert(ship.borrow().id, ship.clone());
+        }
+        
+        self.ships_client_id = HashMap::new();
+        for ship in self.ships_list.iter() {
+            match ship.borrow().client_id {
+                Some(client_id) => { self.ships_client_id.insert(client_id, ship.clone()); },
+                None => {},
+            }
+        }
+    }
 
     pub fn server_preprocess(&mut self) {
         for ship in self.ships.values() {
@@ -68,22 +98,28 @@ impl BattleContext {
     }
     
     #[cfg(client)]
-    pub fn add_plan_visuals(&mut self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
+    pub fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
         for ship in self.ships.values() {
             ship.borrow().add_plan_visuals(asset_store, visuals, ship);
         }
     }
     
     #[cfg(client)]
-    pub fn add_simulation_visuals(&mut self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
+    pub fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
         for ship in self.ships.values() {
             ship.borrow().add_simulation_visuals(asset_store, visuals, ship);
         }
     }
     
-    pub fn after_simulation(&mut self) {
+    pub fn after_simulation(&self) {
         for ship in self.ships.values() {
             ship.borrow_mut().after_simulation();
+        }
+    }
+    
+    pub fn on_ship_removed(&self, ship_id: ShipId) {
+        for ship in self.ships.values() {
+            ship.borrow_mut().on_ship_removed(ship_id);
         }
     }
     

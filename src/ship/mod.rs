@@ -255,6 +255,12 @@ impl Ship {
         }
     }
     
+    pub fn on_ship_removed(&self, ship_id: ShipId) {
+        for module in self.modules.iter() {
+            module.borrow_mut().on_ship_removed(ship_id);
+        }
+    }
+    
     pub fn apply_module_plans(&mut self) {
         for module in self.modules.iter() {
             let mut module = module.borrow_mut();

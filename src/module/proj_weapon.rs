@@ -10,7 +10,7 @@ use assets::{WEAPON_TEXTURE, LASER_TEXTURE, EXPLOSION_TEXTURE, TextureId};
 use battle_state::{BattleContext, TICKS_PER_SECOND};
 use module::{IModule, Module, ModuleRef, ModuleBase};
 use net::{ClientId, InPacket, OutPacket};
-use ship::{ShipRef, ShipState};
+use ship::{ShipId, ShipRef, ShipState};
 use sim::{SimEvent, SimEventAdder};
 use vec::{Vec2, Vec2f};
 
@@ -208,6 +208,21 @@ impl IModule for ProjectileWeaponModule {
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {
+    }
+    
+    fn on_ship_removed(&mut self, ship_id: ShipId) {
+        // TODO make this prettier
+    
+        let mut remove = false;
+        if let Some((ref ship, _)) = self.target {
+            if ship.borrow().id == ship_id {
+                remove = true;
+            }
+        }
+        
+        if remove {
+            self.target = None;
+        }
     }
     
     fn write_plans(&self, packet: &mut OutPacket) {

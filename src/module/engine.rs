@@ -67,7 +67,7 @@ impl IModule for EngineModule {
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {
     }
-    
+
     fn write_plans(&self, packet: &mut OutPacket) {
     }
     

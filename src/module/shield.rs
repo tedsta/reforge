@@ -64,7 +64,7 @@ impl IModule for ShieldModule {
             ship_state.shields += 1; // charge shield
         }
     }
-    
+
     fn write_plans(&self, packet: &mut OutPacket) {
     }
     
