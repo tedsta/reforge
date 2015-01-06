@@ -1,6 +1,7 @@
 *~
 *.swp
 Cargo.lock
+reforge.aip
 
 # Binaries
 *.dll
