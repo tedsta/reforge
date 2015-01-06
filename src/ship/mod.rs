@@ -89,6 +89,7 @@ impl ShipState {
             // If the module was active and can no longer be active, deactivate
             if was_active && !module.get_base().is_active() {
                 self.add_power(module.get_base().get_power());
+                module.get_base_mut().plan_powered = false;
                 module.get_base_mut().powered = false;
                 module.on_deactivated(self, modules);
             }
@@ -110,6 +111,7 @@ impl ShipState {
                     Some(mut module) => {
                         if module.get_base().get_power() > 0 && module.get_base().powered {
                             self.add_power(module.get_base().get_power());
+                            module.get_base_mut().plan_powered = false;
                             module.get_base_mut().powered = false;
                             module.on_deactivated(self, modules);
                         }
