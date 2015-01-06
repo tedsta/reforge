@@ -338,11 +338,11 @@ impl ModuleBase {
     }
     
     pub fn get_render_position(&self) -> Vec2f {
-        Vec2{x: (self.x as f64)*(48f64), y: (self.y as f64)*(48f64)}
+        Vec2{x: (self.x as f64) * 48.0, y: (self.y as f64) * 48.0}
     }
     
     pub fn get_render_size(&self) -> Vec2f {
-        Vec2{x: (self.width as f64)*(48f64), y: (self.height as f64)*(48f64)}
+        Vec2{x: (self.width as f64) * 48.0, y: (self.height as f64) * 48.0}
     }
     
     pub fn get_render_center(&self) -> Vec2f {

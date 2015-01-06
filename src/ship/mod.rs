@@ -148,6 +148,10 @@ pub struct Ship {
     pub client_id: Option<ClientId>,
     pub state: ShipState,
     pub modules: Vec<ModuleRef>,
+    
+    // Ship dimensions in module blocks
+    width: u8,
+    height: u8,
 }
 
 impl Ship {
@@ -157,11 +161,22 @@ impl Ship {
             client_id: None,
             state: ShipState::new(),
             modules: vec!(),
+            
+            width: 0,
+            height: 0,
         }
     }
     
-    pub fn generate(mod_store: &ModuleTypeStore, id: ShipId) -> Ship {
-        generate_ship(mod_store, id)
+    pub fn get_width(&self) -> u8 {
+        self.width
+    }
+    
+    pub fn get_height(&self) -> u8 {
+        self.height
+    }
+    
+    pub fn generate(mod_store: &ModuleTypeStore, id: ShipId, level: u8) -> Ship {
+        generate_ship(mod_store, id, level)
     }
     
     // Returns true if adding the module was successful, false if it failed.
@@ -169,6 +184,10 @@ impl Ship {
         // Add to state hp
         self.state.total_module_hp += module.get_base().get_hp();
         self.state.hp = self.state.total_module_hp/2;
+        
+        // Modify the ship's dimensions
+        self.width = cmp::max(self.width, module.get_base().x + module.get_base().width);
+        self.height = cmp::max(self.height, module.get_base().x + module.get_base().height);
         
         // Setup module's index
         module.get_base_mut().index = self.modules.len() as u32;
@@ -298,7 +317,7 @@ impl Ship {
             let module = module.borrow();
             let module = module.get_base();
             
-            let context = context.trans((module.x*48) as f64, (module.y*48) as f64);
+            let context = context.trans((module.x as f64) * 48.0, (module.y as f64) * 48.0);
             
             let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
             let hp_dmg_rect = Rectangle::border([0.8, 0.3, 0.3, 1.0], 1.0);
@@ -337,7 +356,7 @@ impl Ship {
             // Skip modules that aren't changing powered states
             if module.plan_powered == module.powered { continue; }
             
-            let context = context.trans((module.x*48) as f64, (module.y*48) as f64).trans((module.width*48 - 20) as f64, 2.0);
+            let context = context.trans((module.x as f64) * 48.0, (module.y as f64) * 48.0).trans((module.width as f64)*48.0 - 20.0, 2.0);
             
             if module.plan_powered {
                 // Module is powering up, draw on icon

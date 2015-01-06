@@ -16,6 +16,9 @@ use ship::{Ship, ShipRef};
 use sim::SimVisuals;
 use vec::{Vec2, Vec2f};
 
+static SHIP_OFFSET_X: f64 = 100.0;
+static SHIP_OFFSET_Y: f64 = 170.0;
+
 pub struct ModuleIcons {
     pub power_on_texture: Texture,
     pub power_off_texture: Texture,
@@ -54,13 +57,13 @@ impl<'a> SpaceGui<'a> {
                 //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
                 //let texture = target.get_texture().expect("Failed to get render texture's texture");
                 let x = 772.0;
-                let y = 8.0+(300.0 * (i as f64));
+                let y = (360.0 * (i as f64));
                 render_areas.push(ShipRenderArea {
                     ship: Some(ship.clone()),
                     x: x,
                     y: y,
                     width: 1280.0 - x,
-                    height: 300.0,
+                    height: 360.0,
                     //target: target,
                     //texture: texture,
                 });
@@ -131,8 +134,8 @@ impl<'a> SpaceGui<'a> {
         self.space_bg.draw(context, gl);
         
         // Draw player ship
-        draw_ship(&context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
-        client_ship.draw_module_powered_icons(&context.trans(150.0, 150.0), gl, &self.module_icons);
+        draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, sim_visuals, client_ship, time);
+        client_ship.draw_module_powered_icons(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, &self.module_icons);
     
         let mut enemy_alive = false;
         for render_area in self.render_areas.iter_mut() {
@@ -141,7 +144,7 @@ impl<'a> SpaceGui<'a> {
             Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([render_area.x, render_area.y, render_area.width, render_area.height], context, gl);
         
             {
-                let context = context.trans(render_area.x, render_area.y).trans(150.0, 150.0);
+                let context = context.trans(render_area.x, render_area.y).trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
                 
                 draw_ship(&context, gl, sim_visuals, render_area.ship.as_ref().unwrap().borrow().deref(), time);
             }
@@ -178,8 +181,8 @@ impl<'a> SpaceGui<'a> {
         self.space_bg.draw(context, gl);
         
         // Draw player ship
-        draw_ship(&context.trans(150.0, 150.0), gl, sim_visuals, client_ship, time);
-        client_ship.draw_module_powered_icons(&context.trans(150.0, 150.0), gl, &self.module_icons);
+        draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, sim_visuals, client_ship, time);
+        client_ship.draw_module_powered_icons(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, &self.module_icons);
     
         let mut enemy_alive = false;
         for render_area in self.render_areas.iter_mut() {
@@ -188,7 +191,7 @@ impl<'a> SpaceGui<'a> {
             Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([render_area.x, render_area.y, render_area.width, render_area.height], context, gl);
         
             {
-                let context = context.trans(render_area.x, render_area.y).trans(150.0, 150.0);
+                let context = context.trans(render_area.x, render_area.y).trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
                 
                 draw_ship(&context, gl, sim_visuals, render_area.ship.as_ref().unwrap().borrow().deref(), time);
             }
@@ -219,10 +222,8 @@ impl<'a> SpaceGui<'a> {
     
     fn on_mouse_left_pressed(&mut self, x: f64, y: f64, client_ship: &mut Ship) {
         if self.module.is_none() {
-            let ship_offset_x = 150.0;
-            let ship_offset_y = 150.0;
-            let x = x - ship_offset_x;
-            let y = y - ship_offset_y;
+            let x = x - SHIP_OFFSET_X;
+            let y = y - SHIP_OFFSET_Y;
 
             for module in client_ship.modules.iter() {
                 let mut module_borrowed = module.borrow_mut();
@@ -245,10 +246,8 @@ impl<'a> SpaceGui<'a> {
         }
         
         for render_area in self.render_areas.iter() {
-            let ship_offset_x = 150.0;
-            let ship_offset_y = 150.0;
-            let x = x - render_area.x - ship_offset_x;
-            let y = y - render_area.y - ship_offset_y;
+            let x = x - render_area.x - SHIP_OFFSET_X;
+            let y = y - render_area.y - SHIP_OFFSET_Y;
             match render_area.ship.as_ref() {
                 Some(ship) => {
                     for module in ship.borrow().modules.iter() {
@@ -279,10 +278,8 @@ impl<'a> SpaceGui<'a> {
     
     fn on_mouse_right_pressed(&mut self, x: f64, y: f64, client_ship: &mut Ship) {
         if self.module.is_none() {
-            let ship_offset_x = 150.0;
-            let ship_offset_y = 150.0;
-            let x = x - ship_offset_x;
-            let y = y - ship_offset_y;
+            let x = x - SHIP_OFFSET_X;
+            let y = y - SHIP_OFFSET_Y;
 
             for module in client_ship.modules.iter() {
                 let mut module_borrowed = module.borrow_mut();
@@ -335,19 +332,19 @@ fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship:
     let used_power_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
     
     for i in range(0, ship.state.get_hp()) {
-        hp_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0 + 14.0), gl);
+        hp_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-(SHIP_OFFSET_X - 5.0), -(SHIP_OFFSET_Y - 5.0) + 14.0), gl);
     }
     
     for i in range(0, ship.state.shields) {
-        shield_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0 + 68.0), gl);
+        shield_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-(SHIP_OFFSET_X - 5.0), -(SHIP_OFFSET_Y - 5.0) + 68.0), gl);
     }
     
     for i in range(0, ship.state.plan_power) {
-        power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0 + 120.0), gl);
+        power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-(SHIP_OFFSET_X - 5.0), -(SHIP_OFFSET_Y - 5.0) + 120.0), gl);
     }
     
     for i in range(ship.state.plan_power, ship.state.power) {
-        used_power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-145.0, -145.0 + 120.0), gl);
+        used_power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-(SHIP_OFFSET_X - 5.0), -(SHIP_OFFSET_Y - 5.0) + 120.0), gl);
     }
 }
 
