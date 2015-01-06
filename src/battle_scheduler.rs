@@ -89,7 +89,7 @@ fn schedule_ffa(new_slot: ServerSlot, clients: Vec<ClientId>) {
         let mut ships = vec!();
         for client_id in clients.iter() {
             // Create player's ship
-            let mut ship = Ship::generate(*client_id as ShipId, 0);
+            let mut ship = Ship::generate(*client_id as ShipId, 5);
             ship.client_id = Some(*client_id);
             
             // Add to the list of ships
