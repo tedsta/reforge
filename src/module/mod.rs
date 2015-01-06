@@ -19,38 +19,12 @@ pub use self::proj_weapon::ProjectileWeaponModule;
 pub use self::shield::ShieldModule;
 pub use self::solar::SolarModule;
 pub use self::command::CommandModule;
-pub use self::mod_type::{ModuleType, ModuleTypeInfo, ModuleTypeStore};
 
 pub mod engine;
 pub mod proj_weapon;
 pub mod shield;
 pub mod solar;
 pub mod command;
-pub mod mod_type;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#[deriving(Encodable, Decodable, PartialEq, Copy)]
-pub enum ModuleCategory {
-    Weapon = 0,
-    Propulsion,
-    Defense,
-    Power,
-    Control,
-}
-
-pub struct ModuleCategoryData {
-    pub name: &'static str,
-    pub id: ModuleCategory,
-}
-
-pub static MODULE_CATEGORIES: [ModuleCategoryData, .. 5] = [
-    ModuleCategoryData{name: "Weapon", id: ModuleCategory::Weapon},
-    ModuleCategoryData{name: "Propulsion", id: ModuleCategory::Propulsion},
-    ModuleCategoryData{name: "Defense", id: ModuleCategory::Defense},
-    ModuleCategoryData{name: "Power", id: ModuleCategory::Power},
-    ModuleCategoryData{name: "Control", id: ModuleCategory::Control},
-];
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -270,16 +244,10 @@ pub struct ModuleBase {
     
     // Array index in ship. Used for referencing modules across network.
     pub index: u32,
-    
-    // Module type
-    pub mod_type: ModuleType,
-    
-    // Category of this module
-    pub category: ModuleCategory,
 }
 
 impl ModuleBase {
-    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType, width: u8, height: u8, power: u8, min_hp: u8, hp: u8) -> ModuleBase {
+    pub fn new(width: u8, height: u8, power: u8, min_hp: u8, hp: u8) -> ModuleBase {
         ModuleBase {
             x: 0,
             y: 0,
@@ -295,9 +263,6 @@ impl ModuleBase {
             plan_powered: false,
             
             index: -1,
-            
-            mod_type: mod_type,
-            category: mod_store.get_module_type(mod_type).category,
         }
     }
     

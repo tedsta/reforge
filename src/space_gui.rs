@@ -56,7 +56,7 @@ impl<'a> SpaceGui<'a> {
             if i < 2 {
                 //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
                 //let texture = target.get_texture().expect("Failed to get render texture's texture");
-                let x = 772.0;
+                let x = 700.0;
                 let y = (360.0 * (i as f64));
                 render_areas.push(ShipRenderArea {
                     ship: Some(ship.clone()),

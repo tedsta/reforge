@@ -2,11 +2,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{RingBuf, HashMap};
 use std::collections::hash_map::Entry;
-use std::sync::Arc;
 
 use battle_state::BattleContext;
 use battle_type::BattleType;
-use module::ModuleTypeStore;
 use net::{ClientId, ServerSlot, SlotInMsg};
 use server_battle_state::ServerBattleState;
 use ship::{Ship, ShipId};
@@ -14,15 +12,13 @@ use ship::{Ship, ShipId};
 pub struct BattleScheduler {
     slot: ServerSlot,
     ffa_waiting: HashMap<u8, Vec<ClientId>>,
-    mod_store: Arc<ModuleTypeStore>,
 }
 
 impl BattleScheduler {
-    pub fn new(slot: ServerSlot, mod_store: Arc<ModuleTypeStore>) -> BattleScheduler {
+    pub fn new(slot: ServerSlot) -> BattleScheduler {
         BattleScheduler {
             slot: slot,
             ffa_waiting: HashMap::new(),
-            mod_store: mod_store,
         }
     }
 
@@ -47,7 +43,7 @@ impl BattleScheduler {
                                     // Chech if we're ready to schedule
                                     if waiting.len() == num_players as uint {
                                         let new_slot = self.slot.create_slot_and_transfer_clients(waiting);
-                                        schedule_ffa(new_slot, self.mod_store.clone(), waiting.clone());
+                                        schedule_ffa(new_slot, waiting.clone());
                                         waiting.clear();
                                     }
                                 },
@@ -55,7 +51,7 @@ impl BattleScheduler {
                         },
                         BattleType::Ai => {
                             let new_slot = self.slot.create_slot_and_transfer_clients(&vec![client_id]);
-                            schedule_ai(new_slot, self.mod_store.clone(), client_id);
+                            schedule_ai(new_slot, client_id);
                         },
                     }
                 },
@@ -68,14 +64,14 @@ impl BattleScheduler {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Scheduling functions
 
-fn schedule_ai(new_slot: ServerSlot, mod_store: Arc<ModuleTypeStore>, client_id: ClientId) {
+fn schedule_ai(new_slot: ServerSlot, client_id: ClientId) {
     spawn(move || {
         // Create ships
-        let mut ship1 = Ship::generate(mod_store.deref(), client_id as ShipId, 5);
+        let mut ship1 = Ship::generate(client_id as ShipId, 5);
         ship1.client_id = Some(client_id);
         
         // TODO: come up with better way to generate AI ship IDs
-        let mut ship2 = Ship::generate(mod_store.deref(), (100000000 - client_id) as ShipId, 1);
+        let mut ship2 = Ship::generate((100000000 - client_id) as ShipId, 2);
         ship2.client_id = None;
     
         // Map clients to their ships
@@ -88,12 +84,12 @@ fn schedule_ai(new_slot: ServerSlot, mod_store: Arc<ModuleTypeStore>, client_id:
     });
 }
 
-fn schedule_ffa(new_slot: ServerSlot, mod_store: Arc<ModuleTypeStore>, clients: Vec<ClientId>) {
+fn schedule_ffa(new_slot: ServerSlot, clients: Vec<ClientId>) {
     spawn(move || {
         let mut ships = vec!();
         for client_id in clients.iter() {
             // Create player's ship
-            let mut ship = Ship::generate(mod_store.deref(), *client_id as ShipId, 0);
+            let mut ship = Ship::generate(*client_id as ShipId, 0);
             ship.client_id = Some(*client_id);
             
             // Add to the list of ships

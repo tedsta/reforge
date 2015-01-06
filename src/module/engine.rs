@@ -5,7 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
 use assets::{ENGINE_TEXTURE, PROPULSION_TEXTURE};
-use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore};
+use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
@@ -24,9 +24,9 @@ pub struct EngineModule {
 }
 
 impl EngineModule {
-    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
+    pub fn new() -> Module {
         Module::Engine(EngineModule {
-            base: ModuleBase::new(mod_store, mod_type, 2, 1, 2, 2, 3),
+            base: ModuleBase::new(2, 1, 2, 2, 3),
         })
     }
 }

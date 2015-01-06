@@ -8,7 +8,7 @@ use sdl2_window::Sdl2Window;
 use asset_store::AssetStore;
 use battle_state::{BattleContext, ClientPacketId, ServerPacketId, TICKS_PER_SECOND};
 use net::{Client, OutPacket};
-use ship::ShipRef;
+use ship::{Ship, ShipId, ShipRef};
 use sim::{SimEvents, SimVisuals};
 use space_gui::SpaceGui;
 
@@ -20,6 +20,12 @@ pub struct ClientBattleState {
     
     // The player's ship
     player_ship: ShipRef,
+    
+    // Ships to add after simulation
+    ships_to_add: Vec<Ship>,
+    
+    // Ships to remove after simulation
+    ships_to_remove: Vec<ShipId>,
 }
 
 impl ClientBattleState {
@@ -29,6 +35,8 @@ impl ClientBattleState {
             client: client,
             context: context,
             player_ship: player_ship,
+            ships_to_add: vec!(),
+            ships_to_remove: vec!(),
         }
     }
     
@@ -166,5 +174,8 @@ impl ClientBattleState {
         // Results packet has both plans and results
         self.context.read_plans(&mut packet);
         self.context.read_results(&mut packet);
+        
+        self.ships_to_add = packet.read().ok().expect("Failed to read ships to add from results packet");
+        self.ships_to_remove = packet.read().ok().expect("Failed to read ships to remove from results packet");
     }
 }

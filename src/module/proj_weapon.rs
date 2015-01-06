@@ -8,7 +8,7 @@ use opengl_graphics::Gl;
 
 use assets::{WEAPON_TEXTURE, LASER_TEXTURE, EXPLOSION_TEXTURE, TextureId};
 use battle_state::{BattleContext, TICKS_PER_SECOND};
-use module::{IModule, Module, ModuleRef, ModuleBase, ModuleType, ModuleTypeStore};
+use module::{IModule, Module, ModuleRef, ModuleBase};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::{SimEvent, SimEventAdder};
@@ -31,7 +31,7 @@ pub struct ProjectileWeaponModule {
 }
 
 impl ProjectileWeaponModule {
-    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
+    pub fn new() -> Module {
         let projectile = Projectile {
             damage: 1,
             hit: false,
@@ -47,7 +47,7 @@ impl ProjectileWeaponModule {
         };
     
         Module::ProjectileWeapon(ProjectileWeaponModule {
-            base: ModuleBase::new(mod_store, mod_type, 1, 1, 2, 2, 3),
+            base: ModuleBase::new(1, 1, 2, 2, 3),
             projectiles: Vec::from_elem(3, projectile),
             target: None,
         })

@@ -5,7 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
 use assets::COMMAND_TEXTURE;
-use module::{IModule, Module, ModuleBase, ModuleRef, ModuleType, ModuleTypeStore};
+use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
@@ -24,9 +24,9 @@ pub struct CommandModule {
 }
 
 impl CommandModule {
-    pub fn new(mod_store: &ModuleTypeStore, mod_type: ModuleType) -> Module {
+    pub fn new() -> Module {
         Module::Command(CommandModule {
-            base: ModuleBase::new(mod_store, mod_type, 1, 2, 0, 2, 4),
+            base: ModuleBase::new(1, 2, 0, 2, 4),
         })
     }
 }

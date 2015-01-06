@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::cmp;
 
 use battle_state::BattleContext;
-use module::{IModule, ModuleBase, ModuleRef, Module, ModuleType, ModuleTypeStore};
+use module::{IModule, ModuleBase, ModuleRef, Module};
 use net::{ClientId, InPacket, OutPacket};
 use self::ship_gen::generate_ship;
 use sim::SimEvents;
@@ -152,10 +152,12 @@ pub struct Ship {
     // Ship dimensions in module blocks
     width: u8,
     height: u8,
+    
+    pub level: u8, // TODO: This is very temporary only for IC US semifinals
 }
 
 impl Ship {
-    pub fn new(id: ShipId) -> Ship {
+    pub fn new(id: ShipId, level: u8) -> Ship {
         Ship {
             id: id,
             client_id: None,
@@ -164,7 +166,13 @@ impl Ship {
             
             width: 0,
             height: 0,
+            
+            level: level,
         }
+    }
+    
+    pub fn generate(id: ShipId, level: u8) -> Ship {
+        generate_ship(id, level)
     }
     
     pub fn get_width(&self) -> u8 {
@@ -186,10 +194,6 @@ impl Ship {
         }
         
         true
-    }
-    
-    pub fn generate(mod_store: &ModuleTypeStore, id: ShipId, level: u8) -> Ship {
-        generate_ship(mod_store, id, level)
     }
     
     // Returns true if adding the module was successful, false if it failed.

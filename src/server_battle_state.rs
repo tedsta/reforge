@@ -6,7 +6,7 @@ use ai::run_ai;
 use battle_state::{BattleContext, ClientPacketId, ServerPacketId};
 use module::Module;
 use net::{ClientId, ServerSlot, SlotInMsg, InPacket, OutPacket};
-use ship::Ship;
+use ship::{Ship, ShipId};
 use sim::SimEvents;
 
 pub struct ServerBattleState {
@@ -19,6 +19,12 @@ pub struct ServerBattleState {
     clients_waiting: HashSet<ClientId>,
     clients_active: HashSet<ClientId>,
     
+    // Ships to add after simulation
+    ships_to_add: Vec<Ship>,
+    
+    // Ships to remove after simulation
+    ships_to_remove: Vec<ShipId>,
+    
     turn_number: u32,
 }
 
@@ -30,6 +36,8 @@ impl ServerBattleState {
             received_plans: HashSet::new(),
             clients_waiting: HashSet::new(),
             clients_active: HashSet::new(),
+            ships_to_add: vec!(),
+            ships_to_remove: vec!(),
             turn_number: 0,
         }
     }
@@ -90,19 +98,32 @@ impl ServerBattleState {
                     // Do server-side precalculations
                     self.context.server_preprocess();
                     
-                    // Build the results packet
-                    let results_packet = self.build_results_packet();
-                    self.slot.broadcast(results_packet);
+                    // Start building the results packet
+                    let mut results_packet = self.build_results_packet();
                     
                     // Run the simulation
                     self.do_simulation();
+                    
+                    // Finish the results packet with ships to add and remove
+                    for ship in self.context.ships_list.iter() {
+                        let ship = ship.borrow();
+                        
+                        // Replace dead ships with better ships
+                        if ship.state.get_hp() == 0 {
+                            //let better_ship = Ship::generate(ship.
+                        }
+                    }
+                    
+                    results_packet.write(&self.ships_to_add);
+                    results_packet.write(&self.ships_to_remove);
+                    self.slot.broadcast(results_packet);
                     
                     // Reset everything for the next turn
                     self.received_plans.clear();
                     self.turn_number += 1;
                     
                     // Transfer waiting clients to active clients
-                    self.clients_active = self.clients_active.union(&self.clients_waiting).map(|&x| x).collect()
+                    self.clients_active = self.clients_active.union(&self.clients_waiting).map(|&x| x).collect();
                 }
             },
         }

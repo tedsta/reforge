@@ -6,11 +6,8 @@
 extern crate bincode;
 extern crate "rustc-serialize" as serialize;
 
-use std::sync::Arc;
-
 use net::Server;
 use battle_scheduler::BattleScheduler;
-use module::ModuleTypeStore;
 
 pub mod ai;
 pub mod assets;
@@ -31,9 +28,7 @@ fn main() {
     spawn(move || {
         server.listen("0.0.0.0:30000");
     });
-
-    let mod_store = Arc::new(ModuleTypeStore::new());
         
-    let mut scheduler = BattleScheduler::new(slot, mod_store);
+    let mut scheduler = BattleScheduler::new(slot);
     scheduler.run();
 }
