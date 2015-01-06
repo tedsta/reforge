@@ -9,4 +9,6 @@ bin/*
 lib/*
 target/*
 dist/*
+reForge-cache/*
+reForge-SetupFiles/*
 reforge.zip
