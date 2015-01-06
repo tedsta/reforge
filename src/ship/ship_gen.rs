@@ -98,10 +98,18 @@ pub fn generate_ship(mod_store: &ModuleTypeStore, id: ShipId, level: u8) -> Ship
         }
     }
     
+    // Figure out where to put command module
+    let mut command_x = ship.get_width();
+    let command_y = cmp::min(height - 1, rng.gen::<u8>()%(height + 1));
+    
+    while ship.is_space_free(command_x - 1, command_y, 1, 2) {
+        command_x -= 1;
+    }
+    
     // Finally, add the command module
     let mut command = CommandModule::new(mod_store, 4);
-    command.get_base_mut().x = ship.get_width();
-    command.get_base_mut().y = cmp::min(height - 1, rng.gen::<u8>()%(height + 1));
+    command.get_base_mut().x = command_x;
+    command.get_base_mut().y = command_y;
     ship.add_module(command);
     
     ship

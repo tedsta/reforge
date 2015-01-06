@@ -175,6 +175,19 @@ impl Ship {
         self.height
     }
     
+    pub fn is_space_free(&self, x: u8, y: u8, width: u8, height: u8) -> bool {
+        for module in self.modules.iter() {
+            let module = (*module).borrow();
+            let base = module.get_base();
+            
+            if base.x + base.width > x && base.x < x + width && base.y + base.height > y && base.y < y + height {
+                return false;
+            }
+        }
+        
+        true
+    }
+    
     pub fn generate(mod_store: &ModuleTypeStore, id: ShipId, level: u8) -> Ship {
         generate_ship(mod_store, id, level)
     }
