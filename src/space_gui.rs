@@ -165,6 +165,32 @@ impl<'a> SpaceGui<'a> {
         image(&self.shield_texture, &context.trans(5.0, 58.0), gl);
         image(&self.power_texture, &context.trans(5.0, 110.0), gl);
         
+        if self.module.is_none() {
+            let x = self.mouse_x - SHIP_OFFSET_X;
+            let y = self.mouse_y - SHIP_OFFSET_Y;
+
+            for module in client_ship.modules.iter() {
+                let mut module_borrowed = module.borrow_mut();
+            
+                // Get module position and size on screen
+                let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
+                let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
+                let module_x = module_x as f64;
+                let module_y = module_y as f64;
+                let module_w = module_w as f64;
+                let module_h = module_h as f64;
+                if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
+                    if module_borrowed.get_base().plan_powered {
+                        Rectangle::new([0.0, 0.0, 1.0, 0.5])
+                            .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
+                    } else if client_ship.state.can_activate_module(module_borrowed.get_base()) {
+                        Rectangle::new([1.0, 1.0, 0.0, 0.5])
+                            .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
+                    }
+                }
+            }
+        }
+        
         if client_ship.state.get_hp() == 0 {
             image(&self.lose_texture, &context.trans(550.0, 100.0), gl);
         } else if !enemy_alive {
@@ -213,6 +239,32 @@ impl<'a> SpaceGui<'a> {
         image(&self.hp_texture, &context.trans(5.0, 4.0), gl);
         image(&self.shield_texture, &context.trans(5.0, 58.0), gl);
         image(&self.power_texture, &context.trans(5.0, 110.0), gl);
+        
+        if self.module.is_none() {
+            let x = self.mouse_x - SHIP_OFFSET_X;
+            let y = self.mouse_y - SHIP_OFFSET_Y;
+
+            for module in client_ship.modules.iter() {
+                let mut module_borrowed = module.borrow_mut();
+            
+                // Get module position and size on screen
+                let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
+                let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
+                let module_x = module_x as f64;
+                let module_y = module_y as f64;
+                let module_w = module_w as f64;
+                let module_h = module_h as f64;
+                if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
+                    if module_borrowed.get_base().plan_powered {
+                        Rectangle::new([0.0, 0.0, 1.0, 0.5])
+                            .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
+                    } else if client_ship.state.can_activate_module(module_borrowed.get_base()) {
+                        Rectangle::new([1.0, 1.0, 0.0, 0.5])
+                            .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
+                    }
+                }
+            }
+        }
         
         if client_ship.state.get_hp() == 0 {
             image(&self.lose_texture, &context.trans(550.0, 100.0), gl);
