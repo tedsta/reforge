@@ -44,7 +44,7 @@ impl AssetStore {
             },
             SpriteInfo {
                 texture: textures[WEAPON_TEXTURE as uint].clone(),
-                columns: 6,
+                columns: 7,
                 rows: 1,
             },
             SpriteInfo {

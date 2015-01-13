@@ -49,7 +49,15 @@ impl ShipState {
     }
     
     pub fn can_activate_module(&self, module: &ModuleBase) -> bool {
-        if module.can_activate() && self.plan_power >= module.get_power() {
+        if module.can_activate() && self.power >= module.get_power() {
+            true
+        } else {
+            false
+        }
+    }
+    
+    pub fn can_plan_activate_module(&self, module: &ModuleBase) -> bool {
+        if module.can_plan_activate() && self.plan_power >= module.get_power() {
             true
         } else {
             false
@@ -268,12 +276,10 @@ impl Ship {
             let mut module = module.borrow_mut();
             
             if module.get_base().plan_powered != module.get_base().powered {
-                if !module.get_base().powered {
-                    if module.get_base().can_activate() && self.state.power >= module.get_base().get_power() {
-                        module.get_base_mut().powered = true;
-                        self.state.power -= module.get_base().get_power();
-                        module.on_activated(&mut self.state, &self.modules);
-                    }
+                if module.get_base().can_activate() && self.state.power >= module.get_base().get_power() {
+                    module.get_base_mut().powered = true;
+                    self.state.power -= module.get_base().get_power();
+                    module.on_activated(&mut self.state, &self.modules);
                 } else {
                     module.get_base_mut().powered = false;
                     self.state.power += module.get_base().get_power();

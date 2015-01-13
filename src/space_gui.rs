@@ -183,7 +183,7 @@ impl<'a> SpaceGui<'a> {
                     if module_borrowed.get_base().plan_powered {
                         Rectangle::new([0.0, 0.0, 1.0, 0.5])
                             .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
-                    } else if client_ship.state.can_activate_module(module_borrowed.get_base()) {
+                    } else if client_ship.state.can_plan_activate_module(module_borrowed.get_base()) {
                         Rectangle::new([1.0, 1.0, 0.0, 0.5])
                             .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
                     }
@@ -258,7 +258,7 @@ impl<'a> SpaceGui<'a> {
                     if module_borrowed.get_base().plan_powered {
                         Rectangle::new([0.0, 0.0, 1.0, 0.5])
                             .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
-                    } else if client_ship.state.can_activate_module(module_borrowed.get_base()) {
+                    } else if client_ship.state.can_plan_activate_module(module_borrowed.get_base()) {
                         Rectangle::new([1.0, 1.0, 0.0, 0.5])
                             .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
                     }
@@ -294,7 +294,7 @@ impl<'a> SpaceGui<'a> {
                 if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
                     if module_borrowed.get_base().plan_powered {
                         self.module = Some(module.clone());
-                    } else if client_ship.state.can_activate_module(module_borrowed.get_base()) {
+                    } else if client_ship.state.can_plan_activate_module(module_borrowed.get_base()) {
                         client_ship.state.activate_module(module_borrowed.get_base_mut());
                     }
                 }

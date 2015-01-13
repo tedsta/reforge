@@ -109,7 +109,12 @@ impl IModule for ProjectileWeaponModule {
     #[cfg(client)]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
-        weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
+        
+        if self.base.is_active() {
+            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 1));
+        } else {
+            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
+        }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),
@@ -144,8 +149,8 @@ impl IModule for ProjectileWeaponModule {
                         let weapon_anim_end = start_time+0.15;
                         
                         // Add weapon fire animations for this projectile
-                        weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, weapon_anim_start, 0));
-                        weapon_sprite.add_animation(SpriteAnimation::PlayOnce(weapon_anim_start, weapon_anim_end, 0, 5));
+                        weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, weapon_anim_start, 1));
+                        weapon_sprite.add_animation(SpriteAnimation::PlayOnce(weapon_anim_start, weapon_anim_end, 1, 6));
                         
                         // Set the last end for the next projectile
                         last_weapon_anim_end = weapon_anim_end;
@@ -196,10 +201,12 @@ impl IModule for ProjectileWeaponModule {
                 },
                 None => {},
             }
+            
+            // Add last stay animation
+            weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, 5.0, 1));
+        } else {
+            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
         }
-        
-        // Add last stay animation
-        weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, 5.0, 0));
         
         visuals.add(ship_id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),

@@ -298,6 +298,10 @@ impl ModuleBase {
         self.power > 0 && !self.powered && self.hp >= self.min_hp
     }
     
+    pub fn can_plan_activate(&self) -> bool {
+        self.power > 0 && !self.plan_powered && self.hp >= self.min_hp
+    }
+    
     pub fn is_active(&self) -> bool {
         self.hp >= self.min_hp && (self.powered || self.power == 0)
     }
