@@ -48,6 +48,7 @@ impl ClientBattleState {
             // Plan
             
             // Add planning visuals
+            sim_visuals.clear();
             self.context.add_plan_visuals(asset_store, &mut sim_visuals);
             
             // Store mouse coordinates
@@ -99,6 +100,7 @@ impl ClientBattleState {
             let mut sim_events = SimEvents::new();
             
             // Before simulation
+            sim_visuals.clear();
             self.context.before_simulation(&mut sim_events);
             self.context.add_simulation_visuals(asset_store, &mut sim_visuals);
             
@@ -143,9 +145,6 @@ impl ClientBattleState {
             
             // After simulation
             self.context.after_simulation();
-            
-            // Clear the visuals
-            sim_visuals.clear();
             
             // Handle ships to add and remove
             for ship in self.ships_to_remove.drain() {

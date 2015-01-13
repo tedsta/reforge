@@ -130,9 +130,8 @@ impl IModule for ProjectileWeaponModule {
         
         let mut last_weapon_anim_end = 0.0;
         
-        if self.base.powered {
             match self.target {
-                Some((ref target_ship, ref target_module)) => {
+                Some((ref target_ship, ref target_module)) if self.base.powered => {
                     let target_ship_id = target_ship.borrow().id;
                 
                     for projectile in self.projectiles.iter() {                    
@@ -198,15 +197,12 @@ impl IModule for ProjectileWeaponModule {
                             sprite_sheet: explosion_sprite,
                         });
                     }
+                    
+                    // Add last stay animation
+                    weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, 5.0, 1));
                 },
-                None => {},
+                _ => { weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0)); },
             }
-            
-            // Add last stay animation
-            weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, 5.0, 1));
-        } else {
-            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
-        }
         
         visuals.add(ship_id, 0, box SpriteVisual {
             position: self.base.get_render_position().clone(),
