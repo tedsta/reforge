@@ -58,12 +58,12 @@ impl SpriteSheet {
                     SpriteAnimation::PlayOnce(start_time, end_time, start_frame, end_frame) => {
                         if time >= start_time {
                             if time <= end_time {
-                                let frame = ((time-start_time)/(end_time-start_time) * ((end_frame - start_frame) as f64)).floor() as u32;
+                                let frame = (((time-start_time)/(end_time-start_time) * ((end_frame - start_frame) as f64)).floor() as u32) + start_frame;
                                 self.current_frame = frame;
-                                self.draw_current_frame(context, gl, x, y, rotation);
                             } else {
                                 anim_done = true;
                             }
+                            self.draw_current_frame(context, gl, x, y, rotation);
                         }
                     },
                     SpriteAnimation::Loop(start_time, end_time, start_frame, end_frame, interval) => {
@@ -73,20 +73,20 @@ impl SpriteSheet {
                                 frame = frame % (end_frame - start_frame + 1);
                                 frame += start_frame;
                                 self.current_frame = frame;
-                                self.draw_current_frame(context, gl, x, y, rotation);
                             } else {
                                 anim_done = true;
                             }
+                            self.draw_current_frame(context, gl, x, y, rotation);
                         }
                     },
                     SpriteAnimation::Stay(start_time, end_time, frame) => {
                         if time >= start_time {
                             if time <= end_time {
                                 self.current_frame = frame;
-                                self.draw_current_frame(context, gl, x, y, rotation);
                             } else {
                                 anim_done = true;
                             }
+                            self.draw_current_frame(context, gl, x, y, rotation);
                         }
                     },
                 },
