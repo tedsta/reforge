@@ -1,3 +1,4 @@
+use std::cmp;
 use std::io::File;
 use std::rand::Rng;
 use std::rand;
@@ -88,7 +89,7 @@ impl ProjectileWeaponModule {
 }
 
 impl IModule for ProjectileWeaponModule {
-    fn server_preprocess(&mut self, ship_state: &mut ShipState) {
+    fn server_preprocess(&mut self, ship_state: &mut ShipState) {    
         if self.base.powered {
             match self.target {
                 Some((ref target_ship, ref target_module)) => {
@@ -98,7 +99,7 @@ impl IModule for ProjectileWeaponModule {
                     let target_ship = target_ship.borrow();
                     
                     for projectile in self.projectiles.iter_mut() {
-                        if rng.gen::<f64>() > 0.3 * (target_ship.state.thrust as f64) {
+                        if rng.gen::<f64>() > (0.15 * (cmp::min(target_ship.state.thrust, 5) as f64)) {
                             projectile.hit = true;
                         } else {
                             projectile.hit = false;
