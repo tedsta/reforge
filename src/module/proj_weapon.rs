@@ -1,3 +1,4 @@
+use std::io::File;
 use std::rand::Rng;
 use std::rand;
 
@@ -49,6 +50,38 @@ impl ProjectileWeaponModule {
         Module::ProjectileWeapon(ProjectileWeaponModule {
             base: ModuleBase::new(1, 1, 2, 2, 3),
             projectiles: Vec::from_elem(3, projectile),
+            target: None,
+        })
+    }
+    
+    pub fn from_file(asset_store: &AssetStore, path: &Path) -> Module {
+        let mut damage = 1;
+        let mut num_shots = 1;
+        let mut texture = String::from_str("WEAPON");
+    
+        if let Ok(mut file) = File::open(path) {
+            let contents = file.read_to_end();
+        } else {
+            panic!("Failed to read projectile weapon file: {}", path.as_str());
+        }
+    
+        let projectile = Projectile {
+            damage: damage,
+            hit: false,
+            
+            fire_tick: 0,
+            offscreen_tick: 0,
+            hit_tick: 0,
+            
+            fire_pos: Vec2{x: 0f64, y: 0f64},
+            to_offscreen_pos: Vec2{x: 0f64, y: 0f64},
+            from_offscreen_pos: Vec2{x: 0f64, y: 0f64},
+            hit_pos: Vec2{x: 0f64, y: 0f64},
+        };
+    
+        Module::ProjectileWeapon(ProjectileWeaponModule {
+            base: ModuleBase::new(1, 1, 2, 2, 3),
+            projectiles: Vec::from_elem(num_shots, projectile),
             target: None,
         })
     }
