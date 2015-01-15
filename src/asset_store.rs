@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::rc::Rc;
+use std::string::String;
 
 use graphics::ImageSize;
 use opengl_graphics::Texture;
@@ -18,12 +20,16 @@ use assets::{
 };
 
 pub struct AssetStore {
+    texture_ids: HashMap<String, TextureId>,
     textures: Vec<Rc<Texture>>,
     sprite_info: Vec<SpriteInfo>
 }
 
 impl AssetStore {
     pub fn new() -> AssetStore {
+        let mut texture_ids = HashMap::new();
+        texture_ids.insert(String::from_str("WEAPON"), WEAPON_TEXTURE);
+    
         let textures = vec![
             Rc::new(Texture::from_path(&Path::new("content/textures/modules/engine1.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/modules/weapon_sprite.png")).unwrap()),
@@ -85,6 +91,7 @@ impl AssetStore {
         ];
     
         AssetStore {
+            texture_ids: texture_ids,
             textures: textures,
             sprite_info: sprite_info,
         }
