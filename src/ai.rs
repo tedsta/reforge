@@ -21,7 +21,7 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
             let module_borrowed = module.borrow();
             match *module_borrowed.deref() {
                 ProjectileWeapon(_) => {
-                    if !module_borrowed.get_base().plan_powered && ship.state.can_activate_module(module_borrowed.get_base()) {
+                    if !module_borrowed.get_base().plan_powered && ship.state.can_plan_activate_module(module_borrowed.get_base()) {
                         module_to_activate = Some(module.clone());
                         activating_stuff = true;
                         break;
@@ -42,7 +42,7 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
             let module_borrowed = module.borrow();
             match *module_borrowed.deref() {
                 Engine(_) => {
-                    if !module_borrowed.get_base().plan_powered && ship.state.can_activate_module(module_borrowed.get_base()) {
+                    if !module_borrowed.get_base().plan_powered && ship.state.can_plan_activate_module(module_borrowed.get_base()) {
                         module_to_activate = Some(module.clone());
                         activating_stuff = true;
                         break;
@@ -63,7 +63,7 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
             let module_borrowed = module.borrow();
             match *module_borrowed.deref() {
                 Shield(_) => {
-                    if !module_borrowed.get_base().plan_powered && ship.state.can_activate_module(module_borrowed.get_base()) {
+                    if !module_borrowed.get_base().plan_powered && ship.state.can_plan_activate_module(module_borrowed.get_base()) {
                         module_to_activate = Some(module.clone());
                         activating_stuff = true;
                         break;
