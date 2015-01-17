@@ -6,11 +6,16 @@ authors = [
     "tedsta <tderego94@gmail.com>"
 ]
 
+[features]
+
+default = ["client"]
+
+client = []
+
 [[bin]]
 
 name = "reforge_client"
 path = "src/client.rs"
-cfg = ["client"]
 
 #[[bin]]
 

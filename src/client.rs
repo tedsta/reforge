@@ -1,8 +1,5 @@
 #![crate_name = "reforge_client"]
 #![crate_type = "bin"]
-#![feature(macro_rules)]
-#![feature(default_type_params)]
-#![feature(globs)]
 #![feature(box_syntax)]
 
 extern crate bincode;
@@ -55,6 +52,7 @@ pub mod ai;
 pub mod battle_scheduler;
 pub mod server_battle_state;
 
+#[cfg(feature = "client")]
 fn main () {
     let opengl = piston::shader_version::OpenGL::_3_0;
     

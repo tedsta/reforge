@@ -3,11 +3,11 @@ use std::ops::{DerefMut};
 use module::{Module, ModuleRef};
 
 // SimVisual imports
-#[cfg(client)]
+#[cfg(feature = "client")]
 use piston::graphics::Context;
-#[cfg(client)]
+#[cfg(feature = "client")]
 use opengl_graphics::Gl;
-#[cfg(client)]
+#[cfg(feature = "client")]
 use ship::ShipId;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -62,20 +62,20 @@ impl<'a, 'b> SimEventAdder<'a, 'b> {
 
 // TODO: Replace the SimVisual struct impl trait model with unboxed closures once they are stable
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 static NUM_LAYERS: u8 = 2;
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 pub trait SimVisual {
     fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64);
 }
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 pub struct SimVisuals<'a> {
     visuals: [Vec<(ShipId, Box<SimVisual+'a>)>; 2],
 }
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 impl<'a> SimVisuals<'a> {
     pub fn new() -> SimVisuals<'a> {
         SimVisuals{visuals: [vec!(), vec!()]}

@@ -5,9 +5,9 @@ use std::ops::DerefMut;
 use std::rand::Rng;
 use std::rand;
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 use piston::graphics::Context;
-#[cfg(client)]
+#[cfg(feature = "client")]
 use opengl_graphics::Gl;
 
 use assets::{WEAPON_TEXTURE, LASER_TEXTURE, EXPLOSION_TEXTURE, TextureId};
@@ -18,11 +18,11 @@ use ship::{ShipId, ShipRef, ShipState};
 use sim::{SimEvent, SimEventAdder};
 use vec::{Vec2, Vec2f};
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 use sim::{SimVisuals, SimVisual};
-#[cfg(client)]
+#[cfg(feature = "client")]
 use sprite_sheet::{SpriteSheet, SpriteAnimation};
-#[cfg(client)]
+#[cfg(feature = "client")]
 use asset_store::AssetStore;
 
 #[derive(RustcEncodable, RustcDecodable)]
@@ -142,7 +142,7 @@ impl IModule for ProjectileWeaponModule {
         }
     }
     
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
         
@@ -158,7 +158,7 @@ impl IModule for ProjectileWeaponModule {
         });
     }
     
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let ship_id = ship.borrow().id;
     
@@ -366,7 +366,7 @@ impl SimEvent for DamageEvent {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Basic linear interpolation sim visual
-#[cfg(client)]
+#[cfg(feature = "client")]
 pub struct LerpVisual {
     start_time: f64,
     end_time: f64,
@@ -377,7 +377,7 @@ pub struct LerpVisual {
     sprite_sheet: SpriteSheet,
 }
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 impl SimVisual for LerpVisual {
     fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
         if time >= self.start_time && time <= self.end_time {
@@ -390,13 +390,13 @@ impl SimVisual for LerpVisual {
 }
 
 // Sprite sheet sim visual
-#[cfg(client)]
+#[cfg(feature = "client")]
 pub struct SpriteVisual {
     position: Vec2f,
     sprite_sheet: SpriteSheet,
 }
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 impl SimVisual for SpriteVisual {
     fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
         self.sprite_sheet.draw(context, gl, self.position.x, self.position.y, 0.0, time);

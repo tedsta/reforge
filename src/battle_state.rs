@@ -4,9 +4,9 @@ use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipRef};
 use sim::SimEvents;
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 use sim::SimVisuals;
-#[cfg(client)]
+#[cfg(feature = "client")]
 use asset_store::AssetStore;
 
 // Time value of 1 tick in seconds
@@ -97,14 +97,14 @@ impl BattleContext {
         }
     }
     
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     pub fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
         for ship in self.ships.values() {
             ship.borrow().add_plan_visuals(asset_store, visuals, ship);
         }
     }
     
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     pub fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
         for ship in self.ships.values() {
             ship.borrow().add_simulation_visuals(asset_store, visuals, ship);

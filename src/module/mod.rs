@@ -8,9 +8,9 @@ use ship::{ShipId, ShipRef, ShipState};
 use sim::{SimEventAdder, SimEvents};
 use vec::{Vec2, Vec2f};
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 use sim::SimVisuals;
-#[cfg(client)]
+#[cfg(feature = "client")]
 use asset_store::AssetStore;
 
 // Use+reexport all of the modules
@@ -32,9 +32,9 @@ pub trait IModule {
     fn server_preprocess(&mut self, ship_state: &mut ShipState);
 
     fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder);
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef);
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef);
     fn after_simulation(&mut self, ship_state: &mut ShipState);
     
@@ -112,7 +112,7 @@ impl IModule for Module {
         }
     }
     
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         match *self {
             Module::Engine(ref m) => m.add_plan_visuals(asset_store, visuals, ship),
@@ -123,7 +123,7 @@ impl IModule for Module {
         }
     }
     
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         match *self {
             Module::Engine(ref m) => m.add_simulation_visuals(asset_store, visuals, ship),

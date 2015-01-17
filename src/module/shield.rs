@@ -1,6 +1,6 @@
-#[cfg(client)]
+#[cfg(feature = "client")]
 use piston::graphics::Context;
-#[cfg(client)]
+#[cfg(feature = "client")]
 use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
@@ -11,11 +11,11 @@ use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
 use vec::{Vec2, Vec2f};
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 use sim::{SimVisuals, SimVisual};
-#[cfg(client)]
+#[cfg(feature = "client")]
 use sprite_sheet::{SpriteSheet, SpriteAnimation};
-#[cfg(client)]
+#[cfg(feature = "client")]
 use asset_store::AssetStore;
 
 #[derive(RustcEncodable, RustcDecodable)]
@@ -38,7 +38,7 @@ impl IModule for ShieldModule {
     fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
     }
     
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info(SHIELD_TEXTURE));
         
@@ -54,7 +54,7 @@ impl IModule for ShieldModule {
         });
     }
     
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         self.add_plan_visuals(asset_store, visuals, ship);
     }
@@ -95,13 +95,13 @@ impl IModule for ShieldModule {
 }
 
 // Sprite sheet sim visual
-#[cfg(client)]
+#[cfg(feature = "client")]
 pub struct SpriteVisual {
     position: Vec2f,
     sprite_sheet: SpriteSheet,
 }
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 impl SimVisual for SpriteVisual {
     fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
         self.sprite_sheet.draw(context, gl, self.position.x, self.position.y, 0.0, time);

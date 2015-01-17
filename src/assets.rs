@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 use opengl_graphics::Texture;
 
 pub type TextureId = u16;
@@ -17,7 +17,7 @@ pub static GUI_TEXTURE: u16 = 8;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 pub struct SpriteInfo {
     pub texture: Rc<Texture>,
     pub columns: u8, 

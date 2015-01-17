@@ -8,16 +8,16 @@ use net::{ClientId, InPacket, OutPacket};
 use self::ship_gen::generate_ship;
 use sim::SimEvents;
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 use piston::graphics::Context;
-#[cfg(client)]
+#[cfg(feature = "client")]
 use opengl_graphics::Gl;
 
-#[cfg(client)]
+#[cfg(feature = "client")]
 use sim::SimVisuals;
-#[cfg(client)]
+#[cfg(feature = "client")]
 use asset_store::AssetStore;
-#[cfg(client)]
+#[cfg(feature = "client")]
 use space_gui::ModuleIcons;
 
 // Use the ship_gen module privately here
@@ -245,14 +245,14 @@ impl Ship {
         }
     }
     
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     pub fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_ref: &ShipRef) {
         for module in self.modules.iter() {
             module.borrow().add_plan_visuals(asset_store, visuals, ship_ref);
         }
     }
     
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     pub fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_ref: &ShipRef) {
         for module in self.modules.iter() {
             module.borrow().add_simulation_visuals(asset_store, visuals, ship_ref);
@@ -339,7 +339,7 @@ impl Ship {
         }
     }
     
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     pub fn draw_module_hp(&self, context: &Context, gl: &mut Gl) {
         use piston::quack::Set;
         use piston::graphics::*;
@@ -373,7 +373,7 @@ impl Ship {
         }
     }
     
-    #[cfg(client)]
+    #[cfg(feature = "client")]
     pub fn draw_module_powered_icons(&self, context: &Context, gl: &mut Gl, module_icons: &ModuleIcons) {
         use piston::graphics::*;
     
