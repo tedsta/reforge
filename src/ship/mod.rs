@@ -24,7 +24,7 @@ use space_gui::ModuleIcons;
 mod ship_gen;
 
 // Holds everything about the ship's damage, capabilities, etc.
-#[deriving(Encodable, Decodable)]
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct ShipState {
     hp: u8,
     total_module_hp: u8, // Sum of HP of all modules, used to recalculate HP when damaged
@@ -152,7 +152,7 @@ pub type ShipRef = Rc<RefCell<Ship>>;
 // Type for the ID of a ship
 pub type ShipId = u64;
 
-#[deriving(Encodable, Decodable)]
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct Ship {
     pub id: ShipId,
     pub client_id: Option<ClientId>,
@@ -341,7 +341,7 @@ impl Ship {
     
     #[cfg(client)]
     pub fn draw_module_hp(&self, context: &Context, gl: &mut Gl) {
-        use current::Set;
+        use quack::Set;
         use graphics::*;
     
         for module in self.modules.iter() {

@@ -3,13 +3,14 @@
 #![feature(macro_rules)]
 #![feature(default_type_params)]
 #![feature(globs)]
+#![feature(box_syntax)]
 
 extern crate bincode;
 extern crate time;
-extern crate "rustc-serialize" as serialize;
+extern crate "rustc-serialize" as rustc_serialize;
 
 // Piston stuff
-extern crate current;
+extern crate quack;
 extern crate event;
 extern crate graphics;
 extern crate input;
@@ -21,6 +22,7 @@ extern crate shader_version;
 use std::io;
 use std::os;
 use std::cell::RefCell;
+use std::thread::Thread;
 
 use sdl2_window::Sdl2Window;
 use opengl_graphics::Gl;
@@ -92,11 +94,11 @@ fn main () {
             let mut server = Server::new();
             let slot = server.create_slot();
             
-            spawn(move || {
+            Thread::spawn(move || {
                 server.listen("localhost:30000");
             });
             
-            spawn(move || {
+            Thread::spawn(move || {
                 let mut scheduler = BattleScheduler::new(slot);
                 scheduler.run();
             });

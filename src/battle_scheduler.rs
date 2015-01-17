@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{RingBuf, HashMap};
 use std::collections::hash_map::Entry;
+use std::thread::Thread;
 
 use battle_state::BattleContext;
 use battle_type::BattleType;
@@ -33,7 +34,7 @@ impl BattleScheduler {
                     match battle_type {
                         BattleType::FreeForAll{num_players: num_players} => {
                             match self.ffa_waiting.entry(num_players) {
-                                Entry::Vacant(entry) => { entry.set(vec![client_id]); },
+                                Entry::Vacant(entry) => { entry.insert(vec![client_id]); },
                                 Entry::Occupied(mut entry) => {
                                     let waiting = entry.get_mut();
                                     
@@ -65,7 +66,7 @@ impl BattleScheduler {
 // Scheduling functions
 
 fn schedule_ai(new_slot: ServerSlot, client_id: ClientId) {
-    spawn(move || {
+    Thread::spawn(move || {
         // Create ships
         let mut ship1 = Ship::generate(client_id as ShipId, 5);
         ship1.client_id = Some(client_id);
@@ -85,7 +86,7 @@ fn schedule_ai(new_slot: ServerSlot, client_id: ClientId) {
 }
 
 fn schedule_ffa(new_slot: ServerSlot, clients: Vec<ClientId>) {
-    spawn(move || {
+    Thread::spawn(move || {
         let mut ships = vec!();
         for client_id in clients.iter() {
             // Create player's ship

@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::ops::{Deref, DerefMut};
 
 use ai::run_ai;
 use battle_state::{BattleContext, ClientPacketId, ServerPacketId};
@@ -168,7 +169,7 @@ impl ServerBattleState {
         let mut packet = OutPacket::new();
         match packet.write(&ClientPacketId::SimResults) {
             Ok(()) => {},
-            Err(e) => panic!("Failed to write results packet ID: {}", e),
+            Err(_) => panic!("Failed to write results packet ID"),
         }
         
         // The results packet has both the plans and the results, because clients need both

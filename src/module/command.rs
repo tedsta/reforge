@@ -18,7 +18,7 @@ use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(client)]
 use asset_store::AssetStore;
 
-#[deriving(Encodable, Decodable)]
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct CommandModule {
     pub base: ModuleBase,
 }

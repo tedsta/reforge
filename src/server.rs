@@ -2,9 +2,10 @@
 #![crate_type = "bin"]
 #![feature(globs)]
 #![feature(macro_rules)]
+#![feature(box_syntax)]
 
 extern crate bincode;
-extern crate "rustc-serialize" as serialize;
+extern crate "rustc-serialize" as rustc_serialize;
 
 use net::Server;
 use battle_scheduler::BattleScheduler;

@@ -1,6 +1,7 @@
 use std::rand::Rng;
 use std::rand;
 use std::rc::Rc;
+use std::ops::{Deref, DerefMut};
 
 use event::{Events, GenericEvent, RenderArgs};
 use graphics::{Context, Rectangle};
@@ -127,7 +128,7 @@ impl<'a> SpaceGui<'a> {
         use graphics::*;
         
         // Clear the screen
-        clear([0.0, ..4], gl);
+        clear([0.0; 4], gl);
         
         // Draw the space background
         self.space_bg.update(dt);
@@ -202,7 +203,7 @@ impl<'a> SpaceGui<'a> {
         use graphics::*;
         
         // Clear the screen
-        clear([0.0, ..4], gl);
+        clear([0.0; 4], gl);
         
         // Draw the space background
         self.space_bg.update(dt);
@@ -394,7 +395,7 @@ pub struct ShipRenderArea {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship: &Ship, time: f64) {
-    use current::Set;
+    use quack::Set;
     use graphics::*;
 
     sim_visuals.draw(context, gl, ship.id, time);
@@ -426,7 +427,7 @@ fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship:
 // Yo dawk imma draw me some space stars
 
 struct Star {
-    position: [f64, .. 2],
+    position: [f64; 2],
     size: f64,
 }
 
@@ -437,7 +438,7 @@ struct SpaceStars {
 impl SpaceStars {
     pub fn new() -> SpaceStars {
         // Random number generater
-        let mut rng = rand::task_rng();
+        let mut rng = rand::thread_rng();
         
         // Generate a bunch of stars
         let mut stars = Vec::with_capacity(5); // Five layers of stars

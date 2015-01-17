@@ -1,5 +1,7 @@
 use std::cmp;
 use std::io::File;
+use std::iter::repeat;
+use std::ops::DerefMut;
 use std::rand::Rng;
 use std::rand;
 
@@ -23,7 +25,7 @@ use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(client)]
 use asset_store::AssetStore;
 
-#[deriving(Encodable, Decodable)]
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct ProjectileWeaponModule {
     pub base: ModuleBase,
     
@@ -50,7 +52,7 @@ impl ProjectileWeaponModule {
     
         Module::ProjectileWeapon(ProjectileWeaponModule {
             base: ModuleBase::new(1, 1, 2, 2, 3),
-            projectiles: Vec::from_elem(3, projectile),
+            projectiles: repeat(projectile).take(3).collect(),
             target: None,
         })
     }
@@ -63,7 +65,7 @@ impl ProjectileWeaponModule {
         if let Ok(mut file) = File::open(path) {
             let contents = file.read_to_end();
         } else {
-            panic!("Failed to read projectile weapon file: {}", path.as_str());
+            panic!("Failed to read projectile weapon file");
         }
     
         let projectile = Projectile {
@@ -82,7 +84,7 @@ impl ProjectileWeaponModule {
     
         Module::ProjectileWeapon(ProjectileWeaponModule {
             base: ModuleBase::new(1, 1, 2, 2, 3),
-            projectiles: Vec::from_elem(num_shots, projectile),
+            projectiles: repeat(projectile).take(3).collect(),
             target: None,
         })
     }
@@ -94,7 +96,7 @@ impl IModule for ProjectileWeaponModule {
             match self.target {
                 Some((ref target_ship, ref target_module)) => {
                     // Random number generater
-                    let mut rng = rand::task_rng();
+                    let mut rng = rand::thread_rng();
                     
                     let target_ship = target_ship.borrow();
                     
@@ -319,7 +321,7 @@ impl IModule for ProjectileWeaponModule {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[deriving(Encodable, Decodable, Clone)]
+#[derive(RustcEncodable, RustcDecodable, Clone)]
 struct Projectile {
     damage: u8,
     hit: bool,

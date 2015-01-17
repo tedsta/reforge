@@ -1,3 +1,4 @@
+use std::ops::{Deref, DerefMut};
 use std::rand::Rng;
 use std::rand;
 
@@ -9,7 +10,7 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
     use module::Module::*;
     
     // Random number generater
-    let mut rng = rand::task_rng();
+    let mut rng = rand::thread_rng();
 
     // Activate stuff, notice order of priority
     let mut activating_stuff = true;
@@ -84,7 +85,7 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
     for module in ship.modules.iter() {
         let mut module_borrowed = module.borrow_mut();
         match module_borrowed.deref_mut() {
-            &ProjectileWeapon(_) => {
+            &mut ProjectileWeapon(_) => {
                 if module_borrowed.get_base().is_active() {
                     let target_ship = &enemy_ships[rng.gen::<uint>() % enemy_ships.len()];
                     let target_module = &target_ship.borrow().modules[rng.gen::<uint>() % target_ship.borrow().modules.len()];

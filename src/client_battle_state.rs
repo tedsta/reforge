@@ -1,5 +1,6 @@
 use time;
 use std::cell::RefCell;
+use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 
 use event::Events;
@@ -60,7 +61,11 @@ impl ClientBattleState {
             
             // Run planning loop
             for e in Events::new(window) {
+                use event;
+                use input;
                 use event::*;
+
+                let e: event::Event<input::Input> = e;
             
                 // Keep track of time, break when planning is done
                 let current_time = time::now().to_timespec();
@@ -78,8 +83,8 @@ impl ClientBattleState {
                 gui.event(&e, self.player_ship.borrow_mut().deref_mut());
                 
                 // Render GUI
-                e.render(|args| {
-                    gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+                e.render(|&mut: args: &RenderArgs| {
+                    gl.draw([0, 0, args.width as i32, args.height as i32], |: c, gl| {
                         gui.draw_planning(&c, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref(), elapsed_seconds, dt);
                     });
                 });
@@ -109,7 +114,11 @@ impl ClientBattleState {
             let mut last_time = 0.0;
             let mut next_tick = 0;
             for e in Events::new(window) {
+                use event;
+                use input;
                 use event::*;
+
+                let e: event::Event<input::Input> = e;
             
                 // Keep track of time, break when simulation is done
                 let current_time = time::now().to_timespec();
@@ -136,8 +145,8 @@ impl ClientBattleState {
                 gui.event(&e, self.player_ship.borrow_mut().deref_mut());
                 
                 // Render GUI
-                e.render(|args| {
-                    gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+                e.render(|&mut: args: &RenderArgs| {
+                    gl.draw([0, 0, args.width as i32, args.height as i32], |: c, gl| {
                         gui.draw_simulating(&c, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref(), elapsed_seconds, dt);
                     });
                 });
@@ -170,7 +179,7 @@ impl ClientBattleState {
         let mut packet = OutPacket::new();
         match packet.write(&ServerPacketId::Plan) {
             Ok(()) => {},
-            Err(e) => panic!("Failed to write plan packet ID: {}", e),
+            Err(_) => panic!("Failed to write plan packet ID"),
         }
         
         self.player_ship.borrow().write_plans(&mut packet);
@@ -181,7 +190,7 @@ impl ClientBattleState {
     fn receive_simulation_results(&mut self) {
         let mut packet = self.client.receive();
         match (packet.read::<ClientPacketId>()) {
-            Ok(ref id) if *id != ClientPacketId::SimResults => panic!("Expected SimResults, got {}", id),
+            Ok(ref id) if *id != ClientPacketId::SimResults => panic!("Expected SimResults, got something else"),
             Err(e) => panic!("Failed to read simulation results packet ID: {}", e),
             _ => {}, // All good!
         };

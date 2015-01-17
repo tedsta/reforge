@@ -1,4 +1,4 @@
-#[deriving(Encodable, Decodable)]
+#[derive(RustcEncodable, RustcDecodable)]
 pub enum BattleType {
     // Player vs player free for all
     FreeForAll {

@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::num::FromPrimitive;
 
 use sdl2_window::Sdl2Window;
 use event::{Events, GenericEvent, RenderArgs};
@@ -9,7 +10,7 @@ use opengl_graphics::{Gl, Texture};
 use asset_store::AssetStore;
 use net::{Client, OutPacket};
 
-#[deriving(FromPrimitive)]
+#[derive(FromPrimitive)]
 pub enum MainMenuSelection {
     SinglePlayer,
     Multiplayer,
@@ -42,13 +43,17 @@ impl MainMenu {
     pub fn run(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore) -> MainMenuSelection {
         // Main loop
         for e in Events::new(window) {
+            use event;
+            use input;
             use event::*;
+
+            let e: event::Event<input::Input> = e;
 
             self.event(&e);
 
             // Render GUI
-            e.render(|args| {
-                gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+            e.render(|&mut: args: &RenderArgs| {
+                gl.draw([0, 0, args.width as i32, args.height as i32], |: c, gl| {
                     self.draw(&c, gl, asset_store);
                 });
             });
@@ -83,11 +88,11 @@ impl MainMenu {
     }
 
     fn draw(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore) {
-        use current::Set;
+        use quack::Set;
         use graphics::*;
         
         // Clear the screen
-        clear([0.0, ..4], gl);
+        clear([0.0; 4], gl);
 
         image(&self.bg_texture, context, gl);
         image(&self.single_player_texture, &context.trans(550.0, 300.0), gl);

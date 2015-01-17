@@ -1,4 +1,4 @@
-use serialize::{Encodable, Encoder, Decodable, Decoder};
+use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
 
 macro_rules! custom_encodable {
     ($struct_name:ident, $($field:ident),*) => {

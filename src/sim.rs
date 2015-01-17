@@ -1,3 +1,5 @@
+use std::ops::{DerefMut};
+
 use module::{Module, ModuleRef};
 
 // SimVisual imports
@@ -70,7 +72,7 @@ pub trait SimVisual {
 
 #[cfg(client)]
 pub struct SimVisuals<'a> {
-    visuals: [Vec<(ShipId, Box<SimVisual+'a>)>, ..2],
+    visuals: [Vec<(ShipId, Box<SimVisual+'a>)>; 2],
 }
 
 #[cfg(client)]
@@ -88,7 +90,7 @@ impl<'a> SimVisuals<'a> {
     
     pub fn draw(&mut self, context: &Context, gl: &mut Gl, ship: ShipId, time: f64) {
         for layer in self.visuals.iter_mut() {
-            for &(v_ship, ref mut visual) in layer.iter_mut() {
+            for &mut (v_ship, ref mut visual) in layer.iter_mut() {
                 if v_ship == ship {
                     visual.draw(context, gl, time);
                 }

@@ -12,7 +12,7 @@ use asset_store::AssetStore;
 // Time value of 1 tick in seconds
 pub static TICKS_PER_SECOND: u32 = 20;
 
-#[deriving(Encodable, Decodable)]
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct BattleContext {
     pub ships: HashMap<ShipId, ShipRef>,
     pub ships_client_id: HashMap<ClientId, ShipRef>,
@@ -161,13 +161,13 @@ impl BattleContext {
 }
 
 // Packets sent from client to server
-#[deriving(Show, PartialEq, Encodable, Decodable)]
+#[derive(Show, PartialEq, RustcEncodable, RustcDecodable)]
 pub enum ServerPacketId {
     Plan, // Player's plans
 }
 
 // Packets sent from server to client
-#[deriving(Show, PartialEq, Encodable, Decodable)]
+#[derive(Show, PartialEq, RustcEncodable, RustcDecodable)]
 pub enum ClientPacketId {
     SimResults, // Calculated simulation results from server
 }

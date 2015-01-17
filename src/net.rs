@@ -1,11 +1,14 @@
 use std::collections::HashMap;
 use std::io::{TcpListener, TcpStream, Acceptor, Listener};
 use std::io::{MemReader, MemWriter, IoResult, IoError, TimedOut};
+use std::result::Result;
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::thread::Thread;
 
-use serialize::Encodable;
-use serialize::Decodable;
+use rustc_serialize::Encodable;
+use rustc_serialize::Decodable;
 
-use bincode::{EncoderWriter, DecoderReader, encode_into, decode_from};
+use bincode::{EncoderWriter, EncodingError, DecoderReader, DecodingError, encode_into, decode_from, SizeLimit};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Some basic types
@@ -55,12 +58,18 @@ impl ServerSlot {
     }
     
     pub fn receive(&self) -> SlotInMsg {
-        self.receiver.recv()
+        match self.receiver.recv() {
+            Ok(msg) => msg,
+            _ => panic!("Failed to receive SlotInMsg"),
+        }
     }
     
     pub fn create_slot(&self) -> ServerSlot {
         self.sender.send(SlotOutMsg::CreateSlot(self.id));
-        self.create_slot.recv()
+        match self.create_slot.recv() {
+            Ok(slot) => slot,
+            _ => panic!("Failed to receive newly created ServerSlot"),
+        }
     }
     
     // Transfer a client to a different slot
@@ -178,12 +187,12 @@ impl Server {
                         let out_stream = stream.clone(); // Create copy of stream for output
                     
                         // Client input process
-                        spawn(move || {
+                        Thread::spawn(move || {
                             handle_client_in(client_id, stream, packet_in_t);
                         });
                         
                         // Client output process
-                        spawn(move || {
+                        Thread::spawn(move || {
                             handle_client_out(out_stream, client_out_r);
                         });
                         
@@ -224,7 +233,7 @@ impl Server {
                     Ok(msg) => {
                         received_messages += 1;
                         match msg {
-                            SlotOutMsg::SendPacket(slot_id, client_id, packet) => match client_outs.find(&client_id) {
+                            SlotOutMsg::SendPacket(slot_id, client_id, packet) => match client_outs.get(&client_id) {
                                 Some(&(ref client_slot_id, ref c)) => {
                                     if slot_id == *client_slot_id {
                                         c.send(packet);
@@ -245,9 +254,9 @@ impl Server {
                                 create_slot_t.send(new_slot);
                             },
                             SlotOutMsg::TransferClient(slot_id, client_id, new_slot_id) => {
-                                match self.slots.find(&new_slot_id) {
+                                match self.slots.get(&new_slot_id) {
                                     Some(slot) => {
-                                        let &(ref mut client_slot_id, _) = &mut client_outs[client_id];
+                                        let &mut (ref mut client_slot_id, _) = &mut client_outs[client_id];
                                         if *client_slot_id == slot_id {
                                             let &(ref slot_in_t, _) = slot;
                                             *client_slot_id = new_slot_id; // set the client's new slot ID
@@ -280,7 +289,11 @@ fn handle_client_in(client_id: ClientId, mut stream: TcpStream, packet_in_t: Sen
 fn handle_client_out(mut stream: TcpStream, out_r: Receiver<OutPacket>) {
     loop {
         // Receive a packet to send
-        let packet = out_r.recv();
+        let packet = 
+            match out_r.recv() {
+                Ok(packet) => packet,
+                _ => panic!("Failed to receive out packet over channel."),
+            };
         
         // Get the packet's data
         let data = packet.writer.get_ref();
@@ -346,7 +359,7 @@ impl Client {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Packet
 
-#[deriving(Clone)]
+#[derive(Clone)]
 pub struct OutPacket {
     writer: MemWriter,
 }
@@ -360,8 +373,8 @@ impl OutPacket {
         self.writer.get_ref().len()
     }
     
-    pub fn write<'a, T: Encodable<EncoderWriter<'a, MemWriter>, IoError>>(&mut self, t: &T) -> IoResult<()> {
-        encode_into(t, &mut self.writer)
+    pub fn write<'a, T: Encodable>(&mut self, t: &T) -> Result<(), EncodingError> {
+        encode_into(t, &mut self.writer, SizeLimit::Infinite)
     }
 }
 
@@ -395,7 +408,7 @@ impl InPacket {
         self.reader.get_ref().len()
     }
     
-    pub fn read<'a, T: Decodable<DecoderReader<'a, MemReader>, IoError>>(&mut self) -> IoResult<T> {
-        decode_from(&mut self.reader)
+    pub fn read<'a, T: Decodable>(&mut self) -> Result<T, DecodingError> {
+        decode_from(&mut self.reader, SizeLimit::Infinite)
     }
 }

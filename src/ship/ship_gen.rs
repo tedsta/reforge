@@ -11,7 +11,7 @@ pub fn generate_ship(id: ShipId, level: u8) -> Ship {
     }
 
     // Random number generater
-    let mut rng = rand::task_rng();
+    let mut rng = rand::thread_rng();
 
     // Brand new ship!!
     let mut ship = Ship::new(id, level);

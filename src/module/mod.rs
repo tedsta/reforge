@@ -60,7 +60,7 @@ pub trait IModule {
 
 pub type ModuleRef = Rc<RefCell<Module>>;
 
-#[deriving(Encodable, Decodable)]
+#[derive(RustcEncodable, RustcDecodable)]
 pub enum Module {
     Engine(EngineModule),
     ProjectileWeapon(ProjectileWeaponModule),
@@ -237,7 +237,7 @@ impl IModule for Module {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[deriving(Encodable, Decodable)]
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct ModuleBase {
     // Module position/size stuff
     pub x: u8,
