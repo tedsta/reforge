@@ -81,75 +81,77 @@ fn main () {
     let mut main_menu = MainMenu::new();
     let selection = main_menu.run(&window, &mut gl, &asset_store);
 
-    match selection {
-        MainMenuSelection::SinglePlayer => {
-            // Start a local server
-            let mut server = Server::new();
-            let slot = server.create_slot();
+    if let Some(selection) = selection {
+        match selection {
+            MainMenuSelection::SinglePlayer => {
+                // Start a local server
+                let mut server = Server::new();
+                let slot = server.create_slot();
+                
+                Thread::spawn(move || {
+                    server.listen("localhost:30000");
+                });
+                
+                Thread::spawn(move || {
+                    let mut scheduler = BattleScheduler::new(slot);
+                    scheduler.run();
+                });
             
-            Thread::spawn(move || {
-                server.listen("localhost:30000");
-            });
-            
-            Thread::spawn(move || {
-                let mut scheduler = BattleScheduler::new(slot);
-                scheduler.run();
-            });
-        
-            // Connect to server
-            let mut client = Client::new("localhost:30000");
+                // Connect to server
+                let mut client = Client::new("localhost:30000");
 
-            let mut packet = OutPacket::new();
-            packet.write(&BattleType::Ai);
-            client.send(&packet);
-            
-            // Receive the ships from the server
-            let mut packet = client.receive();
-            let ships = match packet.read() {
-                Ok(ships) => ships,
-                Err(e) => panic!("Unable to receive ships froms server: {}", e),
-            };
-            
-            // Create the battle state
-            let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
-
-            battle.run(&window, &mut gl, &asset_store);
-        },
-        MainMenuSelection::Multiplayer => {
-            // Check for IP address in args
-            let mut ip_address =
-                if os::args().len() > 1 {
-                    os::args()[1].clone()
-                } else {
-                    print!("IP Address: ");
-                    let mut ip_address = io::stdin().read_line().unwrap();
-                    ip_address.pop().unwrap(); // Remove newline at end
-                    ip_address.pop().unwrap(); // Remove newline at end
-                    ip_address
+                let mut packet = OutPacket::new();
+                packet.write(&BattleType::Ai);
+                client.send(&packet);
+                
+                // Receive the ships from the server
+                let mut packet = client.receive();
+                let ships = match packet.read() {
+                    Ok(ships) => ships,
+                    Err(e) => panic!("Unable to receive ships froms server: {}", e),
                 };
-            ip_address.push_str(":30000"); // Add the port to the end of the address
-            
-            // Connect to server
-            let mut client = Client::new(ip_address.as_slice());
+                
+                // Create the battle state
+                let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
 
-            let mut packet = OutPacket::new();
-            packet.write(&BattleType::FreeForAll{num_players: 2});
-            client.send(&packet);
-            
-            // Receive the ships from the server
-            let mut packet = client.receive();
-            let ships = match packet.read() {
-                Ok(ships) => ships,
-                Err(e) => panic!("Unable to receive ships froms server: {}", e),
-            };
-            
-            // Create the battle state
-            let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
+                battle.run(&window, &mut gl, &asset_store);
+            },
+            MainMenuSelection::Multiplayer => {
+                // Check for IP address in args
+                let mut ip_address =
+                    if os::args().len() > 1 {
+                        os::args()[1].clone()
+                    } else {
+                        print!("IP Address: ");
+                        let mut ip_address = io::stdin().read_line().unwrap();
+                        ip_address.pop().unwrap(); // Remove newline at end
+                        ip_address.pop().unwrap(); // Remove newline at end
+                        ip_address
+                    };
+                ip_address.push_str(":30000"); // Add the port to the end of the address
+                
+                // Connect to server
+                let mut client = Client::new(ip_address.as_slice());
 
-            battle.run(&window, &mut gl, &asset_store);
-        },
-        MainMenuSelection::Exit => {
-            
-        },
+                let mut packet = OutPacket::new();
+                packet.write(&BattleType::FreeForAll{num_players: 2});
+                client.send(&packet);
+                
+                // Receive the ships from the server
+                let mut packet = client.receive();
+                let ships = match packet.read() {
+                    Ok(ships) => ships,
+                    Err(e) => panic!("Unable to receive ships froms server: {}", e),
+                };
+                
+                // Create the battle state
+                let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
+
+                battle.run(&window, &mut gl, &asset_store);
+            },
+            MainMenuSelection::Exit => {
+                
+            },
+        }
     }
 }

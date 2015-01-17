@@ -40,6 +40,9 @@ impl ClientBattleState {
     }
     
     pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore) {
+        use piston::window::ShouldClose;
+        use piston::quack::Get;
+    
         let mut gui = SpaceGui::new(asset_store, &self.context, self.client.get_id());
     
         let mut sim_visuals = SimVisuals::new();
@@ -89,6 +92,10 @@ impl ClientBattleState {
                     });
                 });
             }
+            
+            // Check if it's time to exit
+            let ShouldClose(should_close) = window.borrow().get();
+            if should_close { break; }
             
             self.player_ship.borrow_mut().apply_module_plans();
         
@@ -151,6 +158,10 @@ impl ClientBattleState {
                     });
                 });
             }
+            
+            // Check if it's time to exit
+            let ShouldClose(should_close) = window.borrow().get();
+            if should_close { break; }
             
             // After simulation
             self.context.after_simulation();

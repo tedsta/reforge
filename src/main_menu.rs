@@ -40,7 +40,9 @@ impl MainMenu {
         }
     }
 
-    pub fn run(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore) -> MainMenuSelection {
+    pub fn run(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore) -> Option<MainMenuSelection> {
+        let mut menu_selection = None;
+    
         // Main loop
         for e in Events::new(window) {
             use piston::event;
@@ -58,10 +60,13 @@ impl MainMenu {
                 });
             });
 
-            if self.done { break; }
+            if self.done {
+                menu_selection = Some(self.selected);
+                break;
+            }
         }
 
-        FromPrimitive::from_u8(self.selected).expect("invalid MainMenuSelection")
+        menu_selection.map(|x| FromPrimitive::from_u8(x).expect("invalid MainMenuSelection"))
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E) {
