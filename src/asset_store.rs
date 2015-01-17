@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::string::String;
 
-use graphics::ImageSize;
+use piston::graphics::ImageSize;
 use opengl_graphics::Texture;
 
 use assets::{

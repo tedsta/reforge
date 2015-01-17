@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 
-use event::Events;
+use piston::event::Events;
 use opengl_graphics::Gl;
 use sdl2_window::Sdl2Window;
 
@@ -61,9 +61,9 @@ impl ClientBattleState {
             
             // Run planning loop
             for e in Events::new(window) {
-                use event;
-                use input;
-                use event::*;
+                use piston::event;
+                use piston::input;
+                use piston::event::*;
 
                 let e: event::Event<input::Input> = e;
             
@@ -114,9 +114,9 @@ impl ClientBattleState {
             let mut last_time = 0.0;
             let mut next_tick = 0;
             for e in Events::new(window) {
-                use event;
-                use input;
-                use event::*;
+                use piston::event;
+                use piston::input;
+                use piston::event::*;
 
                 let e: event::Event<input::Input> = e;
             

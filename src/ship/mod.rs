@@ -9,7 +9,7 @@ use self::ship_gen::generate_ship;
 use sim::SimEvents;
 
 #[cfg(client)]
-use graphics::Context;
+use piston::graphics::Context;
 #[cfg(client)]
 use opengl_graphics::Gl;
 
@@ -341,8 +341,8 @@ impl Ship {
     
     #[cfg(client)]
     pub fn draw_module_hp(&self, context: &Context, gl: &mut Gl) {
-        use quack::Set;
-        use graphics::*;
+        use piston::quack::Set;
+        use piston::graphics::*;
     
         for module in self.modules.iter() {
             let module = module.borrow();
@@ -375,7 +375,7 @@ impl Ship {
     
     #[cfg(client)]
     pub fn draw_module_powered_icons(&self, context: &Context, gl: &mut Gl, module_icons: &ModuleIcons) {
-        use graphics::*;
+        use piston::graphics::*;
     
         for module in self.modules.iter() {
             let module = module.borrow();

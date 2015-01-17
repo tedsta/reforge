@@ -4,7 +4,7 @@ use module::{Module, ModuleRef};
 
 // SimVisual imports
 #[cfg(client)]
-use graphics::Context;
+use piston::graphics::Context;
 #[cfg(client)]
 use opengl_graphics::Gl;
 #[cfg(client)]

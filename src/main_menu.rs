@@ -2,9 +2,9 @@ use std::cell::RefCell;
 use std::num::FromPrimitive;
 
 use sdl2_window::Sdl2Window;
-use event::{Events, GenericEvent, RenderArgs};
-use graphics::Context;
-use input::{keyboard, mouse, Button};
+use piston::event::{Events, GenericEvent, RenderArgs};
+use piston::graphics::Context;
+use piston::input::{keyboard, mouse, Button};
 use opengl_graphics::{Gl, Texture};
 
 use asset_store::AssetStore;
@@ -43,9 +43,9 @@ impl MainMenu {
     pub fn run(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore) -> MainMenuSelection {
         // Main loop
         for e in Events::new(window) {
-            use event;
-            use input;
-            use event::*;
+            use piston::event;
+            use piston::input;
+            use piston::event::*;
 
             let e: event::Event<input::Input> = e;
 
@@ -65,7 +65,7 @@ impl MainMenu {
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E) {
-        use event::*;
+        use piston::event::*;
         
         e.press(|button| {
             match button {
@@ -76,7 +76,7 @@ impl MainMenu {
     }
     
     fn on_key_pressed(&mut self, key: keyboard::Key) {
-        use input::keyboard::Key;
+        use piston::input::keyboard::Key;
         match key {
             Key::Up if self.selected > 0 => { self.selected -= 1; },
             Key::Up if self.selected == 0 => { self.selected = 2; },
@@ -88,8 +88,8 @@ impl MainMenu {
     }
 
     fn draw(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore) {
-        use quack::Set;
-        use graphics::*;
+        use piston::quack::Set;
+        use piston::graphics::*;
         
         // Clear the screen
         clear([0.0; 4], gl);

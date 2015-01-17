@@ -10,14 +10,9 @@ extern crate time;
 extern crate "rustc-serialize" as rustc_serialize;
 
 // Piston stuff
-extern crate quack;
-extern crate event;
-extern crate graphics;
-extern crate input;
 extern crate piston;
 extern crate sdl2_window;
 extern crate opengl_graphics;
-extern crate shader_version;
 
 use std::io;
 use std::os;
@@ -61,7 +56,7 @@ pub mod battle_scheduler;
 pub mod server_battle_state;
 
 fn main () {
-    let opengl = shader_version::OpenGL::_3_0;
+    let opengl = piston::shader_version::OpenGL::_3_0;
     
     // Create an SDL window.
     let window = Sdl2Window::new(
