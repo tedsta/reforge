@@ -373,7 +373,9 @@ impl OutPacket {
         self.writer.get_ref().len()
     }
     
-    pub fn write<'a, T: Encodable>(&mut self, t: &T) -> Result<(), EncodingError> {
+    pub fn write<'a, T>(&mut self, t: &T) -> Result<(), EncodingError>
+        where T: Encodable
+    {
         encode_into(t, &mut self.writer, SizeLimit::Infinite)
     }
 }

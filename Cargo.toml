@@ -41,3 +41,7 @@ git = "https://github.com/tyoverby/bincode.git"
 [dependencies.time]
 
 git = "https://github.com/rust-lang/time"
+
+[dependencies]
+
+rustc-serialize = "0.2.7"
