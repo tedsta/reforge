@@ -187,13 +187,44 @@ impl<M> IModuleRef for Module<M>
     }
 }
 
+#[derive(RustcEncodable, RustcDecodable)]
+enum ModuleClass {
+    ProjectileWeapon,
+    Shield,
+    Engine,
+    Solar,
+    Command,
+}
+
 impl Decodable for ModuleBox {
     fn decode<D: Decoder>(d: &mut D) -> Result<ModuleBox, D::Error> {
-        let module_class: TypeId = Decodable::decode(d).ok().expect("Failed to decode module_class");
-        Ok(Box::new(Module {
-            base: Decodable::decode(d).ok().expect("Failed to decode ModuleBase"),
-            module: <ProjectileWeaponModule as Decodable>::decode(d).ok().expect("Failed to decode module"),
-        }))
+        use self::ModuleClass::*;
+        
+        let module_class: ModuleClass = try!(Decodable::decode(d));
+        let base: ModuleBase = try!(Decodable::decode(d));
+        
+        match module_class {
+            ProjectileWeapon => Ok(Box::new(Module {
+                base: base,
+                module: try!(<ProjectileWeaponModule as Decodable>::decode(d)),
+            })),
+            Shield => Ok(Box::new(Module {
+                base: base,
+                module: try!(<ShieldModule as Decodable>::decode(d)),
+            })),
+            Engine => Ok(Box::new(Module {
+                base: base,
+                module: try!(<EngineModule as Decodable>::decode(d)),
+            })),
+            Solar => Ok(Box::new(Module {
+                base: base,
+                module: try!(<SolarModule as Decodable>::decode(d)),
+            })),
+            Command => Ok(Box::new(Module {
+                base: base,
+                module: try!(<CommandModule as Decodable>::decode(d)),
+            })),
+        }
     }
 }
 
@@ -201,11 +232,43 @@ impl Encodable for ModuleBox {
     fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
         use std::mem;
         use std::raw;
+        
+        use self::ModuleClass::*;
+        
+        let type_id = self.get_type_id();
+        
+        let module_class =
+            if type_id == TypeId::of::<ProjectileWeaponModule>() { ProjectileWeapon }
+            else if type_id == TypeId::of::<ShieldModule>() { Shield }
+            else if type_id == TypeId::of::<EngineModule>() { Engine }
+            else if type_id == TypeId::of::<SolarModule>() { Solar }
+            else if type_id == TypeId::of::<CommandModule>() { Command }
+            else { unreachable!() };
     
-        self.get_base().encode(s).ok().expect("Failed to encode ModuleBase");
-        unsafe {
-            let to: raw::TraitObject = mem::transmute(self.get_module());
-            <ProjectileWeaponModule as Encodable>::encode(mem::transmute(to.data), s).ok().expect("Failed to encode module");
+        try!(module_class.encode(s));
+        try!(self.get_base().encode(s));
+        
+        match module_class {
+            ProjectileWeapon => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.get_module());
+                try!(<ProjectileWeaponModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            Shield => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.get_module());
+                try!(<ShieldModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            Engine => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.get_module());
+                try!(<EngineModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            Solar => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.get_module());
+                try!(<SolarModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            Command => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.get_module());
+                try!(<CommandModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
         }
         Ok(())
     }

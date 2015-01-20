@@ -24,7 +24,7 @@ pub struct SolarModule;
 impl SolarModule {
     pub fn new() -> Module<SolarModule> {
         Module {
-            base: ModuleBase::new(1, 1, 2, 2, 3),
+            base: ModuleBase::new(1, 1, 0, 2, 3),
             module: SolarModule,
         }
     }

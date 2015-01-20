@@ -24,7 +24,7 @@ pub struct EngineModule;
 impl EngineModule {
     pub fn new() -> Module<EngineModule> {
         Module {
-            base: ModuleBase::new(1, 1, 2, 2, 3),
+            base: ModuleBase::new(2, 1, 2, 2, 3),
             module: EngineModule,
         }
     }

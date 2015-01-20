@@ -24,7 +24,7 @@ pub struct CommandModule;
 impl CommandModule {
     pub fn new() -> Module<CommandModule> {
         Module {
-            base: ModuleBase::new(1, 1, 2, 2, 3),
+            base: ModuleBase::new(1, 2, 0, 2, 4),
             module: CommandModule,
         }
     }
