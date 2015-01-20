@@ -12,7 +12,7 @@ use opengl_graphics::Gl;
 
 use assets::{WEAPON_TEXTURE, LASER_TEXTURE, EXPLOSION_TEXTURE, TextureId};
 use battle_state::{BattleContext, TICKS_PER_SECOND};
-use module::{IModule, Module, ModuleRef, ModuleBase};
+use module::{IModule, Module, ModuleRef, ModuleBase, ModuleBox};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipRef, ShipState};
 use sim::{SimEvent, SimEventAdder};
@@ -27,15 +27,13 @@ use asset_store::AssetStore;
 
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct ProjectileWeaponModule {
-    pub base: ModuleBase,
-    
     projectiles: Vec<Projectile>,
     
     target: Option<(ShipRef, ModuleRef)>,
 }
 
 impl ProjectileWeaponModule {
-    pub fn new() -> Module {
+    pub fn new() -> Module<ProjectileWeaponModule> {
         let projectile = Projectile {
             damage: 1,
             hit: false,
@@ -50,14 +48,16 @@ impl ProjectileWeaponModule {
             hit_pos: Vec2{x: 0f64, y: 0f64},
         };
     
-        Module::ProjectileWeapon(ProjectileWeaponModule {
+        Module {
             base: ModuleBase::new(1, 1, 2, 2, 3),
-            projectiles: repeat(projectile).take(3).collect(),
-            target: None,
-        })
+            module: ProjectileWeaponModule {
+                projectiles: repeat(projectile).take(3).collect(),
+                target: None,
+            },
+        }
     }
     
-    pub fn from_file(asset_store: &AssetStore, path: &Path) -> Module {
+    pub fn from_file(asset_store: &AssetStore, path: &Path) -> Module<ProjectileWeaponModule> {
         let mut damage = 1;
         let mut num_shots = 1;
         let mut texture = String::from_str("WEAPON");
@@ -82,17 +82,19 @@ impl ProjectileWeaponModule {
             hit_pos: Vec2{x: 0f64, y: 0f64},
         };
     
-        Module::ProjectileWeapon(ProjectileWeaponModule {
+        Module {
             base: ModuleBase::new(1, 1, 2, 2, 3),
-            projectiles: repeat(projectile).take(3).collect(),
-            target: None,
-        })
+            module: ProjectileWeaponModule {
+                projectiles: repeat(projectile).take(3).collect(),
+                target: None,
+            },
+        }
     }
 }
 
 impl IModule for ProjectileWeaponModule {
-    fn server_preprocess(&mut self, ship_state: &mut ShipState) {    
-        if self.base.powered {
+    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {    
+        if base.powered {
             match self.target {
                 Some((ref target_ship, ref target_module)) => {
                     // Random number generater
@@ -113,8 +115,8 @@ impl IModule for ProjectileWeaponModule {
         }
     }
 
-    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
-        if self.base.powered {
+    fn before_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, events: &mut SimEventAdder) {
+        if base.powered {
             match self.target {
                 Some((ref target_ship, ref target_module)) => {
                     for (i, projectile) in self.projectiles.iter_mut().enumerate() {                                            
@@ -124,7 +126,7 @@ impl IModule for ProjectileWeaponModule {
                         projectile.offscreen_tick = start + 20;
                         projectile.hit_tick = start + 40;
                         
-                        projectile.fire_pos = self.base.get_render_position();
+                        projectile.fire_pos = base.get_render_position();
                         projectile.to_offscreen_pos = projectile.fire_pos + Vec2{x: 1500.0, y: 0.0};
                         projectile.from_offscreen_pos = Vec2{x: 1500.0, y: 0.0};
                         
@@ -143,28 +145,28 @@ impl IModule for ProjectileWeaponModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
+    fn add_plan_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
         
-        if self.base.is_active() {
+        if base.is_active() {
             weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 1));
         } else {
             weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
         }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
-            position: self.base.get_render_position().clone(),
+            position: base.get_render_position().clone(),
             sprite_sheet: weapon_sprite,
         });
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
+    fn add_simulation_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let ship_id = ship.borrow().id;
     
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
         
-        if self.base.powered {
+        if base.powered {
             if let Some((ref target_ship, ref target_module)) = self.target {
                 let target_ship_id = target_ship.borrow().id;
             
@@ -244,15 +246,15 @@ impl IModule for ProjectileWeaponModule {
         }
         
         visuals.add(ship_id, 0, box SpriteVisual {
-            position: self.base.get_render_position().clone(),
+            position: base.get_render_position().clone(),
             sprite_sheet: weapon_sprite,
         });
     }
     
-    fn after_simulation(&mut self, ship_state: &mut ShipState) {
+    fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
     }
     
-    fn on_ship_removed(&mut self, ship_id: ShipId) {
+    fn on_ship_removed(&mut self, base: &mut ModuleBase, ship_id: ShipId) {
         // TODO make this prettier
     
         let mut remove = false;
@@ -267,7 +269,7 @@ impl IModule for ProjectileWeaponModule {
         }
     }
     
-    fn write_plans(&self, packet: &mut OutPacket) {
+    fn write_plans(&self, base: &ModuleBase, packet: &mut OutPacket) {
         match self.target.as_ref() {
             Some(&(ref ship, ref module)) => {
                 packet.write(&true).unwrap();
@@ -278,7 +280,7 @@ impl IModule for ProjectileWeaponModule {
         }
     }
     
-    fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
+    fn read_plans(&mut self, base: &mut ModuleBase, context: &BattleContext, packet: &mut InPacket) {
         let some: bool = packet.read().unwrap();
         if some {
             let ship_id = packet.read().unwrap();
@@ -291,29 +293,29 @@ impl IModule for ProjectileWeaponModule {
         }
     }
     
-    fn write_results(&self, packet: &mut OutPacket) {
+    fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {
         for projectile in self.projectiles.iter() {
             packet.write(&projectile.hit).unwrap();
         }
     }
     
-    fn read_results(&mut self, packet: &mut InPacket) {
+    fn read_results(&mut self, base: &mut ModuleBase, packet: &mut InPacket) {
         for projectile in self.projectiles.iter_mut() {
             projectile.hit = packet.read().unwrap();
         }
     }
     
-    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
+    fn on_activated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
     }
     
-    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
+    fn on_deactivated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
     }
     
-    fn on_icon_clicked(&mut self) -> bool {
+    fn on_icon_clicked(&mut self, base: &mut ModuleBase) -> bool {
         true
     }
     
-    fn on_module_clicked(&mut self, ship: &ShipRef, module: &ModuleRef) -> bool {
+    fn on_module_clicked(&mut self, base: &mut ModuleBase, ship: &ShipRef, module: &ModuleRef) -> bool {
         self.target = Some((ship.clone(), module.clone()));
         false
     }
@@ -357,7 +359,7 @@ impl DamageEvent {
 }
 
 impl SimEvent for DamageEvent {
-    fn apply(&mut self, module: &mut Module) {
+    fn apply(&mut self, module: &mut ModuleBox) {
         let mut ship = self.ship.borrow_mut();
         ship.deal_damage(self.module.borrow_mut().deref_mut(), self.damage);
     }

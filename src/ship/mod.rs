@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::cmp;
 
 use battle_state::BattleContext;
-use module::{IModule, ModuleBase, ModuleRef, Module};
+use module::{IModule, IModuleRef, ModuleBase, ModuleBox, ModuleRef, Module};
 use net::{ClientId, InPacket, OutPacket};
 use self::ship_gen::generate_ship;
 use sim::SimEvents;
@@ -78,7 +78,7 @@ impl ShipState {
         self.shields = 0;
     }
     
-    pub fn deal_damage(&mut self, modules: &Vec<ModuleRef>, module: &mut Module, damage: u8) {
+    pub fn deal_damage(&mut self, modules: &Vec<ModuleRef>, module: &mut ModuleBox, damage: u8) {
         // Can't deal more damage than there is HP
         let damage = cmp::min(self.hp, damage);
         
@@ -207,7 +207,9 @@ impl Ship {
     }
     
     // Returns true if adding the module was successful, false if it failed.
-    pub fn add_module(&mut self, mut module: Module) -> bool {
+    pub fn add_module<M>(&mut self, mut module: Module<M>) -> bool
+        where M: IModule + 'static
+    {
         // Add to state hp
         self.state.total_module_hp += module.get_base().get_hp();
         self.state.hp = self.state.total_module_hp/2;
@@ -225,11 +227,11 @@ impl Ship {
         }
         
         // Add the module
-        self.modules.push(Rc::new(RefCell::new(module)));
+        self.modules.push(Rc::new(RefCell::new(Box::new(module))));
         true
     }
     
-    pub fn deal_damage(&mut self, module: &mut Module, damage: u8) {
+    pub fn deal_damage(&mut self, module: &mut ModuleBox, damage: u8) {
         self.state.deal_damage(&self.modules, module, damage);
     }
     

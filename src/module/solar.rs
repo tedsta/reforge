@@ -19,74 +19,73 @@ use sprite_sheet::{SpriteSheet, SpriteAnimation};
 use asset_store::AssetStore;
 
 #[derive(RustcEncodable, RustcDecodable)]
-pub struct SolarModule {
-    pub base: ModuleBase,
-}
+pub struct SolarModule;
 
 impl SolarModule {
-    pub fn new() -> Module {
-        Module::Solar(SolarModule {
-            base: ModuleBase::new(1, 1, 0, 2, 3),
-        })
+    pub fn new() -> Module<SolarModule> {
+        Module {
+            base: ModuleBase::new(1, 1, 2, 2, 3),
+            module: SolarModule,
+        }
     }
 }
 
 impl IModule for SolarModule {
-    fn server_preprocess(&mut self, ship_state: &mut ShipState) {
+    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
     }
     
-    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
+    fn before_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, events: &mut SimEventAdder) {
     }
     
     #[cfg(feature = "client")]
-    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
+    fn add_plan_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut solar_sprite = SpriteSheet::new(asset_store.get_sprite_info(SOLAR_TEXTURE));
         
-        if self.base.is_active() {
+        if base.is_active() {
             solar_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 1, 4, 0.1));
         } else {
             solar_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
         }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
-            position: self.base.get_render_position().clone(),
+            position: base.get_render_position().clone(),
             sprite_sheet: solar_sprite,
         });
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
-        self.add_plan_visuals(asset_store, visuals, ship);
+    fn add_simulation_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
+        self.add_plan_visuals(base, asset_store, visuals, ship);
     }
     
-    fn after_simulation(&mut self, ship_state: &mut ShipState) {
+    fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
     }
     
-    fn write_plans(&self, packet: &mut OutPacket) {
+    fn write_plans(&self, base: &ModuleBase, packet: &mut OutPacket) {
     }
     
-    fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
+    fn read_plans(&mut self, base: &mut ModuleBase, context: &BattleContext, packet: &mut InPacket) {
     }
     
-    fn write_results(&self, packet: &mut OutPacket) {
+    fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {
     }
     
-    fn read_results(&mut self, packet: &mut InPacket) {
+    fn read_results(&mut self, base: &mut ModuleBase, packet: &mut InPacket) {
     }
     
-    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
+    fn on_activated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
         ship_state.add_power(5);
     }
     
-    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
+    fn on_deactivated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
         ship_state.remove_power(5, modules);
     }
     
-    fn on_icon_clicked(&mut self) -> bool {
+    fn on_icon_clicked(&mut self, base: &mut ModuleBase) -> bool {
         false
     }
     
-    fn on_module_clicked(&mut self, ship: &ShipRef, module: &ModuleRef) -> bool {
+    fn on_module_clicked(&mut self, base: &mut ModuleBase, ship: &ShipRef, module: &ModuleRef) -> bool {
         false
     }
 }

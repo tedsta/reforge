@@ -1,6 +1,6 @@
 use std::ops::{DerefMut};
 
-use module::{Module, ModuleRef};
+use module::{ModuleRef, ModuleBox};
 
 // SimVisual imports
 #[cfg(feature = "client")]
@@ -13,7 +13,7 @@ use ship::ShipId;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub trait SimEvent {
-    fn apply(&mut self, &mut Module);
+    fn apply(&mut self, &mut ModuleBox);
 }
 
 pub struct SimEvents<'a> {

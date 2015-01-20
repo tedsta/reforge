@@ -3,7 +3,7 @@ use std::rand::Rng;
 use std::rand;
 
 use ship::{Ship, ShipId};
-use module::{EngineModule, ProjectileWeaponModule, ShieldModule, SolarModule, CommandModule};
+use module::{IModuleRef, EngineModule, ProjectileWeaponModule, ShieldModule, SolarModule, CommandModule};
 
 pub fn generate_ship(id: ShipId, level: u8) -> Ship {
     if level == 0 {

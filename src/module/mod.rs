@@ -1,5 +1,8 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::intrinsics::TypeId;
+
+use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
 use assets::TextureId;
 use battle_state::BattleContext;
@@ -29,6 +32,53 @@ pub mod command;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub trait IModule {
+    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
+
+    fn before_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, events: &mut SimEventAdder);
+    #[cfg(feature = "client")]
+    fn add_plan_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef);
+    #[cfg(feature = "client")]
+    fn add_simulation_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef);
+    fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
+    
+    fn on_ship_removed(&mut self, base: &mut ModuleBase, _: ShipId) {}
+
+    fn write_plans(&self, base: &ModuleBase, packet: &mut OutPacket);
+    fn read_plans(&mut self, base: &mut ModuleBase, context: &BattleContext, packet: &mut InPacket);
+    
+    fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket);
+    fn read_results(&mut self, base: &mut ModuleBase, packet: &mut InPacket);
+    
+    fn on_activated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>);
+    fn on_deactivated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>);
+    
+    ////////////////////
+    // GUI stuff
+    
+    fn on_icon_clicked(&mut self, base: &mut ModuleBase) -> bool;
+    fn on_module_clicked(&mut self, base: &mut ModuleBase, ship: &ShipRef, module: &ModuleRef) -> bool;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub type ModuleBox = Box<IModuleRef + 'static>;
+pub type ModuleRef = Rc<RefCell<ModuleBox>>;
+
+#[derive(RustcEncodable, RustcDecodable)]
+pub struct Module<M: IModule> {
+    base: ModuleBase,
+    module: M,
+}
+
+pub trait IModuleRef {
+    fn get_type_id(&self) -> TypeId;
+    fn get_base(&self) -> &ModuleBase;
+    fn get_base_mut(&mut self) -> &mut ModuleBase;
+    fn get_module(&self) -> &IModule;
+    
+    //////////////////////////////////////////////////////
+    // IModule stuff
+    
     fn server_preprocess(&mut self, ship_state: &mut ShipState);
 
     fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder);
@@ -38,7 +88,7 @@ pub trait IModule {
     fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef);
     fn after_simulation(&mut self, ship_state: &mut ShipState);
     
-    fn on_ship_removed(&mut self, _: ShipId) {}
+    fn on_ship_removed(&mut self, ShipId) {}
 
     fn write_plans(&self, packet: &mut OutPacket);
     fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket);
@@ -56,182 +106,108 @@ pub trait IModule {
     fn on_module_clicked(&mut self, ship: &ShipRef, module: &ModuleRef) -> bool;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-pub type ModuleRef = Rc<RefCell<Module>>;
-
-#[derive(RustcEncodable, RustcDecodable)]
-pub enum Module {
-    Engine(EngineModule),
-    ProjectileWeapon(ProjectileWeaponModule),
-    Shield(ShieldModule),
-    Solar(SolarModule),
-    Command(CommandModule),
-}
-
-impl Module {
-    pub fn get_base<'a>(&'a self) -> &'a ModuleBase {
-        match (*self) {
-            Module::Engine(ref m) => &m.base,
-            Module::ProjectileWeapon(ref m) => &m.base,
-            Module::Shield(ref m) => &m.base,
-            Module::Solar(ref m) => &m.base,
-            Module::Command(ref m) => &m.base,
-        }
+impl<M> IModuleRef for Module<M>
+    where M: IModule + 'static
+{
+    fn get_type_id(&self) -> TypeId {
+        TypeId::of::<M>()
     }
     
-    pub fn get_base_mut<'a>(&'a mut self) -> &'a mut ModuleBase {
-        match (*self) {
-            Module::Engine(ref mut m) => &mut m.base,
-            Module::ProjectileWeapon(ref mut m) => &mut m.base,
-            Module::Shield(ref mut m) => &mut m.base,
-            Module::Solar(ref mut m) => &mut m.base,
-            Module::Command(ref mut m) => &mut m.base,
-        }
+    fn get_base(&self) -> &ModuleBase {
+        &self.base
     }
-}
-
-impl IModule for Module {
+    
+    fn get_base_mut(&mut self) -> &mut ModuleBase {
+        &mut self.base
+    }
+    
+    fn get_module(&self) -> &IModule {
+        &self.module
+    }
+    
+    //////////////////////////////////////////////////////
+    // IModule stuff
+    
     fn server_preprocess(&mut self, ship_state: &mut ShipState) {
-        match *self {
-            Module::Engine(ref mut m) => m.server_preprocess(ship_state),
-            Module::ProjectileWeapon(ref mut m) => m.server_preprocess(ship_state),
-            Module::Shield(ref mut m) => m.server_preprocess(ship_state),
-            Module::Solar(ref mut m) => m.server_preprocess(ship_state),
-            Module::Command(ref mut m) => m.server_preprocess(ship_state),
-        }
+        self.module.server_preprocess(&mut self.base, ship_state);
     }
     
     fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
-        match *self {
-            Module::Engine(ref mut m) => m.before_simulation(ship_state, events),
-            Module::ProjectileWeapon(ref mut m) => m.before_simulation(ship_state, events),
-            Module::Shield(ref mut m) => m.before_simulation(ship_state, events),
-            Module::Solar(ref mut m) => m.before_simulation(ship_state, events),
-            Module::Command(ref mut m) => m.before_simulation(ship_state, events),
-        }
+        self.module.before_simulation(&mut self.base, ship_state, events);
     }
     
     #[cfg(feature = "client")]
     fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
-        match *self {
-            Module::Engine(ref m) => m.add_plan_visuals(asset_store, visuals, ship),
-            Module::ProjectileWeapon(ref m) => m.add_plan_visuals(asset_store, visuals, ship),
-            Module::Shield(ref m) => m.add_plan_visuals(asset_store, visuals, ship),
-            Module::Solar(ref m) => m.add_plan_visuals(asset_store, visuals, ship),
-            Module::Command(ref m) => m.add_plan_visuals(asset_store, visuals, ship),
-        }
+        self.module.add_plan_visuals(&self.base, asset_store, visuals, ship);
     }
     
     #[cfg(feature = "client")]
     fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
-        match *self {
-            Module::Engine(ref m) => m.add_simulation_visuals(asset_store, visuals, ship),
-            Module::ProjectileWeapon(ref m) => m.add_simulation_visuals(asset_store, visuals, ship),
-            Module::Shield(ref m) => m.add_simulation_visuals(asset_store, visuals, ship),
-            Module::Solar(ref m) => m.add_simulation_visuals(asset_store, visuals, ship),
-            Module::Command(ref m) => m.add_simulation_visuals(asset_store, visuals, ship),
-        }
+        self.module.add_simulation_visuals(&self.base, asset_store, visuals, ship);
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {
-        match *self {
-            Module::Engine(ref mut m) => m.after_simulation(ship_state),
-            Module::ProjectileWeapon(ref mut m) => m.after_simulation(ship_state),
-            Module::Shield(ref mut m) => m.after_simulation(ship_state),
-            Module::Solar(ref mut m) => m.after_simulation(ship_state),
-            Module::Command(ref mut m) => m.after_simulation(ship_state),
-        }
+        self.module.after_simulation(&mut self.base, ship_state);
     }
     
     fn on_ship_removed(&mut self, ship_id: ShipId) {
-        match *self {
-            Module::Engine(ref mut m) => m.on_ship_removed(ship_id),
-            Module::ProjectileWeapon(ref mut m) => m.on_ship_removed(ship_id),
-            Module::Shield(ref mut m) => m.on_ship_removed(ship_id),
-            Module::Solar(ref mut m) => m.on_ship_removed(ship_id),
-            Module::Command(ref mut m) => m.on_ship_removed(ship_id),
-        }
+        self.module.on_ship_removed(&mut self.base, ship_id);
     }
     
     fn write_plans(&self, packet: &mut OutPacket) {
-        match *self {
-            Module::Engine(ref m) => m.write_plans(packet),
-            Module::ProjectileWeapon(ref m) => m.write_plans(packet),
-            Module::Shield(ref m) => m.write_plans(packet),
-            Module::Solar(ref m) => m.write_plans(packet),
-            Module::Command(ref m) => m.write_plans(packet),
-        }
+        self.module.write_plans(&self.base, packet);
     }
     
     fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
-        match *self {
-            Module::Engine(ref mut m) => m.read_plans(context, packet),
-            Module::ProjectileWeapon(ref mut m) => m.read_plans(context, packet),
-            Module::Shield(ref mut m) => m.read_plans(context, packet),
-            Module::Solar(ref mut m) => m.read_plans(context, packet),
-            Module::Command(ref mut m) => m.read_plans(context, packet),
-        }
+        self.module.read_plans(&mut self.base, context, packet);
     }
     
     fn write_results(&self, packet: &mut OutPacket) {
-        match *self {
-            Module::Engine(ref m) => m.write_results(packet),
-            Module::ProjectileWeapon(ref m) => m.write_results(packet),
-            Module::Shield(ref m) => m.write_results(packet),
-            Module::Solar(ref m) => m.write_results(packet),
-            Module::Command(ref m) => m.write_results(packet),
-        }
+        self.module.write_results(&self.base, packet);
     }
     
     fn read_results(&mut self, packet: &mut InPacket) {
-        match *self {
-            Module::Engine(ref mut m) => m.read_results(packet),
-            Module::ProjectileWeapon(ref mut m) => m.read_results(packet),
-            Module::Shield(ref mut m) => m.read_results(packet),
-            Module::Solar(ref mut m) => m.read_results(packet),
-            Module::Command(ref mut m) => m.read_results(packet),
-        }
+        self.module.read_results(&mut self.base, packet);
     }
     
     fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
-        match *self {
-            Module::Engine(ref mut m) => m.on_activated(ship_state, modules),
-            Module::ProjectileWeapon(ref mut m) => m.on_activated(ship_state, modules),
-            Module::Shield(ref mut m) => m.on_activated(ship_state, modules),
-            Module::Solar(ref mut m) => m.on_activated(ship_state, modules),
-            Module::Command(ref mut m) => m.on_activated(ship_state, modules),
-        }
+        self.module.on_activated(&mut self.base, ship_state, modules);
     }
     
     fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
-        match *self {
-            Module::Engine(ref mut m) => m.on_deactivated(ship_state, modules),
-            Module::ProjectileWeapon(ref mut m) => m.on_deactivated(ship_state, modules),
-            Module::Shield(ref mut m) => m.on_deactivated(ship_state, modules),
-            Module::Solar(ref mut m) => m.on_deactivated(ship_state, modules),
-            Module::Command(ref mut m) => m.on_deactivated(ship_state, modules),
-        }
+        self.module.on_deactivated(&mut self.base, ship_state, modules);
     }
     
     fn on_icon_clicked(&mut self) -> bool {
-        match *self {
-            Module::Engine(ref mut m) => m.on_icon_clicked(),
-            Module::ProjectileWeapon(ref mut m) => m.on_icon_clicked(),
-            Module::Shield(ref mut m) => m.on_icon_clicked(),
-            Module::Solar(ref mut m) => m.on_icon_clicked(),
-            Module::Command(ref mut m) => m.on_icon_clicked(),
-        }
+        self.module.on_icon_clicked(&mut self.base)
     }
     
     fn on_module_clicked(&mut self, ship: &ShipRef, module: &ModuleRef) -> bool {
-        match *self {
-            Module::Engine(ref mut m) => m.on_module_clicked(ship, module),
-            Module::ProjectileWeapon(ref mut m) => m.on_module_clicked(ship, module),
-            Module::Shield(ref mut m) => m.on_module_clicked(ship, module),
-            Module::Solar(ref mut m) => m.on_module_clicked(ship, module),
-            Module::Command(ref mut m) => m.on_module_clicked(ship, module),
+        self.module.on_module_clicked(&mut self.base, ship, module)
+    }
+}
+
+impl Decodable for ModuleBox {
+    fn decode<D: Decoder>(d: &mut D) -> Result<ModuleBox, D::Error> {
+        let module_class: TypeId = Decodable::decode(d).ok().expect("Failed to decode module_class");
+        Ok(Box::new(Module {
+            base: Decodable::decode(d).ok().expect("Failed to decode ModuleBase"),
+            module: <ProjectileWeaponModule as Decodable>::decode(d).ok().expect("Failed to decode module"),
+        }))
+    }
+}
+
+impl Encodable for ModuleBox {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        use std::mem;
+        use std::raw;
+    
+        self.get_base().encode(s).ok().expect("Failed to encode ModuleBase");
+        unsafe {
+            let to: raw::TraitObject = mem::transmute(self.get_module());
+            <ProjectileWeaponModule as Encodable>::encode(mem::transmute(to.data), s).ok().expect("Failed to encode module");
         }
+        Ok(())
     }
 }
 

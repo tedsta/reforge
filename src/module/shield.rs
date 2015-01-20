@@ -19,77 +19,76 @@ use sprite_sheet::{SpriteSheet, SpriteAnimation};
 use asset_store::AssetStore;
 
 #[derive(RustcEncodable, RustcDecodable)]
-pub struct ShieldModule {
-    pub base: ModuleBase,
-}
+pub struct ShieldModule;
 
 impl ShieldModule {
-    pub fn new() -> Module {
-        Module::Shield(ShieldModule {
+    pub fn new() -> Module<ShieldModule>{
+        Module {
             base: ModuleBase::new(1, 1, 2, 2, 3),
-        })
+            module: ShieldModule,
+        }
     }
 }
 
 impl IModule for ShieldModule {
-    fn server_preprocess(&mut self, ship_state: &mut ShipState) {
+    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
     }
     
-    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
+    fn before_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, events: &mut SimEventAdder) {
     }
     
     #[cfg(feature = "client")]
-    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
+    fn add_plan_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info(SHIELD_TEXTURE));
         
-        if self.base.is_active() {
+        if base.is_active() {
             shield_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 9, 0.05));
         } else {
             shield_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
         }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
-            position: self.base.get_render_position().clone(),
+            position: base.get_render_position().clone(),
             sprite_sheet: shield_sprite,
         });
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
-        self.add_plan_visuals(asset_store, visuals, ship);
+    fn add_simulation_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
+        self.add_plan_visuals(base, asset_store, visuals, ship);
     }
     
-    fn after_simulation(&mut self, ship_state: &mut ShipState) {
-        if self.base.powered && ship_state.shields < ship_state.max_shields {
+    fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
+        if base.powered && ship_state.shields < ship_state.max_shields {
             ship_state.shields += 1; // charge shield
         }
     }
 
-    fn write_plans(&self, packet: &mut OutPacket) {
+    fn write_plans(&self, base: &ModuleBase, packet: &mut OutPacket) {
     }
     
-    fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
+    fn read_plans(&mut self, base: &mut ModuleBase, context: &BattleContext, packet: &mut InPacket) {
     }
     
-    fn write_results(&self, packet: &mut OutPacket) {
+    fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {
     }
     
-    fn read_results(&mut self, packet: &mut InPacket) {
+    fn read_results(&mut self, base: &mut ModuleBase, packet: &mut InPacket) {
     }
     
-    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
+    fn on_activated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
         ship_state.add_shields(2);
     }
     
-    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
+    fn on_deactivated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
         ship_state.remove_shields(2);
     }
     
-    fn on_icon_clicked(&mut self) -> bool {
+    fn on_icon_clicked(&mut self, base: &mut ModuleBase) -> bool {
         false
     }
     
-    fn on_module_clicked(&mut self, ship: &ShipRef, module: &ModuleRef) -> bool {
+    fn on_module_clicked(&mut self, base: &mut ModuleBase, ship: &ShipRef, module: &ModuleRef) -> bool {
         false
     }
 }
