@@ -131,7 +131,7 @@ impl MainMenu {
         let (e_width, e_height) = self.exit_texture.get_size();
 
         let mut selected: u8; // is the "button" selected
-        selected = -1;
+        selected = self.selected;
 
         if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (s_width as f64)) && 
             self.mouse_y > 300.0 && self.mouse_y < (300.0 + (s_height as f64)) {
