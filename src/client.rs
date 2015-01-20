@@ -54,7 +54,7 @@ pub mod server_battle_state;
 
 #[cfg(feature = "client")]
 fn main () {
-    let opengl = piston::shader_version::OpenGL::_3_0;
+    let opengl = piston::shader_version::OpenGL::_3_2;
     
     // Create an SDL window.
     let window = Sdl2Window::new(

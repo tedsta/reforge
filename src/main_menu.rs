@@ -3,7 +3,7 @@ use std::num::FromPrimitive;
 
 use sdl2_window::Sdl2Window;
 use piston::event::{Events, GenericEvent, RenderArgs};
-use piston::graphics::Context;
+use piston::graphics::{Context, ImageSize};
 use piston::input::{keyboard, mouse, Button};
 use opengl_graphics::{Gl, Texture};
 
@@ -21,6 +21,9 @@ pub struct MainMenu {
     selected: u8,
     done: bool,
 
+    mouse_x: f64,
+    mouse_y: f64,
+
     // Textures
     bg_texture: Texture,
     single_player_texture: Texture,
@@ -33,6 +36,8 @@ impl MainMenu {
         MainMenu {
             selected: 0,
             done: false,
+            mouse_x: 0.0,
+            mouse_y: 0.0,
             bg_texture: Texture::from_path(&Path::new("content/textures/gui/main_menu.png")).unwrap(),
             single_player_texture: Texture::from_path(&Path::new("content/textures/gui/singleplayer.png")).unwrap(),
             multiplayer_texture: Texture::from_path(&Path::new("content/textures/gui/multiplayer.png")).unwrap(),
@@ -72,14 +77,19 @@ impl MainMenu {
     pub fn event<E: GenericEvent>(&mut self, e: &E) {
         use piston::event::*;
         
+        e.mouse_cursor(|x, y| {
+            self.on_mouse_moved(x, y);
+        });
         e.press(|button| {
             match button {
                 Button::Keyboard(key) => self.on_key_pressed(key), 
-                _ => {},
+                Button::Mouse(button) => {
+                    self.on_mouse_pressed(button);
+                },
             }
         });
     }
-    
+
     fn on_key_pressed(&mut self, key: keyboard::Key) {
         use piston::input::keyboard::Key;
         match key {
@@ -90,6 +100,51 @@ impl MainMenu {
             Key::Return => { self.done = true; },
             _ => {},
         }
+    }
+
+    fn on_mouse_pressed(&mut self, button: mouse::MouseButton) {
+        match button {
+            mouse::MouseButton::Left => {
+                if self.is_mouse_over_button() == 0 {
+                    self.done = true;
+                } else if self.is_mouse_over_button() == 1{
+                    self.done = true;
+                } else if self.is_mouse_over_button() == 2 {
+                    self.done = true;
+                } else {}
+            },
+            mouse::MouseButton::Right => {},
+            _ => {},
+        }
+    }
+
+    fn on_mouse_moved(&mut self, x: f64, y: f64) {
+        self.mouse_x = x;
+        self.mouse_y = y;
+
+        self.selected = self.is_mouse_over_button();
+    }
+
+    fn is_mouse_over_button(&mut self) -> u8 {
+        let (s_width, s_height) = self.single_player_texture.get_size();
+        let (m_width, m_height) = self.multiplayer_texture.get_size();
+        let (e_width, e_height) = self.exit_texture.get_size();
+
+        let mut selected: u8; // is the "button" selected
+        selected = -1;
+
+        if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (s_width as f64)) && 
+            self.mouse_y > 300.0 && self.mouse_y < (300.0 + (s_height as f64)) {
+            selected = 0;
+        } else if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (s_width as f64)) && 
+            self.mouse_y > 400.0 && self.mouse_y < (400.0 + (s_height as f64)) {
+            selected = 1;
+        } else if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (s_width as f64)) && 
+            self.mouse_y > 500.0 && self.mouse_y < (500.0 + (s_height as f64)) {
+            selected = 2;
+        }
+
+        selected
     }
 
     fn draw(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore) {
