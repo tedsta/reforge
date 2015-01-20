@@ -462,7 +462,7 @@ impl SpaceStars {
         for (i, stars) in self.stars.iter_mut().enumerate() {
             let i = i as f64;
             for star in stars.iter_mut() {
-                star.position[0] += 20.0*dt / i;
+                star.position[0] += (50.0/i)*dt;
                 //star.position[1] += 10.0*dt / i;
                 
                 if star.position[0] > 1280.0 {

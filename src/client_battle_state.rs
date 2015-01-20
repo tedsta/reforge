@@ -60,27 +60,25 @@ impl ClientBattleState {
             
             // Record start time
             let start_time = time::now().to_timespec();
-            let mut last_time = 0.0;
             
             // Run planning loop
             for e in Events::new(window) {
+                use std::io::timer::sleep;
+                use std::time::Duration;
+            
                 use piston::event;
                 use piston::input;
                 use piston::event::*;
 
                 let e: event::Event<input::Input> = e;
             
-                // Keep track of time, break when planning is done
+                // Calculate a bunch of time stuff
                 let current_time = time::now().to_timespec();
                 let elapsed_time = current_time - start_time;
+                let elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000.0;
                 if elapsed_time.num_seconds() >= 5 {
                     break;
                 }
-                
-                // Calculate elapsed time in seconds as f64
-                let elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000f64;
-                let dt = elapsed_seconds - last_time;
-                last_time = elapsed_seconds;
             
                 // Forward events to GUI
                 gui.event(&e, self.player_ship.borrow_mut().deref_mut());
@@ -88,7 +86,7 @@ impl ClientBattleState {
                 // Render GUI
                 e.render(|&mut: args: &RenderArgs| {
                     gl.draw([0, 0, args.width as i32, args.height as i32], |: c, gl| {
-                        gui.draw_planning(&c, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref(), elapsed_seconds, dt);
+                        gui.draw_planning(&c, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
                     });
                 });
             }
@@ -118,29 +116,27 @@ impl ClientBattleState {
             
             // Simulation
             let start_time = time::now().to_timespec();
-            let mut last_time = 0.0;
             let mut next_tick = 0;
             for e in Events::new(window) {
+                use std::io::timer::sleep;
+                use std::time::Duration;
+            
                 use piston::event;
                 use piston::input;
                 use piston::event::*;
 
                 let e: event::Event<input::Input> = e;
             
-                // Keep track of time, break when simulation is done
+                // Calculate a bunch of time stuff
                 let current_time = time::now().to_timespec();
                 let elapsed_time = current_time - start_time;
+                let elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000.0;
                 if elapsed_time.num_seconds() >= 5 {
                     break;
                 }
                 
                 // Calculate current tick
                 let tick = (elapsed_time.num_milliseconds() as u32)/(1000/TICKS_PER_SECOND);
-                
-                // Calculate elapsed time in seconds as f64
-                let elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000f64;
-                let dt = elapsed_seconds - last_time;
-                last_time = elapsed_seconds;
                 
                 // Simulate any new ticks
                 for t in range(next_tick, next_tick + tick-next_tick+1) {
@@ -154,7 +150,7 @@ impl ClientBattleState {
                 // Render GUI
                 e.render(|&mut: args: &RenderArgs| {
                     gl.draw([0, 0, args.width as i32, args.height as i32], |: c, gl| {
-                        gui.draw_simulating(&c, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref(), elapsed_seconds, dt);
+                        gui.draw_simulating(&c, gl, asset_store, &mut sim_visuals, self.player_ship.borrow().deref(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
                     });
                 });
             }
