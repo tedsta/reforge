@@ -25,6 +25,7 @@ use battle_type::BattleType;
 use client_battle_state::ClientBattleState;
 use main_menu::{MainMenu, MainMenuSelection};
 use net::{Client, OutPacket};
+use tutorial_state::TutorialState;
 
 // Server stuff
 use net::Server;
@@ -45,6 +46,7 @@ pub mod ship;
 pub mod sim;
 pub mod space_gui;
 pub mod sprite_sheet;
+pub mod tutorial_state;
 pub mod vec;
 
 // server stuff
@@ -146,6 +148,12 @@ fn main () {
                 
                 // Create the battle state
                 let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
+
+                battle.run(&window, &mut gl, &asset_store);
+            },
+            MainMenuSelection::Tutorial => {                
+                // Create the tutorial state
+                let mut battle = TutorialState::new();
 
                 battle.run(&window, &mut gl, &asset_store);
             },

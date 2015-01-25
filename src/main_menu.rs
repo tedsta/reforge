@@ -14,6 +14,7 @@ use net::{Client, OutPacket};
 pub enum MainMenuSelection {
     SinglePlayer,
     Multiplayer,
+    Tutorial,
     Exit,
 }
 
@@ -28,6 +29,7 @@ pub struct MainMenu {
     bg_texture: Texture,
     single_player_texture: Texture,
     multiplayer_texture: Texture,
+    tutorial_texture: Texture,
     exit_texture: Texture,
 }
 
@@ -41,6 +43,7 @@ impl MainMenu {
             bg_texture: Texture::from_path(&Path::new("content/textures/gui/main_menu.png")).unwrap(),
             single_player_texture: Texture::from_path(&Path::new("content/textures/gui/singleplayer.png")).unwrap(),
             multiplayer_texture: Texture::from_path(&Path::new("content/textures/gui/multiplayer.png")).unwrap(),
+            tutorial_texture: Texture::from_path(&Path::new("content/textures/gui/tutorial.png")).unwrap(),
             exit_texture: Texture::from_path(&Path::new("content/textures/gui/exit.png")).unwrap(),
         }
     }
@@ -94,9 +97,9 @@ impl MainMenu {
         use piston::input::keyboard::Key;
         match key {
             Key::Up if self.selected > 0 => { self.selected -= 1; },
-            Key::Up if self.selected == 0 => { self.selected = 2; },
-            Key::Down if self.selected < 2 => { self.selected += 1; },
-            Key::Down if self.selected == 2 => { self.selected = 0; },
+            Key::Up if self.selected == 0 => { self.selected = 3; },
+            Key::Down if self.selected < 3 => { self.selected += 1; },
+            Key::Down if self.selected == 3 => { self.selected = 0; },
             Key::Return => { self.done = true; },
             _ => {},
         }
@@ -107,9 +110,11 @@ impl MainMenu {
             mouse::MouseButton::Left => {
                 if self.is_mouse_over_button() == 0 {
                     self.done = true;
-                } else if self.is_mouse_over_button() == 1{
+                } else if self.is_mouse_over_button() == 1 {
                     self.done = true;
                 } else if self.is_mouse_over_button() == 2 {
+                    self.done = true;
+                } else if self.is_mouse_over_button() == 3 {
                     self.done = true;
                 } else {}
             },
@@ -128,6 +133,7 @@ impl MainMenu {
     fn is_mouse_over_button(&mut self) -> u8 {
         let (s_width, s_height) = self.single_player_texture.get_size();
         let (m_width, m_height) = self.multiplayer_texture.get_size();
+        let (t_width, t_height) = self.tutorial_texture.get_size();
         let (e_width, e_height) = self.exit_texture.get_size();
 
         let mut selected: u8; // is the "button" selected
@@ -139,9 +145,12 @@ impl MainMenu {
         } else if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (s_width as f64)) && 
             self.mouse_y > 400.0 && self.mouse_y < (400.0 + (s_height as f64)) {
             selected = 1;
-        } else if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (s_width as f64)) && 
-            self.mouse_y > 500.0 && self.mouse_y < (500.0 + (s_height as f64)) {
+        } else if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (t_width as f64)) && 
+            self.mouse_y > 500.0 && self.mouse_y < (500.0 + (t_height as f64)) {
             selected = 2;
+        } else if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (e_width as f64)) && 
+            self.mouse_y > 600.0 && self.mouse_y < (600.0 + (e_height as f64)) {
+            selected = 3;
         }
 
         selected
@@ -157,7 +166,8 @@ impl MainMenu {
         image(&self.bg_texture, context, gl);
         image(&self.single_player_texture, &context.trans(550.0, 300.0), gl);
         image(&self.multiplayer_texture, &context.trans(550.0, 400.0), gl);
-        image(&self.exit_texture, &context.trans(550.0, 500.0), gl);
+        image(&self.tutorial_texture, &context.trans(550.0, 500.0), gl);
+        image(&self.exit_texture, &context.trans(550.0, 600.0), gl);
 
         if self.selected == 0 {
             Image::new()
@@ -172,7 +182,12 @@ impl MainMenu {
         if self.selected == 2 {
             Image::new()
                 .set(Color([1.0, 0.0, 0.0, 1.0]))
-                .draw(&self.exit_texture, &context.trans(550.0, 500.0), gl);
+                .draw(&self.tutorial_texture, &context.trans(550.0, 500.0), gl);
+        }
+        if self.selected == 3 {
+            Image::new()
+                .set(Color([1.0, 0.0, 0.0, 1.0]))
+                .draw(&self.exit_texture, &context.trans(550.0, 600.0), gl);
         }
     }
 }
