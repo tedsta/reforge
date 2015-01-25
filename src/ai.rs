@@ -1,7 +1,7 @@
 use std::ops::{Deref, DerefMut};
 use std::rand::Rng;
 use std::rand;
-use std::intrinsics::TypeId;
+use std::any::TypeId;
 
 use ship::{Ship, ShipRef};
 use module::{IModule, EngineModule, ProjectileWeaponModule, ShieldModule};

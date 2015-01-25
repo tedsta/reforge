@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::intrinsics::TypeId;
+use std::any::TypeId;
 
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
