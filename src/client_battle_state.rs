@@ -43,7 +43,7 @@ impl ClientBattleState {
         use piston::window::ShouldClose;
         use piston::quack::Get;
     
-        let mut gui = SpaceGui::new(asset_store, &self.context, self.client.get_id());
+        let mut gui = SpaceGui::new(asset_store, &self.context, self.player_ship.borrow().id);
     
         let mut sim_visuals = SimVisuals::new();
     
@@ -54,9 +54,6 @@ impl ClientBattleState {
             // Add planning visuals
             sim_visuals.clear();
             self.context.add_plan_visuals(asset_store, &mut sim_visuals);
-            
-            // Store mouse coordinates
-            let (mut mouse_x, mut mouse_y) = (0f64, 0f64);
             
             // Record start time
             let start_time = time::now().to_timespec();

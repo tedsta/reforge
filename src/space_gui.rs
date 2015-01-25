@@ -51,9 +51,9 @@ pub struct SpaceGui<'a> {
 }
 
 impl<'a> SpaceGui<'a> {
-    pub fn new(asset_store: &AssetStore, context: &BattleContext, my_client_id: ClientId) -> SpaceGui<'a> {
+    pub fn new(asset_store: &AssetStore, context: &BattleContext, my_ship_id: ShipId) -> SpaceGui<'a> {
         let mut render_areas = vec!();
-        for (i, ship) in context.ships_list.iter().filter(|ship| ship.borrow().client_id != Some(my_client_id)).enumerate() {
+        for (i, ship) in context.ships_list.iter().filter(|ship| ship.borrow().id != my_ship_id).enumerate() {
             if i < 2 {
                 //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
                 //let texture = target.get_texture().expect("Failed to get render texture's texture");
