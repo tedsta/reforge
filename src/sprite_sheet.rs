@@ -28,6 +28,9 @@ pub struct SpriteSheet {
     
     // Time stuff
     animations: RingBuf<SpriteAnimation>,
+    
+    // Whether or not to center the texture
+    pub centered: bool,
 }
 
 impl SpriteSheet {
@@ -44,6 +47,7 @@ impl SpriteSheet {
             frame_height: texture_height/(rows as u32),
             current_frame: 0,
             animations: RingBuf::new(),
+            centered: false,
         }
     }
     
@@ -101,14 +105,32 @@ impl SpriteSheet {
     
     fn draw_current_frame(&self, context: &Context, gl: &mut Gl, x: f64, y: f64, rotation: f64) {
         use piston::quack::Set;
+        use piston::quack::Get;
         use piston::graphics::*;
+        use piston::vecmath::row_mat2x3_mul;
     
         let source_x = ((self.current_frame % (self.columns as u32)) as f64) * (self.frame_width as f64);
         let source_y = ((self.current_frame / (self.columns as u32)) as f64) * (self.frame_height as f64);
+        
+        let half_frame_x = (self.frame_width / 2) as f64;
+        let half_frame_y = (self.frame_height / 2) as f64;
+        
+        let (offset_x, offset_y) =
+            if self.centered {
+                (half_frame_x, half_frame_y)
+            } else {
+                (0.0, 0.0)
+            };
+        
+        let rotation_matrix = row_mat2x3_mul(vecmath::rotate_radians(rotation), vecmath::translate([-offset_x, -offset_y]));
+        
+        let context = context.trans(x, y);
+        let context::Transform(transform) = context.get();
+        let context = context.set(context::Transform(row_mat2x3_mul(transform, rotation_matrix)));
 
         Image::new()
             .set(SrcRect([source_x as i32, source_y as i32, self.frame_width as i32, self.frame_height as i32]))
-            .draw(self.texture.deref(), &context.trans(x, y), gl);
+            .draw(self.texture.deref(), &context, gl);
     }
     
     pub fn set_frame(&mut self, frame: u32) {

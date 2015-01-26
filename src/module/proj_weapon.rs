@@ -1,6 +1,7 @@
 use std::cmp;
 use std::io::File;
 use std::iter::repeat;
+use std::num::Float;
 use std::ops::DerefMut;
 use std::rand::Rng;
 use std::rand;
@@ -126,12 +127,12 @@ impl IModule for ProjectileWeaponModule {
                         projectile.offscreen_tick = start + 20;
                         projectile.hit_tick = start + 40;
                         
-                        projectile.fire_pos = base.get_render_position();
+                        projectile.fire_pos = base.get_render_center() + Vec2{x: 20.0, y: 0.0};
                         projectile.to_offscreen_pos = projectile.fire_pos + Vec2{x: 1500.0, y: 0.0};
                         projectile.from_offscreen_pos = Vec2{x: 1500.0, y: 0.0};
                         
                         if projectile.hit {
-                            projectile.hit_pos = target_module.borrow().get_base().get_render_position();
+                            projectile.hit_pos = target_module.borrow().get_base().get_render_center();
                         
                             events.add(projectile.hit_tick, box DamageEvent::new(target_ship.clone(), target_module.clone(), 1));
                         } else {
@@ -172,14 +173,20 @@ impl IModule for ProjectileWeaponModule {
             
                 let mut last_weapon_anim_end = 0.0;
             
-                for projectile in self.projectiles.iter() {                    
+                for projectile in self.projectiles.iter() {
+                    use std::f64::consts::FRAC_PI_2;
+                
                     // Set up interpolation stuff to send projectile from weapon to offscreen
                     let start_time = (projectile.fire_tick as f64)/(TICKS_PER_SECOND as f64);
                     let end_time = (projectile.offscreen_tick as f64)/(TICKS_PER_SECOND as f64);
                     let start_pos = projectile.fire_pos.clone();
                     let end_pos = projectile.to_offscreen_pos.clone();
                     
+                    let dist = end_pos - start_pos;
+                    let rotation = dist.y.atan2(dist.x);
+                    
                     let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
+                    laser_sprite.centered = true;
                     laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 4, 0.05));
                     
                     let weapon_anim_start = start_time;
@@ -198,8 +205,8 @@ impl IModule for ProjectileWeaponModule {
                         end_time: end_time,
                         start_pos: start_pos,
                         end_pos: end_pos,
-                        start_rot: 0.0,
-                        end_rot: 0.0,
+                        start_rot: rotation,
+                        end_rot: rotation,
                         sprite_sheet: laser_sprite,
                     });
                     
@@ -208,8 +215,12 @@ impl IModule for ProjectileWeaponModule {
                     let end_time = (projectile.hit_tick as f64)/(TICKS_PER_SECOND as f64);
                     let start_pos = projectile.from_offscreen_pos.clone();
                     let end_pos = projectile.hit_pos.clone();
+                    
+                    let dist = end_pos - start_pos;
+                    let rotation = dist.y.atan2(dist.x);
 
                     let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
+                    laser_sprite.centered = true;
                     laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 4, 0.05));
                     
                     // Add the simulation visual for projectile entering target screen
@@ -218,8 +229,8 @@ impl IModule for ProjectileWeaponModule {
                         end_time: end_time,
                         start_pos: start_pos,
                         end_pos: end_pos,
-                        start_rot: 0.0,
-                        end_rot: 0.0,
+                        start_rot: rotation,
+                        end_rot: rotation,
                         sprite_sheet: laser_sprite,
                     });
                     
@@ -228,6 +239,7 @@ impl IModule for ProjectileWeaponModule {
                     let end_time = start_time + 0.7;
                     
                     let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info(EXPLOSION_TEXTURE));
+                    explosion_sprite.centered = true;
                     explosion_sprite.add_animation(SpriteAnimation::PlayOnce(start_time, end_time, 0, 9));
                     
                     visuals.add(target_ship_id, 1, box SpriteVisual {

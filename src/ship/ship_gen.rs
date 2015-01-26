@@ -17,7 +17,7 @@ pub fn generate_ship(id: ShipId, level: u8) -> Ship {
     let mut ship = Ship::new(id, level);
     
     // Generate ship height
-    let height = rng.gen::<u8>()%(cmp::max(level, 2)) + cmp::max(1, level/2);
+    let height = cmp::min(8, rng.gen::<u8>()%(cmp::max(level, 2)) + cmp::max(1, level/2));
 
     // Generate some random module counts
     let mut num_power = cmp::max(height, rng.gen::<u8>()%(level + 1) + 1);

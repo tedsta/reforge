@@ -30,6 +30,10 @@ git = "https://github.com/pistondevelopers/sdl2_window"
 
 git = "https://github.com/pistondevelopers/opengl_graphics"
 
+[dependencies.freetype-rs]
+
+git = "https://github.com/pistondevelopers/freetype-rs"
+
 [dependencies.piston]
 
 git = "https://github.com/pistondevelopers/piston"
