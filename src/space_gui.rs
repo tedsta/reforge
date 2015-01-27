@@ -17,12 +17,21 @@ use ship::{Ship, ShipId, ShipRef};
 use sim::SimVisuals;
 use vec::{Vec2, Vec2f};
 
-static SHIP_OFFSET_X: f64 = 100.0;
+static SHIP_OFFSET_X: f64 = 80.0;
 static SHIP_OFFSET_Y: f64 = 170.0;
+
+static ENEMY_OFFSET_X: f64 = 80.0;
+static ENEMY_OFFSET_Y: f64 = 50.0;
 
 pub struct ModuleIcons {
     pub power_on_texture: Texture,
     pub power_off_texture: Texture,
+}
+
+pub struct StatsLabels {
+    hp_texture: Texture,
+    shield_texture: Texture,
+    power_texture: Texture,
 }
 
 pub struct SpaceGui<'a> {
@@ -40,9 +49,8 @@ pub struct SpaceGui<'a> {
     simulate_texture: Texture,
     win_texture: Texture,
     lose_texture: Texture,
-    hp_texture: Texture,
-    shield_texture: Texture,
-    power_texture: Texture,
+    
+    stats_labels: StatsLabels,
     
     module_icons: ModuleIcons,
     
@@ -54,17 +62,17 @@ impl<'a> SpaceGui<'a> {
     pub fn new(asset_store: &AssetStore, context: &BattleContext, my_ship_id: ShipId) -> SpaceGui<'a> {
         let mut render_areas = vec!();
         for (i, ship) in context.ships_list.iter().filter(|ship| ship.borrow().id != my_ship_id).enumerate() {
-            if i < 2 {
+            if i < 1 {
                 //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
                 //let texture = target.get_texture().expect("Failed to get render texture's texture");
-                let x = 700.0;
-                let y = (360.0 * (i as f64));
+                let x = 1280.0 - 5.0 - 560.0;
+                let y = 128.0;
                 render_areas.push(ShipRenderArea {
                     ship: Some(ship.clone()),
                     x: x,
                     y: y,
-                    width: 1280.0 - x,
-                    height: 360.0,
+                    width: 560.0,
+                    height: (720.0 - 20.0) - y,
                     //target: target,
                     //texture: texture,
                 });
@@ -81,9 +89,12 @@ impl<'a> SpaceGui<'a> {
             simulate_texture: Texture::from_path(&Path::new("content/textures/gui/simulating.png")).unwrap(),
             win_texture: Texture::from_path(&Path::new("content/textures/gui/win.png")).unwrap(),
             lose_texture: Texture::from_path(&Path::new("content/textures/gui/lose.png")).unwrap(),
-            hp_texture: Texture::from_path(&Path::new("content/textures/gui/hp_text.png")).unwrap(),
-            shield_texture: Texture::from_path(&Path::new("content/textures/gui/shield_text.png")).unwrap(),
-            power_texture: Texture::from_path(&Path::new("content/textures/gui/power_text.png")).unwrap(),
+            
+            stats_labels: StatsLabels {
+                hp_texture: Texture::from_path(&Path::new("content/textures/gui/hp_text.png")).unwrap(),
+                shield_texture: Texture::from_path(&Path::new("content/textures/gui/shield_text.png")).unwrap(),
+                power_texture: Texture::from_path(&Path::new("content/textures/gui/power_text.png")).unwrap(),
+            },
             
             module_icons: ModuleIcons {
                 power_on_texture: Texture::from_path(&Path::new("content/textures/gui/power_on_icon.png")).unwrap(),
@@ -130,73 +141,10 @@ impl<'a> SpaceGui<'a> {
         // Clear the screen
         clear([0.0; 4], gl);
         
-        // Draw the space background
-        self.space_bg.update(dt);
-        self.space_bg.draw(context, gl);
+        self.draw_screen(context, gl, asset_store, sim_visuals, client_ship, time, dt);
         
-        // Draw player ship
-        draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, sim_visuals, client_ship, time);
-        client_ship.draw_module_powered_icons(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, &self.module_icons);
-    
-        let mut enemy_alive = false;
-        for render_area in self.render_areas.iter_mut() {
-            if let Some(ref ship) = render_area.ship {
-                // TODO clear render texture
-                
-                Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([render_area.x, render_area.y, render_area.width, render_area.height], context, gl);
-            
-                {
-                    let context = context.trans(render_area.x, render_area.y).trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
-                    
-                    draw_ship(&context, gl, sim_visuals, ship.borrow().deref(), time);
-                }
-                
-                // TODO draw render texture
-            
-                if ship.borrow().state.get_hp() > 0 {
-                    enemy_alive = true;
-                }
-            }
-        }
-        
+        // Draw planning text
         image(&self.plan_texture, &context.trans(550.0, 10.0), gl);
-
-        // Draw labels for hp, shields and power meters
-        image(&self.hp_texture, &context.trans(5.0, 4.0), gl);
-        image(&self.shield_texture, &context.trans(5.0, 58.0), gl);
-        image(&self.power_texture, &context.trans(5.0, 110.0), gl);
-        
-        if self.module.is_none() {
-            let x = self.mouse_x - SHIP_OFFSET_X;
-            let y = self.mouse_y - SHIP_OFFSET_Y;
-
-            for module in client_ship.modules.iter() {
-                let mut module_borrowed = module.borrow_mut();
-            
-                // Get module position and size on screen
-                let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
-                let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
-                let module_x = module_x as f64;
-                let module_y = module_y as f64;
-                let module_w = module_w as f64;
-                let module_h = module_h as f64;
-                if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-                    if module_borrowed.get_base().plan_powered {
-                        Rectangle::new([0.0, 0.0, 1.0, 0.5])
-                            .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
-                    } else if client_ship.state.can_plan_activate_module(module_borrowed.get_base()) {
-                        Rectangle::new([1.0, 1.0, 0.0, 0.5])
-                            .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
-                    }
-                }
-            }
-        }
-        
-        if client_ship.state.get_hp() == 0 {
-            image(&self.lose_texture, &context.trans(550.0, 100.0), gl);
-        } else if !enemy_alive {
-            image(&self.win_texture, &context.trans(550.0, 100.0), gl);
-        }
     }
     
     pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64, dt: f64) {
@@ -205,6 +153,15 @@ impl<'a> SpaceGui<'a> {
         // Clear the screen
         clear([0.0; 4], gl);
         
+        self.draw_screen(context, gl, asset_store, sim_visuals, client_ship, time, dt);
+        
+        // Draw simulating text
+        image(&self.simulate_texture, &context.trans(550.0, 10.0), gl);
+    }
+    
+    fn draw_screen(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64, dt: f64) {
+        use piston::graphics::*;
+        
         // Draw the space background
         self.space_bg.update(dt);
         self.space_bg.draw(context, gl);
@@ -212,6 +169,7 @@ impl<'a> SpaceGui<'a> {
         // Draw player ship
         draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, sim_visuals, client_ship, time);
         client_ship.draw_module_powered_icons(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, &self.module_icons);
+        draw_stats(context, gl, &self.stats_labels, client_ship.deref());
     
         let mut enemy_alive = false;
         for render_area in self.render_areas.iter_mut() {
@@ -221,9 +179,10 @@ impl<'a> SpaceGui<'a> {
                 Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([render_area.x, render_area.y, render_area.width, render_area.height], context, gl);
             
                 {
-                    let context = context.trans(render_area.x, render_area.y).trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
+                    let context = context.trans(render_area.x, render_area.y);
                     
-                    draw_ship(&context, gl, sim_visuals, ship.borrow().deref(), time);
+                    draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, sim_visuals, ship.borrow().deref(), time);
+                    draw_stats(&context.trans(0.0, 450.0), gl, &self.stats_labels, ship.borrow().deref());
                 }
                 
                 // TODO draw render texture
@@ -233,13 +192,6 @@ impl<'a> SpaceGui<'a> {
                 }
             }
         }
-        
-        image(&self.simulate_texture, &context.trans(550.0, 10.0), gl);
-        
-        // Draw labels for hp, shields and power meters
-        image(&self.hp_texture, &context.trans(5.0, 4.0), gl);
-        image(&self.shield_texture, &context.trans(5.0, 58.0), gl);
-        image(&self.power_texture, &context.trans(5.0, 110.0), gl);
         
         if self.module.is_none() {
             let x = self.mouse_x - SHIP_OFFSET_X;
@@ -303,8 +255,8 @@ impl<'a> SpaceGui<'a> {
         }
         
         for render_area in self.render_areas.iter() {
-            let x = x - render_area.x - SHIP_OFFSET_X;
-            let y = y - render_area.y - SHIP_OFFSET_Y;
+            let x = x - render_area.x - ENEMY_OFFSET_X;
+            let y = y - render_area.y - ENEMY_OFFSET_Y;
             match render_area.ship.as_ref() {
                 Some(ship) => {
                     for module in ship.borrow().modules.iter() {
@@ -395,11 +347,14 @@ pub struct ShipRenderArea {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship: &Ship, time: f64) {
-    use piston::quack::Set;
-    use piston::graphics::*;
-
     sim_visuals.draw(context, gl, ship.id, time);
     ship.draw_module_hp(context, gl);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+fn draw_stats(context: &Context, gl: &mut Gl, stats_labels: &StatsLabels, ship: &Ship) {
+    use piston::graphics::*;
     
     let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
     let shield_rect = Rectangle::new([0.0, 0.0, 1.0, 1.0]);
@@ -407,24 +362,29 @@ fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship:
     let used_power_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
     
     for i in range(0, ship.state.get_hp()) {
-        hp_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-(SHIP_OFFSET_X - 5.0), -(SHIP_OFFSET_Y - 5.0) + 14.0), gl);
+        hp_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 14.0), gl);
     }
     
     for i in range(0, ship.state.shields) {
-        shield_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-(SHIP_OFFSET_X - 5.0), -(SHIP_OFFSET_Y - 5.0) + 68.0), gl);
+        shield_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 52.0), gl);
     }
     
     for i in range(0, ship.state.plan_power) {
-        power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-(SHIP_OFFSET_X - 5.0), -(SHIP_OFFSET_Y - 5.0) + 120.0), gl);
+        power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
     }
     
     for i in range(ship.state.plan_power, ship.state.power) {
-        used_power_rect.draw([(i as f64)*18.0, 0.0, 16.0, 32.0], &context.trans(-(SHIP_OFFSET_X - 5.0), -(SHIP_OFFSET_Y - 5.0) + 120.0), gl);
+        used_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
     }
+    
+    // Draw labels for hp, shields and power meters
+    image(&stats_labels.hp_texture, &context.trans(5.0, 4.0), gl);
+    image(&stats_labels.shield_texture, &context.trans(5.0, 42.0), gl);
+    image(&stats_labels.power_texture, &context.trans(5.0, 80.0), gl);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Yo dawk imma draw me some space stars
+// Yo dawg imma draw me some space stars
 
 struct Star {
     position: [f64; 2],
@@ -463,14 +423,10 @@ impl SpaceStars {
             let i = i as f64;
             for star in stars.iter_mut() {
                 star.position[0] += (50.0/i)*dt;
-                //star.position[1] += 10.0*dt / i;
                 
                 if star.position[0] > 1280.0 {
                     star.position[0] -= 1290.0
                 }
-                /*if star.position[1] > 720.0 {
-                    star.position[1] -= 730.0
-                }*/
             }
         }
     }
