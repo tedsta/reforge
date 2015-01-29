@@ -23,36 +23,38 @@ use asset_store::AssetStore;
 use battle_state::BattleContext;
 use battle_type::BattleType;
 use client_battle_state::ClientBattleState;
+use login::LoginPacket;
 use main_menu::{MainMenu, MainMenuSelection};
 use net::{Client, OutPacket};
 use tutorial_state::TutorialState;
 
 // Server stuff
-use net::Server;
 use battle_scheduler::BattleScheduler;
+use net::Server;
 
 #[macro_escape]
-pub mod util;
+mod util;
 
-pub mod assets;
-pub mod asset_store;
-pub mod battle_state;
-pub mod battle_type;
-pub mod client_battle_state;
-pub mod main_menu;
-pub mod module;
-pub mod net;
-pub mod ship;
-pub mod sim;
-pub mod space_gui;
-pub mod sprite_sheet;
-pub mod tutorial_state;
-pub mod vec;
+mod ai;
+mod assets;
+mod asset_store;
+mod battle_state;
+mod battle_type;
+mod client_battle_state;
+mod login;
+mod main_menu;
+mod module;
+mod net;
+mod ship;
+mod sim;
+mod space_gui;
+mod sprite_sheet;
+mod tutorial_state;
+mod vec;
 
 // server stuff
-pub mod ai;
-pub mod battle_scheduler;
-pub mod server_battle_state;
+mod battle_scheduler;
+mod server_battle_state;
 
 #[cfg(feature = "client")]
 fn main () {
@@ -119,24 +121,57 @@ fn main () {
                 battle.run(&window, &mut gl, &asset_store);
             },
             MainMenuSelection::Multiplayer => {
+                use std::str::StrExt;
+                use std::string::String;
+            
                 // Check for IP address in args
+                /*
                 let mut ip_address =
                     if os::args().len() > 1 {
                         os::args()[1].clone()
                     } else {
                         print!("IP Address: ");
-                        let mut ip_address = io::stdin().read_line().unwrap();
-                        ip_address.pop().unwrap(); // Remove newline at end
-                        ip_address.pop().unwrap(); // Remove newline at end
-                        ip_address
+                        String::from_str(
+                            io::stdin().read_line()
+                                .ok().expect("Failed to read IP address")
+                                .trim_left()
+                        )
                     };
                 ip_address.push_str(":30000"); // Add the port to the end of the address
+                */
+                let ip_address = String::from_str("localhost:30000");
+                
+                // Get credentials
+                print!("Username: ");
+                let username = String::from_str(
+                    io::stdin().read_line()
+                        .ok().expect("Failed to read username")
+                        .trim_left()
+                );
+                print!("Password: ");
+                let password = String::from_str(
+                    io::stdin().read_line()
+                        .ok().expect("Failed to read password")
+                        .trim_left()
+                );
+                
+                // Start a local server
+                let mut server = Server::new();
+                let login_slot = server.create_slot();
+                
+                Thread::spawn(move || {
+                    server.listen("localhost:30000");
+                });
+                
+                Thread::spawn(move || {
+                    login::run_login_server(login_slot);
+                });
                 
                 // Connect to server
                 let mut client = Client::new(ip_address.as_slice());
 
                 let mut packet = OutPacket::new();
-                packet.write(&BattleType::FreeForAll{num_players: 2});
+                packet.write(&LoginPacket{username: username, password: password});
                 client.send(&packet);
                 
                 // Receive the ships from the server

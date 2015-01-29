@@ -22,16 +22,16 @@ pub type ServerSlotId = u32;
 
 // Messages incoming to slots
 pub enum SlotInMsg {
-    Joined(ClientId),                        // Client joined slot (client_id)
-    Disconnected(ClientId),                  // Client was disconnected from server (client_id)
+    Joined(ClientId),                   // Client joined slot (client_id)
+    Disconnected(ClientId),             // Client was disconnected from server (client_id)
     ReceivedPacket(ClientId, InPacket), // Received packet from client (client_id, packet)
 }
 
 // Messages outgoing from slots
 pub enum SlotOutMsg {
-    SendPacket(ServerSlotId, ClientId, OutPacket), // Send a packet to a client (my_slot_id, client_id, packet)
-    BroadcastPacket(ServerSlotId, OutPacket), // Send packet to all clients in slot (my_slot_id, packet)
-    CreateSlot(ServerSlotId),            // Tell the server to make a new ServerSlot (slot_id)
+    SendPacket(ServerSlotId, ClientId, OutPacket),        // Send a packet to a client (my_slot_id, client_id, packet)
+    BroadcastPacket(ServerSlotId, OutPacket),             // Send packet to all clients in slot (my_slot_id, packet)
+    CreateSlot(ServerSlotId),                             // Tell the server to make a new ServerSlot (slot_id)
     TransferClient(ServerSlotId, ClientId, ServerSlotId), // Tell the server to transfer a client to a different slot
 }
 
