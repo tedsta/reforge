@@ -1,13 +1,23 @@
+use std::collections::HashMap;
+use std::sync::mpsc::Receiver;
+
 use net::{
     ServerSlot,
     SlotInMsg,
 };
 
-pub struct StarMapServer;
+#[derive(PartialEq, Eq, Hash, RustcEncodable, RustcDecodable)]
+pub struct SectorId(u32);
+
+pub struct StarMapServer {
+    sectors: HashMap<SectorId, Receiver<()>>,
+}
 
 impl StarMapServer {
     pub fn new() -> StarMapServer {
-        StarMapServer
+        StarMapServer {
+            sectors: HashMap::new(),
+        }
     }
     
     pub fn run(&mut self, slot: ServerSlot) {
