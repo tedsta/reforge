@@ -7,17 +7,24 @@ extern crate time;
 extern crate "rustc-serialize" as rustc_serialize;
 
 // Piston stuff
-extern crate piston;
 extern crate sdl2_window;
 extern crate opengl_graphics;
+extern crate graphics;
+extern crate event;
+extern crate input;
+extern crate quack;
+extern crate shader_version;
+extern crate vecmath;
+extern crate window;
 
-use std::io;
+use std::old_io;
 use std::os;
 use std::cell::RefCell;
 use std::thread::Thread;
 
 use sdl2_window::Sdl2Window;
 use opengl_graphics::Gl;
+use window::WindowSettings;
 
 use asset_store::AssetStore;
 use battle_state::BattleContext;
@@ -55,15 +62,16 @@ mod vec;
 // server stuff
 mod battle_scheduler;
 mod server_battle_state;
+mod star_map_server;
 
 #[cfg(feature = "client")]
 fn main () {
-    let opengl = piston::shader_version::OpenGL::_2_1;
+    let opengl = shader_version::OpenGL::_2_1;
     
     // Create an SDL window.
     let window = Sdl2Window::new(
         opengl,
-        piston::WindowSettings {
+        WindowSettings {
             title: "reForge".to_string(),
             size: [1280, 720],
             samples: 0,
@@ -144,13 +152,13 @@ fn main () {
                 // Get credentials
                 print!("Username: ");
                 let username = String::from_str(
-                    io::stdin().read_line()
+                    old_io::stdin().read_line()
                         .ok().expect("Failed to read username")
                         .trim_left()
                 );
                 print!("Password: ");
                 let password = String::from_str(
-                    io::stdin().read_line()
+                    old_io::stdin().read_line()
                         .ok().expect("Failed to read password")
                         .trim_left()
                 );

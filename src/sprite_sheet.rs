@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::num::Float;
 use std::ops::{Deref};
 
-use piston::graphics::{Context, ImageSize};
+use graphics::{Context, ImageSize};
 use opengl_graphics::{Gl, Texture};
 
 use assets::{TextureId, SpriteInfo};
@@ -104,10 +104,10 @@ impl SpriteSheet {
     }
     
     fn draw_current_frame(&self, context: &Context, gl: &mut Gl, x: f64, y: f64, rotation: f64) {
-        use piston::quack::Set;
-        use piston::quack::Get;
-        use piston::graphics::*;
-        use piston::vecmath::row_mat2x3_mul;
+        use quack::Set;
+        use quack::Get;
+        use graphics::*;
+        use vecmath::row_mat2x3_mul;
     
         let source_x = ((self.current_frame % (self.columns as u32)) as f64) * (self.frame_width as f64);
         let source_y = ((self.current_frame / (self.columns as u32)) as f64) * (self.frame_height as f64);

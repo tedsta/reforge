@@ -30,13 +30,38 @@ git = "https://github.com/pistondevelopers/sdl2_window"
 
 git = "https://github.com/pistondevelopers/opengl_graphics"
 
+[dependencies.piston2d-graphics]
+
+git = "https://github.com/pistondevelopers/graphics"
+
+[dependencies.pistoncore-event]
+
+git = "https://github.com/pistondevelopers/event"
+
+[dependencies.pistoncore-input]
+
+git = "https://github.com/pistondevelopers/input"
+
+[dependencies.quack]
+
+git = "https://github.com/pistondevelopers/quack"
+
+[dependencies.shader_version]
+
+git = "https://github.com/pistondevelopers/shader_version"
+
+[dependencies.pistoncore-window]
+
+git = "https://github.com/pistondevelopers/window"
+
+[dependencies.vecmath]
+
+git = "https://github.com/pistondevelopers/vecmath"
+
 [dependencies.freetype-rs]
 
 git = "https://github.com/pistondevelopers/freetype-rs"
 
-[dependencies.piston]
-
-git = "https://github.com/pistondevelopers/piston"
 
 [dependencies.bincode]
 

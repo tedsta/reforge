@@ -3,9 +3,9 @@ use std::rand;
 use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
 
-use piston::event::{Events, GenericEvent, RenderArgs};
-use piston::graphics::{Context, Rectangle};
-use piston::input::{keyboard, mouse, Button};
+use event::{Events, GenericEvent, RenderArgs};
+use graphics::{Context, Rectangle};
+use input::{keyboard, mouse, Button};
 use opengl_graphics::{Gl, Texture};
 
 use assets::GUI_TEXTURE;
@@ -106,7 +106,7 @@ impl<'a> SpaceGui<'a> {
     }
     
     pub fn event<E: GenericEvent>(&mut self, e: &E, client_ship: &mut Ship) {
-        use piston::event::*;
+        use event::*;
         
         if client_ship.state.get_hp() == 0 {
             return;
@@ -136,7 +136,7 @@ impl<'a> SpaceGui<'a> {
     }
     
     pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64, dt: f64) {
-        use piston::graphics::*;
+        use graphics::*;
         
         // Clear the screen
         clear([0.0; 4], gl);
@@ -148,7 +148,7 @@ impl<'a> SpaceGui<'a> {
     }
     
     pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64, dt: f64) {
-        use piston::graphics::*;
+        use graphics::*;
         
         // Clear the screen
         clear([0.0; 4], gl);
@@ -160,7 +160,7 @@ impl<'a> SpaceGui<'a> {
     }
     
     fn draw_screen(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64, dt: f64) {
-        use piston::graphics::*;
+        use graphics::*;
         
         // Draw the space background
         self.space_bg.update(dt);
@@ -354,7 +354,7 @@ fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 fn draw_stats(context: &Context, gl: &mut Gl, stats_labels: &StatsLabels, ship: &Ship) {
-    use piston::graphics::*;
+    use graphics::*;
     
     let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
     let shield_rect = Rectangle::new([0.0, 0.0, 1.0, 1.0]);
@@ -432,7 +432,7 @@ impl SpaceStars {
     }
     
     pub fn draw(&self, context: &Context, gl: &mut Gl) {
-        use piston::graphics::*;
+        use graphics::*;
         
         let star_rect = Rectangle::new([1.0, 1.0, 1.0, 1.0]);
         for stars in self.stars.iter() {

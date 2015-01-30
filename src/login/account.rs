@@ -6,6 +6,7 @@ use ship::Ship;
 
 pub type AccountBox = Box<Account>;
 
+#[derive(PartialEq)]
 pub enum LoginError {
     NoSuchAccount,
     WrongPassword,

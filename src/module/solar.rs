@@ -1,5 +1,5 @@
 #[cfg(feature = "client")]
-use piston::graphics::Context;
+use graphics::Context;
 #[cfg(feature = "client")]
 use opengl_graphics::Gl;
 

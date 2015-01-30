@@ -1,5 +1,5 @@
 use std::cmp;
-use std::io::File;
+use std::old_io::File;
 use std::iter::repeat;
 use std::num::Float;
 use std::ops::DerefMut;
@@ -7,7 +7,7 @@ use std::rand::Rng;
 use std::rand;
 
 #[cfg(feature = "client")]
-use piston::graphics::Context;
+use graphics::Context;
 #[cfg(feature = "client")]
 use opengl_graphics::Gl;
 

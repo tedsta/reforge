@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 
-use piston::event::Events;
+use event::Events;
 use opengl_graphics::Gl;
 use sdl2_window::Sdl2Window;
 
@@ -40,8 +40,8 @@ impl ClientBattleState {
     }
     
     pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore) {
-        use piston::window::ShouldClose;
-        use piston::quack::Get;
+        use window::ShouldClose;
+        use quack::Get;
     
         let mut gui = SpaceGui::new(asset_store, &self.context, self.player_ship.borrow().id);
     
@@ -60,12 +60,12 @@ impl ClientBattleState {
             
             // Run planning loop
             for e in Events::new(window) {
-                use std::io::timer::sleep;
+                use std::old_io::timer::sleep;
                 use std::time::Duration;
             
-                use piston::event;
-                use piston::input;
-                use piston::event::*;
+                use event;
+                use input;
+                use event::*;
 
                 let e: event::Event<input::Input> = e;
             
@@ -115,12 +115,12 @@ impl ClientBattleState {
             let start_time = time::now().to_timespec();
             let mut next_tick = 0;
             for e in Events::new(window) {
-                use std::io::timer::sleep;
+                use std::old_io::timer::sleep;
                 use std::time::Duration;
             
-                use piston::event;
-                use piston::input;
-                use piston::event::*;
+                use event;
+                use input;
+                use event::*;
 
                 let e: event::Event<input::Input> = e;
             

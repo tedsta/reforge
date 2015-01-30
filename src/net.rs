@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use std::io::{TcpListener, TcpStream, Acceptor, Listener};
-use std::io::{MemReader, MemWriter, IoResult, IoError, TimedOut};
+use std::old_io::{TcpListener, TcpStream, Acceptor, Listener};
+use std::old_io::{MemReader, MemWriter, IoResult, IoError, TimedOut};
 use std::result::Result;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread::Thread;
