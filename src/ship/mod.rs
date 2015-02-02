@@ -401,3 +401,60 @@ impl Ship {
         }
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct StoredShip {
+    pub id: ShipId,
+    pub client_id: Option<ClientId>,
+    pub state: ShipState,
+    pub modules: Vec<ModuleBox>,
+    
+    // Ship dimensions in module blocks
+    width: u8,
+    height: u8,
+    
+    pub level: u8, // TODO: This is very temporary only for IC US semifinals
+}
+
+impl StoredShip {
+    pub fn new(id: ShipId, level: u8) -> StoredShip {
+        StoredShip {
+            id: id,
+            client_id: None,
+            state: ShipState::new(),
+            modules: vec!(),
+            
+            width: 0,
+            height: 0,
+            
+            level: level,
+        }
+    }
+    
+    pub fn from_ship(ship: Ship) -> StoredShip {
+        use std::rc::try_unwrap;
+    
+        StoredShip {
+            id: ship.id,
+            client_id: ship.client_id,
+            state: ship.state,
+            modules: ship.modules.into_iter().map(|m| try_unwrap(m).ok().expect("Failed to unwrap Module").into_inner()).collect(),
+            width: ship.width,
+            height: ship.height,
+            level: ship.level,
+        }
+    }
+    
+    pub fn to_ship(self) -> Ship {
+        Ship {
+            id: self.id,
+            client_id: self.client_id,
+            state: self.state,
+            modules: self.modules.into_iter().map(|m| Rc::new(RefCell::new(m))).collect(),
+            width: self.width,
+            height: self.height,
+            level: self.level,
+        }
+    }
+}
