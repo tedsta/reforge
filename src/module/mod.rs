@@ -55,8 +55,27 @@ pub trait IModule {
     ////////////////////
     // GUI stuff
     
-    fn on_icon_clicked(&mut self, base: &mut ModuleBase) -> bool;
-    fn on_module_clicked(&mut self, base: &mut ModuleBase, ship: &ShipRef, module: &ModuleRef) -> bool;
+    fn get_target_mode(&self, base: &ModuleBase) -> Option<TargetMode>;
+    fn inject_target_data(&mut self, base: &mut ModuleBase, target_data: TargetData);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[derive(PartialEq)]
+pub enum TargetMode {
+    TargetShip,
+    TargetModule,
+    OwnModule,
+    AnyModule,
+    Beam,
+}
+
+pub enum TargetData {
+    TargetShip(ShipRef),
+    TargetModule(ShipRef, ModuleRef),
+    OwnModule(ShipRef, ModuleRef),
+    AnyModule(ShipRef, ModuleRef),
+    Beam,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -102,8 +121,8 @@ pub trait IModuleRef {
     ////////////////////
     // GUI stuff
     
-    fn on_icon_clicked(&mut self) -> bool;
-    fn on_module_clicked(&mut self, ship: &ShipRef, module: &ModuleRef) -> bool;
+    fn get_target_mode(&self) -> Option<TargetMode>;
+    fn inject_target_data(&mut self, target_data: TargetData);
 }
 
 impl<M> IModuleRef for Module<M>
@@ -178,12 +197,12 @@ impl<M> IModuleRef for Module<M>
         self.module.on_deactivated(&mut self.base, ship_state, modules);
     }
     
-    fn on_icon_clicked(&mut self) -> bool {
-        self.module.on_icon_clicked(&mut self.base)
+    fn get_target_mode(&self) -> Option<TargetMode> {
+        self.module.get_target_mode(&self.base)
     }
     
-    fn on_module_clicked(&mut self, ship: &ShipRef, module: &ModuleRef) -> bool {
-        self.module.on_module_clicked(&mut self.base, ship, module)
+    fn inject_target_data(&mut self, target_data: TargetData) {
+        self.module.inject_target_data(&mut self.base, target_data);
     }
 }
 

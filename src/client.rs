@@ -21,6 +21,7 @@ use std::old_io;
 use std::os;
 use std::cell::RefCell;
 use std::thread::Thread;
+use std::sync::mpsc::channel;
 
 use sdl2_window::Sdl2Window;
 use opengl_graphics::Gl;
@@ -66,7 +67,7 @@ mod star_map_server;
 
 #[cfg(feature = "client")]
 fn main () {
-    let opengl = shader_version::OpenGL::_2_1;
+    let opengl = shader_version::OpenGL::_3_2;
     
     // Create an SDL window.
     let window = Sdl2Window::new(
@@ -166,14 +167,19 @@ fn main () {
                 // Start a local server
                 let mut server = Server::new();
                 let login_slot = server.create_slot();
+                //let (star_map_account_sender, star_map_account_receiver) = channel();
                 
                 Thread::spawn(move || {
                     server.listen("localhost:30000");
                 });
                 
                 Thread::spawn(move || {
-                    login::run_login_server(login_slot);
+                    login::run_login_server(login_slot/*, star_map_account_sender*/);
                 });
+                
+                /*Thread::spawn(move || {
+                    login::run_login_server(login_slot, star_map_account_sender);
+                });*/
                 
                 // Connect to server
                 let mut client = Client::new(ip_address.as_slice());

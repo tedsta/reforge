@@ -11,6 +11,7 @@ use opengl_graphics::{Gl, Texture};
 use assets::GUI_TEXTURE;
 use asset_store::AssetStore;
 use battle_state::BattleContext;
+use module;
 use module::{IModule, ModuleRef};
 use net::ClientId;
 use ship::{Ship, ShipId, ShipRef};
@@ -39,7 +40,7 @@ pub struct SpaceGui<'a> {
     render_areas: Vec<ShipRenderArea>,
     
     // Selected module
-    module: Option<ModuleRef>,
+    selection: Option<(ModuleRef, module::TargetMode)>,
     
     mouse_x: f64,
     mouse_y: f64,
@@ -81,7 +82,7 @@ impl<'a> SpaceGui<'a> {
     
         SpaceGui {
             render_areas: render_areas,
-            module: None,
+            selection: None,
             mouse_x: 0.0,
             mouse_y: 0.0,
             
@@ -193,7 +194,8 @@ impl<'a> SpaceGui<'a> {
             }
         }
         
-        if self.module.is_none() {
+        // If not currently selecting a module, highlight modules the user mouses-over
+        if self.selection.is_none() {
             let x = self.mouse_x - SHIP_OFFSET_X;
             let y = self.mouse_y - SHIP_OFFSET_Y;
 
@@ -230,7 +232,7 @@ impl<'a> SpaceGui<'a> {
     }
     
     fn on_mouse_left_pressed(&mut self, x: f64, y: f64, client_ship: &mut Ship) {
-        if self.module.is_none() {
+        if self.selection.is_none() {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
 
@@ -246,7 +248,10 @@ impl<'a> SpaceGui<'a> {
                 let module_h = module_h as f64;
                 if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
                     if module_borrowed.get_base().plan_powered {
-                        self.module = Some(module.clone());
+                        if let Some(target_mode) = module_borrowed.get_target_mode() {
+                            // Select this module and begin targeting
+                            self.selection = Some((module.clone(), target_mode));
+                        }
                     } else if client_ship.state.can_plan_activate_module(module_borrowed.get_base()) {
                         client_ship.state.activate_module(module_borrowed.get_base_mut());
                     }
@@ -254,39 +259,40 @@ impl<'a> SpaceGui<'a> {
             }
         }
         
-        for render_area in self.render_areas.iter() {
-            let x = x - render_area.x - ENEMY_OFFSET_X;
-            let y = y - render_area.y - ENEMY_OFFSET_Y;
-            match render_area.ship.as_ref() {
-                Some(ship) => {
-                    for module in ship.borrow().modules.iter() {
-                        // Get module position and size on screen
-                        let Vec2{x: module_x, y: module_y} = module.borrow().get_base().get_render_position();
-                        let Vec2{x: module_w, y: module_h} = module.borrow().get_base().get_render_size();
-                        let module_x = module_x as f64;
-                        let module_y = module_y as f64;
-                        let module_w = module_w as f64;
-                        let module_h = module_h as f64;
-                        if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-                            if self.module.is_some() {
-                                {
-                                    // Inner scope for module ref so we can clear it after
-                                    let selected_module = self.module.as_ref().unwrap();
-                                    selected_module.borrow_mut().on_module_clicked(ship, module);
-                                }
-                                self.module = None;
-                                return;
+        let mut clear_selection = false;
+        
+        if let Some(ref selection) = self.selection {
+            let &(ref selected_module, ref target_mode) = selection;
+            if *target_mode == module::TargetMode::TargetModule {
+                for render_area in self.render_areas.iter() {
+                    let x = x - render_area.x - ENEMY_OFFSET_X;
+                    let y = y - render_area.y - ENEMY_OFFSET_Y;
+                    if let Some(ref ship) = render_area.ship {
+                        for module in ship.borrow().modules.iter() {
+                            // Get module position and size on screen
+                            let Vec2{x: module_x, y: module_y} = module.borrow().get_base().get_render_position();
+                            let Vec2{x: module_w, y: module_h} = module.borrow().get_base().get_render_size();
+                            let module_x = module_x as f64;
+                            let module_y = module_y as f64;
+                            let module_w = module_w as f64;
+                            let module_h = module_h as f64;
+                            if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
+                                selected_module.borrow_mut().inject_target_data(module::TargetData::TargetModule(ship.clone(), module.clone()));
+                                clear_selection = true;
                             }
                         }
                     }
-                },
-                None => {},
+                }
             }
+        }
+        
+        if clear_selection {
+            self.selection = None;
         }
     }
     
     fn on_mouse_right_pressed(&mut self, x: f64, y: f64, client_ship: &mut Ship) {
-        if self.module.is_none() {
+        if self.selection.is_none() {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
 
@@ -310,7 +316,7 @@ impl<'a> SpaceGui<'a> {
             }
         }
         
-        self.module = None;
+        self.selection = None;
     }
     
     pub fn try_lock(&mut self, ship: &ShipRef) {

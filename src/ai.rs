@@ -4,6 +4,7 @@ use std::rand;
 use std::any::TypeId;
 
 use ship::{Ship, ShipRef};
+use module;
 use module::{IModule, EngineModule, ProjectileWeaponModule, ShieldModule};
 
 pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
@@ -69,7 +70,7 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
                 let target_ship = &enemy_ships[rng.gen::<uint>() % enemy_ships.len()];
                 let target_module = &target_ship.borrow().modules[rng.gen::<uint>() % target_ship.borrow().modules.len()];
             
-                module_borrowed.on_module_clicked(target_ship, target_module);
+                module_borrowed.inject_target_data(module::TargetData::TargetModule(target_ship.clone(), target_module.clone()));
             }
         }
     }

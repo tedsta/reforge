@@ -5,6 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
 use assets::{ENGINE_TEXTURE, PROPULSION_TEXTURE};
+use module;
 use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
@@ -87,12 +88,11 @@ impl IModule for EngineModule {
         ship_state.thrust -= 1;
     }
     
-    fn on_icon_clicked(&mut self, base: &mut ModuleBase) -> bool {
-        false
+    fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
+        None
     }
     
-    fn on_module_clicked(&mut self, base: &mut ModuleBase, ship: &ShipRef, module: &ModuleRef) -> bool {
-        false
+    fn inject_target_data(&mut self, base: &mut ModuleBase, target_data: module::TargetData) {
     }
 }
 

@@ -13,9 +13,11 @@ use opengl_graphics::Gl;
 
 use assets::{WEAPON_TEXTURE, LASER_TEXTURE, EXPLOSION_TEXTURE, TextureId};
 use battle_state::{BattleContext, TICKS_PER_SECOND};
+use module;
 use module::{IModule, Module, ModuleRef, ModuleBase, ModuleBox};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipRef, ShipState};
+use space_gui;
 use sim::{SimEvent, SimEventAdder};
 use vec::{Vec2, Vec2f};
 
@@ -323,13 +325,14 @@ impl IModule for ProjectileWeaponModule {
     fn on_deactivated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
     }
     
-    fn on_icon_clicked(&mut self, base: &mut ModuleBase) -> bool {
-        true
+    fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
+        Some(module::TargetMode::TargetModule)
     }
     
-    fn on_module_clicked(&mut self, base: &mut ModuleBase, ship: &ShipRef, module: &ModuleRef) -> bool {
-        self.target = Some((ship.clone(), module.clone()));
-        false
+    fn inject_target_data(&mut self, base: &mut ModuleBase, target_data: module::TargetData) {
+        if let module::TargetData::TargetModule(ship, module) = target_data {
+            self.target = Some((ship.clone(), module.clone()));
+        }
     }
 }
 

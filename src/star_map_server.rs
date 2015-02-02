@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 
+use login::AccountBox;
 use net::{
     ServerSlot,
     SlotInMsg,
@@ -20,7 +21,7 @@ impl StarMapServer {
         }
     }
     
-    pub fn run(&mut self, slot: ServerSlot) {
+    pub fn run(&mut self, slot: ServerSlot/*, account_receiver: Receiver<AccountBox>*/) {
         loop {
             match slot.receive() {
                 SlotInMsg::Joined(client_id) => {
