@@ -227,7 +227,7 @@ impl Ship {
         }
         
         // Add the module
-        self.modules.push(Rc::new(RefCell::new(Box::new(module))));
+        self.modules.push(Rc::new(RefCell::new(ModuleBox::new(module))));
         true
     }
     

@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::any::TypeId;
+use std::ops::{Deref, DerefMut};
 
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
@@ -80,7 +81,7 @@ pub enum TargetData {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub type ModuleBox = Box<IModuleRef + 'static>;
+pub struct ModuleBox(Box<IModuleRef + 'static>);
 pub type ModuleRef = Rc<RefCell<ModuleBox>>;
 
 #[derive(RustcEncodable, RustcDecodable)]
@@ -206,6 +207,51 @@ impl<M> IModuleRef for Module<M>
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*pub type ModuleStoredBox = Box<IModuleStored + 'static>;
+
+pub struct ModuleStored<M: IModule> {
+    base: ModuleBaseStored,
+    module: M,
+}
+
+pub trait IModuleStored {
+    fn from_module(module: ModuleBox) -> ModuleStoredBox;
+    fn to_module(self) -> ModuleBox;
+}
+
+impl<M> IModuleStored for ModuleStored<M>
+    where M: IModule + 'static
+{
+    fn from_module(module: ModuleBox) -> ModuleStoredBox {
+        let type_id = module.get_type_id();
+        
+        if type_id == TypeId::of::<ProjectileWeaponModule>() {
+            
+        }
+        else if type_id == TypeId::of::<ShieldModule>() { Shield }
+        else if type_id == TypeId::of::<EngineModule>() { Engine }
+        else if type_id == TypeId::of::<SolarModule>() { Solar }
+        else if type_id == TypeId::of::<CommandModule>() { Command }
+        else { unreachable!() };
+    
+        Box::new(ModuleStored {
+            base: ModuleBaseStored::from_module_base(module.get_base()),
+            module: // TODO
+        });
+    }
+    
+    fn to_module(self) -> ModuleBox {
+        Box::new(Module {
+            base: self.base.to_module_base(),
+            module: // TODO
+        });
+    }
+}*/
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #[derive(RustcEncodable, RustcDecodable)]
 enum ModuleClass {
     ProjectileWeapon,
@@ -213,6 +259,45 @@ enum ModuleClass {
     Engine,
     Solar,
     Command,
+}
+
+// Some downcasting helper methods
+impl ModuleBox {
+    pub fn new<M>(module: M) -> ModuleBox
+        where M: IModuleRef + 'static
+    {
+        ModuleBox(Box::new(module))
+    }
+
+    unsafe fn unpack<M: IModule+Clone>(self) -> (ModuleBase, M) {
+        use std::mem;
+        use std::raw;
+        
+        // Get the Module<M> trait object
+        let module_to: raw::TraitObject = mem::transmute(self.deref());
+        
+        // Get underlying module from IModule trait object
+        let module: &Module<M> = mem::transmute(module_to.data);
+        
+        // TODO: Optimize?
+        (module.base.clone(), module.module.clone())
+    }
+}
+
+impl Deref for ModuleBox {
+    type Target = IModuleRef+'static;
+
+    fn deref<'a>(&'a self) -> &'a (IModuleRef+'static) {
+        let &ModuleBox(ref module_box) = self;
+        module_box.deref()
+    }
+}
+
+impl DerefMut for ModuleBox {
+    fn deref_mut<'a>(&'a mut self) -> &'a mut (IModuleRef+'static) {
+        let &mut ModuleBox(ref mut module_box) = self;
+        module_box.deref_mut()
+    }
 }
 
 impl Decodable for ModuleBox {
@@ -223,23 +308,23 @@ impl Decodable for ModuleBox {
         let base: ModuleBase = try!(Decodable::decode(d));
         
         match module_class {
-            ProjectileWeapon => Ok(Box::new(Module {
+            ProjectileWeapon => Ok(ModuleBox::new(Module {
                 base: base,
                 module: try!(<ProjectileWeaponModule as Decodable>::decode(d)),
             })),
-            Shield => Ok(Box::new(Module {
+            Shield => Ok(ModuleBox::new(Module {
                 base: base,
                 module: try!(<ShieldModule as Decodable>::decode(d)),
             })),
-            Engine => Ok(Box::new(Module {
+            Engine => Ok(ModuleBox::new(Module {
                 base: base,
                 module: try!(<EngineModule as Decodable>::decode(d)),
             })),
-            Solar => Ok(Box::new(Module {
+            Solar => Ok(ModuleBox::new(Module {
                 base: base,
                 module: try!(<SolarModule as Decodable>::decode(d)),
             })),
-            Command => Ok(Box::new(Module {
+            Command => Ok(ModuleBox::new(Module {
                 base: base,
                 module: try!(<CommandModule as Decodable>::decode(d)),
             })),
@@ -295,7 +380,7 @@ impl Encodable for ModuleBox {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(RustcEncodable, RustcDecodable)]
+#[derive(RustcEncodable, RustcDecodable, Clone)]
 pub struct ModuleBase {
     // Module position/size stuff
     pub x: u8,
@@ -385,5 +470,64 @@ impl ModuleBase {
     
     pub fn get_render_center(&self) -> Vec2f {
         self.get_render_position() + (self.get_render_size()/2.0)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct ModuleBaseStored {
+    // Module position/size stuff
+    pub x: u8,
+    pub y: u8,
+    pub width: u8,
+    pub height: u8,
+
+    // Module stats
+    power: u8,     // Power consumption
+    hp: u8,        // Total current HP of module, including armor
+    min_hp: u8,    // Minimum HP for the module to still operate
+    max_hp: u8,    // Maximum HP of module, including armor
+    
+    pub powered: bool,      // If the module consumes power, whether or not it's currently powered (useless otherwise)
+    
+    pub index: u32, // Array index in ship. Used for referencing modules across network.
+}
+
+impl ModuleBaseStored {
+    pub fn from_module_base(module_base: ModuleBase) -> ModuleBaseStored {
+        ModuleBaseStored {
+            x: module_base.x,
+            y: module_base.y,
+            width: module_base.width,
+            height: module_base.height,
+            
+            power: module_base.power,
+            hp: module_base.hp,
+            min_hp: module_base.min_hp,
+            max_hp: module_base.max_hp,
+            
+            powered: module_base.powered,
+            
+            index: module_base.index,
+        }
+    }
+    
+    pub fn to_module_base(self) -> ModuleBase {
+        ModuleBase {
+            x: self.x,
+            y: self.y,
+            width: self.width,
+            height: self.height,
+            
+            power: self.power,
+            hp: self.hp,
+            min_hp: self.min_hp,
+            max_hp: self.max_hp,
+            
+            powered: self.powered,
+            plan_powered: self.powered,
+            
+            index: self.index,
+        }
     }
 }

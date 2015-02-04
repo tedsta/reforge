@@ -20,7 +20,7 @@ use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(feature = "client")]
 use asset_store::AssetStore;
 
-#[derive(RustcEncodable, RustcDecodable)]
+#[derive(RustcEncodable, RustcDecodable, Clone)]
 pub struct ShieldModule;
 
 impl ShieldModule {

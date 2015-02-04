@@ -12,7 +12,7 @@ use super::account::{
 };
 use super::login_packet::LoginPacket;
 
-pub fn run_login_server(slot: ServerSlot/*, star_map_chan: Sender<AccountBox>*/) {
+pub fn run_login_server(slot: ServerSlot, star_map_chan: Sender<AccountBox>) {
     let mut account_manager = AccountManager::new();
 
     loop {

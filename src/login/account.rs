@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::string::String;
 
 use net::ClientId;
-use ship::Ship;
+use ship::StoredShip;
 
 pub type AccountBox = Box<Account>;
 
@@ -16,7 +16,7 @@ pub enum LoginError {
 pub struct Account {
     pub username: String,
     pub password: String,
-    pub ship: Option<Ship>,
+    pub ship: Option<StoredShip>,
     pub client_id: Option<ClientId>,
 }
 

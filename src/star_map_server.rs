@@ -21,7 +21,7 @@ impl StarMapServer {
         }
     }
     
-    pub fn run(&mut self, slot: ServerSlot/*, account_receiver: Receiver<AccountBox>*/) {
+    pub fn run(&mut self, slot: ServerSlot, account_receiver: Receiver<AccountBox>) {
         loop {
             match slot.receive() {
                 SlotInMsg::Joined(client_id) => {

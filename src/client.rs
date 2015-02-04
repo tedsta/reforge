@@ -173,9 +173,9 @@ fn main () {
                     server.listen("localhost:30000");
                 });
                 
-                Thread::spawn(move || {
-                    login::run_login_server(login_slot/*, star_map_account_sender*/);
-                });
+                /*Thread::spawn(move || {
+                    login::run_login_server(login_slot, star_map_account_sender);
+                });*/
                 
                 /*Thread::spawn(move || {
                     login::run_login_server(login_slot, star_map_account_sender);
