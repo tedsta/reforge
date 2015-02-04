@@ -274,6 +274,22 @@ impl<M> IModuleStored for ModuleStored<M>
     }
 }
 
+impl Deref for ModuleStoredBox {
+    type Target = IModuleStored+'static;
+
+    fn deref<'a>(&'a self) -> &'a (IModuleStored+'static) {
+        let &ModuleStoredBox(ref module_stored_box) = self;
+        module_stored_box.deref()
+    }
+}
+
+impl DerefMut for ModuleStoredBox {
+    fn deref_mut<'a>(&'a mut self) -> &'a mut (IModuleStored+'static) {
+        let &mut ModuleStoredBox(ref mut module_stored_box) = self;
+        module_stored_box.deref_mut()
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(RustcEncodable, RustcDecodable)]

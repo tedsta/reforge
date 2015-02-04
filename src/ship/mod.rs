@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::cmp;
 
 use battle_state::BattleContext;
-use module::{IModule, IModuleRef, ModuleBase, ModuleBox, ModuleRef, Module};
+use module::{IModule, IModuleRef, IModuleStored, Module, ModuleBase, ModuleBox, ModuleRef, ModuleStoredBox};
 use net::{ClientId, InPacket, OutPacket};
 use self::ship_gen::generate_ship;
 use sim::SimEvents;
@@ -408,7 +408,7 @@ pub struct StoredShip {
     pub id: ShipId,
     pub client_id: Option<ClientId>,
     pub state: ShipState,
-    pub modules: Vec<ModuleBox>,
+    pub modules: Vec<ModuleStoredBox>,
     
     // Ship dimensions in module blocks
     width: u8,
@@ -439,7 +439,7 @@ impl StoredShip {
             id: ship.id,
             client_id: ship.client_id,
             state: ship.state,
-            modules: ship.modules.into_iter().map(|m| try_unwrap(m).ok().expect("Failed to unwrap Module").into_inner()).collect(),
+            modules: ship.modules.into_iter().map(|m| try_unwrap(m).ok().expect("Failed to unwrap Module").into_inner().to_module_stored()).collect(),
             width: ship.width,
             height: ship.height,
             level: ship.level,
@@ -451,7 +451,7 @@ impl StoredShip {
             id: self.id,
             client_id: self.client_id,
             state: self.state,
-            modules: self.modules.into_iter().map(|m| Rc::new(RefCell::new(m))).collect(),
+            modules: self.modules.into_iter().map(|m| Rc::new(RefCell::new(m.to_module()))).collect(),
             width: self.width,
             height: self.height,
             level: self.level,
