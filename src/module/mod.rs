@@ -209,7 +209,13 @@ impl<M> IModuleRef for Module<M>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*pub type ModuleStoredBox = Box<IModuleStored + 'static>;
+/*macro_rules! module_type_switch {
+    ($)
+}*/
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct ModuleStoredBox(Box<IModuleStored + 'static>);
 
 pub struct ModuleStored<M: IModule> {
     base: ModuleBaseStored,
@@ -217,38 +223,40 @@ pub struct ModuleStored<M: IModule> {
 }
 
 pub trait IModuleStored {
-    fn from_module(module: ModuleBox) -> ModuleStoredBox;
-    fn to_module(self) -> ModuleBox;
+    fn to_module(&self) -> ModuleBox;
+}
+
+impl ModuleStoredBox {
+    fn from_module(module_box: ModuleBox) -> ModuleStoredBox {
+        let type_id = module_box.get_type_id();
+    
+        let base = ModuleBaseStored::from_module_base(module_box.get_base());
+    
+        unsafe {
+            if type_id == TypeId::of::<ProjectileWeaponModule>() {
+                ModuleStoredBox(Box::new(ModuleStored{base: base, module: module_box.unpack_module::<ProjectileWeaponModule>().clone()}))
+            } else if type_id == TypeId::of::<ShieldModule>() {
+                ModuleStoredBox(Box::new(ModuleStored{base: base, module: module_box.unpack_module::<ShieldModule>().clone()}))
+            } else if type_id == TypeId::of::<EngineModule>() {
+                ModuleStoredBox(Box::new(ModuleStored{base: base, module: module_box.unpack_module::<EngineModule>().clone()}))
+            } else if type_id == TypeId::of::<SolarModule>() {
+                ModuleStoredBox(Box::new(ModuleStored{base: base, module: module_box.unpack_module::<SolarModule>().clone()}))
+            } else if type_id == TypeId::of::<CommandModule>() {
+                ModuleStoredBox(Box::new(ModuleStored{base: base, module: module_box.unpack_module::<CommandModule>().clone()}))
+            } else { unreachable!() }
+        }
+    }
 }
 
 impl<M> IModuleStored for ModuleStored<M>
-    where M: IModule + 'static
-{
-    fn from_module(module: ModuleBox) -> ModuleStoredBox {
-        let type_id = module.get_type_id();
-        
-        if type_id == TypeId::of::<ProjectileWeaponModule>() {
-            
-        }
-        else if type_id == TypeId::of::<ShieldModule>() { Shield }
-        else if type_id == TypeId::of::<EngineModule>() { Engine }
-        else if type_id == TypeId::of::<SolarModule>() { Solar }
-        else if type_id == TypeId::of::<CommandModule>() { Command }
-        else { unreachable!() };
+    where M: IModule+Clone + 'static
+{   
+    fn to_module(&self) -> ModuleBox {
+        let base = self.base.to_module_base();
     
-        Box::new(ModuleStored {
-            base: ModuleBaseStored::from_module_base(module.get_base()),
-            module: // TODO
-        });
+        ModuleBox::new(Module{base: base, module: self.module.clone()})
     }
-    
-    fn to_module(self) -> ModuleBox {
-        Box::new(Module {
-            base: self.base.to_module_base(),
-            module: // TODO
-        });
-    }
-}*/
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -269,18 +277,17 @@ impl ModuleBox {
         ModuleBox(Box::new(module))
     }
 
-    unsafe fn unpack<M: IModule+Clone>(self) -> (ModuleBase, M) {
+    unsafe fn unpack_module<M: IModule>(&self) -> &M {
         use std::mem;
         use std::raw;
         
-        // Get the Module<M> trait object
-        let module_to: raw::TraitObject = mem::transmute(self.deref());
+        // Get the &IModule trait object
+        let module_to: raw::TraitObject = mem::transmute(self.get_module());
         
         // Get underlying module from IModule trait object
-        let module: &Module<M> = mem::transmute(module_to.data);
-        
-        // TODO: Optimize?
-        (module.base.clone(), module.module.clone())
+        let module: &M = mem::transmute(module_to.data);
+
+        module
     }
 }
 
@@ -494,7 +501,7 @@ pub struct ModuleBaseStored {
 }
 
 impl ModuleBaseStored {
-    pub fn from_module_base(module_base: ModuleBase) -> ModuleBaseStored {
+    pub fn from_module_base(module_base: &ModuleBase) -> ModuleBaseStored {
         ModuleBaseStored {
             x: module_base.x,
             y: module_base.y,
@@ -512,7 +519,7 @@ impl ModuleBaseStored {
         }
     }
     
-    pub fn to_module_base(self) -> ModuleBase {
+    pub fn to_module_base(&self) -> ModuleBase {
         ModuleBase {
             x: self.x,
             y: self.y,
