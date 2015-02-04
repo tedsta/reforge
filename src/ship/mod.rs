@@ -208,7 +208,7 @@ impl Ship {
     
     // Returns true if adding the module was successful, false if it failed.
     pub fn add_module<M>(&mut self, mut module: Module<M>) -> bool
-        where M: IModule + 'static
+        where M: IModule + Clone + 'static
     {
         // Add to state hp
         self.state.total_module_hp += module.get_base().get_hp();

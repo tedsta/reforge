@@ -96,6 +96,8 @@ pub trait IModuleRef {
     fn get_base_mut(&mut self) -> &mut ModuleBase;
     fn get_module(&self) -> &IModule;
     
+    fn to_module_stored(&self) -> ModuleStoredBox;
+    
     //////////////////////////////////////////////////////
     // IModule stuff
     
@@ -127,7 +129,7 @@ pub trait IModuleRef {
 }
 
 impl<M> IModuleRef for Module<M>
-    where M: IModule + 'static
+    where M: IModule + Clone + 'static
 {
     fn get_type_id(&self) -> TypeId {
         TypeId::of::<M>()
@@ -143,6 +145,12 @@ impl<M> IModuleRef for Module<M>
     
     fn get_module(&self) -> &IModule {
         &self.module
+    }
+    
+    fn to_module_stored(&self) -> ModuleStoredBox {
+        let base = ModuleBaseStored::from_module_base(&self.base);
+    
+        ModuleStoredBox::new(ModuleStored{base: base, module: self.module.clone()})
     }
     
     //////////////////////////////////////////////////////
@@ -227,6 +235,14 @@ pub trait IModuleStored {
 }
 
 impl ModuleStoredBox {
+    pub fn new<M>(module: M) -> ModuleStoredBox
+        where M: IModuleStored + 'static
+    {
+        ModuleStoredBox(Box::new(module))
+    }
+}
+
+/*impl ModuleStoredBox {
     fn from_module(module_box: ModuleBox) -> ModuleStoredBox {
         let type_id = module_box.get_type_id();
     
@@ -246,7 +262,7 @@ impl ModuleStoredBox {
             } else { unreachable!() }
         }
     }
-}
+}*/
 
 impl<M> IModuleStored for ModuleStored<M>
     where M: IModule+Clone + 'static
