@@ -84,9 +84,6 @@ impl IModule for CommandModule {
     fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
         None
     }
-    
-    fn inject_target_data(&mut self, base: &mut ModuleBase, target_data: module::TargetData) {
-    }
 }
 
 // Sprite sheet sim visual

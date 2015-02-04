@@ -31,8 +31,6 @@ use asset_store::AssetStore;
 #[derive(RustcEncodable, RustcDecodable, Clone)]
 pub struct ProjectileWeaponModule {
     projectiles: Vec<Projectile>,
-    
-    target: Option<(ShipRef, ModuleRef)>,
 }
 
 impl ProjectileWeaponModule {
@@ -55,7 +53,6 @@ impl ProjectileWeaponModule {
             base: ModuleBase::new(1, 1, 2, 2, 3),
             module: ProjectileWeaponModule {
                 projectiles: repeat(projectile).take(3).collect(),
-                target: None,
             },
         }
     }
@@ -89,7 +86,6 @@ impl ProjectileWeaponModule {
             base: ModuleBase::new(1, 1, 2, 2, 3),
             module: ProjectileWeaponModule {
                 projectiles: repeat(projectile).take(3).collect(),
-                target: None,
             },
         }
     }
@@ -98,51 +94,45 @@ impl ProjectileWeaponModule {
 impl IModule for ProjectileWeaponModule {
     fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {    
         if base.powered {
-            match self.target {
-                Some((ref target_ship, ref target_module)) => {
-                    // Random number generater
-                    let mut rng = rand::thread_rng();
-                    
-                    let target_ship = target_ship.borrow();
-                    
-                    for projectile in self.projectiles.iter_mut() {
-                        if rng.gen::<f64>() > (0.15 * (cmp::min(target_ship.state.thrust, 5) as f64)) {
-                            projectile.hit = true;
-                        } else {
-                            projectile.hit = false;
-                        }
+            if let Some(module::TargetData::TargetModule(ref target_ship, ref target_module)) = base.target_data {
+                // Random number generater
+                let mut rng = rand::thread_rng();
+                
+                let target_ship = target_ship.borrow();
+                
+                for projectile in self.projectiles.iter_mut() {
+                    if rng.gen::<f64>() > (0.15 * (cmp::min(target_ship.state.thrust, 5) as f64)) {
+                        projectile.hit = true;
+                    } else {
+                        projectile.hit = false;
                     }
-                },
-                None => {}
+                }
             }
         }
     }
 
     fn before_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, events: &mut SimEventAdder) {
         if base.powered {
-            match self.target {
-                Some((ref target_ship, ref target_module)) => {
-                    for (i, projectile) in self.projectiles.iter_mut().enumerate() {                                            
-                        let start = (i*10) as u32;
-                        
-                        projectile.fire_tick = start;
-                        projectile.offscreen_tick = start + 20;
-                        projectile.hit_tick = start + 40;
-                        
-                        projectile.fire_pos = base.get_render_center() + Vec2{x: 20.0, y: 0.0};
-                        projectile.to_offscreen_pos = projectile.fire_pos + Vec2{x: 1500.0, y: 0.0};
-                        projectile.from_offscreen_pos = Vec2{x: 1500.0, y: 0.0};
-                        
-                        if projectile.hit {
-                            projectile.hit_pos = target_module.borrow().get_base().get_render_center();
-                        
-                            events.add(projectile.hit_tick, box DamageEvent::new(target_ship.clone(), target_module.clone(), 1));
-                        } else {
-                            projectile.hit_pos = Vec2{x: 200.0, y: 300.0};
-                        }
+            if let Some(module::TargetData::TargetModule(ref target_ship, ref target_module)) = base.target_data {
+                for (i, projectile) in self.projectiles.iter_mut().enumerate() {                                            
+                    let start = (i*10) as u32;
+                    
+                    projectile.fire_tick = start;
+                    projectile.offscreen_tick = start + 20;
+                    projectile.hit_tick = start + 40;
+                    
+                    projectile.fire_pos = base.get_render_center() + Vec2{x: 20.0, y: 0.0};
+                    projectile.to_offscreen_pos = projectile.fire_pos + Vec2{x: 1500.0, y: 0.0};
+                    projectile.from_offscreen_pos = Vec2{x: 1500.0, y: 0.0};
+                    
+                    if projectile.hit {
+                        projectile.hit_pos = target_module.borrow().get_base().get_render_center();
+                    
+                        events.add(projectile.hit_tick, box DamageEvent::new(target_ship.clone(), target_module.clone(), 1));
+                    } else {
+                        projectile.hit_pos = Vec2{x: 200.0, y: 300.0};
                     }
                 }
-                None => { },
             }
         }
     }
@@ -170,7 +160,7 @@ impl IModule for ProjectileWeaponModule {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
         
         if base.powered {
-            if let Some((ref target_ship, ref target_module)) = self.target {
+            if let Some(module::TargetData::TargetModule(ref target_ship, ref target_module)) = base.target_data {
                 let target_ship_id = target_ship.borrow().id;
             
                 let mut last_weapon_anim_end = 0.0;
@@ -272,39 +262,21 @@ impl IModule for ProjectileWeaponModule {
         // TODO make this prettier
     
         let mut remove = false;
-        if let Some((ref ship, _)) = self.target {
+        if let Some(module::TargetData::TargetModule(ref ship, _)) = base.target_data {
             if ship.borrow().id == ship_id {
                 remove = true;
             }
         }
         
         if remove {
-            self.target = None;
+            base.target_data = None;
         }
     }
     
     fn write_plans(&self, base: &ModuleBase, packet: &mut OutPacket) {
-        match self.target.as_ref() {
-            Some(&(ref ship, ref module)) => {
-                packet.write(&true).unwrap();
-                packet.write(&ship.borrow().id).unwrap();
-                packet.write(&module.borrow().get_base().index).unwrap();
-            },
-            None => {packet.write(&false).unwrap()},
-        }
     }
     
     fn read_plans(&mut self, base: &mut ModuleBase, context: &BattleContext, packet: &mut InPacket) {
-        let some: bool = packet.read().unwrap();
-        if some {
-            let ship_id = packet.read().unwrap();
-            let module_index: u32 = packet.read().unwrap();
-            
-            let ship = context.get_ship(ship_id);
-            let module = ship.borrow().modules[module_index as uint].clone();
-            
-            self.target = Some((ship.clone(), module.clone()));
-        }
     }
     
     fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {
@@ -327,12 +299,6 @@ impl IModule for ProjectileWeaponModule {
     
     fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
         Some(module::TargetMode::TargetModule)
-    }
-    
-    fn inject_target_data(&mut self, base: &mut ModuleBase, target_data: module::TargetData) {
-        if let module::TargetData::TargetModule(ship, module) = target_data {
-            self.target = Some((ship.clone(), module.clone()));
-        }
     }
 }
 

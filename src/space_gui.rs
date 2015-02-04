@@ -277,7 +277,7 @@ impl<'a> SpaceGui<'a> {
                             let module_w = module_w as f64;
                             let module_h = module_h as f64;
                             if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-                                selected_module.borrow_mut().inject_target_data(module::TargetData::TargetModule(ship.clone(), module.clone()));
+                                selected_module.borrow_mut().get_base_mut().target_data = Some(module::TargetData::TargetModule(ship.clone(), module.clone()));
                                 clear_selection = true;
                             }
                         }

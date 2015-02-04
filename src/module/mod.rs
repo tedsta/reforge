@@ -57,12 +57,11 @@ pub trait IModule {
     // GUI stuff
     
     fn get_target_mode(&self, base: &ModuleBase) -> Option<TargetMode>;
-    fn inject_target_data(&mut self, base: &mut ModuleBase, target_data: TargetData);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(PartialEq)]
+#[derive(PartialEq, RustcEncodable, RustcDecodable)]
 pub enum TargetMode {
     TargetShip,
     TargetModule,
@@ -71,6 +70,7 @@ pub enum TargetMode {
     Beam,
 }
 
+#[derive(RustcEncodable, RustcDecodable, Clone)]
 pub enum TargetData {
     TargetShip(ShipRef),
     TargetModule(ShipRef, ModuleRef),
@@ -125,7 +125,6 @@ pub trait IModuleRef {
     // GUI stuff
     
     fn get_target_mode(&self) -> Option<TargetMode>;
-    fn inject_target_data(&mut self, target_data: TargetData);
 }
 
 impl<M> IModuleRef for Module<M>
@@ -183,10 +182,12 @@ impl<M> IModuleRef for Module<M>
     }
     
     fn write_plans(&self, packet: &mut OutPacket) {
+        self.base.write_plans(packet);
         self.module.write_plans(&self.base, packet);
     }
     
     fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
+        self.base.read_plans(context, packet);
         self.module.read_plans(&mut self.base, context, packet);
     }
     
@@ -208,10 +209,6 @@ impl<M> IModuleRef for Module<M>
     
     fn get_target_mode(&self) -> Option<TargetMode> {
         self.module.get_target_mode(&self.base)
-    }
-    
-    fn inject_target_data(&mut self, target_data: TargetData) {
-        self.module.inject_target_data(&mut self.base, target_data);
     }
 }
 
@@ -395,6 +392,8 @@ pub struct ModuleBase {
     pub powered: bool,      // If the module consumes power, whether or not it's currently powered (useless otherwise)
     pub plan_powered: bool, // Plan to power
     
+    pub target_data: Option<TargetData>,
+    
     pub index: u32, // Array index in ship. Used for referencing modules across network.
 }
 
@@ -413,6 +412,8 @@ impl ModuleBase {
             
             powered: false,
             plan_powered: false,
+            
+            target_data: None,
             
             index: -1,
         }
@@ -455,6 +456,90 @@ impl ModuleBase {
             let dealt_damage = self.hp;
             self.hp = 0;
             dealt_damage
+        }
+    }
+    
+    fn write_plans(&self, packet: &mut OutPacket) {
+        use self::TargetData::*;
+    
+        match self.target_data {
+            Some(ref target_data) => {
+                packet.write(&true).unwrap();
+            
+                match target_data {
+                    &TargetShip(ref ship) => {
+                        packet.write(&TargetMode::TargetShip);
+                        packet.write(&ship.borrow().id).unwrap();
+                    },
+                    &TargetModule(ref ship, ref module) => {
+                        packet.write(&TargetMode::TargetModule);
+                        packet.write(&ship.borrow().id).unwrap();
+                        packet.write(&module.borrow().get_base().index).unwrap();
+                    },
+                    &OwnModule(ref ship, ref module) => {
+                        packet.write(&TargetMode::OwnModule);
+                        packet.write(&ship.borrow().id).unwrap();
+                        packet.write(&module.borrow().get_base().index).unwrap();
+                    },
+                    &AnyModule(ref ship, ref module) => {
+                        packet.write(&TargetMode::AnyModule);
+                        packet.write(&ship.borrow().id).unwrap();
+                        packet.write(&module.borrow().get_base().index).unwrap();
+                    },
+                    &Beam => {
+                        packet.write(&TargetMode::Beam);
+                    },
+                }
+            },
+            None => {packet.write(&false).unwrap()},
+        }
+    }
+    
+    fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
+        use self::TargetData::*;
+    
+        let some: bool = packet.read().unwrap();
+        if some {
+            let target_mode: TargetMode = packet.read().unwrap();
+            
+            match target_mode {
+                TargetMode::TargetShip => {
+                    let ship_id = packet.read().unwrap();
+
+                    let ship = context.get_ship(ship_id);
+
+                    self.target_data = Some(TargetShip(ship.clone()));
+                },
+                TargetMode::TargetModule => {
+                    let ship_id = packet.read().unwrap();
+                    let module_index: u32 = packet.read().unwrap();
+                    
+                    let ship = context.get_ship(ship_id);
+                    let module = ship.borrow().modules[module_index as uint].clone();
+                    
+                    self.target_data = Some(TargetModule(ship.clone(), module.clone()));
+                },
+                TargetMode::OwnModule => {
+                    let ship_id = packet.read().unwrap();
+                    let module_index: u32 = packet.read().unwrap();
+                    
+                    let ship = context.get_ship(ship_id);
+                    let module = ship.borrow().modules[module_index as uint].clone();
+                    
+                    self.target_data = Some(TargetModule(ship.clone(), module.clone()));
+                },
+                TargetMode::AnyModule => {
+                    let ship_id = packet.read().unwrap();
+                    let module_index: u32 = packet.read().unwrap();
+                    
+                    let ship = context.get_ship(ship_id);
+                    let module = ship.borrow().modules[module_index as uint].clone();
+                    
+                    self.target_data = Some(TargetModule(ship.clone(), module.clone()));
+                },
+                TargetMode::Beam => {
+                },
+            }
         }
     }
     
@@ -524,6 +609,8 @@ impl ModuleBaseStored {
             
             powered: self.powered,
             plan_powered: self.powered,
+            
+            target_data: None,
             
             index: self.index,
         }
