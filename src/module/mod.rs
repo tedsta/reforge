@@ -217,12 +217,6 @@ impl<M> IModuleRef for Module<M>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*macro_rules! module_type_switch {
-    ($)
-}*/
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 pub struct ModuleStoredBox(Box<IModuleStored + 'static>);
 
 pub struct ModuleStored<M: IModule> {
@@ -241,28 +235,6 @@ impl ModuleStoredBox {
         ModuleStoredBox(Box::new(module))
     }
 }
-
-/*impl ModuleStoredBox {
-    fn from_module(module_box: ModuleBox) -> ModuleStoredBox {
-        let type_id = module_box.get_type_id();
-    
-        let base = ModuleBaseStored::from_module_base(module_box.get_base());
-    
-        unsafe {
-            if type_id == TypeId::of::<ProjectileWeaponModule>() {
-                ModuleStoredBox(Box::new(ModuleStored{base: base, module: module_box.unpack_module::<ProjectileWeaponModule>().clone()}))
-            } else if type_id == TypeId::of::<ShieldModule>() {
-                ModuleStoredBox(Box::new(ModuleStored{base: base, module: module_box.unpack_module::<ShieldModule>().clone()}))
-            } else if type_id == TypeId::of::<EngineModule>() {
-                ModuleStoredBox(Box::new(ModuleStored{base: base, module: module_box.unpack_module::<EngineModule>().clone()}))
-            } else if type_id == TypeId::of::<SolarModule>() {
-                ModuleStoredBox(Box::new(ModuleStored{base: base, module: module_box.unpack_module::<SolarModule>().clone()}))
-            } else if type_id == TypeId::of::<CommandModule>() {
-                ModuleStoredBox(Box::new(ModuleStored{base: base, module: module_box.unpack_module::<CommandModule>().clone()}))
-            } else { unreachable!() }
-        }
-    }
-}*/
 
 impl<M> IModuleStored for ModuleStored<M>
     where M: IModule+Clone + 'static
@@ -307,19 +279,6 @@ impl ModuleBox {
         where M: IModuleRef + 'static
     {
         ModuleBox(Box::new(module))
-    }
-
-    unsafe fn unpack_module<M: IModule>(&self) -> &M {
-        use std::mem;
-        use std::raw;
-        
-        // Get the &IModule trait object
-        let module_to: raw::TraitObject = mem::transmute(self.get_module());
-        
-        // Get underlying module from IModule trait object
-        let module: &M = mem::transmute(module_to.data);
-
-        module
     }
 }
 
