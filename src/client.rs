@@ -167,15 +167,15 @@ fn main () {
                 // Start a local server
                 let mut server = Server::new();
                 let login_slot = server.create_slot();
-                //let (star_map_account_sender, star_map_account_receiver) = channel();
+                let (star_map_account_sender, star_map_account_receiver) = channel();
                 
                 Thread::spawn(move || {
                     server.listen("localhost:30000");
                 });
                 
-                /*Thread::spawn(move || {
+                Thread::spawn(move || {
                     login::run_login_server(login_slot, star_map_account_sender);
-                });*/
+                });
                 
                 /*Thread::spawn(move || {
                     login::run_login_server(login_slot, star_map_account_sender);

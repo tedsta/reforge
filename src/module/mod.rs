@@ -32,7 +32,7 @@ pub mod command;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub trait IModule {
+pub trait IModule : Send {
     fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
 
     fn before_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, events: &mut SimEventAdder);
@@ -221,7 +221,7 @@ pub struct ModuleStored<M: IModule> {
     module: M,
 }
 
-pub trait IModuleStored {
+pub trait IModuleStored : Send {
     fn to_module(&self) -> ModuleBox;
 }
 
