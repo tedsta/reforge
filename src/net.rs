@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::old_io::{TcpListener, TcpStream, Acceptor, Listener};
 use std::old_io::{MemReader, MemWriter, IoResult, IoError, TimedOut};
 use std::result::Result;
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread::Thread;
 
 use rustc_serialize::Encodable;
@@ -62,6 +62,10 @@ impl ServerSlot {
             Ok(msg) => msg,
             _ => panic!("Failed to receive SlotInMsg"),
         }
+    }
+    
+    pub fn try_receive(&self) -> Result<SlotInMsg, TryRecvError> {
+        self.receiver.try_recv()
     }
     
     pub fn create_slot(&self) -> ServerSlot {

@@ -34,6 +34,7 @@ use client_battle_state::ClientBattleState;
 use login::LoginPacket;
 use main_menu::{MainMenu, MainMenuSelection};
 use net::{Client, OutPacket};
+use star_map_server::StarMapServer;
 use tutorial_state::TutorialState;
 
 // Server stuff
@@ -53,6 +54,7 @@ mod login;
 mod main_menu;
 mod module;
 mod net;
+mod sector_state;
 mod ship;
 mod sim;
 mod space_gui;
@@ -127,7 +129,7 @@ fn main () {
                 // Create the battle state
                 let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
 
-                battle.run(&window, &mut gl, &asset_store);
+                battle.run(&window, &mut gl, &asset_store, 0);
             },
             MainMenuSelection::Multiplayer => {
                 use std::str::StrExt;
@@ -167,6 +169,8 @@ fn main () {
                 // Start a local server
                 let mut server = Server::new();
                 let login_slot = server.create_slot();
+                let star_map_slot = server.create_slot();
+                let star_map_slot_id = star_map_slot.get_id();
                 let (star_map_account_sender, star_map_account_receiver) = channel();
                 
                 Thread::spawn(move || {
@@ -174,12 +178,13 @@ fn main () {
                 });
                 
                 Thread::spawn(move || {
-                    login::run_login_server(login_slot, star_map_account_sender);
+                    login::run_login_server(login_slot, star_map_slot_id, star_map_account_sender);
                 });
                 
-                /*Thread::spawn(move || {
-                    login::run_login_server(login_slot, star_map_account_sender);
-                });*/
+                Thread::spawn(move || {
+                    let mut star_map_server = StarMapServer::new(star_map_slot);
+                    star_map_server.run(star_map_account_receiver);
+                });
                 
                 // Connect to server
                 let mut client = Client::new(ip_address.as_slice());
@@ -190,6 +195,7 @@ fn main () {
                 
                 // Receive the ships from the server
                 let mut packet = client.receive();
+                let turn_time_milliseconds: u32 = packet.read().ok().expect("Failed to read turn time from server");
                 let ships = match packet.read() {
                     Ok(ships) => ships,
                     Err(e) => panic!("Unable to receive ships froms server: {}", e),
@@ -198,7 +204,7 @@ fn main () {
                 // Create the battle state
                 let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
 
-                battle.run(&window, &mut gl, &asset_store);
+                battle.run(&window, &mut gl, &asset_store, 5000 - (turn_time_milliseconds as i64));
             },
             MainMenuSelection::Tutorial => {                
                 // Create the tutorial state

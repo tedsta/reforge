@@ -2,6 +2,7 @@ use std::sync::mpsc::Sender;
 
 use net::{
     ServerSlot,
+    ServerSlotId,
     SlotInMsg,
 };
 
@@ -11,8 +12,9 @@ use super::account::{
     LoginError,
 };
 use super::login_packet::LoginPacket;
+use ship::{Ship, ShipId, ShipStored};
 
-pub fn run_login_server(slot: ServerSlot, star_map_chan: Sender<AccountBox>) {
+pub fn run_login_server(slot: ServerSlot, star_map_slot_id: ServerSlotId, star_map_chan: Sender<AccountBox>) {
     let mut account_manager = AccountManager::new();
 
     loop {
@@ -26,12 +28,23 @@ pub fn run_login_server(slot: ServerSlot, star_map_chan: Sender<AccountBox>) {
                 match account_manager.login_account(username.clone(), password.clone(), client_id) {
                     Ok(account) => {
                         // Login ok
+                        slot.transfer_client(account.client_id.expect("This must have a client ID"), star_map_slot_id);
+                        star_map_chan.send(account);
                     },
                     Err(ref e) if *e == LoginError::NoSuchAccount => {
                         // Account doesn't exist yet, make it
                         account_manager.create_account(username.clone(), password.clone());
                         
-                        if let Ok(account) = account_manager.login_account(username.clone(), password.clone(), client_id) {
+                        // Log into the new account
+                        if let Ok(mut account) = account_manager.login_account(username.clone(), password.clone(), client_id) {
+                            // Create ships
+                            let player_ship = ShipStored::from_ship(Ship::generate(client_id as ShipId, 5));
+                            
+                            account.ship = Some(player_ship);
+                            
+                            slot.transfer_client(account.client_id.expect("This must have a client ID"), star_map_slot_id);
+                            star_map_chan.send(account);
+                            
                         } else {
                             panic!("Failed to log into newly created account");
                         }

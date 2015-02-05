@@ -404,9 +404,8 @@ impl Ship {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct StoredShip {
+pub struct ShipStored {
     pub id: ShipId,
-    pub client_id: Option<ClientId>,
     pub state: ShipState,
     pub modules: Vec<ModuleStoredBox>,
     
@@ -417,11 +416,10 @@ pub struct StoredShip {
     pub level: u8, // TODO: This is very temporary only for IC US semifinals
 }
 
-impl StoredShip {
-    pub fn new(id: ShipId, level: u8) -> StoredShip {
-        StoredShip {
+impl ShipStored {
+    pub fn new(id: ShipId, level: u8) -> ShipStored {
+        ShipStored {
             id: id,
-            client_id: None,
             state: ShipState::new(),
             modules: vec!(),
             
@@ -432,12 +430,11 @@ impl StoredShip {
         }
     }
     
-    pub fn from_ship(ship: Ship) -> StoredShip {
+    pub fn from_ship(ship: Ship) -> ShipStored {
         use std::rc::try_unwrap;
     
-        StoredShip {
+        ShipStored {
             id: ship.id,
-            client_id: ship.client_id,
             state: ship.state,
             modules: ship.modules.into_iter().map(|m| try_unwrap(m).ok().expect("Failed to unwrap Module").into_inner().to_module_stored()).collect(),
             width: ship.width,
@@ -446,10 +443,10 @@ impl StoredShip {
         }
     }
     
-    pub fn to_ship(self) -> Ship {
+    pub fn to_ship(self, client_id: Option<ClientId>) -> Ship {
         Ship {
             id: self.id,
-            client_id: self.client_id,
+            client_id: client_id,
             state: self.state,
             modules: self.modules.into_iter().map(|m| Rc::new(RefCell::new(m.to_module()))).collect(),
             width: self.width,

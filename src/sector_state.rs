@@ -2,21 +2,31 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
+use std::sync::mpsc::{Sender, Receiver};
+use time;
 
+use login::AccountBox;
 use ai::run_ai;
 use battle_state::{BattleContext, ClientPacketId, ServerPacketId};
 use module::Module;
 use net::{ClientId, ServerSlot, SlotInMsg, InPacket, OutPacket};
-use ship::{Ship, ShipId};
+use ship::{Ship, ShipId, ShipStored};
 use sim::SimEvents;
 
 pub struct SectorState {
+    slot: ServerSlot,
+
     // Context holding all the things involved in this battle
     context: BattleContext,
+    
+    turn_start_time: time::Timespec,
     
     received_plans: HashSet<ClientId>,
     clients_waiting: HashSet<ClientId>,
     clients_active: HashSet<ClientId>,
+    
+    // All the clients' accounts
+    accounts: HashMap<ClientId, AccountBox>,
     
     // Ships to add after simulation
     ships_to_add: Vec<Ship>,
@@ -30,35 +40,64 @@ pub struct SectorState {
 impl SectorState {
     pub fn new(slot: ServerSlot, context: BattleContext) -> SectorState {
         SectorState {
+            slot: slot,
             context: context,
+            turn_start_time: time::now().to_timespec(),
             received_plans: HashSet::new(),
             clients_waiting: HashSet::new(),
             clients_active: HashSet::new(),
+            accounts: HashMap::new(),
             ships_to_add: vec!(),
             ships_to_remove: vec!(),
             turn_number: 0,
         }
     }
     
-    pub fn run(&mut self, slot: ServerSlot) {
+    pub fn run(&mut self, to_map_sender: Sender<AccountBox>, from_map_receiver: Receiver<AccountBox>) {
+        // TODO: come up with better way to generate AI ship IDs
+        let mut ai_ship = Ship::generate((100000000) as ShipId, 2);
+        self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+    
         loop {
-            match slot.receive() {
-                SlotInMsg::Joined(client_id) => {
-                    println!("Client {} joined battle {}", client_id, slot.get_id());
-                    
-                    // Send the player all the ships
-                    let mut packet = OutPacket::new();
-                    packet.write(&self.context.ships_list);
-                    slot.send(client_id, packet);
-                    
-                    if self.turn_number != 0 {
-                        self.clients_waiting.insert(client_id);
-                    } else {
-                        self.clients_active.insert(client_id);
-                    }
-                },
-                SlotInMsg::ReceivedPacket(client_id, mut packet) => { self.handle_packet(client_id, &mut packet); },
-                _ => {}
+            if let Ok(msg) = self.slot.try_receive() {
+                match msg {
+                    SlotInMsg::Joined(client_id) => {
+                        println!("Client {} joined battle {}", client_id, self.slot.get_id());
+                    },
+                    SlotInMsg::ReceivedPacket(client_id, mut packet) => { self.handle_packet(client_id, &mut packet); },
+                    _ => {}
+                }
+            }
+            
+            if let Ok(mut account) = from_map_receiver.try_recv() {
+                let client_id = account.client_id.expect("This must have a client ID");
+                
+                // Get the ship out of storage
+                let ship_stored = account.ship.take().expect("This account must have a ship");
+                let ship = ship_stored.to_ship(Some(client_id));
+                
+                // Get the current time from our turn timer
+                let turn_time = time::now().to_timespec() - self.turn_start_time;
+            
+                // Send the player all the ships
+                let mut packet = OutPacket::new();
+                
+                if self.clients_active.is_empty() {
+                    self.clients_active.insert(client_id);
+                    packet.write(&0).unwrap();
+                } else {
+                    self.clients_waiting.insert(client_id);
+                    packet.write(&(turn_time.num_milliseconds() as u32)).unwrap();
+                }
+                
+                // Add the player's account
+                self.accounts.insert(client_id, account);
+                
+                // Add the player's ship
+                self.context.add_ship(Rc::new(RefCell::new(ship)));
+                
+                packet.write(&self.context.ships_list).unwrap();
+                self.slot.send(client_id, packet);
             }
         }
     }
@@ -134,6 +173,9 @@ impl SectorState {
                     
                     // Transfer waiting clients to active clients
                     self.clients_active = self.clients_active.union(&self.clients_waiting).map(|&x| x).collect();
+                    
+                    // Reset the turn timer
+                    self.turn_start_time = time::now().to_timespec();
                 }
             },
         }

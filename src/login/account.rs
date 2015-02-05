@@ -2,7 +2,8 @@ use std::collections::HashMap;
 use std::string::String;
 
 use net::ClientId;
-use ship::StoredShip;
+use ship::ShipStored;
+use star_map_server::SectorId;
 
 pub type AccountBox = Box<Account>;
 
@@ -16,8 +17,9 @@ pub enum LoginError {
 pub struct Account {
     pub username: String,
     pub password: String,
-    pub ship: Option<StoredShip>,
+    pub ship: Option<ShipStored>,
     pub client_id: Option<ClientId>,
+    pub sector: SectorId,
 }
 
 pub struct AccountManager {
@@ -38,6 +40,7 @@ impl AccountManager {
             password: password,
             ship: None,
             client_id: None,
+            sector: SectorId(0),
         })));
     }
     

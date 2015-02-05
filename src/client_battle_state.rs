@@ -1,7 +1,8 @@
-use time;
 use std::cell::RefCell;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
+use std::time::Duration;
+use time;
 
 use event::Events;
 use opengl_graphics::Gl;
@@ -39,7 +40,7 @@ impl ClientBattleState {
         }
     }
     
-    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore) {
+    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore, mut first_time_bias: i64) {
         use window::ShouldClose;
         use quack::Get;
     
@@ -56,7 +57,8 @@ impl ClientBattleState {
             self.context.add_plan_visuals(asset_store, &mut sim_visuals);
             
             // Record start time
-            let start_time = time::now().to_timespec();
+            let start_time = time::now().to_timespec() + Duration::milliseconds(first_time_bias);
+            first_time_bias = 0;
             
             // Run planning loop
             for e in Events::new(window) {
@@ -71,10 +73,19 @@ impl ClientBattleState {
             
                 // Calculate a bunch of time stuff
                 let current_time = time::now().to_timespec();
-                let elapsed_time = current_time - start_time;
-                let elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000.0;
+                let elapsed_time = 
+                    if current_time > start_time {
+                        current_time - start_time
+                    } else {
+                        Duration::milliseconds(0)
+                    };
+                let mut elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000.0;
                 if elapsed_time.num_seconds() >= 5 {
                     break;
+                }
+                
+                if elapsed_seconds < 0.0 {
+                    elapsed_seconds = 0.0;
                 }
             
                 // Forward events to GUI
