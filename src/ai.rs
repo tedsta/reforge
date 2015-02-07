@@ -63,14 +63,16 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
     }
     
     // Try to target weapons
-    for module in ship.modules.iter() {
-        let mut module_borrowed = module.borrow_mut();
-        if module_borrowed.get_type_id() == TypeId::of::<ProjectileWeaponModule>() {
-            if module_borrowed.get_base().is_active() {
-                let target_ship = &enemy_ships[rng.gen::<uint>() % enemy_ships.len()];
-                let target_module = &target_ship.borrow().modules[rng.gen::<uint>() % target_ship.borrow().modules.len()];
-            
-                module_borrowed.get_base_mut().target_data = Some(module::TargetData::TargetModule(target_ship.clone(), target_module.clone()));
+    if !enemy_ships.is_empty() {
+        for module in ship.modules.iter() {
+            let mut module_borrowed = module.borrow_mut();
+            if module_borrowed.get_type_id() == TypeId::of::<ProjectileWeaponModule>() {
+                if module_borrowed.get_base().is_active() {
+                    let target_ship = &enemy_ships[rng.gen::<uint>() % enemy_ships.len()];
+                    let target_module = &target_ship.borrow().modules[rng.gen::<uint>() % target_ship.borrow().modules.len()];
+                
+                    module_borrowed.get_base_mut().target_data = Some(module::TargetData::TargetModule(target_ship.clone(), target_module.clone()));
+                }
             }
         }
     }

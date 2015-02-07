@@ -44,9 +44,9 @@ impl IModule for CommandModule {
         let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info(COMMAND_TEXTURE));
 
         if base.is_active() {
-            command_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 7, 0.2));
+            command_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.2));
         } else {
-            command_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
+            command_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {

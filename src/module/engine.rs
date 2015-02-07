@@ -41,7 +41,7 @@ impl IModule for EngineModule {
     #[cfg(feature = "client")]
     fn add_plan_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
         let mut engine_sprite = SpriteSheet::new(asset_store.get_sprite_info(ENGINE_TEXTURE));
-        engine_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
+        engine_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
             position: base.get_render_position().clone(),
@@ -51,7 +51,7 @@ impl IModule for EngineModule {
         // Propulsion sprite
         if base.is_active() {
             let mut prop_sprite = SpriteSheet::new(asset_store.get_sprite_info(PROPULSION_TEXTURE));
-            prop_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 7, 0.05));
+            prop_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.05));
         
             visuals.add(ship.borrow().id, 0, box SpriteVisual {
                 position: base.get_render_position().clone() + Vec2{x: -48.0, y: 2.0},

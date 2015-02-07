@@ -142,9 +142,9 @@ impl IModule for ProjectileWeaponModule {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
         
         if base.is_active() {
-            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 1));
+            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 1));
         } else {
-            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
+            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
@@ -179,7 +179,7 @@ impl IModule for ProjectileWeaponModule {
                     
                     let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
                     laser_sprite.centered = true;
-                    laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 4, 0.05));
+                    laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
                     
                     let weapon_anim_start = start_time;
                     let weapon_anim_end = start_time+0.15;
@@ -213,7 +213,7 @@ impl IModule for ProjectileWeaponModule {
 
                     let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
                     laser_sprite.centered = true;
-                    laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 4, 0.05));
+                    laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
                     
                     // Add the simulation visual for projectile entering target screen
                     visuals.add(target_ship_id, 1, box LerpVisual {
@@ -241,12 +241,12 @@ impl IModule for ProjectileWeaponModule {
                 }
                 
                 // Add last stay animation
-                weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, 5.0, 1));
+                weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, 7.0, 1));
             } else {
-                weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 1));
+                weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 1));
             }
         } else {
-            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
+            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
         
         visuals.add(ship_id, 0, box SpriteVisual {

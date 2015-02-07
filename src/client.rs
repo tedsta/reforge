@@ -196,13 +196,16 @@ fn main () {
                 // Receive the ships from the server
                 let mut packet = client.receive();
                 let turn_time_milliseconds: u32 = packet.read().ok().expect("Failed to read turn time from server");
+                let player_ship = packet.read().ok().expect("Failed to read player's ship");
                 let ships = match packet.read() {
                     Ok(ships) => ships,
                     Err(e) => panic!("Unable to receive ships froms server: {}", e),
                 };
                 
                 // Create the battle state
-                let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
+                let mut battle_context = BattleContext::new(ships);
+                battle_context.add_ship(player_ship);
+                let mut battle = ClientBattleState::new(client, battle_context);
 
                 battle.run(&window, &mut gl, &asset_store, 5000 - (turn_time_milliseconds as i64));
             },

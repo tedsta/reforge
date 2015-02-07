@@ -355,6 +355,10 @@ impl Client {
         packet
     }
     
+    pub fn try_receive(&mut self) -> IoResult<InPacket> {
+        Ok(try!(InPacket::try_new_from_reader(&mut self.stream)))
+    }
+    
     pub fn get_id(&self) -> ClientId {
         self.id
     }
@@ -408,6 +412,17 @@ impl InPacket {
         
         // Build packet
         InPacket::new(data)
+    }
+    
+    pub fn try_new_from_reader<T: Reader>(reader: &mut T) -> IoResult<InPacket> {
+        // Get next packet size
+        let packet_size = try!(reader.read_le_u16());
+        
+        // Get data
+        let data = try!(reader.read_exact(packet_size as uint));
+        
+        // Build packet
+        Ok(InPacket::new(data))
     }
     
     pub fn len(&self) -> uint {

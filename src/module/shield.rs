@@ -44,9 +44,9 @@ impl IModule for ShieldModule {
         let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info(SHIELD_TEXTURE));
         
         if base.is_active() {
-            shield_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 0, 9, 0.05));
+            shield_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 9, 0.05));
         } else {
-            shield_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
+            shield_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {

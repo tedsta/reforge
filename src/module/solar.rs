@@ -44,9 +44,9 @@ impl IModule for SolarModule {
         let mut solar_sprite = SpriteSheet::new(asset_store.get_sprite_info(SOLAR_TEXTURE));
         
         if base.is_active() {
-            solar_sprite.add_animation(SpriteAnimation::Loop(0.0, 5.0, 1, 4, 0.1));
+            solar_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 1, 4, 0.1));
         } else {
-            solar_sprite.add_animation(SpriteAnimation::Stay(0.0, 5.0, 0));
+            solar_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
     
         visuals.add(ship.borrow().id, 0, box SpriteVisual {
