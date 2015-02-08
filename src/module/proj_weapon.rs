@@ -259,19 +259,6 @@ impl IModule for ProjectileWeaponModule {
     }
     
     fn on_ship_removed(&mut self, base: &mut ModuleBase, ship_id: ShipId) {
-        // TODO make this prettier
-        // TODO move this to ModuleBase
-    
-        let mut remove = false;
-        if let Some(module::TargetData::TargetModule(ref ship, _)) = base.target_data {
-            if ship.borrow().id == ship_id {
-                remove = true;
-            }
-        }
-        
-        if remove {
-            base.target_data = None;
-        }
     }
     
     fn write_plans(&self, base: &ModuleBase, packet: &mut OutPacket) {

@@ -178,6 +178,7 @@ impl<M> IModuleRef for Module<M>
     }
     
     fn on_ship_removed(&mut self, ship_id: ShipId) {
+        self.base.on_ship_removed(ship_id);
         self.module.on_ship_removed(&mut self.base, ship_id);
     }
     
@@ -540,6 +541,53 @@ impl ModuleBase {
                 TargetMode::Beam => {
                 },
             }
+        }
+    }
+    
+    fn on_ship_removed(&mut self, ship_id: ShipId) {
+        use self::TargetData::*;
+    
+        // TODO make this prettier
+        
+        let mut remove = false;
+    
+        if let Some(ref target_data) = self.target_data {
+            match target_data {
+                &TargetShip(ref ship) => {
+                    if let Some(TargetData::TargetShip(ref ship)) = self.target_data {
+                        if ship.borrow().id == ship_id {
+                            remove = true;
+                        }
+                    }
+                },
+                &TargetModule(ref ship, ref module) => {
+                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
+                        if ship.borrow().id == ship_id {
+                            remove = true;
+                        }
+                    }
+                },
+                &OwnModule(ref ship, ref module) => {
+                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
+                        if ship.borrow().id == ship_id {
+                            remove = true;
+                        }
+                    }
+                },
+                &AnyModule(ref ship, ref module) => {
+                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
+                        if ship.borrow().id == ship_id {
+                            remove = true;
+                        }
+                    }
+                },
+                &Beam => {
+                },
+            }
+        }
+        
+        if remove {
+            self.target_data = None;
         }
     }
     
