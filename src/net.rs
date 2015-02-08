@@ -356,7 +356,10 @@ impl Client {
     }
     
     pub fn try_receive(&mut self) -> IoResult<InPacket> {
-        Ok(try!(InPacket::try_new_from_reader(&mut self.stream)))
+        self.stream.set_read_timeout(Some(1));
+        let packet = try!(InPacket::try_new_from_reader(&mut self.stream));
+        self.stream.set_read_timeout(None);
+        Ok(packet)
     }
     
     pub fn get_id(&self) -> ClientId {
