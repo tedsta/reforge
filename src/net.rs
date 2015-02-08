@@ -356,10 +356,17 @@ impl Client {
     }
     
     pub fn try_receive(&mut self) -> IoResult<InPacket> {
+        // Fake non-blocking IO lololol
         self.stream.set_read_timeout(Some(1));
-        let packet = try!(InPacket::try_new_from_reader(&mut self.stream));
+        
+        // Get next packet size
+        let packet_size = try!(self.stream.read_le_u16());
+        
+        // Go back to blocking after we receive packet size, the rest of the packet should arrive
+        // soon enough.
         self.stream.set_read_timeout(None);
-        Ok(packet)
+        
+        Ok(try!(InPacket::try_new_from_reader(&mut self.stream, packet_size)))
     }
     
     pub fn get_id(&self) -> ClientId {
@@ -417,10 +424,7 @@ impl InPacket {
         InPacket::new(data)
     }
     
-    pub fn try_new_from_reader<T: Reader>(reader: &mut T) -> IoResult<InPacket> {
-        // Get next packet size
-        let packet_size = try!(reader.read_le_u16());
-        
+    pub fn try_new_from_reader<T: Reader>(reader: &mut T, packet_size: u16) -> IoResult<InPacket> {
         // Get data
         let data = try!(reader.read_exact(packet_size as uint));
         
