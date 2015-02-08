@@ -12,9 +12,9 @@ use assets::GUI_TEXTURE;
 use asset_store::AssetStore;
 use battle_state::BattleContext;
 use module;
-use module::{IModule, ModuleRef};
+use module::{IModule, ModuleBox, ModuleRef};
 use net::ClientId;
-use ship::{Ship, ShipId, ShipRef};
+use ship::{Ship, ShipId, ShipRef, ShipState};
 use sim::SimVisuals;
 use vec::{Vec2, Vec2f};
 
@@ -136,7 +136,7 @@ impl<'a> SpaceGui<'a> {
         client_ship.state.plan_power = client_ship.state.power;
     }
     
-    pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64, dt: f64) {
+    pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
         use graphics::*;
         
         // Clear the screen
@@ -148,7 +148,7 @@ impl<'a> SpaceGui<'a> {
         image(&self.plan_texture, &context.trans(550.0, 10.0), gl);
     }
     
-    pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64, dt: f64) {
+    pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
         use graphics::*;
         
         // Clear the screen
@@ -160,7 +160,7 @@ impl<'a> SpaceGui<'a> {
         image(&self.simulate_texture, &context.trans(550.0, 10.0), gl);
     }
     
-    fn draw_screen(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &Ship, time: f64, dt: f64) {
+    fn draw_screen(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
         use graphics::*;
         
         // Draw the space background
@@ -199,26 +199,19 @@ impl<'a> SpaceGui<'a> {
             let x = self.mouse_x - SHIP_OFFSET_X;
             let y = self.mouse_y - SHIP_OFFSET_Y;
 
-            for module in client_ship.modules.iter() {
-                let mut module_borrowed = module.borrow_mut();
-            
-                // Get module position and size on screen
+            apply_to_module_if_point_inside(client_ship, x, y, |ship_state, _, module_borrowed| {
                 let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
                 let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
-                let module_x = module_x as f64;
-                let module_y = module_y as f64;
-                let module_w = module_w as f64;
-                let module_h = module_h as f64;
-                if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-                    if module_borrowed.get_base().plan_powered {
-                        Rectangle::new([0.0, 0.0, 1.0, 0.5])
-                            .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
-                    } else if client_ship.state.can_plan_activate_module(module_borrowed.get_base()) {
-                        Rectangle::new([1.0, 1.0, 0.0, 0.5])
-                            .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
-                    }
+                let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
+            
+                if module_borrowed.get_base().plan_powered {
+                    Rectangle::new([0.0, 0.0, 1.0, 0.5])
+                        .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
+                } else if ship_state.can_plan_activate_module(module_borrowed.get_base()) {
+                    Rectangle::new([1.0, 1.0, 0.0, 0.5])
+                        .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
                 }
-            }
+            });
         }
         
         if client_ship.state.get_hp() == 0 {
@@ -235,28 +228,17 @@ impl<'a> SpaceGui<'a> {
         if self.selection.is_none() {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
-
-            for module in client_ship.modules.iter() {
-                let mut module_borrowed = module.borrow_mut();
             
-                // Get module position and size on screen
-                let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
-                let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
-                let module_x = module_x as f64;
-                let module_y = module_y as f64;
-                let module_w = module_w as f64;
-                let module_h = module_h as f64;
-                if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-                    if module_borrowed.get_base().plan_powered {
-                        if let Some(target_mode) = module_borrowed.get_target_mode() {
-                            // Select this module and begin targeting
-                            self.selection = Some((module.clone(), target_mode));
-                        }
-                    } else if client_ship.state.can_plan_activate_module(module_borrowed.get_base()) {
-                        client_ship.state.activate_module(module_borrowed.get_base_mut());
+            apply_to_module_if_point_inside(client_ship, x, y, |ship_state, module, module_borrowed| {
+                if module_borrowed.get_base().plan_powered {
+                    if let Some(target_mode) = module_borrowed.get_target_mode() {
+                        // Select this module and begin targeting
+                        self.selection = Some((module.clone(), target_mode));
                     }
+                } else if ship_state.can_plan_activate_module(module_borrowed.get_base()) {
+                    ship_state.activate_module(module_borrowed.get_base_mut());
                 }
-            }
+            });
         }
         
         let mut clear_selection = false;
@@ -267,20 +249,12 @@ impl<'a> SpaceGui<'a> {
                 for render_area in self.render_areas.iter() {
                     let x = x - render_area.x - ENEMY_OFFSET_X;
                     let y = y - render_area.y - ENEMY_OFFSET_Y;
+                    
                     if let Some(ref ship) = render_area.ship {
-                        for module in ship.borrow().modules.iter() {
-                            // Get module position and size on screen
-                            let Vec2{x: module_x, y: module_y} = module.borrow().get_base().get_render_position();
-                            let Vec2{x: module_w, y: module_h} = module.borrow().get_base().get_render_size();
-                            let module_x = module_x as f64;
-                            let module_y = module_y as f64;
-                            let module_w = module_w as f64;
-                            let module_h = module_h as f64;
-                            if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-                                selected_module.borrow_mut().get_base_mut().target_data = Some(module::TargetData::TargetModule(ship.clone(), module.clone()));
-                                clear_selection = true;
-                            }
-                        }
+                        apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
+                            selected_module.borrow_mut().get_base_mut().target_data = Some(module::TargetData::TargetModule(ship.clone(), module.clone()));
+                            clear_selection = true;
+                        });
                     }
                 }
             }
@@ -292,31 +266,24 @@ impl<'a> SpaceGui<'a> {
     }
     
     fn on_mouse_right_pressed(&mut self, x: f64, y: f64, client_ship: &mut Ship) {
+        let mut module_was_deactivated = false;
+    
         if self.selection.is_none() {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
-
-            for module in client_ship.modules.iter() {
-                let mut module_borrowed = module.borrow_mut();
             
-                // Get module position and size on screen
-                let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
-                let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
-                let module_x = module_x as f64;
-                let module_y = module_y as f64;
-                let module_w = module_w as f64;
-                let module_h = module_h as f64;
-                if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-                    let module_power = module_borrowed.get_base().get_power();
-                    if module_borrowed.get_base().plan_powered {
-                        client_ship.state.deactivate_module(module_borrowed.get_base_mut());
-                    }
-                    return;
+            apply_to_module_if_point_inside(client_ship, x, y, |ship_state, module, module_borrowed| {
+                let module_power = module_borrowed.get_base().get_power();
+                if module_borrowed.get_base().plan_powered {
+                    ship_state.deactivate_module(module_borrowed.get_base_mut());
                 }
-            }
+                module_was_deactivated = true;
+            });
         }
         
-        self.selection = None;
+        if !module_was_deactivated {
+            self.selection = None;
+        }
     }
     
     pub fn try_lock(&mut self, ship: &ShipRef) {
@@ -334,6 +301,27 @@ impl<'a> SpaceGui<'a> {
                 render_area.ship = None;
                 break;
             }
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/// Applies function to a module in the ship if the mouse is over the module.
+/// Returns whether or not the function was applied.
+pub fn apply_to_module_if_point_inside<F>(ship: &mut Ship, x: f64, y: f64, mut f: F)
+    where
+        F: FnMut(&mut ShipState, &ModuleRef, &mut ModuleBox)
+{
+    for module in ship.modules.iter() {
+        let mut module_borrowed = module.borrow_mut();
+    
+        // Get module position and size on screen
+        let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
+        let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
+        let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
+        if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
+            f(&mut ship.state, module, module_borrowed.deref_mut());
         }
     }
 }
