@@ -25,6 +25,7 @@ use std::sync::mpsc::channel;
 
 use sdl2_window::Sdl2Window;
 use opengl_graphics::Gl;
+use opengl_graphics::glyph_cache::GlyphCache;
 use window::WindowSettings;
 
 use asset_store::AssetStore;
@@ -86,6 +87,9 @@ fn main () {
     // Create GL device
     let mut gl = Gl::new(opengl);
     
+    // Load our font
+    let glyph_cache = GlyphCache::new(&Path::new("content/fonts/8bit.ttf")).unwrap();
+    
     // Create the asset store
     let asset_store = AssetStore::new();
 
@@ -94,9 +98,7 @@ fn main () {
     
     // Create main menu
     let mut main_menu = MainMenu::new();
-    let selection = main_menu.run(&window, &mut gl, &asset_store);
-
-    if let Some(selection) = selection {
+    main_menu.run(&window, &mut gl, |&mut: window, gl, selection| {
         match selection {
             MainMenuSelection::SinglePlayer => {
                 // Start a local server
@@ -129,7 +131,7 @@ fn main () {
                 // Create the battle state
                 let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
 
-                battle.run(&window, &mut gl, &asset_store, 0);
+                battle.run(window, gl, &asset_store, 0);
             },
             MainMenuSelection::Multiplayer => {
                 use std::str::StrExt;
@@ -207,17 +209,17 @@ fn main () {
                 battle_context.add_ship(player_ship);
                 let mut battle = ClientBattleState::new(client, battle_context);
 
-                battle.run(&window, &mut gl, &asset_store, 5000 - (turn_time_milliseconds as i64));
+                battle.run(window, gl, &asset_store, 5000 - (turn_time_milliseconds as i64));
             },
             MainMenuSelection::Tutorial => {                
                 // Create the tutorial state
                 let mut battle = TutorialState::new();
 
-                battle.run(&window, &mut gl, &asset_store);
+                battle.run(window, gl, &asset_store);
             },
             MainMenuSelection::Exit => {
                 
             },
         }
-    }
+    });
 }

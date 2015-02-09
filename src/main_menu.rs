@@ -7,7 +7,6 @@ use graphics::{Context, ImageSize};
 use input::{keyboard, mouse, Button};
 use opengl_graphics::{Gl, Texture};
 
-use asset_store::AssetStore;
 use net::{Client, OutPacket};
 
 #[derive(FromPrimitive)]
@@ -48,9 +47,10 @@ impl MainMenu {
         }
     }
 
-    pub fn run(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore) -> Option<MainMenuSelection> {
-        let mut menu_selection = None;
-    
+    pub fn run<F>(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, mut f: F)
+        where
+            F: FnMut(&RefCell<Sdl2Window>, &mut Gl, MainMenuSelection)
+    {
         // Main loop
         for e in Events::new(window) {
             use event;
@@ -61,20 +61,20 @@ impl MainMenu {
 
             self.event(&e);
 
-            // Render GUI
-            e.render(|&mut: args: &RenderArgs| {
-                gl.draw([0, 0, args.width as i32, args.height as i32], |: c, gl| {
-                    self.draw(&c, gl, asset_store);
+            {
+                // Render GUI
+                e.render(|&mut: args: &RenderArgs| {
+                    gl.draw([0, 0, args.width as i32, args.height as i32], |: c, gl| {
+                        self.draw(&c, gl);
+                    });
                 });
-            });
+            }
 
             if self.done {
-                menu_selection = Some(self.selected);
-                break;
+                let menu_selection = FromPrimitive::from_u8(self.selected).expect("invalid MainMenuSelection");
+                f(window, gl, menu_selection);
             }
         }
-
-        menu_selection.map(|x| FromPrimitive::from_u8(x).expect("invalid MainMenuSelection"))
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E) {
@@ -156,7 +156,7 @@ impl MainMenu {
         selected
     }
 
-    fn draw(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore) {
+    fn draw(&mut self, context: &Context, gl: &mut Gl) {
         use quack::Set;
         use graphics::*;
         
