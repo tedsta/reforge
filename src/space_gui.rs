@@ -37,7 +37,7 @@ pub struct StatsLabels {
 
 pub struct SpaceGui<'a> {
     // The target ships' render areas
-    render_areas: Vec<ShipRenderArea>,
+    render_area: ShipRenderArea,
     
     // Selected module
     selection: Option<(ModuleRef, module::TargetMode)>,
@@ -61,27 +61,24 @@ pub struct SpaceGui<'a> {
 
 impl<'a> SpaceGui<'a> {
     pub fn new(asset_store: &AssetStore, context: &BattleContext, my_ship_id: ShipId) -> SpaceGui<'a> {
-        let mut render_areas = vec!();
-        for (i, ship) in context.ships_list.iter().filter(|ship| ship.borrow().id != my_ship_id).enumerate() {
-            if i < 1 {
-                //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
-                //let texture = target.get_texture().expect("Failed to get render texture's texture");
-                let x = 1280.0 - 5.0 - 560.0;
-                let y = 128.0;
-                render_areas.push(ShipRenderArea {
-                    ship: Some(ship.clone()),
-                    x: x,
-                    y: y,
-                    width: 560.0,
-                    height: (720.0 - 20.0) - y,
-                    //target: target,
-                    //texture: texture,
-                });
-            }
-        }
+        // Set up the render area
+        //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
+        //let texture = target.get_texture().expect("Failed to get render texture's texture");
+        let x = 1280.0 - 5.0 - 560.0;
+        let y = 128.0;
+        let ship = context.ships_list.iter().filter(|ship| ship.borrow().id != my_ship_id).next().map(|ship| ship.clone());
+        let render_area = ShipRenderArea {
+            ship: ship,
+            x: x,
+            y: y,
+            width: 560.0,
+            height: (720.0 - 20.0) - y,
+            //target: target,
+            //texture: texture,
+        };
     
         SpaceGui {
-            render_areas: render_areas,
+            render_area: render_area,
             selection: None,
             mouse_x: 0.0,
             mouse_y: 0.0,
@@ -173,24 +170,22 @@ impl<'a> SpaceGui<'a> {
         draw_stats(context, gl, &self.stats_labels, client_ship.deref());
     
         let mut enemy_alive = false;
-        for render_area in self.render_areas.iter_mut() {
-            if let Some(ref ship) = render_area.ship {
-                // TODO clear render texture
-                
-                Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([render_area.x, render_area.y, render_area.width, render_area.height], context, gl);
+        if let Some(ref ship) = self.render_area.ship {
+            // TODO clear render texture
             
-                {
-                    let context = context.trans(render_area.x, render_area.y);
-                    
-                    draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, sim_visuals, ship.borrow().deref(), time);
-                    draw_stats(&context.trans(0.0, 450.0), gl, &self.stats_labels, ship.borrow().deref());
-                }
+            Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([self.render_area.x, self.render_area.y, self.render_area.width, self.render_area.height], context, gl);
+        
+            {
+                let context = context.trans(self.render_area.x, self.render_area.y);
                 
-                // TODO draw render texture
+                draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, sim_visuals, ship.borrow().deref(), time);
+                draw_stats(&context.trans(0.0, 450.0), gl, &self.stats_labels, ship.borrow().deref());
+            }
             
-                if ship.borrow().state.get_hp() > 0 {
-                    enemy_alive = true;
-                }
+            // TODO draw render texture
+        
+            if ship.borrow().state.get_hp() > 0 {
+                enemy_alive = true;
             }
         }
         
@@ -246,16 +241,14 @@ impl<'a> SpaceGui<'a> {
         if let Some(ref selection) = self.selection {
             let &(ref selected_module, ref target_mode) = selection;
             if *target_mode == module::TargetMode::TargetModule {
-                for render_area in self.render_areas.iter() {
-                    let x = x - render_area.x - ENEMY_OFFSET_X;
-                    let y = y - render_area.y - ENEMY_OFFSET_Y;
-                    
-                    if let Some(ref ship) = render_area.ship {
-                        apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
-                            selected_module.borrow_mut().get_base_mut().target_data = Some(module::TargetData::TargetModule(ship.clone(), module.clone()));
-                            clear_selection = true;
-                        });
-                    }
+                let x = x - self.render_area.x - ENEMY_OFFSET_X;
+                let y = y - self.render_area.y - ENEMY_OFFSET_Y;
+                
+                if let Some(ref ship) = self.render_area.ship {
+                    apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
+                        selected_module.borrow_mut().get_base_mut().target_data = Some(module::TargetData::TargetModule(ship.clone(), module.clone()));
+                        clear_selection = true;
+                    });
                 }
             }
         }
@@ -287,20 +280,14 @@ impl<'a> SpaceGui<'a> {
     }
     
     pub fn try_lock(&mut self, ship: &ShipRef) {
-        for render_area in self.render_areas.iter_mut() {
-            if render_area.ship.is_none() {
-                render_area.ship = Some(ship.clone());
-                break;
-            }
+        if self.render_area.ship.is_none() {
+            self.render_area.ship = Some(ship.clone());
         }
     }
     
     pub fn remove_lock(&mut self, ship_id: ShipId) {
-        for render_area in self.render_areas.iter_mut() {
-            if render_area.ship.is_some() && render_area.ship.as_ref().unwrap().borrow().id == ship_id {
-                render_area.ship = None;
-                break;
-            }
+        if self.render_area.ship.is_some() && self.render_area.ship.as_ref().unwrap().borrow().id == ship_id {
+            self.render_area.ship = None;
         }
     }
 }
