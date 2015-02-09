@@ -78,7 +78,7 @@ impl TutorialState {
                 }
             
                 // Forward events to GUI
-                gui.event(&e, self.player_ship.borrow_mut().deref_mut());
+                gui.event(&e, &self.player_ship);
                 
                 // Render GUI
                 e.render(|args: &RenderArgs| {
@@ -141,7 +141,7 @@ impl TutorialState {
                 next_tick = tick+1;
             
                 // Forward events to GUI
-                gui.event(&e, self.player_ship.borrow_mut().deref_mut());
+                gui.event(&e, &self.player_ship);
                 
                 // Render GUI
                 e.render(|args: &RenderArgs| {

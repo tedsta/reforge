@@ -110,10 +110,10 @@ impl<'a> SpaceGui<'a> {
         }
     }
     
-    pub fn event<E: GenericEvent>(&mut self, e: &E, client_ship: &mut Ship) {
+    pub fn event<E: GenericEvent>(&mut self, e: &E, client_ship: &ShipRef) {
         use event::*;
         
-        if client_ship.state.get_hp() == 0 {
+        if client_ship.borrow().state.get_hp() == 0 {
             return;
         }
     
@@ -241,12 +241,12 @@ impl<'a> SpaceGui<'a> {
     fn on_key_pressed(&mut self, key: keyboard::Key) {
     }
     
-    fn on_mouse_left_pressed(&mut self, x: f64, y: f64, client_ship: &mut Ship) {
+    fn on_mouse_left_pressed(&mut self, x: f64, y: f64, client_ship: &ShipRef) {
         if self.selection.is_none() {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
-            apply_to_module_if_point_inside(client_ship, x, y, |ship_state, module, module_borrowed| {
+            apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_state, module, module_borrowed| {
                 if module_borrowed.get_base().plan_powered {
                     if let Some(target_mode) = module_borrowed.get_target_mode() {
                         // Select this module and begin targeting
@@ -278,7 +278,7 @@ impl<'a> SpaceGui<'a> {
                 module::TargetMode::OwnModule => {
                     let x = x - SHIP_OFFSET_X;
                     let y = y - SHIP_OFFSET_Y;
-                    apply_to_module_if_point_inside(client_ship, x, y, |_, module, _| {
+                    apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
                         selected_module.borrow_mut().get_base_mut().target_data =
                             Some(module::TargetData::OwnModule(client_ship.clone(), module.clone()));
                         clear_selection = true;
@@ -317,14 +317,14 @@ impl<'a> SpaceGui<'a> {
         }
     }
     
-    fn on_mouse_right_pressed(&mut self, x: f64, y: f64, client_ship: &mut Ship) {
+    fn on_mouse_right_pressed(&mut self, x: f64, y: f64, client_ship: &ShipRef) {
         let mut module_was_deactivated = false;
     
         if self.selection.is_none() {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
-            apply_to_module_if_point_inside(client_ship, x, y, |ship_state, module, module_borrowed| {
+            apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_state, module, module_borrowed| {
                 let module_power = module_borrowed.get_base().get_power();
                 if module_borrowed.get_base().plan_powered {
                     ship_state.deactivate_module(module_borrowed.get_base_mut());

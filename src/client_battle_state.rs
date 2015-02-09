@@ -116,11 +116,10 @@ impl ClientBattleState {
                 println!("Received results at {}", elapsed_time.num_milliseconds());
                 break;
             } else {
-                
             }
         
             // Forward events to GUI
-            gui.event(&e, self.player_ship.borrow_mut().deref_mut());
+            gui.event(&e, &self.player_ship);
             
             // Render GUI
             e.render(|args: &RenderArgs| {
@@ -170,7 +169,7 @@ impl ClientBattleState {
             next_tick = tick+1;
         
             // Forward events to GUI
-            gui.event(&e, self.player_ship.borrow_mut().deref_mut());
+            gui.event(&e, &self.player_ship);
             
             // Render GUI
             e.render(|args: &RenderArgs| {
