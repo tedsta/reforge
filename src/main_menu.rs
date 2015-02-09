@@ -9,7 +9,7 @@ use opengl_graphics::{Gl, Texture};
 
 use net::{Client, OutPacket};
 
-#[derive(FromPrimitive)]
+#[derive(FromPrimitive, PartialEq)]
 pub enum MainMenuSelection {
     SinglePlayer,
     Multiplayer,
@@ -70,6 +70,9 @@ impl MainMenu {
 
             if self.done {
                 let menu_selection = FromPrimitive::from_u8(self.selected).expect("invalid MainMenuSelection");
+                if menu_selection == MainMenuSelection::Exit {
+                    break;
+                }
                 f(window, gl, &self.bg_texture, menu_selection);
                 self.done = false;
             }
