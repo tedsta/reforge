@@ -33,8 +33,8 @@ impl LoginScreen {
             mouse_x: 0.0,
             mouse_y: 0.0,
             
-            username_box: TextBox::new("tedsta".to_string(), 20, [600.0, 300.0], [300.0, 40.0]),
-            password_box: TextBox::new("tedsta".to_string(), 20, [600.0, 370.0], [300.0, 40.0]),
+            username_box: TextBox::new("user".to_string(), 20, [600.0, 300.0], [300.0, 40.0]),
+            password_box: TextBox::new("pass".to_string(), 20, [600.0, 370.0], [300.0, 40.0]),
             
             cancel_button: TextButton::new("Cancel".to_string(), 20, [450.0, 500.0], [150.0, 40.0]),
             login_button: TextButton::new("Login".to_string(), 20, [610.0, 500.0], [150.0, 40.0]),
@@ -231,18 +231,27 @@ impl TextBox {
             // TODO
         });
         e.press(|button| {
-            if let Button::Mouse(button) = button {
-                if button == mouse::MouseButton::Left {
-                    let x = mouse_pos[0];
-                    let y = mouse_pos[1];
-                    if x >= self.position[0] && x <= self.position[0]+self.size[0] &&
-                        y >= self.position[1] && y <= self.position[1]+self.size[1]
-                    {
-                        self.has_focus = true;
-                    } else {
-                        self.has_focus = false;
+            match button {
+                Button::Mouse(button) => {
+                    if button == mouse::MouseButton::Left {
+                        let x = mouse_pos[0];
+                        let y = mouse_pos[1];
+                        if x >= self.position[0] && x <= self.position[0]+self.size[0] &&
+                            y >= self.position[1] && y <= self.position[1]+self.size[1]
+                        {
+                            self.has_focus = true;
+                        } else {
+                            self.has_focus = false;
+                        }
                     }
-                }
+                },
+                Button::Keyboard(key) => {
+                    if self.has_focus {
+                        if key == keyboard::Key::Backspace {
+                            self.text.pop();
+                        }
+                    }
+                },
             }
         });
         e.text(|text| {
