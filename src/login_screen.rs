@@ -13,6 +13,7 @@ use net::{Client, OutPacket};
 
 pub struct LoginScreen {
     done: bool,
+    login_info: Option<(String, String)>,
 
     mouse_x: f64,
     mouse_y: f64,
@@ -30,6 +31,8 @@ impl LoginScreen {
     pub fn new() -> LoginScreen {
         LoginScreen {
             done: false,
+            login_info: None,
+            
             mouse_x: 0.0,
             mouse_y: 0.0,
             
@@ -41,7 +44,7 @@ impl LoginScreen {
         }
     }
 
-    pub fn run(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, bg_texture: &Texture) {
+    pub fn run(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, bg_texture: &Texture) -> Option<(String, String)> {
         // Main loop
         for e in Events::new(window) {
             use event;
@@ -63,6 +66,8 @@ impl LoginScreen {
                 break;
             }
         }
+        
+        self.login_info
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E) {
@@ -83,6 +88,20 @@ impl LoginScreen {
         // Handle text boxes
         self.username_box.event(e, [self.mouse_x, self.mouse_y]);
         self.password_box.event(e, [self.mouse_x, self.mouse_y]);
+        
+        // Handle buttons
+        self.login_button.event(e, [self.mouse_x, self.mouse_y]);
+        self.cancel_button.event(e, [self.mouse_x, self.mouse_y]);
+        
+        if self.cancel_button.clicked() {
+            self.done = true;
+            self.login_info = None;
+        }
+        
+        if self.login_button.clicked() {
+            self.done = true;
+            self.login_info = Some((self.username_box.text.clone(), self.password_box.text.clone()));
+        }
     }
 
     fn on_mouse_pressed(&mut self, button: mouse::MouseButton) {
@@ -145,13 +164,19 @@ enum MouseFocus {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct TextButton {
-    text: String,
+    pub text: String,
     font_size: u32,
     bg_color: [f32; 4],
+    bg_color_hover: [f32; 4],
+    bg_color_focus: [f32; 4],
     text_color: [f32; 4],
     
     position: [f64; 2],
     size: [f64; 2],
+    
+    clicked: bool,
+    
+    mouse_focus: MouseFocus,
 }
 
 impl TextButton {
@@ -159,11 +184,17 @@ impl TextButton {
         TextButton {
             text: text,
             font_size: font_size,
-            bg_color: [0.3, 0.9, 0.0, 1.0],
+            bg_color: [0.3, 1.0, 0.0, 1.0],
+            bg_color_hover: [0.6, 1.0, 0.0, 1.0],
+            bg_color_focus: [1.0, 0.0, 0.0, 1.0],
             text_color: [1.0, 1.0, 1.0, 1.0],
             
             position: position,
             size: size,
+            
+            clicked: false,
+            
+            mouse_focus: MouseFocus::NoHover,
         }
     }
     
@@ -171,8 +202,15 @@ impl TextButton {
         use graphics::*;
         use graphics::text::Text;
     
+        let bg_color =
+            match self.mouse_focus {
+                MouseFocus::NoHover => self.bg_color,
+                MouseFocus::Hover => self.bg_color_hover,
+                MouseFocus::Focus => self.bg_color_focus,
+            };
+    
         // Draw background rectangle
-        Rectangle::new(self.bg_color)
+        Rectangle::new(bg_color)
             .draw([self.position[0], self.position[1], self.size[0], self.size[1]], context, gl);
         
         // Draw text
@@ -183,6 +221,45 @@ impl TextButton {
             &context.trans(self.position[0] + buffer, self.position[1] + self.size[1] - buffer),
             gl,
         );
+    }
+    
+    pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) {
+        use event::*;
+        
+        e.mouse_cursor(|_, _| {
+            if self.mouse_focus != MouseFocus::Focus {
+                let x = mouse_pos[0];
+                let y = mouse_pos[1];
+                if x >= self.position[0] && x <= self.position[0]+self.size[0] &&
+                    y >= self.position[1] && y <= self.position[1]+self.size[1]
+                {
+                    self.mouse_focus = MouseFocus::Hover;
+                } else {
+                    self.mouse_focus = MouseFocus::NoHover;
+                }
+            }
+        });
+        e.press(|button| {
+            if let Button::Mouse(button) = button {
+                if button == mouse::MouseButton::Left {
+                    let x = mouse_pos[0];
+                    let y = mouse_pos[1];
+                    if x >= self.position[0] && x <= self.position[0]+self.size[0] &&
+                        y >= self.position[1] && y <= self.position[1]+self.size[1]
+                    {
+                        self.clicked = true;
+                        self.mouse_focus = MouseFocus::Focus;
+                    } else {
+                        self.clicked = false;
+                        self.mouse_focus = MouseFocus::NoHover;
+                    }
+                }
+            }
+        });
+    }
+    
+    pub fn clicked(&self) -> bool {
+        self.clicked
     }
 }
 

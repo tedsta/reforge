@@ -139,81 +139,81 @@ fn main () {
                 use std::str::StrExt;
                 use std::string::String;
                 
-                LoginScreen::new().run(window, gl, &mut glyph_cache, menu_bg);
-            
-                // Check for IP address in args
-                /*
-                let mut ip_address =
-                    if os::args().len() > 1 {
-                        os::args()[1].clone()
-                    } else {
-                        print!("IP Address: ");
-                        String::from_str(
-                            io::stdin().read_line()
-                                .ok().expect("Failed to read IP address")
-                                .trim_left()
-                        )
+                if let Some((username, password)) = LoginScreen::new().run(window, gl, &mut glyph_cache, menu_bg) {
+                    // Check for IP address in args
+                    /*
+                    let mut ip_address =
+                        if os::args().len() > 1 {
+                            os::args()[1].clone()
+                        } else {
+                            print!("IP Address: ");
+                            String::from_str(
+                                io::stdin().read_line()
+                                    .ok().expect("Failed to read IP address")
+                                    .trim_left()
+                            )
+                        };
+                    ip_address.push_str(":30000"); // Add the port to the end of the address
+                    */
+                    let ip_address = String::from_str("localhost:30000");
+                    
+                    // Get credentials
+                    /*print!("Username: ");
+                    let username = String::from_str(
+                        old_io::stdin().read_line()
+                            .ok().expect("Failed to read username")
+                            .trim_left()
+                    );
+                    print!("Password: ");
+                    let password = String::from_str(
+                        old_io::stdin().read_line()
+                            .ok().expect("Failed to read password")
+                            .trim_left()
+                    );*/
+                    
+                    // Start a local server
+                    let mut server = Server::new();
+                    let login_slot = server.create_slot();
+                    let star_map_slot = server.create_slot();
+                    let star_map_slot_id = star_map_slot.get_id();
+                    let (star_map_account_sender, star_map_account_receiver) = channel();
+                    
+                    Thread::spawn(move || {
+                        server.listen("localhost:30000");
+                    });
+                    
+                    Thread::spawn(move || {
+                        login::run_login_server(login_slot, star_map_slot_id, star_map_account_sender);
+                    });
+                    
+                    Thread::spawn(move || {
+                        let mut star_map_server = StarMapServer::new(star_map_slot);
+                        star_map_server.run(star_map_account_receiver);
+                    });
+                    
+                    // Connect to server
+                    let mut client = Client::new(ip_address.as_slice());
+
+                    let mut packet = OutPacket::new();
+                    packet.write(&LoginPacket{username: username, password: password});
+                    client.send(&packet);
+                    
+                    // Receive the ships from the server
+                    let mut packet = client.receive();
+                    let turn_time_milliseconds: u32 = packet.read().ok().expect("Failed to read turn time from server");
+                    let player_ship = packet.read().ok().expect("Failed to read player's ship");
+                    let ships = match packet.read() {
+                        Ok(ships) => ships,
+                        Err(e) => panic!("Unable to receive ships froms server: {}", e),
                     };
-                ip_address.push_str(":30000"); // Add the port to the end of the address
-                */
-                let ip_address = String::from_str("localhost:30000");
-                
-                // Get credentials
-                print!("Username: ");
-                let username = String::from_str(
-                    old_io::stdin().read_line()
-                        .ok().expect("Failed to read username")
-                        .trim_left()
-                );
-                print!("Password: ");
-                let password = String::from_str(
-                    old_io::stdin().read_line()
-                        .ok().expect("Failed to read password")
-                        .trim_left()
-                );
-                
-                // Start a local server
-                let mut server = Server::new();
-                let login_slot = server.create_slot();
-                let star_map_slot = server.create_slot();
-                let star_map_slot_id = star_map_slot.get_id();
-                let (star_map_account_sender, star_map_account_receiver) = channel();
-                
-                Thread::spawn(move || {
-                    server.listen("localhost:30000");
-                });
-                
-                Thread::spawn(move || {
-                    login::run_login_server(login_slot, star_map_slot_id, star_map_account_sender);
-                });
-                
-                Thread::spawn(move || {
-                    let mut star_map_server = StarMapServer::new(star_map_slot);
-                    star_map_server.run(star_map_account_receiver);
-                });
-                
-                // Connect to server
-                let mut client = Client::new(ip_address.as_slice());
+                    
+                    // Create the battle state
+                    let mut battle_context = BattleContext::new(ships);
+                    battle_context.add_ship(player_ship);
+                    let mut battle = ClientBattleState::new(client, battle_context);
 
-                let mut packet = OutPacket::new();
-                packet.write(&LoginPacket{username: username, password: password});
-                client.send(&packet);
-                
-                // Receive the ships from the server
-                let mut packet = client.receive();
-                let turn_time_milliseconds: u32 = packet.read().ok().expect("Failed to read turn time from server");
-                let player_ship = packet.read().ok().expect("Failed to read player's ship");
-                let ships = match packet.read() {
-                    Ok(ships) => ships,
-                    Err(e) => panic!("Unable to receive ships froms server: {}", e),
-                };
-                
-                // Create the battle state
-                let mut battle_context = BattleContext::new(ships);
-                battle_context.add_ship(player_ship);
-                let mut battle = ClientBattleState::new(client, battle_context);
-
-                battle.run(window, gl, &asset_store, 5000 - (turn_time_milliseconds as i64));
+                    battle.run(window, gl, &asset_store, 5000 - (turn_time_milliseconds as i64));
+                }
             },
             MainMenuSelection::Tutorial => {                
                 // Create the tutorial state

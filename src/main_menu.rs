@@ -71,6 +71,7 @@ impl MainMenu {
             if self.done {
                 let menu_selection = FromPrimitive::from_u8(self.selected).expect("invalid MainMenuSelection");
                 f(window, gl, &self.bg_texture, menu_selection);
+                self.done = false;
             }
         }
     }
