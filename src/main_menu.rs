@@ -49,7 +49,7 @@ impl MainMenu {
 
     pub fn run<F>(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, mut f: F)
         where
-            F: FnMut(&RefCell<Sdl2Window>, &mut Gl, MainMenuSelection)
+            F: FnMut(&RefCell<Sdl2Window>, &mut Gl, &Texture, MainMenuSelection)
     {
         // Main loop
         for e in Events::new(window) {
@@ -61,18 +61,16 @@ impl MainMenu {
 
             self.event(&e);
 
-            {
-                // Render GUI
-                e.render(|args: &RenderArgs| {
-                    gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-                        self.draw(&c, gl);
-                    });
+            // Render GUI
+            e.render(|args: &RenderArgs| {
+                gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+                    self.draw(&c, gl);
                 });
-            }
+            });
 
             if self.done {
                 let menu_selection = FromPrimitive::from_u8(self.selected).expect("invalid MainMenuSelection");
-                f(window, gl, menu_selection);
+                f(window, gl, &self.bg_texture, menu_selection);
             }
         }
     }

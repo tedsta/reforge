@@ -100,7 +100,7 @@ fn main () {
     
     // Create main menu
     let mut main_menu = MainMenu::new();
-    main_menu.run(&window, &mut gl, |window, gl, selection| {
+    main_menu.run(&window, &mut gl, |window, gl, menu_bg, selection| {
         match selection {
             MainMenuSelection::SinglePlayer => {
                 // Start a local server
@@ -139,7 +139,7 @@ fn main () {
                 use std::str::StrExt;
                 use std::string::String;
                 
-                LoginScreen::new().run(window, gl, &mut glyph_cache);
+                LoginScreen::new().run(window, gl, &mut glyph_cache, menu_bg);
             
                 // Check for IP address in args
                 /*

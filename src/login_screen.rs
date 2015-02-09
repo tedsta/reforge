@@ -16,9 +16,6 @@ pub struct LoginScreen {
 
     mouse_x: f64,
     mouse_y: f64,
-
-    // Textures
-    bg_texture: Texture,
     
     // Buttons
     cancel_button: TextButton,
@@ -31,13 +28,12 @@ impl LoginScreen {
             done: false,
             mouse_x: 0.0,
             mouse_y: 0.0,
-            bg_texture: Texture::from_path(&Path::new("content/textures/gui/main_menu.png")).unwrap(),
-            cancel_button: TextButton::new("Cancel".to_string(), 20, [300.0, 300.0], [90.0, 20.0]),
-            login_button: TextButton::new("Login".to_string(), 20, [400.0, 300.0], [90.0, 20.0]),
+            cancel_button: TextButton::new("Cancel".to_string(), 20, [450.0, 500.0], [150.0, 40.0]),
+            login_button: TextButton::new("Login".to_string(), 20, [610.0, 500.0], [150.0, 40.0]),
         }
     }
 
-    pub fn run(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache) {
+    pub fn run(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, bg_texture: &Texture) {
         // Main loop
         for e in Events::new(window) {
             use event;
@@ -51,7 +47,7 @@ impl LoginScreen {
             // Render GUI
             e.render(|args: &RenderArgs| {
                 gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-                    self.draw(&c, gl, glyph_cache);
+                    self.draw(&c, gl, glyph_cache, bg_texture);
                 });
             });
 
@@ -90,14 +86,14 @@ impl LoginScreen {
         self.mouse_y = y;
     }
 
-    fn draw(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache) {
+    fn draw(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, bg_texture: &Texture) {
         use quack::Set;
         use graphics::*;
         
         // Clear the screen
         clear([0.0; 4], gl);
 
-        image(&self.bg_texture, context, gl);
+        image(bg_texture, context, gl);
         
         // Draw the buttons
         self.cancel_button.draw(context, gl, glyph_cache);
@@ -134,13 +130,16 @@ impl TextButton {
         use graphics::*;
         use graphics::text::Text;
     
+        // Draw background rectangle
         Rectangle::new(self.bg_color)
             .draw([self.position[0], self.position[1], self.size[0], self.size[1]], context, gl);
         
+        // Draw text
+        let buffer = (self.size[1] - (self.font_size as f64)) / 2.0;
         Text::colored(self.text_color, self.font_size).draw(
             self.text.as_slice(),
             glyph_cache,
-            &context.trans(self.position[0] + 5.0, self.position[1] + 5.0),
+            &context.trans(self.position[0] + buffer, self.position[1] + self.size[1] - buffer),
             gl,
         );
     }
