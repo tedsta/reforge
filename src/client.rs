@@ -33,6 +33,7 @@ use battle_state::BattleContext;
 use battle_type::BattleType;
 use client_battle_state::ClientBattleState;
 use login::LoginPacket;
+use login_screen::LoginScreen;
 use main_menu::{MainMenu, MainMenuSelection};
 use net::{Client, OutPacket};
 use star_map_server::StarMapServer;
@@ -89,7 +90,7 @@ fn main () {
     let mut gl = Gl::new(opengl);
     
     // Load our font
-    let glyph_cache = GlyphCache::new(&Path::new("content/fonts/8bit.ttf")).unwrap();
+    let mut glyph_cache = GlyphCache::new(&Path::new("content/fonts/8bit.ttf")).unwrap();
     
     // Create the asset store
     let asset_store = AssetStore::new();
@@ -137,6 +138,8 @@ fn main () {
             MainMenuSelection::Multiplayer => {
                 use std::str::StrExt;
                 use std::string::String;
+                
+                LoginScreen::new().run(window, gl, &mut glyph_cache);
             
                 // Check for IP address in args
                 /*

@@ -11,7 +11,7 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use asset_store::AssetStore;
 use net::{Client, OutPacket};
 
-pub struct MainMenu {
+pub struct LoginScreen {
     done: bool,
 
     mouse_x: f64,
@@ -19,15 +19,21 @@ pub struct MainMenu {
 
     // Textures
     bg_texture: Texture,
+    
+    // Buttons
+    cancel_button: TextButton,
+    login_button: TextButton,
 }
 
-impl MainMenu {
-    pub fn new() -> MainMenu {
-        MainMenu {
+impl LoginScreen {
+    pub fn new() -> LoginScreen {
+        LoginScreen {
             done: false,
             mouse_x: 0.0,
             mouse_y: 0.0,
             bg_texture: Texture::from_path(&Path::new("content/textures/gui/main_menu.png")).unwrap(),
+            cancel_button: TextButton::new("Cancel".to_string(), 20, [300.0, 300.0], [90.0, 20.0]),
+            login_button: TextButton::new("Login".to_string(), 20, [400.0, 300.0], [90.0, 20.0]),
         }
     }
 
@@ -92,28 +98,50 @@ impl MainMenu {
         clear([0.0; 4], gl);
 
         image(&self.bg_texture, context, gl);
+        
+        // Draw the buttons
+        self.cancel_button.draw(context, gl, glyph_cache);
+        self.login_button.draw(context, gl, glyph_cache);
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct Button {
+struct TextButton {
     text: String,
     font_size: u32,
-    bg_color: Color,
-    text_color: Color,
+    bg_color: [f32; 4],
+    text_color: [f32; 4],
+    
+    position: [f64; 2],
+    size: [f64; 2],
 }
 
-impl Button {
-    pub fn new(text: String, font_size: u32) -> Button {
-        Button {
+impl TextButton {
+    pub fn new(text: String, font_size: u32, position: [f64; 2], size: [f64; 2]) -> TextButton {
+        TextButton {
             text: text,
             font_size: font_size,
+            bg_color: [0.3, 0.9, 0.0, 1.0],
+            text_color: [1.0, 1.0, 1.0, 1.0],
+            
+            position: position,
+            size: size,
         }
     }
     
     pub fn draw(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache) {
+        use graphics::*;
+        use graphics::text::Text;
+    
         Rectangle::new(self.bg_color)
-            .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
+            .draw([self.position[0], self.position[1], self.size[0], self.size[1]], context, gl);
+        
+        Text::colored(self.text_color, self.font_size).draw(
+            self.text.as_slice(),
+            glyph_cache,
+            &context.trans(self.position[0] + 5.0, self.position[1] + 5.0),
+            gl,
+        );
     }
 }
