@@ -262,16 +262,29 @@ impl<'a> SpaceGui<'a> {
         
         if let Some(ref selection) = self.selection {
             let &(ref selected_module, ref target_mode) = selection;
-            if *target_mode == module::TargetMode::TargetModule {
-                let x = x - self.render_area.x - ENEMY_OFFSET_X;
-                let y = y - self.render_area.y - ENEMY_OFFSET_Y;
-                
-                if let Some(ref ship) = self.render_area.ship {
-                    apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
-                        selected_module.borrow_mut().get_base_mut().target_data = Some(module::TargetData::TargetModule(ship.clone(), module.clone()));
+
+            match *target_mode {
+                module::TargetMode::TargetModule => {
+                    let x = x - self.render_area.x - ENEMY_OFFSET_X;
+                    let y = y - self.render_area.y - ENEMY_OFFSET_Y;
+                    if let Some(ref ship) = self.render_area.ship {
+                        apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
+                            selected_module.borrow_mut().get_base_mut().target_data =
+                                Some(module::TargetData::TargetModule(ship.clone(), module.clone()));
+                            clear_selection = true;
+                        });
+                    }
+                },
+                module::TargetMode::OwnModule => {
+                    let x = x - SHIP_OFFSET_X;
+                    let y = y - SHIP_OFFSET_Y;
+                    apply_to_module_if_point_inside(client_ship, x, y, |_, module, _| {
+                        selected_module.borrow_mut().get_base_mut().target_data =
+                            Some(module::TargetData::OwnModule(client_ship.clone(), module.clone()));
                         clear_selection = true;
                     });
-                }
+                },
+                _ => {},
             }
         }
         
