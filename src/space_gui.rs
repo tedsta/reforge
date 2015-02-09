@@ -57,6 +57,9 @@ pub struct SpaceGui<'a> {
     
     // Space background
     space_bg: SpaceStars,
+
+    // targets
+    target_icons: Vec<TargetIcon>,
 }
 
 impl<'a> SpaceGui<'a> {
@@ -76,6 +79,8 @@ impl<'a> SpaceGui<'a> {
             //target: target,
             //texture: texture,
         };
+
+        let ship = render_area.ship.as_ref().unwrap().clone();
     
         SpaceGui {
             render_area: render_area,
@@ -100,6 +105,8 @@ impl<'a> SpaceGui<'a> {
             },
             
             space_bg: SpaceStars::new(),
+
+            target_icons: vec![TargetIcon{ship: ship}],
         }
     }
     
@@ -214,6 +221,21 @@ impl<'a> SpaceGui<'a> {
         } else if !enemy_alive {
             image(&self.win_texture, &context.trans(550.0, 100.0), gl);
         }
+
+        // draw target icons
+        for (i, icon) in self.target_icons.iter().enumerate() {
+            let i = i as f64;
+
+            if let Some(ref ship) = self.render_area.ship {
+                if ship.borrow().id == icon.ship.borrow().id {
+                    Rectangle::new([0.0, 0.0, 1.0, 1.0])
+                        .draw([715.0+(i*100.0), 5.0, 96.0, 96.0], context, gl);
+                }
+            } else {
+                Rectangle::new([1.0, 0.0, 0.0, 1.0])
+                    .draw([715.0+(i*100.0), 5.0, 96.0, 96.0], context, gl);
+            }
+        }
     }
     
     fn on_key_pressed(&mut self, key: keyboard::Key) {
@@ -255,6 +277,30 @@ impl<'a> SpaceGui<'a> {
         
         if clear_selection {
             self.selection = None;
+        }
+
+        for (i, icon) in self.target_icons.iter().enumerate() {
+            let i = i as f64;
+            let icon_x = 715.0+(i*100.0);
+            let icon_y = 5.0;
+            let icon_w = 96.0;
+            let icon_h = 96.0;
+
+            if x >= icon_x && x <= icon_x+icon_w && y >= icon_y && y <= icon_y+icon_h {
+                let mut should_change = false;
+
+                if let Some(ref ship) = self.render_area.ship { // switching to a new ship
+                    if ship.borrow().id != icon.ship.borrow().id {
+                        should_change = true;
+                    } else {
+                        // do nothing
+                    }
+                } 
+                if should_change {
+                    self.render_area.ship = Some(icon.ship.clone());
+                    break;
+                }
+            }
         }
     }
     
@@ -311,6 +357,12 @@ pub fn apply_to_module_if_point_inside<F>(ship: &mut Ship, x: f64, y: f64, mut f
             f(&mut ship.state, module, module_borrowed.deref_mut());
         }
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct TargetIcon {
+    ship: ShipRef,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
