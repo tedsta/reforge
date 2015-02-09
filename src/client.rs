@@ -98,7 +98,7 @@ fn main () {
     
     // Create main menu
     let mut main_menu = MainMenu::new();
-    main_menu.run(&window, &mut gl, |&mut: window, gl, selection| {
+    main_menu.run(&window, &mut gl, |window, gl, selection| {
         match selection {
             MainMenuSelection::SinglePlayer => {
                 // Start a local server

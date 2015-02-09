@@ -63,8 +63,8 @@ impl MainMenu {
 
             {
                 // Render GUI
-                e.render(|&mut: args: &RenderArgs| {
-                    gl.draw([0, 0, args.width as i32, args.height as i32], |: c, gl| {
+                e.render(|args: &RenderArgs| {
+                    gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
                         self.draw(&c, gl);
                     });
                 });
