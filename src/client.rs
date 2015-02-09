@@ -52,6 +52,7 @@ mod battle_state;
 mod battle_type;
 mod client_battle_state;
 mod login;
+mod login_screen;
 mod main_menu;
 mod module;
 mod net;
