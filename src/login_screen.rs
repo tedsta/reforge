@@ -3,7 +3,7 @@ use std::num::FromPrimitive;
 
 use sdl2_window::Sdl2Window;
 use event::{Events, GenericEvent, RenderArgs};
-use graphics::{Context, ImageSize};
+use graphics::{Color, Context};
 use input::{keyboard, mouse, Button};
 use opengl_graphics::{Gl, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
@@ -92,5 +92,28 @@ impl MainMenu {
         clear([0.0; 4], gl);
 
         image(&self.bg_texture, context, gl);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+struct Button {
+    text: String,
+    font_size: u32,
+    bg_color: Color,
+    text_color: Color,
+}
+
+impl Button {
+    pub fn new(text: String, font_size: u32) -> Button {
+        Button {
+            text: text,
+            font_size: font_size,
+        }
+    }
+    
+    pub fn draw(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache) {
+        Rectangle::new(self.bg_color)
+            .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
     }
 }
