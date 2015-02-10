@@ -59,6 +59,7 @@ mod login_screen;
 mod main_menu;
 mod module;
 mod net;
+mod sector_data;
 mod sector_state;
 mod ship;
 mod sim;

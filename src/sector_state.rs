@@ -5,11 +5,11 @@ use std::ops::{Deref, DerefMut};
 use std::sync::mpsc::{Sender, Receiver};
 use time;
 
-use login::AccountBox;
 use ai::run_ai;
 use battle_state::{BattleContext, ClientPacketId, ServerPacketId};
+use login::AccountBox;
 use module::Module;
-use net::{ClientId, ServerSlot, SlotInMsg, InPacket, OutPacket};
+use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
 use ship::{Ship, ShipId, ShipStored};
 use sim::SimEvents;
 

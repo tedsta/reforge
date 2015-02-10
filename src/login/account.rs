@@ -3,7 +3,7 @@ use std::string::String;
 
 use net::ClientId;
 use ship::ShipStored;
-use star_map_server::SectorId;
+use sector_data::SectorId;
 
 pub type AccountBox = Box<Account>;
 

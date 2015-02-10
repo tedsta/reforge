@@ -9,8 +9,12 @@ use opengl_graphics::glyph_cache::GlyphCache;
 
 use gui::TextButton;
 
+pub enum StarMapAction {
+    Close,
+}
+
 pub struct StarMapGui {
-    done: bool,
+    action: Option<StarMapAction>,
     
     // Buttons
     close_button: TextButton,
@@ -20,14 +24,14 @@ pub struct StarMapGui {
 impl StarMapGui {
     pub fn new() -> StarMapGui {
         StarMapGui {
-            done: false,
+            action: None,
             
             close_button: TextButton::new("Close".to_string(), 20, [450.0, 400.0], [150.0, 40.0]),
             jump_button: TextButton::new("Jump".to_string(), 20, [610.0, 400.0], [150.0, 40.0]),
         }
     }
 
-    pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) {
+    pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) -> Option<StarMapAction> {
         use event::*;
         
         e.press(|button| {
@@ -44,12 +48,13 @@ impl StarMapGui {
         self.close_button.event(e, mouse_pos);
         
         if self.close_button.get_clicked() {
-            self.done = true;
+            self.action = Some(StarMapAction::Close);
         }
         
         if self.jump_button.get_clicked() {
-            self.done = true;
         }
+        
+        self.action.take()
     }
 
     fn on_mouse_pressed(&mut self, button: mouse::MouseButton) {

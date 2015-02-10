@@ -6,12 +6,12 @@ use net::{
     SlotInMsg,
 };
 
-use super::account::{
+use super::{
     AccountBox,
     AccountManager,
     LoginError,
 };
-use super::login_packet::LoginPacket;
+use super::LoginPacket;
 use ship::{Ship, ShipId, ShipStored};
 
 pub fn run_login_server(slot: ServerSlot, star_map_slot_id: ServerSlotId, star_map_chan: Sender<AccountBox>) {

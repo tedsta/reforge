@@ -9,14 +9,19 @@ use net::{
     ServerSlotId,
     SlotInMsg,
 };
+use sector_data::{SectorData, SectorId};
 use sector_state::SectorState;
 
-#[derive(PartialEq, Eq, Hash, RustcEncodable, RustcDecodable)]
-pub struct SectorId(pub u32);
+pub struct Sector {
+    pub slot_id: ServerSlotId,
+    pub to_sector_sender: Sender<AccountBox>,
+    pub from_sector_receiver: Receiver<AccountBox>,
+    pub data: SectorData,
+}
 
 pub struct StarMapServer {
     slot: ServerSlot,
-    sectors: HashMap<SectorId, (ServerSlotId, Sender<AccountBox>, Receiver<AccountBox>)>,
+    sectors: HashMap<SectorId, Sector>,
 }
 
 impl StarMapServer {
@@ -26,7 +31,16 @@ impl StarMapServer {
         let (to_sector_sender, to_sector_receiver) = channel();
         let (from_sector_sender, from_sector_receiver) = channel();
         let sector_slot = slot.create_slot();
-        sectors.insert(SectorId(0), (sector_slot.get_id(), to_sector_sender, from_sector_receiver));
+        sectors.insert(SectorId(0), Sector {
+            slot_id: sector_slot.get_id(),
+            to_sector_sender: to_sector_sender,
+            from_sector_receiver: from_sector_receiver,
+            data: SectorData {
+                id: SectorId(0),
+                map_x: 50.0,
+                map_y: 50.0,
+            },
+        });
         
         Thread::spawn(move || {
             let mut sector_state = SectorState::new(sector_slot, BattleContext::new(vec!()));
@@ -53,10 +67,10 @@ impl StarMapServer {
             }
             
             if let Ok(account) = account_receiver.try_recv() {
-                let (ref sector_slot_id, ref to_sector_account_sender, _) = self.sectors[account.sector];
+                let ref sector = self.sectors[account.sector];
                 
-                self.slot.transfer_client(account.client_id.expect("This needs to have a client ID"), *sector_slot_id);
-                to_sector_account_sender.send(account);
+                self.slot.transfer_client(account.client_id.expect("This needs to have a client ID"), sector.slot_id);
+                sector.to_sector_sender.send(account);
             }
         }
     }

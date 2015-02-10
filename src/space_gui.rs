@@ -11,12 +11,13 @@ use opengl_graphics::glyph_cache::GlyphCache;
 
 use asset_store::AssetStore;
 use battle_state::BattleContext;
+use gui::TextButton;
 use module;
 use module::{IModule, ModuleBox, ModuleRef};
 use net::ClientId;
 use ship::{Ship, ShipId, ShipRef, ShipState};
 use sim::SimVisuals;
-use star_map_gui::StarMapGui;
+use star_map_gui::{StarMapAction, StarMapGui};
 use vec::{Vec2, Vec2f};
 
 static SHIP_OFFSET_X: f64 = 80.0;
@@ -59,7 +60,9 @@ pub struct SpaceGui<'a> {
     // Space background
     space_bg: SpaceStars,
     
+    star_map_button: TextButton,
     star_map_gui: StarMapGui,
+    show_star_map: bool,
 
     // targets
     target_icons: Vec<TargetIcon>,
@@ -109,7 +112,9 @@ impl<'a> SpaceGui<'a> {
             
             space_bg: SpaceStars::new(),
             
+            star_map_button: TextButton::new("star map".to_string(), 20, [550.0, 50.0], [120.0, 40.0]),
             star_map_gui: StarMapGui::new(),
+            show_star_map: false,
 
             target_icons: vec![TargetIcon{ship: ship}],
         }
@@ -140,7 +145,18 @@ impl<'a> SpaceGui<'a> {
             }
         });
         
-        self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]);
+        if let Some(star_map_result) = self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]) {
+            match star_map_result {
+                StarMapAction::Close => {
+                    self.show_star_map = false;
+                },
+            }
+        }
+        
+        self.star_map_button.event(e, [self.mouse_x, self.mouse_y]);
+        if self.star_map_button.get_clicked() {
+            self.show_star_map = true;
+        }
     }
     
     pub fn reset_plan_stats(&mut self, client_ship: &mut Ship) {
@@ -158,7 +174,9 @@ impl<'a> SpaceGui<'a> {
         // Draw planning text
         image(&self.plan_texture, &context.trans(550.0, 10.0), gl);
         
-        self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
+        if self.show_star_map {
+            self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
+        }
     }
     
     pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
@@ -172,7 +190,9 @@ impl<'a> SpaceGui<'a> {
         // Draw simulating text
         image(&self.simulate_texture, &context.trans(550.0, 10.0), gl);
         
-        self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
+        if self.show_star_map {
+            self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
+        }
     }
     
     fn draw_screen(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
@@ -232,6 +252,8 @@ impl<'a> SpaceGui<'a> {
         } else if !enemy_alive {
             image(&self.win_texture, &context.trans(550.0, 100.0), gl);
         }
+        
+        self.star_map_button.draw(context, gl, glyph_cache);
 
         // draw target icons
         for (i, icon) in self.target_icons.iter().enumerate() {
