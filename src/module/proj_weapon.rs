@@ -17,7 +17,6 @@ use module;
 use module::{IModule, Module, ModuleRef, ModuleBase, ModuleBox};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipRef, ShipState};
-use space_gui;
 use sim::{SimEvent, SimEventAdder};
 use vec::{Vec2, Vec2f};
 
@@ -57,7 +56,7 @@ impl ProjectileWeaponModule {
         }
     }
     
-    pub fn from_file(asset_store: &AssetStore, path: &Path) -> Module<ProjectileWeaponModule> {
+    pub fn from_file(path: &Path) -> Module<ProjectileWeaponModule> {
         let mut damage = 1;
         let mut num_shots = 1;
         let mut texture = String::from_str("WEAPON");

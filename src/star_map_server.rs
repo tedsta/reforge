@@ -5,6 +5,7 @@ use std::thread::Thread;
 use battle_state::BattleContext;
 use login::AccountBox;
 use net::{
+    OutPacket,
     ServerSlot,
     ServerSlotId,
     SlotInMsg,
@@ -67,9 +68,17 @@ impl StarMapServer {
             }
             
             if let Ok(account) = account_receiver.try_recv() {
+                let client_id = account.client_id.expect("This needs to have a client ID");
+            
+                let sector_data: Vec<SectorData> = self.sectors.iter().map(|(_, s)| s.data.clone()).collect();
+            
+                let mut sectors_packet = OutPacket::new();
+                sectors_packet.write(&sector_data).ok().expect("Failed to write SectorData");
+                self.slot.send(client_id, sectors_packet);
+            
                 let ref sector = self.sectors[account.sector];
                 
-                self.slot.transfer_client(account.client_id.expect("This needs to have a client ID"), sector.slot_id);
+                self.slot.transfer_client(client_id, sector.slot_id);
                 sector.to_sector_sender.send(account);
             }
         }

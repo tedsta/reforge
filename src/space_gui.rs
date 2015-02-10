@@ -86,7 +86,7 @@ impl<'a> SpaceGui<'a> {
             //texture: texture,
         };
 
-        let ship = render_area.ship.as_ref().unwrap().clone();
+        let target_icons = context.ships_list.iter().filter(|ship| ship.borrow().id != my_ship_id).take(5).map(|ship| TargetIcon { ship: ship.clone() }).collect();
     
         SpaceGui {
             render_area: render_area,
@@ -116,7 +116,7 @@ impl<'a> SpaceGui<'a> {
             star_map_gui: StarMapGui::new(),
             show_star_map: false,
 
-            target_icons: vec![TargetIcon{ship: ship}],
+            target_icons: target_icons,
         }
     }
     
@@ -263,6 +263,9 @@ impl<'a> SpaceGui<'a> {
                 if ship.borrow().id == icon.ship.borrow().id {
                     Rectangle::new([0.0, 0.0, 1.0, 1.0])
                         .draw([715.0+(i*100.0), 5.0, 96.0, 96.0], context, gl);
+                } else {
+                    Rectangle::new([1.0, 0.0, 0.0, 1.0])
+                        .draw([715.0+(i*100.0), 5.0, 96.0, 96.0], context, gl);
                 }
             } else {
                 Rectangle::new([1.0, 0.0, 0.0, 1.0])
@@ -375,12 +378,18 @@ impl<'a> SpaceGui<'a> {
         if self.render_area.ship.is_none() {
             self.render_area.ship = Some(ship.clone());
         }
+        
+        if self.target_icons.len() < 5 {
+            self.target_icons.push(TargetIcon { ship: ship.clone() });
+        }
     }
     
     pub fn remove_lock(&mut self, ship_id: ShipId) {
         if self.render_area.ship.is_some() && self.render_area.ship.as_ref().unwrap().borrow().id == ship_id {
             self.render_area.ship = None;
         }
+        
+        self.target_icons.retain(|i| i.ship.borrow().id != ship_id);
     }
 }
 

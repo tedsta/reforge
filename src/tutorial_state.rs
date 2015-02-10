@@ -166,9 +166,9 @@ impl TutorialState {
 // Tutorial ship generation
 
 fn create_player_ship() -> Ship {
-    Ship::generate(0, 5)
+    Ship::generate(0, "player".to_string(), 5)
 }
 
 fn create_enemy_ship() -> Ship {
-    Ship::generate(1, 5)
+    Ship::generate(1, "enemy".to_string(), 5)
 }

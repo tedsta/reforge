@@ -111,7 +111,7 @@ impl ServerBattleState {
                         
                         // Replace dead ships with better ships
                         if ship.state.get_hp() == 0 {
-                            let mut better_ship = Ship::generate(ship.id, ship.level + 1);
+                            let mut better_ship = Ship::generate(ship.id, ship.name.clone(), ship.level + 1);
                             better_ship.client_id = ship.client_id;
                             
                             self.ships_to_add.push(better_ship);

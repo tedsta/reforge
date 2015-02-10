@@ -55,7 +55,7 @@ impl SectorState {
     
     pub fn run(&mut self, to_map_sender: Sender<AccountBox>, from_map_receiver: Receiver<AccountBox>) {
         // TODO: come up with better way to generate AI ship IDs
-        let mut ai_ship = Ship::generate((100000000) as ShipId, 2);
+        let mut ai_ship = Ship::generate((100000000) as ShipId, "bot1".to_string(), 2);
         self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
     
         loop {
@@ -173,7 +173,7 @@ impl SectorState {
             
             // Replace dead ships with better ships
             if ship.state.get_hp() == 0 {
-                let mut better_ship = Ship::generate(ship.id, ship.level + 1);
+                let mut better_ship = Ship::generate(ship.id, ship.name.clone(), ship.level + 1);
                 better_ship.client_id = ship.client_id;
                 
                 self.ships_to_add.push(better_ship);

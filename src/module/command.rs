@@ -9,7 +9,6 @@ use module;
 use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
-use space_gui;
 use sim::SimEventAdder;
 use vec::{Vec2, Vec2f};
 

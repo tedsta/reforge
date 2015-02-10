@@ -13,6 +13,7 @@ use sdl2_window::Sdl2Window;
 use asset_store::AssetStore;
 use battle_state::{BattleContext, ClientPacketId, ServerPacketId, TICKS_PER_SECOND};
 use net::{Client, OutPacket};
+use sector_data::SectorData;
 use ship::{Ship, ShipId, ShipRef};
 use sim::{SimEvents, SimVisuals};
 use space_gui::SpaceGui;
@@ -42,7 +43,7 @@ impl ClientBattleState {
         }
     }
     
-    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, mut first_time_bias: i64) {
+    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>, mut first_time_bias: i64) {
         use window::ShouldClose;
         use quack::Get;
     
@@ -193,8 +194,11 @@ impl ClientBattleState {
         for ship in self.ships_to_add.drain() {
             let ship = Rc::new(RefCell::new(ship));
             
+            println!("Got a new ship {:?}", ship.borrow().client_id);
+            
             // Only add the ship if it's not the player's ship
             if ship.borrow().client_id != Some(self.client.get_id()) {
+                println!("Trying to lock");
                 gui.try_lock(&ship);
                 self.context.add_ship(ship);
             }

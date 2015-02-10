@@ -12,6 +12,8 @@ default = ["client"]
 
 client = []
 
+server = []
+
 [[bin]]
 
 name = "reforge_client"

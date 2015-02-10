@@ -37,12 +37,12 @@ use login_screen::LoginScreen;
 use main_menu::{MainMenu, MainMenuSelection};
 use net::{Client, OutPacket};
 use star_map_gui::StarMapGui;
-use star_map_server::StarMapServer;
 use tutorial_state::TutorialState;
 
 // Server stuff
 use battle_scheduler::BattleScheduler;
 use net::Server;
+use star_map_server::StarMapServer;
 
 #[macro_escape]
 mod util;
@@ -108,7 +108,7 @@ fn main () {
         match selection {
             MainMenuSelection::SinglePlayer => {
                 // Start a local server
-                let mut server = Server::new();
+                /*let mut server = Server::new();
                 let slot = server.create_slot();
                 
                 Thread::spawn(move || {
@@ -137,7 +137,7 @@ fn main () {
                 // Create the battle state
                 let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
 
-                battle.run(window, gl, &mut glyph_cache, &asset_store, 0);
+                battle.run(window, gl, &mut glyph_cache, &asset_store, 0);*/
             },
             MainMenuSelection::Multiplayer => {
                 use std::str::StrExt;
@@ -161,22 +161,8 @@ fn main () {
                     */
                     let ip_address = String::from_str("localhost:30000");
                     
-                    // Get credentials
-                    /*print!("Username: ");
-                    let username = String::from_str(
-                        old_io::stdin().read_line()
-                            .ok().expect("Failed to read username")
-                            .trim_left()
-                    );
-                    print!("Password: ");
-                    let password = String::from_str(
-                        old_io::stdin().read_line()
-                            .ok().expect("Failed to read password")
-                            .trim_left()
-                    );*/
-                    
                     // Start a local server
-                    let mut server = Server::new();
+                    /*let mut server = Server::new();
                     let login_slot = server.create_slot();
                     let star_map_slot = server.create_slot();
                     let star_map_slot_id = star_map_slot.get_id();
@@ -193,7 +179,7 @@ fn main () {
                     Thread::spawn(move || {
                         let mut star_map_server = StarMapServer::new(star_map_slot);
                         star_map_server.run(star_map_account_receiver);
-                    });
+                    });*/
                     
                     // Connect to server
                     let mut client = Client::new(ip_address.as_slice());
@@ -201,6 +187,10 @@ fn main () {
                     let mut packet = OutPacket::new();
                     packet.write(&LoginPacket{username: username, password: password});
                     client.send(&packet);
+                    
+                    // Receive the star map
+                    let mut packet = client.receive();
+                    let sectors = packet.read().ok().expect("Failed to read star map");
                     
                     // Receive the ships from the server
                     let mut packet = client.receive();
@@ -216,7 +206,7 @@ fn main () {
                     battle_context.add_ship(player_ship);
                     let mut battle = ClientBattleState::new(client, battle_context);
 
-                    battle.run(window, gl, &mut glyph_cache, &asset_store, 5000 - (turn_time_milliseconds as i64));
+                    battle.run(window, gl, &mut glyph_cache, &asset_store, sectors, 5000 - (turn_time_milliseconds as i64));
                 }
             },
             MainMenuSelection::Tutorial => {                

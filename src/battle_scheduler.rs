@@ -68,11 +68,11 @@ impl BattleScheduler {
 fn schedule_ai(new_slot: ServerSlot, client_id: ClientId) {
     Thread::spawn(move || {
         // Create ships
-        let mut ship1 = Ship::generate(client_id as ShipId, 5);
+        let mut ship1 = Ship::generate(client_id as ShipId, "player".to_string(), 5);
         ship1.client_id = Some(client_id);
         
         // TODO: come up with better way to generate AI ship IDs
-        let mut ship2 = Ship::generate((100000000 - client_id) as ShipId, 2);
+        let mut ship2 = Ship::generate((100000000 - client_id) as ShipId, "bot1".to_string(), 2);
         ship2.client_id = None;
     
         // Map clients to their ships
@@ -90,7 +90,7 @@ fn schedule_ffa(new_slot: ServerSlot, clients: Vec<ClientId>) {
         let mut ships = vec!();
         for client_id in clients.iter() {
             // Create player's ship
-            let mut ship = Ship::generate(*client_id as ShipId, 5);
+            let mut ship = Ship::generate(*client_id as ShipId, "player".to_string(), 5);
             ship.client_id = Some(*client_id);
             
             // Add to the list of ships

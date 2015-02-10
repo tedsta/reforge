@@ -1,35 +1,50 @@
 #![crate_name = "reforge_server"]
 #![crate_type = "bin"]
-#![feature(globs)]
-#![feature(macro_rules)]
 #![feature(box_syntax)]
 
 extern crate bincode;
+extern crate time;
 extern crate "rustc-serialize" as rustc_serialize;
 
-use net::Server;
-use battle_scheduler::BattleScheduler;
+use std::thread::Thread;
+use std::sync::mpsc::channel;
 
-pub mod ai;
-pub mod assets;
-pub mod battle_scheduler;
-pub mod battle_state;
-pub mod battle_type;
-pub mod module;
-pub mod net;
-pub mod server_battle_state;
-pub mod ship;
-pub mod sim;
-pub mod vec;
+use net::Server;
+use star_map_server::StarMapServer;
+
+mod ai;
+mod assets;
+mod battle_state;
+mod battle_type;
+mod login;
+mod module;
+mod net;
+mod sector_data;
+mod sector_state;
+mod ship;
+mod sim;
+mod vec;
+
+mod battle_scheduler;
+mod server_battle_state;
+mod star_map_server;
 
 fn main() {
+    // Start a local server
     let mut server = Server::new();
-    let slot = server.create_slot();
+    let login_slot = server.create_slot();
+    let star_map_slot = server.create_slot();
+    let star_map_slot_id = star_map_slot.get_id();
+    let (star_map_account_sender, star_map_account_receiver) = channel();
     
-    spawn(move || {
-        server.listen("0.0.0.0:30000");
+    Thread::spawn(move || {
+        server.listen("localhost:30000");
     });
-        
-    let mut scheduler = BattleScheduler::new(slot);
-    scheduler.run();
+    
+    Thread::spawn(move || {
+        login::run_login_server(login_slot, star_map_slot_id, star_map_account_sender);
+    });
+    
+    let mut star_map_server = StarMapServer::new(star_map_slot);
+    star_map_server.run(star_map_account_receiver);
 }

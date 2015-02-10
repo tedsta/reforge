@@ -38,7 +38,7 @@ pub fn run_login_server(slot: ServerSlot, star_map_slot_id: ServerSlotId, star_m
                         // Log into the new account
                         if let Ok(mut account) = account_manager.login_account(username.clone(), password.clone(), client_id) {
                             // Create ships
-                            let player_ship = ShipStored::from_ship(Ship::generate(client_id as ShipId, 5));
+                            let player_ship = ShipStored::from_ship(Ship::generate(client_id as ShipId, username.clone(), 5));
                             
                             account.ship = Some(player_ship);
                             

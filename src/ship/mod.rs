@@ -155,6 +155,7 @@ pub type ShipId = u64;
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct Ship {
     pub id: ShipId,
+    pub name: String,
     pub client_id: Option<ClientId>,
     pub state: ShipState,
     pub modules: Vec<ModuleRef>,
@@ -167,9 +168,10 @@ pub struct Ship {
 }
 
 impl Ship {
-    pub fn new(id: ShipId, level: u8) -> Ship {
+    pub fn new(id: ShipId, name: String, level: u8) -> Ship {
         Ship {
             id: id,
+            name: name,
             client_id: None,
             state: ShipState::new(),
             modules: vec!(),
@@ -181,8 +183,8 @@ impl Ship {
         }
     }
     
-    pub fn generate(id: ShipId, level: u8) -> Ship {
-        generate_ship(id, level)
+    pub fn generate(id: ShipId, name: String, level: u8) -> Ship {
+        generate_ship(id, name, level)
     }
     
     pub fn get_width(&self) -> u8 {
@@ -406,6 +408,7 @@ impl Ship {
 
 pub struct ShipStored {
     pub id: ShipId,
+    pub name: String,
     pub state: ShipState,
     pub modules: Vec<ModuleStoredBox>,
     
@@ -420,6 +423,7 @@ impl ShipStored {
     pub fn new(id: ShipId, level: u8) -> ShipStored {
         ShipStored {
             id: id,
+            name: String::new(),
             state: ShipState::new(),
             modules: vec!(),
             
@@ -435,6 +439,7 @@ impl ShipStored {
     
         ShipStored {
             id: ship.id,
+            name: ship.name,
             state: ship.state,
             modules: ship.modules.into_iter().map(|m| try_unwrap(m).ok().expect("Failed to unwrap Module").into_inner().to_module_stored()).collect(),
             width: ship.width,
@@ -446,6 +451,7 @@ impl ShipStored {
     pub fn to_ship(self, client_id: Option<ClientId>) -> Ship {
         Ship {
             id: self.id,
+            name: self.name,
             client_id: client_id,
             state: self.state,
             modules: self.modules.into_iter().map(|m| Rc::new(RefCell::new(m.to_module()))).collect(),

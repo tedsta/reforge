@@ -5,7 +5,7 @@ use std::rand;
 use ship::{Ship, ShipId};
 use module::{IModuleRef, EngineModule, ProjectileWeaponModule, ShieldModule, SolarModule, CommandModule};
 
-pub fn generate_ship(id: ShipId, level: u8) -> Ship {
+pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     if level == 0 {
         panic!("Can't generate ship with level 0");
     }
@@ -14,7 +14,7 @@ pub fn generate_ship(id: ShipId, level: u8) -> Ship {
     let mut rng = rand::thread_rng();
 
     // Brand new ship!!
-    let mut ship = Ship::new(id, level);
+    let mut ship = Ship::new(id, name, level);
     
     // Generate ship height
     let height = cmp::min(8, rng.gen::<u8>()%(cmp::max(level, 2)) + cmp::max(1, level/2));
