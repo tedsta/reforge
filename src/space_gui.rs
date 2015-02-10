@@ -8,7 +8,6 @@ use graphics::{Context, Rectangle};
 use input::{keyboard, mouse, Button};
 use opengl_graphics::{Gl, Texture};
 
-use assets::GUI_TEXTURE;
 use asset_store::AssetStore;
 use battle_state::BattleContext;
 use module;

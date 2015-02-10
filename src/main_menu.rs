@@ -2,12 +2,10 @@ use std::cell::RefCell;
 use std::num::FromPrimitive;
 
 use sdl2_window::Sdl2Window;
-use event::{Events, GenericEvent, RenderArgs};
+use event::{Events, GenericEvent};
 use graphics::{Context, ImageSize};
 use input::{keyboard, mouse, Button};
 use opengl_graphics::{Gl, Texture};
-
-use net::{Client, OutPacket};
 
 #[derive(FromPrimitive, PartialEq)]
 pub enum MainMenuSelection {
@@ -62,7 +60,7 @@ impl MainMenu {
             self.event(&e);
 
             // Render GUI
-            e.render(|args: &RenderArgs| {
+            e.render(|args| {
                 gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
                     self.draw(&c, gl);
                 });
