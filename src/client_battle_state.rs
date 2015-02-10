@@ -194,14 +194,19 @@ impl ClientBattleState {
         for ship in self.ships_to_add.drain() {
             let ship = Rc::new(RefCell::new(ship));
             
+            if ship.borrow().client_id == Some(self.client.get_id()) && self.player_ship.borrow().state.get_hp() == 0 {
+                self.player_ship = ship.clone();
+            }
+            
             println!("Got a new ship {:?}", ship.borrow().client_id);
             
             // Only add the ship if it's not the player's ship
             if ship.borrow().client_id != Some(self.client.get_id()) {
                 println!("Trying to lock");
                 gui.try_lock(&ship);
-                self.context.add_ship(ship);
             }
+            
+            self.context.add_ship(ship);
         }
     }
     

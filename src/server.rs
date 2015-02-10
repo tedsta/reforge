@@ -38,7 +38,7 @@ fn main() {
     let (star_map_account_sender, star_map_account_receiver) = channel();
     
     Thread::spawn(move || {
-        server.listen("localhost:30000");
+        server.listen("0.0.0.0:30000");
     });
     
     Thread::spawn(move || {

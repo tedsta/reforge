@@ -205,7 +205,7 @@ impl<'a> SpaceGui<'a> {
         // Draw player ship
         draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, sim_visuals, client_ship, time);
         client_ship.draw_module_powered_icons(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, &self.module_icons);
-        draw_stats(context, gl, &self.stats_labels, client_ship.deref());
+        draw_stats(context, gl, glyph_cache, &self.stats_labels, client_ship.deref());
     
         let mut enemy_alive = false;
         if let Some(ref ship) = self.render_area.ship {
@@ -217,7 +217,7 @@ impl<'a> SpaceGui<'a> {
                 let context = context.trans(self.render_area.x, self.render_area.y);
                 
                 draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, sim_visuals, ship.borrow().deref(), time);
-                draw_stats(&context.trans(0.0, 450.0), gl, &self.stats_labels, ship.borrow().deref());
+                draw_stats(&context.trans(0.0, 375.0), gl, glyph_cache, &self.stats_labels, ship.borrow().deref());
             }
             
             // TODO draw render texture
@@ -441,8 +441,9 @@ fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-fn draw_stats(context: &Context, gl: &mut Gl, stats_labels: &StatsLabels, ship: &Ship) {
+fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stats_labels: &StatsLabels, ship: &Ship) {
     use graphics::*;
+    use graphics::text::Text;
     
     let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
     let shield_rect = Rectangle::new([0.0, 0.0, 1.0, 1.0]);
@@ -469,6 +470,13 @@ fn draw_stats(context: &Context, gl: &mut Gl, stats_labels: &StatsLabels, ship: 
     image(&stats_labels.hp_texture, &context.trans(5.0, 4.0), gl);
     image(&stats_labels.shield_texture, &context.trans(5.0, 42.0), gl);
     image(&stats_labels.power_texture, &context.trans(5.0, 80.0), gl);
+    
+    Text::colored([1.0; 4], 30).draw(
+        ship.name.as_slice(),
+        glyph_cache,
+        &context.trans(5.0, 160.0),
+        gl,
+    );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
