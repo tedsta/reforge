@@ -97,10 +97,24 @@ impl TextButton {
                     if x >= self.position[0] && x <= self.position[0]+self.size[0] &&
                         y >= self.position[1] && y <= self.position[1]+self.size[1]
                     {
-                        self.clicked = true;
                         self.mouse_focus = MouseFocus::Focus;
                     } else {
-                        self.clicked = false;
+                        self.mouse_focus = MouseFocus::NoHover;
+                    }
+                }
+            }
+        });
+        e.release(|button| {
+            if let Button::Mouse(button) = button {
+                if button == mouse::MouseButton::Left {
+                    let x = mouse_pos[0];
+                    let y = mouse_pos[1];
+                    if x >= self.position[0] && x <= self.position[0]+self.size[0] &&
+                        y >= self.position[1] && y <= self.position[1]+self.size[1]
+                    {
+                        self.clicked = true;
+                        self.mouse_focus = MouseFocus::Hover;
+                    } else {
                         self.mouse_focus = MouseFocus::NoHover;
                     }
                 }
@@ -108,8 +122,10 @@ impl TextButton {
         });
     }
     
-    pub fn clicked(&self) -> bool {
-        self.clicked
+    pub fn get_clicked(&mut self) -> bool {
+        let clicked = self.clicked;
+        self.clicked = false;
+        clicked
     }
 }
 

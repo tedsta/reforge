@@ -7,6 +7,7 @@ use time;
 
 use event::Events;
 use opengl_graphics::Gl;
+use opengl_graphics::glyph_cache::GlyphCache;
 use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
@@ -41,7 +42,7 @@ impl ClientBattleState {
         }
     }
     
-    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore, mut first_time_bias: i64) {
+    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, mut first_time_bias: i64) {
         use window::ShouldClose;
         use quack::Get;
     
@@ -54,7 +55,7 @@ impl ClientBattleState {
         // Wait for simulation results
         while self.try_receive_simulation_results().is_err() {}
         
-        self.run_simulation_phase(window, gl, asset_store, &mut gui, &mut sim_visuals);
+        self.run_simulation_phase(window, gl, glyph_cache, asset_store, &mut gui, &mut sim_visuals);
             
         // Check if it's time to exit
         let ShouldClose(should_close) = window.borrow().get();
@@ -64,7 +65,7 @@ impl ClientBattleState {
             ////////////////////////////////
             // Plan
             
-            self.run_planning_phase(window, gl, asset_store, &mut gui, &mut sim_visuals);
+            self.run_planning_phase(window, gl, glyph_cache, asset_store, &mut gui, &mut sim_visuals);
             
             // Check if it's time to exit
             let ShouldClose(should_close) = window.borrow().get();
@@ -73,7 +74,7 @@ impl ClientBattleState {
             ////////////////////////////////
             // Simulate
             
-            self.run_simulation_phase(window, gl, asset_store, &mut gui, &mut sim_visuals);
+            self.run_simulation_phase(window, gl, glyph_cache, asset_store, &mut gui, &mut sim_visuals);
             
             // Check if it's time to exit
             let ShouldClose(should_close) = window.borrow().get();
@@ -81,7 +82,7 @@ impl ClientBattleState {
         }
     }
     
-    fn run_planning_phase(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_visuals: &mut SimVisuals) {
+    fn run_planning_phase(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_visuals: &mut SimVisuals) {
         // Add planning visuals
         sim_visuals.clear();
         self.context.add_plan_visuals(asset_store, &mut sim_visuals);
@@ -124,7 +125,7 @@ impl ClientBattleState {
             // Render GUI
             e.render(|args: &RenderArgs| {
                 gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-                    gui.draw_planning(&c, gl, asset_store, &mut sim_visuals, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
+                    gui.draw_planning(&c, gl, glyph_cache, asset_store, &mut sim_visuals, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
                 });
             });
         }
@@ -133,7 +134,7 @@ impl ClientBattleState {
         self.player_ship.borrow_mut().apply_module_plans();
     }
     
-    fn run_simulation_phase(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_visuals: &mut SimVisuals) {
+    fn run_simulation_phase(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_visuals: &mut SimVisuals) {
         let mut sim_events = SimEvents::new();
             
         // Before simulation
@@ -174,7 +175,7 @@ impl ClientBattleState {
             // Render GUI
             e.render(|args: &RenderArgs| {
                 gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-                    gui.draw_simulating(&c, gl, asset_store, &mut sim_visuals, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
+                    gui.draw_simulating(&c, gl, glyph_cache, asset_store, &mut sim_visuals, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
                 });
             });
         }

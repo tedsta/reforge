@@ -36,6 +36,7 @@ use login::LoginPacket;
 use login_screen::LoginScreen;
 use main_menu::{MainMenu, MainMenuSelection};
 use net::{Client, OutPacket};
+use star_map_gui::StarMapGui;
 use star_map_server::StarMapServer;
 use tutorial_state::TutorialState;
 
@@ -63,6 +64,7 @@ mod ship;
 mod sim;
 mod space_gui;
 mod sprite_sheet;
+mod star_map_gui;
 mod tutorial_state;
 mod vec;
 
@@ -134,7 +136,7 @@ fn main () {
                 // Create the battle state
                 let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
 
-                battle.run(window, gl, &asset_store, 0);
+                battle.run(window, gl, &mut glyph_cache, &asset_store, 0);
             },
             MainMenuSelection::Multiplayer => {
                 use std::str::StrExt;
@@ -213,14 +215,14 @@ fn main () {
                     battle_context.add_ship(player_ship);
                     let mut battle = ClientBattleState::new(client, battle_context);
 
-                    battle.run(window, gl, &asset_store, 5000 - (turn_time_milliseconds as i64));
+                    battle.run(window, gl, &mut glyph_cache, &asset_store, 5000 - (turn_time_milliseconds as i64));
                 }
             },
             MainMenuSelection::Tutorial => {                
                 // Create the tutorial state
                 let mut battle = TutorialState::new();
 
-                battle.run(window, gl, &asset_store);
+                battle.run(window, gl, &mut glyph_cache, &asset_store);
             },
             MainMenuSelection::Exit => {
                 

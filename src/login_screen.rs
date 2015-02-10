@@ -91,12 +91,12 @@ impl LoginScreen {
         self.login_button.event(e, [self.mouse_x, self.mouse_y]);
         self.cancel_button.event(e, [self.mouse_x, self.mouse_y]);
         
-        if self.cancel_button.clicked() {
+        if self.cancel_button.get_clicked() {
             self.done = true;
             self.login_info = None;
         }
         
-        if self.login_button.clicked() {
+        if self.login_button.get_clicked() {
             self.done = true;
             self.login_info = Some((self.username_box.text.clone(), self.password_box.text.clone()));
         }

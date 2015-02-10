@@ -5,6 +5,7 @@ use std::rc::Rc;
 
 use event::Events;
 use opengl_graphics::Gl;
+use opengl_graphics::glyph_cache::GlyphCache;
 use sdl2_window::Sdl2Window;
 
 use ai::run_ai;
@@ -39,7 +40,7 @@ impl TutorialState {
         }
     }
     
-    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, asset_store: &AssetStore) {
+    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore) {
         use window::ShouldClose;
         use quack::Get;
     
@@ -83,7 +84,7 @@ impl TutorialState {
                 // Render GUI
                 e.render(|args: &RenderArgs| {
                     gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-                        gui.draw_planning(&c, gl, asset_store, &mut sim_visuals, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
+                        gui.draw_planning(&c, gl, glyph_cache, asset_store, &mut sim_visuals, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
                     });
                 });
             }
@@ -146,7 +147,7 @@ impl TutorialState {
                 // Render GUI
                 e.render(|args: &RenderArgs| {
                     gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-                        gui.draw_simulating(&c, gl, asset_store, &mut sim_visuals, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
+                        gui.draw_simulating(&c, gl, glyph_cache, asset_store, &mut sim_visuals, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
                     });
                 });
             }

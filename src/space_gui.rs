@@ -7,6 +7,7 @@ use event::{Events, GenericEvent, RenderArgs};
 use graphics::{Context, Rectangle};
 use input::{keyboard, mouse, Button};
 use opengl_graphics::{Gl, Texture};
+use opengl_graphics::glyph_cache::GlyphCache;
 
 use asset_store::AssetStore;
 use battle_state::BattleContext;
@@ -15,6 +16,7 @@ use module::{IModule, ModuleBox, ModuleRef};
 use net::ClientId;
 use ship::{Ship, ShipId, ShipRef, ShipState};
 use sim::SimVisuals;
+use star_map_gui::StarMapGui;
 use vec::{Vec2, Vec2f};
 
 static SHIP_OFFSET_X: f64 = 80.0;
@@ -56,6 +58,8 @@ pub struct SpaceGui<'a> {
     
     // Space background
     space_bg: SpaceStars,
+    
+    star_map_gui: StarMapGui,
 
     // targets
     target_icons: Vec<TargetIcon>,
@@ -104,6 +108,8 @@ impl<'a> SpaceGui<'a> {
             },
             
             space_bg: SpaceStars::new(),
+            
+            star_map_gui: StarMapGui::new(),
 
             target_icons: vec![TargetIcon{ship: ship}],
         }
@@ -133,37 +139,43 @@ impl<'a> SpaceGui<'a> {
                 },
             }
         });
+        
+        self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]);
     }
     
     pub fn reset_plan_stats(&mut self, client_ship: &mut Ship) {
         client_ship.state.plan_power = client_ship.state.power;
     }
     
-    pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
+    pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
         use graphics::*;
         
         // Clear the screen
         clear([0.0; 4], gl);
         
-        self.draw_screen(context, gl, asset_store, sim_visuals, client_ship, time, dt);
+        self.draw_screen(context, gl, glyph_cache, asset_store, sim_visuals, client_ship, time, dt);
         
         // Draw planning text
         image(&self.plan_texture, &context.trans(550.0, 10.0), gl);
+        
+        self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
     }
     
-    pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
+    pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
         use graphics::*;
         
         // Clear the screen
         clear([0.0; 4], gl);
         
-        self.draw_screen(context, gl, asset_store, sim_visuals, client_ship, time, dt);
+        self.draw_screen(context, gl, glyph_cache, asset_store, sim_visuals, client_ship, time, dt);
         
         // Draw simulating text
         image(&self.simulate_texture, &context.trans(550.0, 10.0), gl);
+        
+        self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
     }
     
-    fn draw_screen(&mut self, context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
+    fn draw_screen(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
         use graphics::*;
         
         // Draw the space background
