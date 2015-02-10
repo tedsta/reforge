@@ -68,8 +68,8 @@ impl StarMapGui {
         Rectangle::new([0.2, 0.05, 0.3, 0.8])
             .draw([0.0, 0.0, 800.0, 450.0], context, gl);
         
-        Rectangle::new([0.0; 4])
-            .draw([5.0, 5.0, 800.0 - 5.0, 400.0 - 5.0], context, gl);
+        Rectangle::new([0.0, 0.0, 0.0, 1.0])
+            .draw([5.0, 25.0, 800.0 - 10.0, 400.0 - 30.0], context, gl);
         
         Text::colored([1.0; 4], 15).draw(
             "star map",
