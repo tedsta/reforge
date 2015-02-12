@@ -86,46 +86,52 @@ impl BattleContext {
     }
 
     pub fn server_preprocess(&mut self) {
-        for ship in self.ships.values() {
+        for ship in self.ships_list.iter() {
             ship.borrow_mut().server_preprocess();
         }
     }
     
     pub fn before_simulation(&mut self, events: &mut SimEvents) {
-        for ship in self.ships.values() {
+        for ship in self.ships_list.iter() {
             ship.borrow_mut().before_simulation(events);
         }
     }
     
     #[cfg(feature = "client")]
     pub fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
-        for ship in self.ships.values() {
+        for ship in self.ships_list.iter() {
             ship.borrow().add_plan_visuals(asset_store, visuals, ship);
         }
     }
     
     #[cfg(feature = "client")]
     pub fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
-        for ship in self.ships.values() {
+        for ship in self.ships_list.iter() {
             ship.borrow().add_simulation_visuals(asset_store, visuals, ship);
         }
     }
     
     pub fn after_simulation(&self) {
-        for ship in self.ships.values() {
+        for ship in self.ships_list.iter() {
             ship.borrow_mut().after_simulation();
         }
     }
     
     pub fn on_ship_removed(&self, ship_id: ShipId) {
-        for ship in self.ships.values() {
+        for ship in self.ships_list.iter() {
             ship.borrow_mut().on_ship_removed(ship_id);
+        }
+    }
+    
+    pub fn apply_module_plans(&self) {
+        for ship in self.ships_list.iter() {
+            ship.borrow_mut().apply_module_plans();
         }
     }
     
     pub fn write_plans(&self, packet: &mut OutPacket) {
         packet.write(&(self.ships.len() as u32)).unwrap();
-        for ship in self.ships.values() {
+        for ship in self.ships_list.iter() {
             packet.write(&ship.borrow().id).unwrap();
             ship.borrow().write_plans(packet);
         }
@@ -143,7 +149,7 @@ impl BattleContext {
     
     pub fn write_results(&self, packet: &mut OutPacket) {
         packet.write(&(self.ships.len() as u32));
-        for ship in self.ships.values() {
+        for ship in self.ships_list.iter() {
             packet.write(&ship.borrow().id);
             ship.borrow().write_results(packet);
         }

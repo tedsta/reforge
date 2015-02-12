@@ -95,11 +95,16 @@ impl ShipState {
             self.hp -= damage;
             
             // If the module was active and can no longer be active, deactivate
-            if was_active && !module.get_base().is_active() {
-                self.add_power(module.get_base().get_power());
-                module.get_base_mut().plan_powered = false;
-                module.get_base_mut().powered = false;
-                module.on_deactivated(self, modules);
+            if !module.get_base().is_active() {
+                if was_active {
+                    // Module just got deactivated
+                    self.add_power(module.get_base().get_power());
+                    module.get_base_mut().plan_powered = false;
+                    module.get_base_mut().powered = false;
+                    module.on_deactivated(self, modules);
+                } else if module.get_base_mut().plan_powered && !module.get_base_mut().can_activate() {
+                    module.get_base_mut().plan_powered = false;
+                }
             }
         }
     }
@@ -111,17 +116,21 @@ impl ShipState {
     
     pub fn remove_power(&mut self, power: u8, modules: &Vec<ModuleRef>) {
         for module in modules.iter() {
-            if power <= self.power {
+            if power <= self.power && power <= self.plan_power {
                 break;
             } else {
                 // Attempt to borrow the module
                 match module.try_borrow_mut() {
                     Some(mut module) => {
-                        if module.get_base().get_power() > 0 && module.get_base().powered {
-                            self.add_power(module.get_base().get_power());
-                            module.get_base_mut().plan_powered = false;
-                            module.get_base_mut().powered = false;
-                            module.on_deactivated(self, modules);
+                        if module.get_base().get_power() > 0 {
+                            if power > self.power && module.get_base().powered {
+                                self.add_power(module.get_base().get_power());
+                                module.get_base_mut().plan_powered = false;
+                                module.get_base_mut().powered = false;
+                                module.on_deactivated(self, modules);
+                            } else if power > self.plan_power && !module.get_base().powered && module.get_base().plan_powered {
+                                self.deactivate_module(module.get_base_mut());
+                            }
                         }
                     },
                     None => {},
@@ -301,7 +310,7 @@ impl Ship {
         
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Write the base plans
-            packet.write(&module.get_base().powered);
+            packet.write(&module.get_base().plan_powered);
         
             // Write the module plans
             module.write_plans(packet);
@@ -314,17 +323,7 @@ impl Ship {
             
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Read the base plans
-            let was_powered = module.get_base().powered;
-            module.get_base_mut().powered = packet.read().ok().expect("Failed to read ModuleBase powered");
-            if !was_powered && module.get_base().powered {
-                // Module was powered on
-                self.state.remove_power(module.get_base().get_power(), &self.modules);
-                module.on_activated(&mut self.state, &self.modules);
-            } else if was_powered && !module.get_base().powered {
-                // Module was powered off
-                self.state.add_power(module.get_base().get_power());
-                module.on_deactivated(&mut self.state, &self.modules);
-            }
+            module.get_base_mut().plan_powered = packet.read().ok().expect("Failed to read ModuleBase powered");
             
             // Read the module plans
             module.read_plans(context, packet);

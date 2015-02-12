@@ -19,8 +19,9 @@ extern crate window;
 
 use std::old_io;
 use std::os;
+use std::rc::Rc;
 use std::cell::RefCell;
-use std::thread::Thread;
+use std::thread::{Builder, Thread};
 use std::sync::mpsc::channel;
 
 use sdl2_window::Sdl2Window;
@@ -159,27 +160,27 @@ fn main () {
                         };
                     ip_address.push_str(":30000"); // Add the port to the end of the address
                     */
-                    let ip_address = String::from_str("104.131.129.181:30000");
+                    let ip_address = String::from_str("localhost:30000");
                     
                     // Start a local server
-                    /*let mut server = Server::new();
+                    let mut server = Server::new();
                     let login_slot = server.create_slot();
                     let star_map_slot = server.create_slot();
                     let star_map_slot_id = star_map_slot.get_id();
                     let (star_map_account_sender, star_map_account_receiver) = channel();
                     
-                    Thread::spawn(move || {
+                    Builder::new().name("server_master".to_string()).spawn(move || {
                         server.listen("localhost:30000");
                     });
                     
-                    Thread::spawn(move || {
+                    Builder::new().name("login_server".to_string()).spawn(move || {
                         login::run_login_server(login_slot, star_map_slot_id, star_map_account_sender);
                     });
                     
-                    Thread::spawn(move || {
+                    Builder::new().name("star_map_server".to_string()).spawn(move || {
                         let mut star_map_server = StarMapServer::new(star_map_slot);
                         star_map_server.run(star_map_account_receiver);
-                    });*/
+                    });
                     
                     // Connect to server
                     let mut client = Client::new(ip_address.as_slice());
@@ -194,8 +195,8 @@ fn main () {
                     
                     // Receive the ships from the server
                     let mut packet = client.receive();
-                    let turn_time_milliseconds: u32 = packet.read().ok().expect("Failed to read turn time from server");
-                    let player_ship = packet.read().ok().expect("Failed to read player's ship");
+                    let my_ship = packet.read().ok().expect("Failed to read my Ship");
+                    let start_at_sim = packet.read().ok().expect("Failed to read start_at_sim from server");
                     let ships = match packet.read() {
                         Ok(ships) => ships,
                         Err(e) => panic!("Unable to receive ships froms server: {}", e),
@@ -203,10 +204,10 @@ fn main () {
                     
                     // Create the battle state
                     let mut battle_context = BattleContext::new(ships);
-                    battle_context.add_ship(player_ship);
+                    battle_context.add_ship(my_ship);
                     let mut battle = ClientBattleState::new(client, battle_context);
 
-                    battle.run(window, gl, &mut glyph_cache, &asset_store, sectors, 5000 - (turn_time_milliseconds as i64));
+                    battle.run(window, gl, &mut glyph_cache, &asset_store, sectors, start_at_sim);
                 }
             },
             MainMenuSelection::Tutorial => {                

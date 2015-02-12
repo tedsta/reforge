@@ -26,9 +26,6 @@ pub struct ClientBattleState {
     
     // The player's ship
     player_ship: ShipRef,
-    
-    ships_to_add: Vec<Ship>,
-    ships_to_remove: Vec<ShipId>,
 }
 
 impl ClientBattleState {
@@ -38,35 +35,38 @@ impl ClientBattleState {
             client: client,
             context: context,
             player_ship: player_ship,
-            ships_to_add: vec!(),
-            ships_to_remove: vec!(),
         }
     }
     
-    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>, mut first_time_bias: i64) {
+    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>, start_at_sim: bool) {
         use window::ShouldClose;
         use quack::Get;
     
-        let mut gui = SpaceGui::new(asset_store, &self.context, self.player_ship.borrow().id);
+        let ref mut gui = SpaceGui::new(asset_store, &self.context, self.player_ship.borrow().id);
     
-        let mut sim_visuals = SimVisuals::new();
+        let ref mut sim_visuals = SimVisuals::new();
         
         // TODO display joining screen here
         
-        // Wait for simulation results
-        while self.try_receive_simulation_results().is_err() {}
-        
-        self.run_simulation_phase(window, gl, glyph_cache, asset_store, &mut gui, &mut sim_visuals);
+        // If we joined during a planning phase, wait for simulation to start
+        if start_at_sim {
+            while self.try_receive_new_ships(gui).is_err() {}
+            while self.try_receive_simulation_results().is_err() {}
             
-        // Check if it's time to exit
-        let ShouldClose(should_close) = window.borrow().get();
-        if should_close { return; }
+            self.run_simulation_phase(window, gl, glyph_cache, asset_store, gui, sim_visuals);
+            
+            // Check if it's time to exit
+            let ShouldClose(should_close) = window.borrow().get();
+            if should_close { return; }
+        }
     
         loop {
             ////////////////////////////////
             // Plan
             
-            self.run_planning_phase(window, gl, glyph_cache, asset_store, &mut gui, &mut sim_visuals);
+            while self.try_receive_new_ships(gui).is_err() {}
+            
+            self.run_planning_phase(window, gl, glyph_cache, asset_store, gui, sim_visuals);
             
             // Check if it's time to exit
             let ShouldClose(should_close) = window.borrow().get();
@@ -75,7 +75,7 @@ impl ClientBattleState {
             ////////////////////////////////
             // Simulate
             
-            self.run_simulation_phase(window, gl, glyph_cache, asset_store, &mut gui, &mut sim_visuals);
+            self.run_simulation_phase(window, gl, glyph_cache, asset_store, gui, sim_visuals);
             
             // Check if it's time to exit
             let ShouldClose(should_close) = window.borrow().get();
@@ -114,7 +114,9 @@ impl ClientBattleState {
             }
             
             // Break once we receive sim results
-            if plans_sent && self.try_receive_simulation_results().is_ok() {
+            if plans_sent && self.try_receive_new_ships(gui).is_ok() {
+                println!("Receiving results");
+                while self.try_receive_simulation_results().is_err() { }
                 println!("Received results at {}", elapsed_time.num_milliseconds());
                 break;
             } else {
@@ -130,9 +132,6 @@ impl ClientBattleState {
                 });
             });
         }
-        
-        // Apply the player's plans
-        self.player_ship.borrow_mut().apply_module_plans();
     }
     
     fn run_simulation_phase(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_visuals: &mut SimVisuals) {
@@ -184,30 +183,7 @@ impl ClientBattleState {
         // After simulation
         self.context.after_simulation();
         
-        // Handle ships to add and remove
-        for ship in self.ships_to_remove.drain() {
-            gui.remove_lock(ship);
-        
-            self.context.remove_ship(ship);
-        }
-    
-        for ship in self.ships_to_add.drain() {
-            let ship = Rc::new(RefCell::new(ship));
-            
-            if ship.borrow().client_id == Some(self.client.get_id()) && self.player_ship.borrow().state.get_hp() == 0 {
-                self.player_ship = ship.clone();
-            }
-            
-            println!("Got a new ship {:?}", ship.borrow().client_id);
-            
-            // Only add the ship if it's not the player's ship
-            if ship.borrow().client_id != Some(self.client.get_id()) {
-                println!("Trying to lock");
-                gui.try_lock(&ship);
-            }
-            
-            self.context.add_ship(ship);
-        }
+        while self.try_receive_new_ships(gui).is_err() { }
     }
     
     fn build_plans_packet(&mut self) -> OutPacket {
@@ -216,7 +192,7 @@ impl ClientBattleState {
             Ok(()) => {},
             Err(_) => panic!("Failed to write plan packet ID"),
         }
-        
+
         self.player_ship.borrow().write_plans(&mut packet);
 
         packet
@@ -234,8 +210,42 @@ impl ClientBattleState {
         self.context.read_plans(&mut packet);
         self.context.read_results(&mut packet);
         
-        self.ships_to_add = packet.read().ok().expect("Failed to read ships to add from results packet");
-        self.ships_to_remove = packet.read().ok().expect("Failed to read ships to remove from results packet");
+        self.context.apply_module_plans();
+        
+        Ok(())
+    }
+    
+    fn try_receive_new_ships(&mut self, gui: &mut SpaceGui) -> IoResult<()> {
+        let mut packet = try!(self.client.try_receive());
+        
+        let ships_to_add: Vec<Ship> = packet.read().ok().expect("Failed to read ships to add from packet");
+        let ships_to_remove: Vec<ShipId> = packet.read().ok().expect("Failed to read ships to remove from packet");
+        
+        for ship in ships_to_remove.into_iter() {
+            println!("Removing ship {:?}", ship);
+        
+            gui.remove_lock(ship);
+        
+            self.context.remove_ship(ship);
+        }
+    
+        for ship in ships_to_add.into_iter() {
+            let ship = Rc::new(RefCell::new(ship));
+            
+            println!("Got a new ship {:?}", ship.borrow().id);
+            
+            if ship.borrow().id == self.player_ship.borrow().id {
+                if self.player_ship.borrow().state.get_hp() == 0 {
+                    println!("Replacing player's ship");
+                    self.player_ship = ship.clone();
+                    self.context.add_ship(ship);
+                }
+            } else {
+                println!("Trying to lock");
+                gui.try_lock(&ship);
+                self.context.add_ship(ship);
+            }
+        }
         
         Ok(())
     }

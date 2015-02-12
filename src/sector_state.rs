@@ -10,7 +10,7 @@ use battle_state::{BattleContext, ClientPacketId, ServerPacketId};
 use login::AccountBox;
 use module::Module;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
-use ship::{Ship, ShipId, ShipStored};
+use ship::{Ship, ShipId, ShipRef, ShipStored};
 use sim::SimEvents;
 
 pub struct SectorState {
@@ -20,6 +20,7 @@ pub struct SectorState {
     context: BattleContext,
     
     turn_start_time: time::Timespec,
+    sent_new_ships: bool,
     
     received_plans: HashSet<ClientId>,
     clients_waiting: HashSet<ClientId>,
@@ -29,7 +30,7 @@ pub struct SectorState {
     accounts: HashMap<ClientId, AccountBox>,
     
     // Ships to add after simulation
-    ships_to_add: Vec<Ship>,
+    ships_to_add: Vec<ShipRef>,
     
     // Ships to remove after simulation
     ships_to_remove: Vec<ShipId>,
@@ -43,6 +44,7 @@ impl SectorState {
             slot: slot,
             context: context,
             turn_start_time: time::now().to_timespec(),
+            sent_new_ships: false,
             received_plans: HashSet::new(),
             clients_waiting: HashSet::new(),
             clients_active: HashSet::new(),
@@ -55,7 +57,7 @@ impl SectorState {
     
     pub fn run(&mut self, to_map_sender: Sender<AccountBox>, from_map_receiver: Receiver<AccountBox>) {
         // TODO: come up with better way to generate AI ship IDs
-        let mut ai_ship = Ship::generate((100000000) as ShipId, "bot1".to_string(), 2);
+        let ai_ship = Ship::generate((100000000) as ShipId, "bot1".to_string(), 2);
         self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
     
         loop {
@@ -65,8 +67,18 @@ impl SectorState {
             // Get the current time from our turn timer
             let turn_time = time::now().to_timespec() - self.turn_start_time;
             
+            if !self.sent_new_ships && turn_time.num_milliseconds() > 4500 {
+                self.send_new_ships();
+                
+                self.sent_new_ships = true;
+            }
+            
             if turn_time.num_milliseconds() > 11000 {
                 self.simulate_next_turn();
+                
+                // Reset the turn stuff
+                self.turn_start_time = time::now().to_timespec();
+                self.sent_new_ships = false;
             }
         
             ///////////////////////////////////////////////////////////
@@ -96,22 +108,16 @@ impl SectorState {
                 // Add the player's account
                 self.accounts.insert(client_id, account);
                 
-                // Get the current time from our turn timer
-                let turn_time = time::now().to_timespec() - self.turn_start_time;
-            
-                // Send the player all the ships
+                // Send initial join packet
                 let mut packet = OutPacket::new();
-                
-                // Write time before ship will be added
-                packet.write(&(11000 - (turn_time.num_milliseconds() as u32))).unwrap();
-                
-                // Write player's ship
                 packet.write(&ship);
-                
+                packet.write(&self.sent_new_ships); // Whether or not to start at simulation instead of planning phase
                 packet.write(&self.context.ships_list).unwrap();
                 self.slot.send(client_id, packet);
                 
                 // Add the player's ship
+                let ship = Rc::new(RefCell::new(ship));
+                self.context.add_ship(ship.clone());
                 self.ships_to_add.push(ship);
             }
         }
@@ -132,6 +138,8 @@ impl SectorState {
                 
                 // Handle the plans
                 self.handle_plans_packet(client_id, packet);
+                
+                println!("Received plans packet from {} for turn {}", client_id, self.turn_number);
  
                 if self.received_plans == self.clients_active {
                     // TODO decide if we should simulate turn a little early here.
@@ -145,6 +153,9 @@ impl SectorState {
     }
     
     fn simulate_next_turn(&mut self) {
+        // Send new ships to added/removed before simulation
+        self.send_new_ships();
+    
         // Run AI on ships with no client
         for ship in self.context.ships_list.iter() {
             let ship_id = ship.borrow().id;
@@ -154,20 +165,25 @@ impl SectorState {
             if ship.client_id.is_none() {
                 // Run AI
                 run_ai(ship.deref_mut(), enemies);
-                ship.apply_module_plans();
             }
         }
+        
+        // Apply all the plans
+        self.context.apply_module_plans();
     
         // Do server-side precalculations
         self.context.server_preprocess();
         
-        // Start building the results packet
+        // Send the results packet
         let mut results_packet = self.build_results_packet();
+        self.slot.broadcast(results_packet);
         
         // Run the simulation
         self.do_simulation();
         
         // Finish the results packet with ships to add and remove
+        let mut new_ships = vec!();
+        let mut dead_ships = vec!();
         for ship in self.context.ships_list.iter() {
             let ship = ship.borrow();
             
@@ -175,23 +191,29 @@ impl SectorState {
             if ship.state.get_hp() == 0 {
                 let mut better_ship = Ship::generate(ship.id, ship.name.clone(), ship.level + 1);
                 better_ship.client_id = ship.client_id;
+                let better_ship = Rc::new(RefCell::new(better_ship));
                 
-                self.ships_to_add.push(better_ship);
+                self.ships_to_add.push(better_ship.clone());
                 self.ships_to_remove.push(ship.id);
+                
+                // Remove the old ship
+                dead_ships.push(ship.id);
+                
+                // Add the better ship
+                new_ships.push(better_ship);
             }
         }
         
-        results_packet.write(&self.ships_to_add);
-        results_packet.write(&self.ships_to_remove);
-        self.slot.broadcast(results_packet);
-        
-        for ship in self.ships_to_remove.drain() {
-            self.context.remove_ship(ship);
+        for dead_ships in dead_ships.into_iter() {
+            self.context.remove_ship(dead_ships);
         }
         
-        for ship in self.ships_to_add.drain() {
-            self.context.add_ship(Rc::new(RefCell::new(ship)));
+        for new_ship in new_ships.into_iter() {
+            self.context.add_ship(new_ship);
         }
+        
+        // Send new ships
+        self.send_new_ships();
         
         // Reset everything for the next turn
         self.received_plans.clear();
@@ -199,9 +221,6 @@ impl SectorState {
         
         // Transfer waiting clients to active clients
         self.clients_active = self.clients_active.union(&self.clients_waiting).map(|&x| x).collect();
-        
-        // Reset the turn timer
-        self.turn_start_time = time::now().to_timespec();
     }
     
     fn do_simulation(&mut self) {
@@ -235,5 +254,15 @@ impl SectorState {
         self.context.write_results(&mut packet);
 
         packet
+    }
+    
+    fn send_new_ships(&mut self) {
+        let mut ships_packet = OutPacket::new();
+        ships_packet.write(&self.ships_to_add);
+        ships_packet.write(&self.ships_to_remove);
+        self.slot.broadcast(ships_packet);
+        
+        self.ships_to_add.clear();
+        self.ships_to_remove.clear();
     }
 }

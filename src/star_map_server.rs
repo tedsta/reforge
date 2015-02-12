@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::mpsc::{channel, Sender, Receiver};
-use std::thread::Thread;
+use std::thread::Builder;
 
 use battle_state::BattleContext;
 use login::AccountBox;
@@ -43,7 +43,7 @@ impl StarMapServer {
             },
         });
         
-        Thread::spawn(move || {
+        Builder::new().name(format!("sector_{}_thread", 0)).spawn(move || {
             let mut sector_state = SectorState::new(sector_slot, BattleContext::new(vec!()));
             sector_state.run(from_sector_sender, to_sector_receiver);
         });
