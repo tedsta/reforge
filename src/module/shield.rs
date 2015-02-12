@@ -64,18 +64,6 @@ impl IModule for ShieldModule {
             ship_state.shields += 1; // charge shield
         }
     }
-
-    fn write_plans(&self, base: &ModuleBase, packet: &mut OutPacket) {
-    }
-    
-    fn read_plans(&mut self, base: &mut ModuleBase, context: &BattleContext, packet: &mut InPacket) {
-    }
-    
-    fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {
-    }
-    
-    fn read_results(&mut self, base: &mut ModuleBase, packet: &mut InPacket) {
-    }
     
     fn on_activated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
         ship_state.add_shields(2);

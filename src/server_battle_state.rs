@@ -143,7 +143,8 @@ impl ServerBattleState {
     }
     
     fn handle_plans_packet(&mut self, client_id: ClientId, packet: &mut InPacket) {
-        self.context.get_ship_by_client_id(client_id).borrow_mut().read_plans(&self.context, packet);
+        let plans = packet.read().ok().expect("Failed to read player's plans");
+        self.context.get_ship_by_client_id(client_id).borrow().set_module_plans(&self.context, &plans);
     }
     
     fn do_simulation(&mut self) {

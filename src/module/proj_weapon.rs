@@ -260,12 +260,6 @@ impl IModule for ProjectileWeaponModule {
     fn on_ship_removed(&mut self, base: &mut ModuleBase, ship_id: ShipId) {
     }
     
-    fn write_plans(&self, base: &ModuleBase, packet: &mut OutPacket) {
-    }
-    
-    fn read_plans(&mut self, base: &mut ModuleBase, context: &BattleContext, packet: &mut InPacket) {
-    }
-    
     fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {
         for projectile in self.projectiles.iter() {
             packet.write(&projectile.hit).unwrap();

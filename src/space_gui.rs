@@ -449,6 +449,7 @@ fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stat
     let shield_rect = Rectangle::new([0.0, 0.0, 1.0, 1.0]);
     let power_rect = Rectangle::new([1.0, 1.0, 0.0, 1.0]);
     let used_power_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
+    let new_power_rect = Rectangle::new([0.0, 1.0, 0.0, 0.5]);
     
     for i in range(0, ship.state.get_hp()) {
         hp_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 14.0), gl);
@@ -462,8 +463,14 @@ fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stat
         power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
     }
     
-    for i in range(ship.state.plan_power, ship.state.power) {
-        used_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
+    if ship.state.plan_power < ship.state.power {
+        for i in range(ship.state.plan_power, ship.state.power) {
+            used_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
+        }
+    } else if ship.state.plan_power > ship.state.power {
+        for i in range(ship.state.power, ship.state.plan_power) {
+            new_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
+        }
     }
     
     // Draw labels for hp, shields and power meters

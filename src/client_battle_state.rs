@@ -193,7 +193,7 @@ impl ClientBattleState {
             Err(_) => panic!("Failed to write plan packet ID"),
         }
 
-        self.player_ship.borrow().write_plans(&mut packet);
+        packet.write(&self.player_ship.borrow().get_module_plans()).ok().expect("Failed to write player's plans");
 
         packet
     }
@@ -207,10 +207,8 @@ impl ClientBattleState {
         };
         
         // Results packet has both plans and results
-        self.context.read_plans(&mut packet);
+        self.context.read_plans(&mut packet, Some(self.player_ship.borrow().id));
         self.context.read_results(&mut packet);
-        
-        self.context.apply_module_plans();
         
         Ok(())
     }

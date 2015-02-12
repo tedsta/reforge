@@ -24,11 +24,15 @@ pub use self::shield::ShieldModule;
 pub use self::solar::SolarModule;
 pub use self::command::CommandModule;
 
+pub use self::target_data::{NetworkTargetData, TargetMode, TargetData};
+
 pub mod engine;
 pub mod proj_weapon;
 pub mod shield;
 pub mod solar;
 pub mod command;
+
+pub mod target_data;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -43,12 +47,9 @@ pub trait IModule : Send {
     fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
     
     fn on_ship_removed(&mut self, base: &mut ModuleBase, _: ShipId) {}
-
-    fn write_plans(&self, base: &ModuleBase, packet: &mut OutPacket);
-    fn read_plans(&mut self, base: &mut ModuleBase, context: &BattleContext, packet: &mut InPacket);
     
-    fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket);
-    fn read_results(&mut self, base: &mut ModuleBase, packet: &mut InPacket);
+    fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {}
+    fn read_results(&mut self, base: &mut ModuleBase, packet: &mut InPacket) {}
     
     fn on_activated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>);
     fn on_deactivated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>);
@@ -57,26 +58,6 @@ pub trait IModule : Send {
     // GUI stuff
     
     fn get_target_mode(&self, base: &ModuleBase) -> Option<TargetMode>;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#[derive(PartialEq, RustcEncodable, RustcDecodable)]
-pub enum TargetMode {
-    TargetShip,
-    TargetModule,
-    OwnModule,
-    AnyModule,
-    Beam,
-}
-
-#[derive(RustcEncodable, RustcDecodable, Clone)]
-pub enum TargetData {
-    TargetShip(ShipRef),
-    TargetModule(ShipRef, ModuleRef),
-    OwnModule(ShipRef, ModuleRef),
-    AnyModule(ShipRef, ModuleRef),
-    Beam,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -111,9 +92,6 @@ pub trait IModuleRef {
     fn after_simulation(&mut self, ship_state: &mut ShipState);
     
     fn on_ship_removed(&mut self, ShipId) {}
-
-    fn write_plans(&self, packet: &mut OutPacket);
-    fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket);
     
     fn write_results(&self, packet: &mut OutPacket);
     fn read_results(&mut self, packet: &mut InPacket);
@@ -180,16 +158,6 @@ impl<M> IModuleRef for Module<M>
     fn on_ship_removed(&mut self, ship_id: ShipId) {
         self.base.on_ship_removed(ship_id);
         self.module.on_ship_removed(&mut self.base, ship_id);
-    }
-    
-    fn write_plans(&self, packet: &mut OutPacket) {
-        self.base.write_plans(packet);
-        self.module.write_plans(&self.base, packet);
-    }
-    
-    fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
-        self.base.read_plans(context, packet);
-        self.module.read_plans(&mut self.base, context, packet);
     }
     
     fn write_results(&self, packet: &mut OutPacket) {
@@ -376,6 +344,14 @@ impl Encodable for ModuleBox {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#[derive(RustcEncodable, RustcDecodable)]
+pub struct ModulePlans {
+    pub plan_powered: bool,
+    pub target_data: Option<NetworkTargetData>,
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #[derive(RustcEncodable, RustcDecodable, Clone)]
 pub struct ModuleBase {
     // Module position/size stuff
@@ -460,88 +436,16 @@ impl ModuleBase {
         }
     }
     
-    fn write_plans(&self, packet: &mut OutPacket) {
-        use self::TargetData::*;
-    
-        match self.target_data {
-            Some(ref target_data) => {
-                packet.write(&true).unwrap();
-            
-                match target_data {
-                    &TargetShip(ref ship) => {
-                        packet.write(&TargetMode::TargetShip);
-                        packet.write(&ship.borrow().id).unwrap();
-                    },
-                    &TargetModule(ref ship, ref module) => {
-                        packet.write(&TargetMode::TargetModule);
-                        packet.write(&ship.borrow().id).unwrap();
-                        packet.write(&module.borrow().get_base().index).unwrap();
-                    },
-                    &OwnModule(ref ship, ref module) => {
-                        packet.write(&TargetMode::OwnModule);
-                        packet.write(&ship.borrow().id).unwrap();
-                        packet.write(&module.borrow().get_base().index).unwrap();
-                    },
-                    &AnyModule(ref ship, ref module) => {
-                        packet.write(&TargetMode::AnyModule);
-                        packet.write(&ship.borrow().id).unwrap();
-                        packet.write(&module.borrow().get_base().index).unwrap();
-                    },
-                    &Beam => {
-                        packet.write(&TargetMode::Beam);
-                    },
-                }
-            },
-            None => {packet.write(&false).unwrap()},
+    pub fn get_plans(&self) -> ModulePlans {
+        ModulePlans {
+            plan_powered: self.plan_powered,
+            target_data: self.target_data.as_ref().map(|t| NetworkTargetData::from_target_data(t)),
         }
     }
     
-    fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
-        use self::TargetData::*;
-    
-        let some: bool = packet.read().unwrap();
-        if some {
-            let target_mode: TargetMode = packet.read().unwrap();
-            
-            match target_mode {
-                TargetMode::TargetShip => {
-                    let ship_id = packet.read().unwrap();
-
-                    let ship = context.get_ship(ship_id);
-
-                    self.target_data = Some(TargetShip(ship.clone()));
-                },
-                TargetMode::TargetModule => {
-                    let ship_id = packet.read().unwrap();
-                    let module_index: u32 = packet.read().unwrap();
-                    
-                    let ship = context.get_ship(ship_id);
-                    let module = ship.borrow().modules[module_index as uint].clone();
-                    
-                    self.target_data = Some(TargetModule(ship.clone(), module.clone()));
-                },
-                TargetMode::OwnModule => {
-                    let ship_id = packet.read().unwrap();
-                    let module_index: u32 = packet.read().unwrap();
-                    
-                    let ship = context.get_ship(ship_id);
-                    let module = ship.borrow().modules[module_index as uint].clone();
-                    
-                    self.target_data = Some(TargetModule(ship.clone(), module.clone()));
-                },
-                TargetMode::AnyModule => {
-                    let ship_id = packet.read().unwrap();
-                    let module_index: u32 = packet.read().unwrap();
-                    
-                    let ship = context.get_ship(ship_id);
-                    let module = ship.borrow().modules[module_index as uint].clone();
-                    
-                    self.target_data = Some(TargetModule(ship.clone(), module.clone()));
-                },
-                TargetMode::Beam => {
-                },
-            }
-        }
+    pub fn set_plans(&mut self, context: &BattleContext, plans: &ModulePlans) {
+        self.plan_powered = plans.plan_powered;
+        self.target_data = plans.target_data.as_ref().map(|t| t.to_target_data(context));
     }
     
     fn on_ship_removed(&mut self, ship_id: ShipId) {

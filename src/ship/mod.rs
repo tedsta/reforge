@@ -3,6 +3,7 @@ use std::cell::RefCell;
 use std::cmp;
 
 use battle_state::BattleContext;
+use module;
 use module::{IModule, IModuleRef, IModuleStored, Module, ModuleBase, ModuleBox, ModuleRef, ModuleStoredBox};
 use net::{ClientId, InPacket, OutPacket};
 use self::ship_gen::generate_ship;
@@ -103,7 +104,7 @@ impl ShipState {
                     module.get_base_mut().powered = false;
                     module.on_deactivated(self, modules);
                 } else if module.get_base_mut().plan_powered && !module.get_base_mut().can_activate() {
-                    module.get_base_mut().plan_powered = false;
+                    self.deactivate_module(module.get_base_mut());
                 }
             }
         }
@@ -285,6 +286,7 @@ impl Ship {
     }
     
     pub fn apply_module_plans(&mut self) {
+        println!("Applying plans");
         for module in self.modules.iter() {
             let mut module = module.borrow_mut();
             
@@ -304,41 +306,39 @@ impl Ship {
         }
     }
     
-    pub fn write_plans(&self, packet: &mut OutPacket) {
-        for module in self.modules.iter() {
-            let module = module.borrow();
-        
-            // TODO: fix this ugliness when inheritance is a thing in Rust
-            // Write the base plans
-            packet.write(&module.get_base().plan_powered);
-        
-            // Write the module plans
-            module.write_plans(packet);
-        }
+    pub fn get_module_plans(&self) -> Vec<module::ModulePlans> {
+        self.modules.iter().map(|m| m.borrow().get_base().get_plans()).collect()
     }
     
-    pub fn read_plans(&mut self, context: &BattleContext, packet: &mut InPacket) {
-        for module in self.modules.iter() {
-            let mut module = module.borrow_mut();
-            
-            // TODO: fix this ugliness when inheritance is a thing in Rust
-            // Read the base plans
-            module.get_base_mut().plan_powered = packet.read().ok().expect("Failed to read ModuleBase powered");
-            
-            // Read the module plans
-            module.read_plans(context, packet);
+    pub fn set_module_plans(&self, context: &BattleContext, plans: &Vec<module::ModulePlans>) {
+        for (module, plans) in self.modules.iter().zip(plans.iter()) {
+            module.borrow_mut().get_base_mut().set_plans(context, plans);
         }
     }
     
     pub fn write_results(&self, packet: &mut OutPacket) {
+        packet.write(&self.state.power);
         for module in self.modules.iter() {
-            module.borrow().write_results(packet);
+            let module = module.borrow();
+        
+            // TODO: fix this ugliness when inheritance is a thing in Rust
+            // Write the base results
+            packet.write(&module.get_base().powered);
+        
+            module.write_results(packet);
         }
     }
     
-    pub fn read_results(&self, packet: &mut InPacket) {
+    pub fn read_results(&mut self, packet: &mut InPacket) {
+        self.state.power = packet.read().ok().expect("Failed to read ShipState power");
         for module in self.modules.iter() {
-            module.borrow_mut().read_results(packet);
+            let mut module = module.borrow_mut();
+            
+            // TODO: fix this ugliness when inheritance is a thing in Rust
+            // Read the base results
+            module.get_base_mut().powered = packet.read().ok().expect("Failed to read ModuleBase powered");
+        
+            module.read_results(packet);
         }
     }
     
