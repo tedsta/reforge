@@ -217,7 +217,7 @@ impl<'a> SpaceGui<'a> {
                 let context = context.trans(self.render_area.x, self.render_area.y);
                 
                 draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, sim_visuals, ship.borrow().deref(), time);
-                draw_stats(&context.trans(0.0, 375.0), gl, glyph_cache, &self.stats_labels, ship.borrow().deref(), false);
+                draw_stats(&context.trans(0.0, 400.0), gl, glyph_cache, &self.stats_labels, ship.borrow().deref(), false);
             }
             
             // TODO draw render texture
@@ -305,7 +305,7 @@ impl<'a> SpaceGui<'a> {
                     let y = y - self.render_area.y - ENEMY_OFFSET_Y;
                     if let Some(ref ship) = self.render_area.ship {
                         apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
-                            selected_module.borrow_mut().get_base_mut().target_data =
+                            selected_module.borrow_mut().get_base_mut().plan_target_data =
                                 Some(module::TargetData::TargetModule(ship.clone(), module.clone()));
                             clear_selection = true;
                         });
@@ -315,7 +315,7 @@ impl<'a> SpaceGui<'a> {
                     let x = x - SHIP_OFFSET_X;
                     let y = y - SHIP_OFFSET_Y;
                     apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
-                        selected_module.borrow_mut().get_base_mut().target_data =
+                        selected_module.borrow_mut().get_base_mut().plan_target_data =
                             Some(module::TargetData::OwnModule(client_ship.clone(), module.clone()));
                         clear_selection = true;
                     });
@@ -469,7 +469,7 @@ fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stat
             for i in range(ship.state.plan_power, ship.state.power) {
                 used_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
             }
-        } else ship.state.plan_power > ship.state.power {
+        } else if ship.state.plan_power > ship.state.power {
             for i in range(ship.state.power, ship.state.plan_power) {
                 new_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
             }

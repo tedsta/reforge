@@ -207,7 +207,6 @@ impl ClientBattleState {
         };
         
         // Results packet has both plans and results
-        self.context.read_plans(&mut packet, Some(self.player_ship.borrow().id));
         self.context.read_results(&mut packet);
         
         Ok(())

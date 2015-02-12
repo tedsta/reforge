@@ -250,8 +250,7 @@ impl SectorState {
             Err(_) => panic!("Failed to write results packet ID"),
         }
         
-        // The results packet has both the plans and the results, because clients need both
-        self.context.write_plans(&mut packet);
+        // Write the results!
         self.context.write_results(&mut packet);
 
         packet

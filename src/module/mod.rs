@@ -347,7 +347,7 @@ impl Encodable for ModuleBox {
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct ModulePlans {
     pub plan_powered: bool,
-    pub target_data: Option<NetworkTargetData>,
+    pub plan_target_data: Option<NetworkTargetData>,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -370,6 +370,7 @@ pub struct ModuleBase {
     pub plan_powered: bool, // Plan to power
     
     pub target_data: Option<TargetData>,
+    pub plan_target_data: Option<TargetData>,
     
     pub index: u32, // Array index in ship. Used for referencing modules across network.
 }
@@ -391,6 +392,7 @@ impl ModuleBase {
             plan_powered: false,
             
             target_data: None,
+            plan_target_data: None,
             
             index: -1,
         }
@@ -436,16 +438,20 @@ impl ModuleBase {
         }
     }
     
+    pub fn apply_target_plans(&mut self) {
+        self.target_data.clone_from(&self.plan_target_data);
+    }
+    
     pub fn get_plans(&self) -> ModulePlans {
         ModulePlans {
             plan_powered: self.plan_powered,
-            target_data: self.target_data.as_ref().map(|t| NetworkTargetData::from_target_data(t)),
+            plan_target_data: self.plan_target_data.as_ref().map(|t| NetworkTargetData::from_target_data(t)),
         }
     }
     
     pub fn set_plans(&mut self, context: &BattleContext, plans: &ModulePlans) {
         self.plan_powered = plans.plan_powered;
-        self.target_data = plans.target_data.as_ref().map(|t| t.to_target_data(context));
+        self.plan_target_data = plans.plan_target_data.as_ref().map(|t| t.to_target_data(context));
     }
     
     fn on_ship_removed(&mut self, ship_id: ShipId) {
@@ -455,6 +461,47 @@ impl ModuleBase {
         
         let mut remove = false;
     
+        if let Some(ref target_data) = self.plan_target_data {
+            match target_data {
+                &TargetShip(ref ship) => {
+                    if let Some(TargetData::TargetShip(ref ship)) = self.target_data {
+                        if ship.borrow().id == ship_id {
+                            remove = true;
+                        }
+                    }
+                },
+                &TargetModule(ref ship, ref module) => {
+                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
+                        if ship.borrow().id == ship_id {
+                            remove = true;
+                        }
+                    }
+                },
+                &OwnModule(ref ship, ref module) => {
+                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
+                        if ship.borrow().id == ship_id {
+                            remove = true;
+                        }
+                    }
+                },
+                &AnyModule(ref ship, ref module) => {
+                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
+                        if ship.borrow().id == ship_id {
+                            remove = true;
+                        }
+                    }
+                },
+                &Beam => {
+                },
+            }
+        }
+        
+        if remove {
+            self.plan_target_data = None;
+        }
+        
+        remove = false;
+        
         if let Some(ref target_data) = self.target_data {
             match target_data {
                 &TargetShip(ref ship) => {
@@ -563,6 +610,7 @@ impl ModuleBaseStored {
             plan_powered: self.powered,
             
             target_data: None,
+            plan_target_data: None,
             
             index: self.index,
         }

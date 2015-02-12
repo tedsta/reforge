@@ -130,32 +130,6 @@ impl BattleContext {
         }
     }
     
-    pub fn write_plans(&self, packet: &mut OutPacket) {
-        let mut module_plans = HashMap::new();
-    
-        for ship in self.ships_list.iter() {
-            module_plans.insert(ship.borrow().id, ship.borrow().get_module_plans());
-        }
-        
-        packet.write(&module_plans).ok().expect("Failed to write module plans");
-    }
-    
-    pub fn read_plans(&self, packet: &mut InPacket, exclude_id: Option<ShipId>) {
-        let module_plans: HashMap<ShipId, Vec<ModulePlans>> = packet.read().ok().expect("Failed to read module plans");
-    
-        for (ship_id, plans) in module_plans.iter() {
-            if let Some(ref exclude_id) = exclude_id {
-                if *ship_id == *exclude_id {
-                    continue;
-                }
-            }
-        
-            let ship = self.get_ship(*ship_id);
-            
-            ship.borrow().set_module_plans(self, &plans);
-        }
-    }
-    
     pub fn write_results(&self, packet: &mut OutPacket) {
         packet.write(&(self.ships.len() as u32));
         for ship in self.ships_list.iter() {
@@ -170,7 +144,7 @@ impl BattleContext {
             let ship_id = packet.read().unwrap();
             let ship = self.get_ship(ship_id);
             
-            ship.borrow_mut().read_results(packet);
+            ship.borrow_mut().read_results(self, packet);
         }
     }
 }

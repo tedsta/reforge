@@ -286,16 +286,15 @@ impl Ship {
     }
     
     pub fn apply_module_plans(&mut self) {
-        println!("Applying plans");
         for module in self.modules.iter() {
             let mut module = module.borrow_mut();
             
             if module.get_base().plan_powered != module.get_base().powered {
-                if module.get_base().can_activate() && self.state.power >= module.get_base().get_power() {
+                if module.get_base().plan_powered && self.state.can_activate_module(module.get_base()) {
                     module.get_base_mut().powered = true;
                     self.state.power -= module.get_base().get_power();
                     module.on_activated(&mut self.state, &self.modules);
-                } else {
+                } else if module.get_base().powered {
                     module.get_base_mut().powered = false;
                     self.state.power += module.get_base().get_power();
                     module.on_deactivated(&mut self.state, &self.modules);
@@ -303,6 +302,8 @@ impl Ship {
                 
                 module.get_base_mut().plan_powered = module.get_base().powered;
             }
+            
+            module.get_base_mut().apply_target_plans();
         }
     }
     
@@ -324,19 +325,30 @@ impl Ship {
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Write the base results
             packet.write(&module.get_base().powered);
+            packet.write(&module.get_base().target_data.as_ref().map(|t| module::NetworkTargetData::from_target_data(t)));
         
             module.write_results(packet);
         }
     }
     
-    pub fn read_results(&mut self, packet: &mut InPacket) {
+    pub fn read_results(&mut self, context: &BattleContext, packet: &mut InPacket) {
         self.state.power = packet.read().ok().expect("Failed to read ShipState power");
         for module in self.modules.iter() {
             let mut module = module.borrow_mut();
             
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Read the base results
+            let was_powered = module.get_base_mut().powered;
             module.get_base_mut().powered = packet.read().ok().expect("Failed to read ModuleBase powered");
+            
+            if !was_powered && module.get_base_mut().powered {
+                module.on_activated(&mut self.state, &self.modules);
+            } else if was_powered && !module.get_base_mut().powered {
+                module.on_deactivated(&mut self.state, &self.modules);
+            }
+            
+            let target_data: Option<module::NetworkTargetData> = packet.read().ok().expect("Failed to read ModuleBase target_data");
+            module.get_base_mut().target_data = target_data.map(|t| t.to_target_data(context));
         
             module.read_results(packet);
         }
