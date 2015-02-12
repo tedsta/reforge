@@ -205,7 +205,7 @@ impl<'a> SpaceGui<'a> {
         // Draw player ship
         draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, sim_visuals, client_ship, time);
         client_ship.draw_module_powered_icons(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, &self.module_icons);
-        draw_stats(context, gl, glyph_cache, &self.stats_labels, client_ship.deref());
+        draw_stats(context, gl, glyph_cache, &self.stats_labels, client_ship.deref(), true);
     
         let mut enemy_alive = false;
         if let Some(ref ship) = self.render_area.ship {
@@ -217,7 +217,7 @@ impl<'a> SpaceGui<'a> {
                 let context = context.trans(self.render_area.x, self.render_area.y);
                 
                 draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, sim_visuals, ship.borrow().deref(), time);
-                draw_stats(&context.trans(0.0, 375.0), gl, glyph_cache, &self.stats_labels, ship.borrow().deref());
+                draw_stats(&context.trans(0.0, 375.0), gl, glyph_cache, &self.stats_labels, ship.borrow().deref(), false);
             }
             
             // TODO draw render texture
@@ -441,15 +441,13 @@ fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stats_labels: &StatsLabels, ship: &Ship) {
+fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stats_labels: &StatsLabels, ship: &Ship, is_client_ship: bool) {
     use graphics::*;
     use graphics::text::Text;
     
     let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
     let shield_rect = Rectangle::new([0.0, 0.0, 1.0, 1.0]);
     let power_rect = Rectangle::new([1.0, 1.0, 0.0, 1.0]);
-    let used_power_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
-    let new_power_rect = Rectangle::new([0.0, 1.0, 0.0, 0.5]);
     
     for i in range(0, ship.state.get_hp()) {
         hp_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 14.0), gl);
@@ -463,13 +461,18 @@ fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stat
         power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
     }
     
-    if ship.state.plan_power < ship.state.power {
-        for i in range(ship.state.plan_power, ship.state.power) {
-            used_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
-        }
-    } else if ship.state.plan_power > ship.state.power {
-        for i in range(ship.state.power, ship.state.plan_power) {
-            new_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
+    if is_client_ship {
+        let used_power_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
+        let new_power_rect = Rectangle::new([0.0, 1.0, 0.0, 0.5]);
+    
+        if ship.state.plan_power < ship.state.power {
+            for i in range(ship.state.plan_power, ship.state.power) {
+                used_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
+            }
+        } else ship.state.plan_power > ship.state.power {
+            for i in range(ship.state.power, ship.state.plan_power) {
+                new_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
+            }
         }
     }
     
