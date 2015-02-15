@@ -13,6 +13,7 @@ extern crate graphics;
 extern crate event;
 extern crate input;
 extern crate quack;
+extern crate sdl2_mixer;
 extern crate shader_version;
 extern crate vecmath;
 extern crate window;
@@ -90,6 +91,15 @@ fn main () {
             exit_on_esc: true,
         }
     );
+    
+    // Initialize SDL mixer
+    sdl2_mixer::init(sdl2_mixer::INIT_MP3 | sdl2_mixer::INIT_FLAC |
+        sdl2_mixer::INIT_MOD | sdl2_mixer::INIT_FLUIDSYNTH |
+        sdl2_mixer::INIT_MODPLUG | sdl2_mixer::INIT_OGG);
+    
+    // TODO: 0x8010 is SDL_audio flag
+    sdl2_mixer::open_audio(sdl2_mixer::DEFAULT_FREQUENCY, 0x8010u16, 2, 1024).ok().expect("Failed to initialize SDL2 mixer");
+    sdl2_mixer::allocate_channels(sdl2_mixer::DEFAULT_CHANNELS);
     
     // Create GL device
     let mut gl = Gl::new(opengl);
@@ -222,4 +232,7 @@ fn main () {
             },
         }
     });
+    
+    sdl2_mixer::Music::halt();
+    sdl2_mixer::quit();
 }
