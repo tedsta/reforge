@@ -12,7 +12,7 @@ use ai::run_ai;
 use asset_store::AssetStore;
 use battle_state::{BattleContext, TICKS_PER_SECOND};
 use ship::{Ship, ShipRef};
-use sim::{SimEvents, SimVisuals};
+use sim::{SimEvents, SimEffects};
 use space_gui::SpaceGui;
 
 pub struct TutorialState {
@@ -46,15 +46,15 @@ impl TutorialState {
     
         let mut gui = SpaceGui::new(asset_store, &self.context, self.player_ship.borrow().id);
     
-        let mut sim_visuals = SimVisuals::new();
+        let mut sim_effects = SimEffects::new();
     
         loop {
             ////////////////////////////////
             // Plan
             
-            // Add planning visuals
-            sim_visuals.clear();
-            self.context.add_plan_visuals(asset_store, &mut sim_visuals);
+            // Add planning effects
+            sim_effects.reset();
+            self.context.add_plan_effects(asset_store, &mut sim_effects);
             
             // Record start time
             let start_time = time::now().to_timespec();
@@ -84,7 +84,7 @@ impl TutorialState {
                 // Render GUI
                 e.render(|args: &RenderArgs| {
                     gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-                        gui.draw_planning(&c, gl, glyph_cache, asset_store, &mut sim_visuals, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
+                        gui.draw_planning(&c, gl, glyph_cache, asset_store, &mut sim_effects, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
                     });
                 });
             }
@@ -106,10 +106,10 @@ impl TutorialState {
             let mut sim_events = SimEvents::new();
             
             // Before simulation
-            sim_visuals.clear();
+            sim_effects.reset();
             self.context.server_preprocess();
             self.context.before_simulation(&mut sim_events);
-            self.context.add_simulation_visuals(asset_store, &mut sim_visuals);
+            self.context.add_simulation_effects(asset_store, &mut sim_effects);
             
             // Simulation
             let start_time = time::now().to_timespec();
@@ -147,7 +147,7 @@ impl TutorialState {
                 // Render GUI
                 e.render(|args: &RenderArgs| {
                     gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-                        gui.draw_simulating(&c, gl, glyph_cache, asset_store, &mut sim_visuals, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
+                        gui.draw_simulating(&c, gl, glyph_cache, asset_store, &mut sim_effects, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
                     });
                 });
             }

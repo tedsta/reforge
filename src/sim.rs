@@ -1,4 +1,5 @@
 use std::ops::{DerefMut};
+use std::rc::Rc;
 
 use module::{ModuleRef, ModuleBox};
 
@@ -7,6 +8,8 @@ use module::{ModuleRef, ModuleBox};
 use graphics::Context;
 #[cfg(feature = "client")]
 use opengl_graphics::Gl;
+#[cfg(feature = "client")]
+use sdl2_mixer;
 #[cfg(feature = "client")]
 use ship::ShipId;
 
@@ -71,25 +74,55 @@ pub trait SimVisual {
 }
 
 #[cfg(feature = "client")]
-pub struct SimVisuals<'a> {
-    visuals: [Vec<(ShipId, Box<SimVisual+'a>)>; 2],
+pub struct SimEffects<'a> {
+    effects: [Vec<(ShipId, Box<SimVisual+'a>)>; 2],
+    
+    // Audio stuff
+    sounds: Vec<(f64, Rc<sdl2_mixer::Chunk>)>,
+    next_sound: usize,
 }
 
 #[cfg(feature = "client")]
-impl<'a> SimVisuals<'a> {
-    pub fn new() -> SimVisuals<'a> {
-        SimVisuals{visuals: [vec!(), vec!()]}
+impl<'a> SimEffects<'a> {
+    pub fn new() -> SimEffects<'a> {
+        SimEffects {
+            effects: [vec!(), vec!()],
+            
+            sounds: vec!(),
+            next_sound: 0,
+        }
     }
     
-    pub fn add(&mut self, ship: ShipId, layer: u8, visual: Box<SimVisual+'a>) {
+    pub fn add_visual(&mut self, ship: ShipId, layer: u8, visual: Box<SimVisual+'a>) {
         if layer >= NUM_LAYERS {
             panic!("Tried to add visual to layer {} when only {} layers exist", layer, NUM_LAYERS);
         }
-        self.visuals[layer as uint].push((ship, visual));
+        self.effects[layer as uint].push((ship, visual));
     }
     
-    pub fn draw(&mut self, context: &Context, gl: &mut Gl, ship: ShipId, time: f64) {
-        for layer in self.visuals.iter_mut() {
+    pub fn add_sound(&mut self, time: f64, sound: Rc<sdl2_mixer::Chunk>) {
+        let mut index = 0;
+        for &(sound_time, _) in self.sounds.iter() {
+            if sound_time > time {
+                break;
+            }
+            index += 1;
+        }
+        
+        self.sounds.insert(index, (time, sound));
+    }
+    
+    pub fn update(&mut self, context: &Context, gl: &mut Gl, ship: ShipId, time: f64) {
+        while self.next_sound < self.sounds.len() {
+            let (sound_time, ref sound) = self.sounds[self.next_sound];
+            if sound_time > time {
+                break;
+            }
+            sdl2_mixer::Channel::all().play(sound, 1);
+            self.next_sound += 1;
+        }
+    
+        for layer in self.effects.iter_mut() {
             for &mut (v_ship, ref mut visual) in layer.iter_mut() {
                 if v_ship == ship {
                     visual.draw(context, gl, time);
@@ -98,8 +131,10 @@ impl<'a> SimVisuals<'a> {
         }
     }
     
-    pub fn clear(&mut self) {
-        for visual_vec in self.visuals.iter_mut() {
+    pub fn reset(&mut self) {
+        self.sounds.clear();
+        self.next_sound = 0;
+        for visual_vec in self.effects.iter_mut() {
             visual_vec.clear();
         }
     }

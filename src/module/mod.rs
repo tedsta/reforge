@@ -13,7 +13,7 @@ use sim::{SimEventAdder, SimEvents};
 use vec::{Vec2, Vec2f};
 
 #[cfg(feature = "client")]
-use sim::SimVisuals;
+use sim::SimEffects;
 #[cfg(feature = "client")]
 use asset_store::AssetStore;
 
@@ -41,9 +41,9 @@ pub trait IModule : Send {
 
     fn before_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, events: &mut SimEventAdder);
     #[cfg(feature = "client")]
-    fn add_plan_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef);
+    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
     #[cfg(feature = "client")]
-    fn add_simulation_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef);
+    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
     fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
     
     fn on_ship_removed(&mut self, base: &mut ModuleBase, _: ShipId) {}
@@ -86,9 +86,9 @@ pub trait IModuleRef {
 
     fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder);
     #[cfg(feature = "client")]
-    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef);
+    fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
     #[cfg(feature = "client")]
-    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef);
+    fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
     fn after_simulation(&mut self, ship_state: &mut ShipState);
     
     fn on_ship_removed(&mut self, ShipId) {}
@@ -142,13 +142,13 @@ impl<M> IModuleRef for Module<M>
     }
     
     #[cfg(feature = "client")]
-    fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
-        self.module.add_plan_visuals(&self.base, asset_store, visuals, ship);
+    fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
+        self.module.add_plan_effects(&self.base, asset_store, effects, ship);
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
-        self.module.add_simulation_visuals(&self.base, asset_store, visuals, ship);
+    fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
+        self.module.add_simulation_effects(&self.base, asset_store, effects, ship);
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {

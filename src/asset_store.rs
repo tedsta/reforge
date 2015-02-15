@@ -4,6 +4,7 @@ use std::string::String;
 
 use graphics::ImageSize;
 use opengl_graphics::Texture;
+use sdl2_mixer;
 
 use assets::{
     SpriteInfo,
@@ -22,7 +23,9 @@ use assets::{
 pub struct AssetStore {
     texture_ids: HashMap<String, TextureId>,
     textures: Vec<Rc<Texture>>,
-    sprite_info: Vec<SpriteInfo>
+    sprite_info: Vec<SpriteInfo>,
+    
+    sounds: HashMap<String, Rc<sdl2_mixer::Chunk>>,
 }
 
 impl AssetStore {
@@ -89,11 +92,25 @@ impl AssetStore {
                 rows: 1,
             },
         ];
+        
+        let mut sounds = HashMap::new();
+        sounds.insert(
+            "content/audio/effects/small_explosion.wav".to_string(),
+            Rc::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/small_explosion.wav"))
+                .ok().expect("Failed to load sound"))
+        );
+        sounds.insert(
+            "content/audio/effects/laser.wav".to_string(),
+            Rc::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/laser.wav"))
+                .ok().expect("Failed to load sound"))
+        );
     
         AssetStore {
             texture_ids: texture_ids,
             textures: textures,
             sprite_info: sprite_info,
+            
+            sounds: sounds,
         }
     }
     
@@ -107,5 +124,9 @@ impl AssetStore {
     
     pub fn get_sprite_info<'a>(&'a self, texture: TextureId) -> &'a SpriteInfo {
         &self.sprite_info[texture as uint]
+    }
+    
+    pub fn get_sound(&self, name: &String) -> &Rc<sdl2_mixer::Chunk> {
+        &self.sounds[*name]
     }
 }

@@ -15,7 +15,7 @@ use graphics::Context;
 use opengl_graphics::Gl;
 
 #[cfg(feature = "client")]
-use sim::SimVisuals;
+use sim::SimEffects;
 #[cfg(feature = "client")]
 use asset_store::AssetStore;
 #[cfg(feature = "client")]
@@ -260,16 +260,16 @@ impl Ship {
     }
     
     #[cfg(feature = "client")]
-    pub fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_ref: &ShipRef) {
+    pub fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship_ref: &ShipRef) {
         for module in self.modules.iter() {
-            module.borrow().add_plan_visuals(asset_store, visuals, ship_ref);
+            module.borrow().add_plan_effects(asset_store, effects, ship_ref);
         }
     }
     
     #[cfg(feature = "client")]
-    pub fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals, ship_ref: &ShipRef) {
+    pub fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship_ref: &ShipRef) {
         for module in self.modules.iter() {
-            module.borrow().add_simulation_visuals(asset_store, visuals, ship_ref);
+            module.borrow().add_simulation_effects(asset_store, effects, ship_ref);
         }
     }
     

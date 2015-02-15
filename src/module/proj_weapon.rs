@@ -21,11 +21,13 @@ use sim::{SimEvent, SimEventAdder};
 use vec::{Vec2, Vec2f};
 
 #[cfg(feature = "client")]
-use sim::{SimVisuals, SimVisual};
+use sim::{SimEffects, SimVisual};
 #[cfg(feature = "client")]
 use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(feature = "client")]
 use asset_store::AssetStore;
+#[cfg(feature = "client")]
+use sdl2_mixer;
 
 #[derive(RustcEncodable, RustcDecodable, Clone)]
 pub struct ProjectileWeaponModule {
@@ -114,7 +116,7 @@ impl IModule for ProjectileWeaponModule {
         if base.powered {
             if let Some(module::TargetData::TargetModule(ref target_ship, ref target_module)) = base.target_data {
                 for (i, projectile) in self.projectiles.iter_mut().enumerate() {                                            
-                    let start = (i*10) as u32;
+                    let start = (i*25) as u32;
                     
                     projectile.fire_tick = start;
                     projectile.offscreen_tick = start + 20;
@@ -137,7 +139,7 @@ impl IModule for ProjectileWeaponModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_plan_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
+    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
         
         if base.is_active() {
@@ -146,14 +148,14 @@ impl IModule for ProjectileWeaponModule {
             weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
     
-        visuals.add(ship.borrow().id, 0, box SpriteVisual {
+        effects.add_visual(ship.borrow().id, 0, box SpriteVisual {
             position: base.get_render_position().clone(),
             sprite_sheet: weapon_sprite,
         });
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_visuals(&self, base: &ModuleBase, asset_store: &AssetStore, visuals: &mut SimVisuals, ship: &ShipRef) {
+    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
         let ship_id = ship.borrow().id;
     
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
@@ -191,7 +193,7 @@ impl IModule for ProjectileWeaponModule {
                     last_weapon_anim_end = weapon_anim_end;
                 
                     // Add the simulation visual for projectile leaving
-                    visuals.add(ship_id, 1, box LerpVisual {
+                    effects.add_visual(ship_id, 1, box LerpVisual {
                         start_time: start_time,
                         end_time: end_time,
                         start_pos: start_pos,
@@ -200,6 +202,9 @@ impl IModule for ProjectileWeaponModule {
                         end_rot: rotation,
                         sprite_sheet: laser_sprite,
                     });
+                    
+                    // Add the sound for projectile firing
+                    effects.add_sound(start_time, asset_store.get_sound(&"content/audio/effects/laser.wav".to_string()).clone());
                     
                     // Set up interpolation stuff to send projectile from offscreen to target
                     let start_time = (projectile.offscreen_tick as f64)/(TICKS_PER_SECOND as f64);
@@ -215,7 +220,7 @@ impl IModule for ProjectileWeaponModule {
                     laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
                     
                     // Add the simulation visual for projectile entering target screen
-                    visuals.add(target_ship_id, 1, box LerpVisual {
+                    effects.add_visual(target_ship_id, 1, box LerpVisual {
                         start_time: start_time,
                         end_time: end_time,
                         start_pos: start_pos,
@@ -233,10 +238,13 @@ impl IModule for ProjectileWeaponModule {
                     explosion_sprite.centered = true;
                     explosion_sprite.add_animation(SpriteAnimation::PlayOnce(start_time, end_time, 0, 9));
                     
-                    visuals.add(target_ship_id, 1, box SpriteVisual {
+                    effects.add_visual(target_ship_id, 1, box SpriteVisual {
                         position: projectile.hit_pos.clone(),
                         sprite_sheet: explosion_sprite,
                     });
+                    
+                    // Add the sound for projectile exploding
+                    effects.add_sound(start_time, asset_store.get_sound(&"content/audio/effects/small_explosion.wav".to_string()).clone());
                 }
                 
                 // Add last stay animation
@@ -248,7 +256,7 @@ impl IModule for ProjectileWeaponModule {
             weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
         
-        visuals.add(ship_id, 0, box SpriteVisual {
+        effects.add_visual(ship_id, 0, box SpriteVisual {
             position: base.get_render_position().clone(),
             sprite_sheet: weapon_sprite,
         });

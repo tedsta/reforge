@@ -6,7 +6,7 @@ use ship::{ShipId, ShipRef};
 use sim::SimEvents;
 
 #[cfg(feature = "client")]
-use sim::SimVisuals;
+use sim::SimEffects;
 #[cfg(feature = "client")]
 use asset_store::AssetStore;
 
@@ -99,16 +99,16 @@ impl BattleContext {
     }
     
     #[cfg(feature = "client")]
-    pub fn add_plan_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
+    pub fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
         for ship in self.ships_list.iter() {
-            ship.borrow().add_plan_visuals(asset_store, visuals, ship);
+            ship.borrow().add_plan_effects(asset_store, effects, ship);
         }
     }
     
     #[cfg(feature = "client")]
-    pub fn add_simulation_visuals(&self, asset_store: &AssetStore, visuals: &mut SimVisuals) {
+    pub fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
         for ship in self.ships_list.iter() {
-            ship.borrow().add_simulation_visuals(asset_store, visuals, ship);
+            ship.borrow().add_simulation_effects(asset_store, effects, ship);
         }
     }
     

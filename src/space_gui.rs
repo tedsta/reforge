@@ -16,7 +16,7 @@ use module;
 use module::{IModule, ModuleBox, ModuleRef};
 use net::ClientId;
 use ship::{Ship, ShipId, ShipRef, ShipState};
-use sim::SimVisuals;
+use sim::SimEffects;
 use star_map_gui::{StarMapAction, StarMapGui};
 use vec::{Vec2, Vec2f};
 
@@ -163,13 +163,13 @@ impl<'a> SpaceGui<'a> {
         client_ship.state.plan_power = client_ship.state.power;
     }
     
-    pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
+    pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_effects: &mut SimEffects, client_ship: &mut Ship, time: f64, dt: f64) {
         use graphics::*;
         
         // Clear the screen
         clear([0.0; 4], gl);
         
-        self.draw_screen(context, gl, glyph_cache, asset_store, sim_visuals, client_ship, time, dt);
+        self.draw_screen(context, gl, glyph_cache, asset_store, sim_effects, client_ship, time, dt);
         
         // Draw planning text
         image(&self.plan_texture, &context.trans(550.0, 10.0), gl);
@@ -179,13 +179,13 @@ impl<'a> SpaceGui<'a> {
         }
     }
     
-    pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
+    pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_effects: &mut SimEffects, client_ship: &mut Ship, time: f64, dt: f64) {
         use graphics::*;
         
         // Clear the screen
         clear([0.0; 4], gl);
         
-        self.draw_screen(context, gl, glyph_cache, asset_store, sim_visuals, client_ship, time, dt);
+        self.draw_screen(context, gl, glyph_cache, asset_store, sim_effects, client_ship, time, dt);
         
         // Draw simulating text
         image(&self.simulate_texture, &context.trans(550.0, 10.0), gl);
@@ -195,7 +195,7 @@ impl<'a> SpaceGui<'a> {
         }
     }
     
-    fn draw_screen(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_visuals: &mut SimVisuals, client_ship: &mut Ship, time: f64, dt: f64) {
+    fn draw_screen(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_effects: &mut SimEffects, client_ship: &mut Ship, time: f64, dt: f64) {
         use graphics::*;
         
         // Draw the space background
@@ -203,7 +203,7 @@ impl<'a> SpaceGui<'a> {
         self.space_bg.draw(context, gl);
         
         // Draw player ship
-        draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, sim_visuals, client_ship, time);
+        draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, sim_effects, client_ship, time);
         client_ship.draw_module_powered_icons(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, &self.module_icons);
         draw_stats(context, gl, glyph_cache, &self.stats_labels, client_ship.deref(), true);
     
@@ -216,7 +216,7 @@ impl<'a> SpaceGui<'a> {
             {
                 let context = context.trans(self.render_area.x, self.render_area.y);
                 
-                draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, sim_visuals, ship.borrow().deref(), time);
+                draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, sim_effects, ship.borrow().deref(), time);
                 draw_stats(&context.trans(0.0, 400.0), gl, glyph_cache, &self.stats_labels, ship.borrow().deref(), false);
             }
             
@@ -434,8 +434,8 @@ pub struct ShipRenderArea {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-fn draw_ship(context: &Context, gl: &mut Gl, sim_visuals: &mut SimVisuals, ship: &Ship, time: f64) {
-    sim_visuals.draw(context, gl, ship.id, time);
+fn draw_ship(context: &Context, gl: &mut Gl, sim_effects: &mut SimEffects, ship: &Ship, time: f64) {
+    sim_effects.update(context, gl, ship.id, time);
     ship.draw_module_hp(context, gl);
 }
 
