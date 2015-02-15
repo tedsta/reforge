@@ -7,6 +7,7 @@ extern crate time;
 extern crate "rustc-serialize" as rustc_serialize;
 
 // Piston stuff
+extern crate sdl2;
 extern crate sdl2_window;
 extern crate opengl_graphics;
 extern crate graphics;
@@ -93,6 +94,7 @@ fn main () {
     );
     
     // Initialize SDL mixer
+    sdl2::init(sdl2::INIT_AUDIO | sdl2::INIT_TIMER);
     sdl2_mixer::init(sdl2_mixer::INIT_MP3 | sdl2_mixer::INIT_FLAC |
         sdl2_mixer::INIT_MOD | sdl2_mixer::INIT_FLUIDSYNTH |
         sdl2_mixer::INIT_MODPLUG | sdl2_mixer::INIT_OGG);
@@ -112,6 +114,10 @@ fn main () {
 
     // Wrap window in RefCell
     let window = RefCell::new(window);
+    
+    let music = sdl2_mixer::Music::from_file(&Path::new("content/audio/music/space.wav")).unwrap();
+    
+    music.play(-1);
     
     // Create main menu
     let mut main_menu = MainMenu::new();
