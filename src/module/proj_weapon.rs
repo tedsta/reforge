@@ -116,7 +116,7 @@ impl IModule for ProjectileWeaponModule {
         if base.powered {
             if let Some(module::TargetData::TargetModule(ref target_ship, ref target_module)) = base.target_data {
                 for (i, projectile) in self.projectiles.iter_mut().enumerate() {                                            
-                    let start = (i*25) as u32;
+                    let start = (i*10) as u32;
                     
                     projectile.fire_tick = start;
                     projectile.offscreen_tick = start + 20;

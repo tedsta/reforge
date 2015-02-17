@@ -85,6 +85,8 @@ pub struct SimEffects<'a> {
 #[cfg(feature = "client")]
 impl<'a> SimEffects<'a> {
     pub fn new() -> SimEffects<'a> {
+        use std::default::Default;
+    
         SimEffects {
             effects: [vec!(), vec!()],
             
@@ -113,12 +115,20 @@ impl<'a> SimEffects<'a> {
     }
     
     pub fn update(&mut self, context: &Context, gl: &mut Gl, ship: ShipId, time: f64) {
+        use std::default::Default;
+    
         while self.next_sound < self.sounds.len() {
             let (sound_time, ref sound) = self.sounds[self.next_sound];
             if sound_time > time {
                 break;
             }
-            sdl2_mixer::Channel::all().play(sound, 1);
+            let sound_group: sdl2_mixer::Group = Default::default();
+            if let Some(channel) = sound_group.find_available() {
+                
+                channel.play(sound, 0);
+            } else {
+                println!("Failed to play sound");
+            }
             self.next_sound += 1;
         }
     
