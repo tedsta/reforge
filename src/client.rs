@@ -101,7 +101,7 @@ fn main () {
     
     // TODO: 0x8010 is SDL_audio flag
     sdl2_mixer::open_audio(sdl2_mixer::DEFAULT_FREQUENCY, 0x8010u16, 2, 1024).ok().expect("Failed to initialize SDL2 mixer");
-    sdl2_mixer::allocate_channels(32);
+    sdl2_mixer::allocate_channels(512);
     
     // Create GL device
     let mut gl = Gl::new(opengl);
