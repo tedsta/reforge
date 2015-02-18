@@ -23,6 +23,7 @@ pub use self::proj_weapon::ProjectileWeaponModule;
 pub use self::shield::ShieldModule;
 pub use self::solar::SolarModule;
 pub use self::command::CommandModule;
+pub use self::beam_weapon::BeamWeaponModule;
 
 pub use self::target_data::{NetworkTargetData, TargetMode, TargetData};
 
@@ -31,6 +32,7 @@ pub mod proj_weapon;
 pub mod shield;
 pub mod solar;
 pub mod command;
+pub mod beam_weapon;
 
 pub mod target_data;
 
@@ -237,6 +239,7 @@ enum ModuleClass {
     Engine,
     Solar,
     Command,
+    BeamWeapon,
 }
 
 // Some downcasting helper methods
@@ -292,6 +295,10 @@ impl Decodable for ModuleBox {
                 base: base,
                 module: try!(<CommandModule as Decodable>::decode(d)),
             })),
+            BeamWeapon => Ok(ModuleBox::new(Module {
+                base: base,
+                module: try!(<BeamWeaponModule as Decodable>::decode(d)),
+            })),
         }
     }
 }
@@ -311,6 +318,7 @@ impl Encodable for ModuleBox {
             else if type_id == TypeId::of::<EngineModule>() { Engine }
             else if type_id == TypeId::of::<SolarModule>() { Solar }
             else if type_id == TypeId::of::<CommandModule>() { Command }
+            else if type_id == TypeId::of::<BeamWeaponModule>() { Command }
             else { unreachable!() };
     
         try!(module_class.encode(s));
@@ -336,6 +344,10 @@ impl Encodable for ModuleBox {
             Command => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.get_module());
                 try!(<CommandModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            BeamWeapon => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.get_module());
+                try!(<BeamWeaponModule as Encodable>::encode(mem::transmute(to.data), s));
             },
         }
         Ok(())
