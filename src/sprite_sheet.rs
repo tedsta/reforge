@@ -71,10 +71,10 @@ impl SpriteSheet {
                             self.draw_current_frame(context, gl, x, y, rotation);
                         }
                     },
-                    SpriteAnimation::Loop(start_time, end_time, start_frame, end_frame, interval) => {
+                    SpriteAnimation::Loop(start_time, end_time, start_frame, end_frame, isizeerval) => {
                         if time >= start_time {
                             if time <= end_time {
-                                let mut frame = ((time-start_time) / interval).floor() as u32;
+                                let mut frame = ((time-start_time) / isizeerval).floor() as u32;
                                 frame = frame % (end_frame - start_frame + 1);
                                 frame += start_frame;
                                 self.current_frame = frame;

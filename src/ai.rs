@@ -68,8 +68,8 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
             let mut module_borrowed = module.borrow_mut();
             if module_borrowed.get_type_id() == TypeId::of::<ProjectileWeaponModule>() {
                 if module_borrowed.get_base().is_active() {
-                    let target_ship = &enemy_ships[rng.gen::<uint>() % enemy_ships.len()];
-                    let target_module = &target_ship.borrow().modules[rng.gen::<uint>() % target_ship.borrow().modules.len()];
+                    let target_ship = &enemy_ships[rng.gen::<usize>() % enemy_ships.len()];
+                    let target_module = &target_ship.borrow().modules[rng.gen::<usize>() % target_ship.borrow().modules.len()];
                 
                     module_borrowed.get_base_mut().plan_target_data = Some(module::TargetData::TargetModule(target_ship.clone(), target_module.clone()));
                 }

@@ -52,19 +52,19 @@ impl NetworkTargetData {
             },
             &NetworkTargetData::TargetModule(ref ship_id, ref module_index) => {
                 let ship = context.get_ship(*ship_id);
-                let module = ship.borrow().modules[(*module_index) as uint].clone();
+                let module = ship.borrow().modules[(*module_index) as usize].clone();
                 
                 TargetData::TargetModule(ship.clone(), module.clone())
             },
             &NetworkTargetData::OwnModule(ref ship_id, ref module_index) => {
                 let ship = context.get_ship(*ship_id);
-                let module = ship.borrow().modules[(*module_index) as uint].clone();
+                let module = ship.borrow().modules[(*module_index) as usize].clone();
                 
                 TargetData::TargetModule(ship.clone(), module.clone())
             },
             &NetworkTargetData::AnyModule(ref ship_id, ref module_index) => {
                 let ship = context.get_ship(*ship_id);
-                let module = ship.borrow().modules[(*module_index) as uint].clone();
+                let module = ship.borrow().modules[(*module_index) as usize].clone();
                 
                 TargetData::TargetModule(ship.clone(), module.clone())
             },

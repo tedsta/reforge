@@ -42,7 +42,7 @@ impl BattleScheduler {
                                     waiting.push(client_id);
                                     
                                     // Chech if we're ready to schedule
-                                    if waiting.len() == num_players as uint {
+                                    if waiting.len() == num_players as usize {
                                         let new_slot = self.slot.create_slot_and_transfer_clients(waiting);
                                         schedule_ffa(new_slot, waiting.clone());
                                         waiting.clear();

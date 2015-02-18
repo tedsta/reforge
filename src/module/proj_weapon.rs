@@ -18,6 +18,7 @@ use module::{IModule, Module, ModuleRef, ModuleBase, ModuleBox};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipRef, ShipState};
 use sim::{SimEvent, SimEventAdder};
+use sim_visuals::{LerpVisual, SpriteVisual};
 use vec::{Vec2, Vec2f};
 
 #[cfg(feature = "client")]
@@ -332,45 +333,5 @@ impl SimEvent for DamageEvent {
     fn apply(&mut self, module: &mut ModuleBox) {
         let mut ship = self.ship.borrow_mut();
         ship.deal_damage(self.module.borrow_mut().deref_mut(), self.damage);
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Basic linear interpolation sim visual
-#[cfg(feature = "client")]
-pub struct LerpVisual {
-    start_time: f64,
-    end_time: f64,
-    start_pos: Vec2f,
-    end_pos: Vec2f,
-    start_rot: f64,
-    end_rot: f64,
-    sprite_sheet: SpriteSheet,
-}
-
-#[cfg(feature = "client")]
-impl SimVisual for LerpVisual {
-    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
-        if time >= self.start_time && time <= self.end_time {
-            let interp = (time-self.start_time)/(self.end_time-self.start_time);
-            let pos = self.start_pos + (self.end_pos-self.start_pos)*interp;
-            let rot = self.start_rot + (self.start_rot-self.end_rot)*interp;
-            self.sprite_sheet.draw(context, gl, pos.x, pos.y, rot, time);
-        }
-    }
-}
-
-// Sprite sheet sim visual
-#[cfg(feature = "client")]
-pub struct SpriteVisual {
-    position: Vec2f,
-    sprite_sheet: SpriteSheet,
-}
-
-#[cfg(feature = "client")]
-impl SimVisual for SpriteVisual {
-    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
-        self.sprite_sheet.draw(context, gl, self.position.x, self.position.y, 0.0, time);
     }
 }

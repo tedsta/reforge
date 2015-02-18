@@ -2,7 +2,7 @@ use std::ops::{Add, Sub, Mul, Div};
 
 pub type Vec2f = Vec2<f64>;
 
-#[derive(Clone, Copy, RustcEncodable, RustcDecodable, Show)]
+#[derive(Clone, Copy, RustcEncodable, RustcDecodable, Debug)]
 pub struct Vec2<T> {
     pub x: T,
     pub y: T,

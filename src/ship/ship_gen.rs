@@ -62,9 +62,9 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
         let mut choice = rng.gen::<u8>()%(module_counts.len() as u8);
         
         // Make sure there are modules left to place of that type
-        while module_counts[choice as uint] == 0 {
+        while module_counts[choice as usize] == 0 {
             choice += 1;
-            if choice as uint >= module_counts.len() {
+            if choice as usize >= module_counts.len() {
                 choice = 0;
             }
         }
@@ -88,7 +88,7 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
         }
         
         // Decrement the chosen module's pool
-        module_counts[choice as uint] -= 1;
+        module_counts[choice as usize] -= 1;
     
         // Move cursor
         y += 1;

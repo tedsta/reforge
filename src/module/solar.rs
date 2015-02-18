@@ -10,6 +10,7 @@ use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
+use sim_visuals::SpriteVisual;
 use vec::{Vec2, Vec2f};
 
 #[cfg(feature = "client")]
@@ -72,19 +73,5 @@ impl IModule for SolarModule {
     
     fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
         None
-    }
-}
-
-// Sprite sheet sim visual
-#[cfg(feature = "client")]
-pub struct SpriteVisual {
-    position: Vec2f,
-    sprite_sheet: SpriteSheet,
-}
-
-#[cfg(feature = "client")]
-impl SimVisual for SpriteVisual {
-    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
-        self.sprite_sheet.draw(context, gl, self.position.x, self.position.y, 0.0, time);
     }
 }

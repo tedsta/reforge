@@ -47,7 +47,7 @@ use battle_scheduler::BattleScheduler;
 use net::Server;
 use star_map_server::StarMapServer;
 
-#[macro_escape]
+#[macro_use]
 mod util;
 
 mod ai;
@@ -66,6 +66,7 @@ mod sector_data;
 mod sector_state;
 mod ship;
 mod sim;
+mod sim_visuals;
 mod space_gui;
 mod sprite_sheet;
 mod star_map_gui;
@@ -167,7 +168,7 @@ fn main () {
                         if os::args().len() > 1 {
                             os::args()[1].clone()
                         } else {
-                            print!("IP Address: ");
+                            prisize!("IP Address: ");
                             String::from_str(
                                 io::stdin().read_line()
                                     .ok().expect("Failed to read IP address")

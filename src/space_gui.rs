@@ -232,7 +232,7 @@ impl<'a> SpaceGui<'a> {
             let x = self.mouse_x - SHIP_OFFSET_X;
             let y = self.mouse_y - SHIP_OFFSET_Y;
 
-            apply_to_module_if_point_inside(client_ship, x, y, |ship_state, _, module_borrowed| {
+            apply_to_module_if_poisize_inside(client_ship, x, y, |ship_state, _, module_borrowed| {
                 let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
                 let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
                 let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
@@ -282,7 +282,7 @@ impl<'a> SpaceGui<'a> {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
-            apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_state, module, module_borrowed| {
+            apply_to_module_if_poisize_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_state, module, module_borrowed| {
                 if module_borrowed.get_base().plan_powered {
                     if let Some(target_mode) = module_borrowed.get_target_mode() {
                         // Select this module and begin targeting
@@ -304,7 +304,7 @@ impl<'a> SpaceGui<'a> {
                     let x = x - self.render_area.x - ENEMY_OFFSET_X;
                     let y = y - self.render_area.y - ENEMY_OFFSET_Y;
                     if let Some(ref ship) = self.render_area.ship {
-                        apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
+                        apply_to_module_if_poisize_inside(ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
                             selected_module.borrow_mut().get_base_mut().plan_target_data =
                                 Some(module::TargetData::TargetModule(ship.clone(), module.clone()));
                             clear_selection = true;
@@ -314,7 +314,7 @@ impl<'a> SpaceGui<'a> {
                 module::TargetMode::OwnModule => {
                     let x = x - SHIP_OFFSET_X;
                     let y = y - SHIP_OFFSET_Y;
-                    apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
+                    apply_to_module_if_poisize_inside(client_ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
                         selected_module.borrow_mut().get_base_mut().plan_target_data =
                             Some(module::TargetData::OwnModule(client_ship.clone(), module.clone()));
                         clear_selection = true;
@@ -360,7 +360,7 @@ impl<'a> SpaceGui<'a> {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
-            apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_state, module, module_borrowed| {
+            apply_to_module_if_poisize_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_state, module, module_borrowed| {
                 let module_power = module_borrowed.get_base().get_power();
                 if module_borrowed.get_base().plan_powered {
                     ship_state.deactivate_module(module_borrowed.get_base_mut());
@@ -397,7 +397,7 @@ impl<'a> SpaceGui<'a> {
 
 /// Applies function to a module in the ship if the mouse is over the module.
 /// Returns whether or not the function was applied.
-pub fn apply_to_module_if_point_inside<F>(ship: &mut Ship, x: f64, y: f64, mut f: F)
+pub fn apply_to_module_if_poisize_inside<F>(ship: &mut Ship, x: f64, y: f64, mut f: F)
     where
         F: FnMut(&mut ShipState, &ModuleRef, &mut ModuleBox)
 {

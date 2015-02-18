@@ -35,7 +35,7 @@ impl<'a> SimEvents<'a> {
     }
     
     pub fn apply_tick(&mut self, tick: u32) {
-        let tick = tick as uint;
+        let tick = tick as usize;
         while self.events[tick].len() > 0 {
             let (module, mut event) = self.events[tick].pop().unwrap();
             event.apply(module.borrow_mut().deref_mut());
@@ -57,7 +57,7 @@ pub struct SimEventAdder<'a: 'b, 'b> {
 
 impl<'a, 'b> SimEventAdder<'a, 'b> {
     pub fn add(&mut self, tick: u32, event: Box<SimEvent+'a>) {
-        self.sim_events.events[tick as uint].push((self.module.clone(), event));
+        self.sim_events.events[tick as usize].push((self.module.clone(), event));
     }
 }
 
@@ -99,7 +99,7 @@ impl<'a> SimEffects<'a> {
         if layer >= NUM_LAYERS {
             panic!("Tried to add visual to layer {} when only {} layers exist", layer, NUM_LAYERS);
         }
-        self.effects[layer as uint].push((ship, visual));
+        self.effects[layer as usize].push((ship, visual));
     }
     
     pub fn add_sound(&mut self, time: f64, sound: Rc<sdl2_mixer::Chunk>) {

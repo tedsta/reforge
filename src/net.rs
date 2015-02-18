@@ -161,7 +161,7 @@ impl Server {
         // Manage server slots
         loop {
             // Accept connections and process them, spawning a new tasks for each one
-            let mut accepted_connections = 0u; // Counter for accepted connections - move on after a while if connections keep coming
+            let mut accepted_connections = 0u32; // Counter for accepted connections - move on after a while if connections keep coming
             for stream in acceptor.incoming() {
                 match stream {
                     Err(ref e) if e.kind == TimedOut => { break }, // TimedOut is fine, because timeout is 0 lolz
@@ -213,7 +213,7 @@ impl Server {
             }
         
             // Check for new packets
-            let mut received_packets = 0u; // Packet counter. Move on after a while if packets keep coming
+            let mut received_packets = 0u32; // Packet counter. Move on after a while if packets keep coming
             loop {
                 match packet_in_r.try_recv() {
                     Ok((client_id, packet)) => {
@@ -231,7 +231,7 @@ impl Server {
             }
             
             // Check for messages from slots
-            let mut received_messages = 0u; // Packet counter. Move on after a while if messages keep coming
+            let mut received_messages = 0u32; // Packet counter. Move on after a while if messages keep coming
             loop {
                 match self.slot_channel_r.try_recv() {
                     Ok(msg) => {
@@ -387,7 +387,7 @@ impl OutPacket {
         OutPacket{writer: MemWriter::new()}
     }
     
-    pub fn len(&self) -> uint {
+    pub fn len(&self) -> usize {
         self.writer.get_ref().len()
     }
     
@@ -415,7 +415,7 @@ impl InPacket {
             };
         
         // Get data
-        let data = match reader.read_exact(packet_size as uint) {
+        let data = match reader.read_exact(packet_size as usize) {
                 Err(e) => panic!("Failed to receive data: {}", e),
                 Ok(data) => data
             };
@@ -426,13 +426,13 @@ impl InPacket {
     
     pub fn try_new_from_reader<T: Reader>(reader: &mut T, packet_size: u16) -> IoResult<InPacket> {
         // Get data
-        let data = try!(reader.read_exact(packet_size as uint));
+        let data = try!(reader.read_exact(packet_size as usize));
         
         // Build packet
         Ok(InPacket::new(data))
     }
     
-    pub fn len(&self) -> uint {
+    pub fn len(&self) -> usize {
         self.reader.get_ref().len()
     }
     

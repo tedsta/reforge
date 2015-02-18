@@ -47,47 +47,47 @@ impl AssetStore {
         
         let sprite_info = vec![
             SpriteInfo {
-                texture: textures[ENGINE_TEXTURE as uint].clone(),
+                texture: textures[ENGINE_TEXTURE as usize].clone(),
                 columns: 1,
                 rows: 1,
             },
             SpriteInfo {
-                texture: textures[WEAPON_TEXTURE as uint].clone(),
+                texture: textures[WEAPON_TEXTURE as usize].clone(),
                 columns: 7,
                 rows: 1,
             },
             SpriteInfo {
-                texture: textures[SHIELD_TEXTURE as uint].clone(),
+                texture: textures[SHIELD_TEXTURE as usize].clone(),
                 columns: 5,
                 rows: 2,
             },
             SpriteInfo {
-                texture: textures[SOLAR_TEXTURE as uint].clone(),
+                texture: textures[SOLAR_TEXTURE as usize].clone(),
                 columns: 5,
                 rows: 3,
             },
             SpriteInfo {
-                texture: textures[COMMAND_TEXTURE as uint].clone(),
+                texture: textures[COMMAND_TEXTURE as usize].clone(),
                 columns: 8,
                 rows: 1,
             },
             SpriteInfo {
-                texture: textures[LASER_TEXTURE as uint].clone(),
+                texture: textures[LASER_TEXTURE as usize].clone(),
                 columns: 1,
                 rows: 4,
             },
             SpriteInfo {
-                texture: textures[EXPLOSION_TEXTURE as uint].clone(),
+                texture: textures[EXPLOSION_TEXTURE as usize].clone(),
                 columns: 1,
                 rows: 10,
             },
             SpriteInfo {
-                texture: textures[PROPULSION_TEXTURE as uint].clone(),
+                texture: textures[PROPULSION_TEXTURE as usize].clone(),
                 columns: 1,
                 rows: 7,
             },
             SpriteInfo {
-                texture: textures[GUI_TEXTURE as uint].clone(),
+                texture: textures[GUI_TEXTURE as usize].clone(),
                 columns: 1,
                 rows: 1,
             },
@@ -115,15 +115,15 @@ impl AssetStore {
     }
     
     pub fn get_texture<'a>(&'a self, texture: TextureId) -> &'a Rc<Texture> {
-        &self.textures[texture as uint]
+        &self.textures[texture as usize]
     }
     
     pub fn get_texture_size(&self, texture: TextureId) -> (u32, u32) {
-        self.textures[texture as uint].get_size()
+        self.textures[texture as usize].get_size()
     }
     
     pub fn get_sprite_info<'a>(&'a self, texture: TextureId) -> &'a SpriteInfo {
-        &self.sprite_info[texture as uint]
+        &self.sprite_info[texture as usize]
     }
     
     pub fn get_sound(&self, name: &String) -> &Rc<sdl2_mixer::Chunk> {
