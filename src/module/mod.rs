@@ -2,6 +2,8 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::any::TypeId;
 use std::ops::{Deref, DerefMut};
+use std::rand;
+use std::rand::Rng;
 
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
@@ -26,6 +28,7 @@ pub use self::command::CommandModule;
 pub use self::beam_weapon::BeamWeaponModule;
 
 pub use self::target_data::{NetworkTargetData, TargetMode, TargetData};
+pub use self::damage_visual::{DamageVisual, DamageVisualKind};
 
 pub mod engine;
 pub mod proj_weapon;
@@ -35,6 +38,7 @@ pub mod command;
 pub mod beam_weapon;
 
 pub mod target_data;
+pub mod damage_visual;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -364,7 +368,7 @@ pub struct ModulePlans {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(RustcEncodable, RustcDecodable, Clone)]
+#[derive(Clone, RustcEncodable, RustcDecodable)]
 pub struct ModuleBase {
     // Module position/size stuff
     pub x: u8,
@@ -383,6 +387,9 @@ pub struct ModuleBase {
     
     pub target_data: Option<TargetData>,
     pub plan_target_data: Option<TargetData>,
+    
+    // Module damage visuals
+    damage_visuals: Vec<DamageVisual>,
     
     pub index: u32, // Array index in ship. Used for referencing modules across network.
 }
@@ -405,6 +412,8 @@ impl ModuleBase {
             
             target_data: None,
             plan_target_data: None,
+            
+            damage_visuals: vec!(),
             
             index: -1,
         }
@@ -440,14 +449,32 @@ impl ModuleBase {
     
     // Returns the amount of damage dealt
     pub fn deal_damage(&mut self, damage: u8) -> u8 {
-        if self.hp >= damage {
-            self.hp -= damage;
-            damage
-        } else {
-            let dealt_damage = self.hp;
-            self.hp = 0;
-            dealt_damage
+        let dealt_damage =
+            if self.hp >= damage {
+                self.hp -= damage;
+                damage
+            } else {
+                let dealt_damage = self.hp;
+                self.hp = 0;
+                dealt_damage
+            };
+        
+        // Create damage visual at random location
+        if self.hp < self.min_hp {
+            // Random number generater
+            let mut rng = rand::thread_rng();
+            
+            let x = rng.gen::<f64>() * ((self.width as f64) * 48.0);
+            let y = rng.gen::<f64>() * ((self.height as f64) * 48.0);
+
+            self.damage_visuals.push(DamageVisual {
+                x: x,
+                y: y,
+                kind: DamageVisualKind::Fire
+            });
         }
+        
+        dealt_damage
     }
     
     pub fn apply_target_plans(&mut self) {
@@ -623,6 +650,8 @@ impl ModuleBaseStored {
             
             target_data: None,
             plan_target_data: None,
+            
+            damage_visuals: vec!(),
             
             index: self.index,
         }
