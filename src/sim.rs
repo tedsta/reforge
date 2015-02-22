@@ -66,7 +66,7 @@ impl<'a, 'b> SimEventAdder<'a, 'b> {
 // TODO: Replace the SimVisual struct impl trait model with unboxed closures once they are stable
 
 #[cfg(feature = "client")]
-static NUM_LAYERS: u8 = 2;
+static NUM_LAYERS: u8 = 4;
 
 #[cfg(feature = "client")]
 pub trait SimVisual {
@@ -75,7 +75,7 @@ pub trait SimVisual {
 
 #[cfg(feature = "client")]
 pub struct SimEffects<'a> {
-    effects: [Vec<(ShipId, Box<SimVisual+'a>)>; 2],
+    effects: [Vec<(ShipId, Box<SimVisual+'a>)>; 4],
     
     // Audio stuff
     sounds: Vec<(f64, Rc<sdl2_mixer::Chunk>)>,
@@ -88,7 +88,7 @@ impl<'a> SimEffects<'a> {
         use std::default::Default;
     
         SimEffects {
-            effects: [vec!(), vec!()],
+            effects: [vec!(), vec!(), vec!(), vec!()],
             
             sounds: vec!(),
             next_sound: 0,

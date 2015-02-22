@@ -194,7 +194,7 @@ impl IModule for ProjectileWeaponModule {
                     last_weapon_anim_end = weapon_anim_end;
                 
                     // Add the simulation visual for projectile leaving
-                    effects.add_visual(ship_id, 1, box LerpVisual {
+                    effects.add_visual(ship_id, 2, box LerpVisual {
                         start_time: start_time,
                         end_time: end_time,
                         start_pos: start_pos,
@@ -221,7 +221,7 @@ impl IModule for ProjectileWeaponModule {
                     laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
                     
                     // Add the simulation visual for projectile entering target screen
-                    effects.add_visual(target_ship_id, 1, box LerpVisual {
+                    effects.add_visual(target_ship_id, 2, box LerpVisual {
                         start_time: start_time,
                         end_time: end_time,
                         start_pos: start_pos,
@@ -239,7 +239,7 @@ impl IModule for ProjectileWeaponModule {
                     explosion_sprite.centered = true;
                     explosion_sprite.add_animation(SpriteAnimation::PlayOnce(start_time, end_time, 0, 9));
                     
-                    effects.add_visual(target_ship_id, 1, box SpriteVisual {
+                    effects.add_visual(target_ship_id, 3, box SpriteVisual {
                         position: projectile.hit_pos.clone(),
                         sprite_sheet: explosion_sprite,
                     });

@@ -150,11 +150,13 @@ impl<M> IModuleRef for Module<M>
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
         self.module.add_plan_effects(&self.base, asset_store, effects, ship);
+        self.base.add_damage_effects(asset_store, effects, ship.borrow().id);
     }
     
     #[cfg(feature = "client")]
     fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
         self.module.add_simulation_effects(&self.base, asset_store, effects, ship);
+        self.base.add_damage_effects(asset_store, effects, ship.borrow().id);
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {
@@ -470,11 +472,27 @@ impl ModuleBase {
             self.damage_visuals.push(DamageVisual {
                 x: x,
                 y: y,
-                kind: DamageVisualKind::Fire
+                kind: DamageVisualKind::Fire,
             });
         }
         
         dealt_damage
+    }
+    
+    pub fn add_damage_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship_id: ShipId) {
+        use assets::FIRE_TEXTURE;
+        use sim_visuals::SpriteVisual;
+        use sprite_sheet::{SpriteSheet, SpriteAnimation};
+    
+        for visual in &self.damage_visuals {
+            let mut sprite = SpriteSheet::new(asset_store.get_sprite_info(FIRE_TEXTURE));
+            sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.05));
+        
+            effects.add_visual(ship_id, 1, box SpriteVisual {
+                position: self.get_render_position().clone(),
+                sprite_sheet: sprite,
+            });
+        }
     }
     
     pub fn apply_target_plans(&mut self) {

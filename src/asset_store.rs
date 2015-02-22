@@ -17,6 +17,8 @@ use assets::{
     LASER_TEXTURE,
     EXPLOSION_TEXTURE,
     PROPULSION_TEXTURE,
+    FIRE_TEXTURE,
+    SMOKE_TEXTURE,
     GUI_TEXTURE,
 };
 
@@ -42,6 +44,8 @@ impl AssetStore {
             Rc::new(Texture::from_path(&Path::new("content/textures/effects/laser1.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/effects/explosion1.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/effects/propulsion_sprite.png")).unwrap()),
+            Rc::new(Texture::from_path(&Path::new("content/textures/effects/fire_sprite.png")).unwrap()),
+            Rc::new(Texture::from_path(&Path::new("content/textures/effects/smoke_sprite.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/gui/module_button.png")).unwrap()),
         ];
         
@@ -85,6 +89,16 @@ impl AssetStore {
                 texture: textures[PROPULSION_TEXTURE as usize].clone(),
                 columns: 1,
                 rows: 7,
+            },
+            SpriteInfo {
+                texture: textures[FIRE_TEXTURE as usize].clone(),
+                columns: 8,
+                rows: 1,
+            },
+            SpriteInfo {
+                texture: textures[SMOKE_TEXTURE as usize].clone(),
+                columns: 8,
+                rows: 1,
             },
             SpriteInfo {
                 texture: textures[GUI_TEXTURE as usize].clone(),
