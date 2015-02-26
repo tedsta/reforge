@@ -1,3 +1,4 @@
+use std::num::Float;
 use std::ops::{Add, Sub, Mul, Div};
 
 pub type Vec2f = Vec2<f64>;
@@ -6,6 +7,16 @@ pub type Vec2f = Vec2<f64>;
 pub struct Vec2<T> {
     pub x: T,
     pub y: T,
+}
+
+impl<T: Float> Vec2<T> {
+    pub fn normalize(self) -> Vec2<T> {
+        Vec2 { x: self.x / self.length(), y: self.y / self.length() }
+    }
+    
+    pub fn length(&self) -> T {
+        (self.x*self.x + self.y*self.y).sqrt()
+    }
 }
 
 impl<T: Add+Copy> Add for Vec2<T> {
