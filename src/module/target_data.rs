@@ -1,5 +1,7 @@
 use battle_state::BattleContext;
 use ship::{ShipId, ShipRef};
+use vec::{Vec2, Vec2f};
+
 use super::ModuleRef;
 
 #[derive(PartialEq, RustcEncodable, RustcDecodable)]
@@ -8,7 +10,7 @@ pub enum TargetMode {
     TargetModule,
     OwnModule,
     AnyModule,
-    Beam,
+    Beam(u8),
 }
 
 #[derive(RustcEncodable, RustcDecodable, Clone)]
@@ -17,7 +19,7 @@ pub enum TargetData {
     TargetModule(ShipRef, ModuleRef),
     OwnModule(ShipRef, ModuleRef),
     AnyModule(ShipRef, ModuleRef),
-    Beam,
+    Beam(ShipRef, Vec2f, Vec2f),
 }
 
 // Target data suitable for sending over the network
@@ -27,7 +29,7 @@ pub enum NetworkTargetData {
     TargetModule(ShipId, u32),
     OwnModule(ShipId, u32),
     AnyModule(ShipId, u32),
-    Beam,
+    Beam(ShipId, Vec2f, Vec2f),
 }
 
 impl NetworkTargetData {
@@ -39,7 +41,7 @@ impl NetworkTargetData {
             &TargetModule(ref ship, ref module) => NetworkTargetData::TargetModule(ship.borrow().id, module.borrow().get_base().index),
             &OwnModule(ref ship, ref module) => NetworkTargetData::OwnModule(ship.borrow().id, module.borrow().get_base().index),
             &AnyModule(ref ship, ref module) => NetworkTargetData::AnyModule(ship.borrow().id, module.borrow().get_base().index),
-            &Beam => NetworkTargetData::Beam,
+            &Beam(ref ship, start, end) => NetworkTargetData::Beam(ship.borrow().id, start, end),
         }
     }
     
@@ -68,8 +70,10 @@ impl NetworkTargetData {
                 
                 TargetData::TargetModule(ship.clone(), module.clone())
             },
-            &NetworkTargetData::Beam => {
-                TargetData::Beam
+            &NetworkTargetData::Beam(ref ship_id, start, end) => {
+                let ship = context.get_ship(*ship_id);
+            
+                TargetData::Beam(ship.clone(), start, end)
             },
         }
     }

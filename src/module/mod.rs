@@ -527,28 +527,33 @@ impl ModuleBase {
                         }
                     }
                 },
-                &TargetModule(ref ship, ref module) => {
+                &TargetModule(ref ship, _) => {
                     if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
                         if ship.borrow().id == ship_id {
                             remove = true;
                         }
                     }
                 },
-                &OwnModule(ref ship, ref module) => {
+                &OwnModule(ref ship, _) => {
                     if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
                         if ship.borrow().id == ship_id {
                             remove = true;
                         }
                     }
                 },
-                &AnyModule(ref ship, ref module) => {
+                &AnyModule(ref ship, _) => {
                     if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
                         if ship.borrow().id == ship_id {
                             remove = true;
                         }
                     }
                 },
-                &Beam => {
+                &Beam(ref ship, _, _) => {
+                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
+                        if ship.borrow().id == ship_id {
+                            remove = true;
+                        }
+                    }
                 },
             }
         }
@@ -589,7 +594,12 @@ impl ModuleBase {
                         }
                     }
                 },
-                &Beam => {
+                &Beam(ref ship, _, _) => {
+                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
+                        if ship.borrow().id == ship_id {
+                            remove = true;
+                        }
+                    }
                 },
             }
         }
