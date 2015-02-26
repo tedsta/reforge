@@ -44,6 +44,9 @@ pub struct SpaceGui<'a> {
     // Selected module
     selection: Option<(ModuleRef, module::TargetMode)>,
     
+    // Current state of targeting
+    beam_targeting_state: Option<Vec2f>,
+    
     mouse_x: f64,
     mouse_y: f64,
     
@@ -91,6 +94,7 @@ impl<'a> SpaceGui<'a> {
         SpaceGui {
             render_area: render_area,
             selection: None,
+            beam_targeting_state: None,
             mouse_x: 0.0,
             mouse_y: 0.0,
             
@@ -320,6 +324,26 @@ impl<'a> SpaceGui<'a> {
                         clear_selection = true;
                     });
                 },
+                module::TargetMode::Beam(beam_length) => {
+                    let x = x - self.render_area.x - ENEMY_OFFSET_X;
+                    let y = y - self.render_area.y - ENEMY_OFFSET_Y;
+                    let beam_length = (beam_length as f64) * 48.0;
+                    
+                    if let Some(ref ship) = self.render_area.ship {
+                        if let Some(beam_start) = self.beam_targeting_state {
+                            // Calculate beam vector by normalizing (mouse_pos - start) and multiplying by beam length
+                            let mouse_pos = Vec2 { x: x, y: y };
+                            let beam_vec = (mouse_pos - beam_start).normalize() * beam_length;
+                            let beam_end = beam_start + beam_vec;
+                            selected_module.borrow_mut().get_base_mut().plan_target_data =
+                                Some(module::TargetData::Beam(ship.clone(), beam_start, beam_end));
+                            clear_selection = true;
+                            self.beam_targeting_state = None;
+                        } else {
+                            self.beam_targeting_state = Some(Vec2 { x: x, y: y });
+                        }
+                    }
+                },
                 _ => {},
             }
         }
@@ -416,13 +440,13 @@ pub fn apply_to_module_if_point_inside<F>(ship: &mut Ship, x: f64, y: f64, mut f
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct TargetIcon {
+struct TargetIcon {
     ship: ShipRef,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-pub struct ShipRenderArea {
+struct ShipRenderArea {
     ship: Option<ShipRef>,
     x: f64,
     y: f64,
