@@ -231,8 +231,26 @@ impl<'a> SpaceGui<'a> {
             }
         }
         
-        // If not currently selecting a module, highlight modules the user mouses-over
-        if self.selection.is_none() {
+        if let Some(ref selection) = self.selection {
+            let &(ref selected_module, ref target_mode) = selection;
+            
+            // TODO highlight selected module
+            
+            // Draw beam targeting visual
+            if let &module::TargetMode::Beam(beam_length) = target_mode {
+                if let Some(beam_start) = self.beam_targeting_state {
+                    let x = self.mouse_x - self.render_area.x - ENEMY_OFFSET_X;
+                    let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
+                    let beam_length = (beam_length as f64) * 48.0;
+                    
+                    let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
+                    
+                    Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
+                        .draw([beam_start.x, beam_start.y, beam_end.x, beam_end.y], context, gl);
+                }
+            }
+        } else {
+            // If not currently selecting a module, highlight modules the user mouses-over
             let x = self.mouse_x - SHIP_OFFSET_X;
             let y = self.mouse_y - SHIP_OFFSET_Y;
 
@@ -331,10 +349,7 @@ impl<'a> SpaceGui<'a> {
                     
                     if let Some(ref ship) = self.render_area.ship {
                         if let Some(beam_start) = self.beam_targeting_state {
-                            // Calculate beam vector by normalizing (mouse_pos - start) and multiplying by beam length
-                            let mouse_pos = Vec2 { x: x, y: y };
-                            let beam_vec = (mouse_pos - beam_start).normalize() * beam_length;
-                            let beam_end = beam_start + beam_vec;
+                            let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
                             selected_module.borrow_mut().get_base_mut().plan_target_data =
                                 Some(module::TargetData::Beam(ship.clone(), beam_start, beam_end));
                             clear_selection = true;
@@ -436,6 +451,13 @@ pub fn apply_to_module_if_point_inside<F>(ship: &mut Ship, x: f64, y: f64, mut f
             f(&mut ship.state, module, module_borrowed.deref_mut());
         }
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+fn calculate_beam_end(beam_start: Vec2f, mouse_pos: Vec2f, beam_length: f64) -> Vec2f {
+    let beam_vec = (mouse_pos - beam_start).normalize() * beam_length;
+    beam_start + beam_vec
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
