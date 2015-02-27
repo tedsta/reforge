@@ -75,6 +75,6 @@ impl IModule for ShieldModule {
     }
     
     fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
-        None
+        Some(module::TargetMode::Beam(3))
     }
 }

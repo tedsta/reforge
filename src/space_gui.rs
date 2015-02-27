@@ -245,8 +245,10 @@ impl<'a> SpaceGui<'a> {
                     
                     let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
                     
+                    let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
+                    
                     Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
-                        .draw([beam_start.x, beam_start.y, beam_end.x, beam_end.y], context, gl);
+                        .draw([beam_start.x, beam_start.y, beam_end.x, beam_end.y], &context, gl);
                 }
             }
         } else {
@@ -347,15 +349,17 @@ impl<'a> SpaceGui<'a> {
                     let y = y - self.render_area.y - ENEMY_OFFSET_Y;
                     let beam_length = (beam_length as f64) * 48.0;
                     
-                    if let Some(ref ship) = self.render_area.ship {
-                        if let Some(beam_start) = self.beam_targeting_state {
-                            let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
-                            selected_module.borrow_mut().get_base_mut().plan_target_data =
-                                Some(module::TargetData::Beam(ship.clone(), beam_start, beam_end));
-                            clear_selection = true;
-                            self.beam_targeting_state = None;
-                        } else {
-                            self.beam_targeting_state = Some(Vec2 { x: x, y: y });
+                    if x >= 0.0 && y >= 0.0 {
+                        if let Some(ref ship) = self.render_area.ship {
+                            if let Some(beam_start) = self.beam_targeting_state {
+                                let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
+                                selected_module.borrow_mut().get_base_mut().plan_target_data =
+                                    Some(module::TargetData::Beam(ship.clone(), beam_start, beam_end));
+                                clear_selection = true;
+                                self.beam_targeting_state = None;
+                            } else {
+                                self.beam_targeting_state = Some(Vec2 { x: x, y: y });
+                            }
                         }
                     }
                 },
