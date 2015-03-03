@@ -234,7 +234,18 @@ impl<'a> SpaceGui<'a> {
         if let Some(ref selection) = self.selection {
             let &(ref selected_module, ref target_mode) = selection;
             
-            // TODO highlight selected module
+            // Highlight selected module
+            let x = self.mouse_x - SHIP_OFFSET_X;
+            let y = self.mouse_y - SHIP_OFFSET_Y;
+            
+            let module_borrowed = selected_module.borrow();
+
+            let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
+            let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
+            let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
+        
+            Rectangle::new([0.0, 1.0, 0.0, 0.5])
+                .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
             
             // Draw beam targeting visual
             if let &module::TargetMode::Beam(beam_length) = target_mode {
