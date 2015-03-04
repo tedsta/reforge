@@ -246,13 +246,17 @@ impl Ship {
     
     /// Returns a list of modules hit by the specified beam slong with the normalized time that the
     /// beam will hit each module
-    pub fn get_beam_hits(&self, start: Vec2f, end: Vec2f) -> Vec<(ModuleRef, f64)> {
+    pub fn beam_hits<F>(&self, start: Vec2f, end: Vec2f, mut to_apply: F)
+        where
+            F: FnMut(Option<(&ModuleRef, &ModuleBox, f64)>)
+    {
         use std::num::Float;
+        use std::ops::Deref;
         
         // We are using the algorithm described here:
         // http://stackoverflow.com/a/1084899/4006804
     
-        self.modules.iter().filter_map(|module| {
+        for module in &self.modules {
             let module_borrowed = module.borrow();
             let module_size = module_borrowed.get_base().get_render_size();
             
@@ -275,7 +279,7 @@ impl Ship {
             
             if discriminant < 0.0 {
                 // No intersection
-                None
+                to_apply(None);
             } else {
                 // Ray didn't totally miss sphere, so there is a solution to the equation.
 
@@ -296,19 +300,19 @@ impl Ship {
 
                 if t1 >= 0.0 && t1 <= 1.0 {
                     // Impale, poke
-                    Some((module.clone(), t1))
+                    to_apply(Some((module, module_borrowed.deref(), t1)));
                 } else if t2 >= 0.0 && t2 <= 1.0 {
                     // Exit wound
-                    Some((module.clone(), t2))
+                    to_apply(Some((module, module_borrowed.deref(), t2)));
                 } else if t1 < 0.0 && t2 > 1.0 {
                     // Completely inside
-                    Some((module.clone(), 0.0))
+                    to_apply(Some((module, module_borrowed.deref(), 0.0)));
                 } else {
                     // No hit
-                    None
+                    to_apply(None);
                 }
             }
-        }).collect()
+        }
     }
     
     pub fn deal_damage(&mut self, module: &mut ModuleBox, damage: u8) {
