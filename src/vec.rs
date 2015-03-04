@@ -14,6 +14,10 @@ impl<T: Float> Vec2<T> {
         Vec2 { x: self.x / self.length(), y: self.y / self.length() }
     }
     
+    pub fn dot(self, other: Vec2<T>) -> T {
+        self.x*other.x + self.y*other.y
+    }
+    
     pub fn length(&self) -> T {
         (self.x*self.x + self.y*self.y).sqrt()
     }
