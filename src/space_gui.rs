@@ -258,6 +258,22 @@ impl<'a> SpaceGui<'a> {
                     
                     let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
                     
+                    // Draw targeting circles
+                    if let Some(ref ship) = self.render_area.ship {
+                        ship.borrow().beam_hits(beam_start, beam_end, |_, circle_pos, radius, hit| {
+                            let circle =
+                                if let Some(hit_dist) = hit {
+                                    Ellipse::new([1.0, 0.0, 0.0, 0.5])
+                                } else {
+                                    Ellipse::new([0.0, 0.0, 1.0, 0.5])
+                                };
+                            
+                            let size = radius * 2.0;
+                            
+                            circle.draw([circle_pos.x - radius, circle_pos.y - radius, size, size], &context, gl);
+                        });
+                    }
+                    
                     Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
                         .draw([beam_start.x, beam_start.y, beam_end.x, beam_end.y], &context, gl);
                 }
@@ -425,6 +441,7 @@ impl<'a> SpaceGui<'a> {
         
         if !module_was_deactivated {
             self.selection = None;
+            self.beam_targeting_state = None;
         }
     }
     

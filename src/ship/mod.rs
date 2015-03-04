@@ -248,7 +248,7 @@ impl Ship {
     /// beam will hit each module
     pub fn beam_hits<F>(&self, start: Vec2f, end: Vec2f, mut to_apply: F)
         where
-            F: FnMut(Option<(&ModuleRef, &ModuleBox, f64)>)
+            F: FnMut(&ModuleRef, Vec2f, f64, Option<f64>)
     {
         use std::num::Float;
         use std::ops::Deref;
@@ -261,7 +261,7 @@ impl Ship {
             let module_size = module_borrowed.get_base().get_render_size();
             
             let circle_pos = module_borrowed.get_base().get_render_center();
-            let circle_radius = module_size.x.min(module_size.y) / 2.0;
+            let circle_radius = module_size.x.min(module_size.y) / 2.5;
             
             // The beam's direction vector
             let d = end - start;
@@ -279,7 +279,7 @@ impl Ship {
             
             if discriminant < 0.0 {
                 // No intersection
-                to_apply(None);
+                to_apply(module, circle_pos, circle_radius, None);
             } else {
                 // Ray didn't totally miss sphere, so there is a solution to the equation.
 
@@ -300,16 +300,16 @@ impl Ship {
 
                 if t1 >= 0.0 && t1 <= 1.0 {
                     // Impale, poke
-                    to_apply(Some((module, module_borrowed.deref(), t1)));
+                    to_apply(module, circle_pos, circle_radius, Some(t1));
                 } else if t2 >= 0.0 && t2 <= 1.0 {
                     // Exit wound
-                    to_apply(Some((module, module_borrowed.deref(), t2)));
+                    to_apply(module, circle_pos, circle_radius, Some(t2));
                 } else if t1 < 0.0 && t2 > 1.0 {
                     // Completely inside
-                    to_apply(Some((module, module_borrowed.deref(), 0.0)));
+                    to_apply(module, circle_pos, circle_radius, Some(0.0));
                 } else {
                     // No hit
-                    to_apply(None);
+                    to_apply(module, circle_pos, circle_radius, None);
                 }
             }
         }
