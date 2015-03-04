@@ -8,6 +8,7 @@ use module::{IModule, IModuleRef, IModuleStored, Module, ModuleBase, ModuleBox, 
 use net::{ClientId, InPacket, OutPacket};
 use self::ship_gen::generate_ship;
 use sim::SimEvents;
+use vec::{Vec2, Vec2f};
 
 #[cfg(feature = "client")]
 use graphics::Context;
@@ -241,6 +242,73 @@ impl Ship {
         // Add the module
         self.modules.push(Rc::new(RefCell::new(ModuleBox::new(module))));
         true
+    }
+    
+    /// Returns a list of modules hit by the specified beam slong with the normalized time that the
+    /// beam will hit each module
+    pub fn get_beam_hits(&self, start: Vec2f, end: Vec2f) -> Vec<(ModuleRef, f64)> {
+        use std::num::Float;
+        
+        // We are using the algorithm described here:
+        // http://stackoverflow.com/a/1084899/4006804
+    
+        self.modules.iter().filter_map(|module| {
+            let module_borrowed = module.borrow();
+            let module_size = module_borrowed.get_base().get_render_size();
+            
+            let circle_pos = module_borrowed.get_base().get_render_center();
+            let circle_radius = module_size.x.min(module_size.y) / 2.0;
+            
+            // The beam's direction vector
+            let d = end - start;
+            
+            // The vector from the circle center to the beam start
+            let f = start - circle_pos;
+            
+            // Some variables for the algorithm. These correspond to variables in the quadratic
+            // formula.
+            let a = d.dot(d);
+            let b = 2.0 * f.dot(d);
+            let c = f.dot(f) - circle_radius*circle_radius;
+            
+            let discriminant = b*b - 4.0*a*c;
+            
+            if discriminant < 0.0 {
+                // No intersection
+                None
+            } else {
+                // Ray didn't totally miss sphere, so there is a solution to the equation.
+
+                let discriminant = discriminant.sqrt();
+
+                // Either solution may be on or off the ray so need to test both t1 is always the
+                // smaller value, because BOTH discriminant and a are nonnegative.
+                let t1 = (-b - discriminant)/(2.0*a);
+                let t2 = (-b + discriminant)/(2.0*a);
+
+                // 3x HIT cases:
+                //          -o->             --|-->  |            |  --|->
+                // Impale(t1 hit,t2 hit), Poke(t1 hit,t2>1), ExitWound(t1<0, t2 hit), 
+
+                // 3x MISS cases:
+                //       ->  o                     o ->              | -> |
+                // FallShort (t1>1,t2>1), Past (t1<0,t2<0), CompletelyInside(t1<0, t2>1)
+
+                if t1 >= 0.0 && t1 <= 1.0 {
+                    // Impale, poke
+                    Some((module.clone(), t1))
+                } else if t2 >= 0.0 && t2 <= 1.0 {
+                    // Exit wound
+                    Some((module.clone(), t2))
+                } else if t1 < 0.0 && t2 > 1.0 {
+                    // Completely inside
+                    Some((module.clone(), 0.0))
+                } else {
+                    // No hit
+                    None
+                }
+            }
+        }).collect()
     }
     
     pub fn deal_damage(&mut self, module: &mut ModuleBox, damage: u8) {
