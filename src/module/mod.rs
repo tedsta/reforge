@@ -324,7 +324,7 @@ impl Encodable for ModuleBox {
             else if type_id == TypeId::of::<EngineModule>() { Engine }
             else if type_id == TypeId::of::<SolarModule>() { Solar }
             else if type_id == TypeId::of::<CommandModule>() { Command }
-            else if type_id == TypeId::of::<BeamWeaponModule>() { Command }
+            else if type_id == TypeId::of::<BeamWeaponModule>() { BeamWeapon }
             else { unreachable!() };
     
         try!(module_class.encode(s));
