@@ -11,7 +11,7 @@ use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
 use sim_events::DamageEvent;
-use sim_visuals::{BeamVisual, SpriteVisual};
+use sim_visuals::{BeamExitVisual, BeamVisual, SpriteVisual};
 use vec::{Vec2, Vec2f};
 
 #[cfg(feature = "client")]
@@ -80,7 +80,16 @@ impl IModule for BeamWeaponModule {
                 let start_time = 1.0;
                 let end_time = 3.0;
                 
-                // Add the simulation visual for projectile entering target screen
+                // Add the simulation visual for beam leaving ship screen
+                effects.add_visual(ship_id, 2, box BeamExitVisual {
+                    start_time: start_time,
+                    end_time: end_time,
+                    
+                    beam_start: base.get_render_center() + Vec2 { x: 20.0, y: 0.0 },
+                    beam_end: base.get_render_center() + Vec2 { x: 20.0, y: 0.0 } + Vec2 { x: 1500.0, y: 0.0 },
+                });
+                
+                // Add the simulation visual for beam entering target screen
                 effects.add_visual(target_ship_id, 2, box BeamVisual {
                     start_time: start_time,
                     end_time: end_time,

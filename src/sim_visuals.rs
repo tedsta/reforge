@@ -30,6 +30,28 @@ impl SimVisual for LerpVisual {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Basic linear interpolation sim visual
+pub struct BeamExitVisual {
+    pub start_time: f64,
+    pub end_time: f64,
+    
+    pub beam_start: Vec2f,
+    pub beam_end: Vec2f,
+}
+
+impl SimVisual for BeamExitVisual {
+    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
+        use graphics::Line;
+    
+        if time >= self.start_time && time <= self.end_time {
+            Line::new([1.0, 0.0, 0.0, 1.0], 1.0)
+                .draw([self.beam_start.x, self.beam_start.y, self.beam_end.x, self.beam_end.y], &context, gl);
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Basic linear interpolation sim visual
 pub struct BeamVisual {
     pub start_time: f64,
     pub end_time: f64,
