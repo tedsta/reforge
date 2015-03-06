@@ -325,9 +325,9 @@ impl Ship {
         }
     }
     
-    pub fn before_simulation(&mut self, events: &mut SimEvents) {
+    pub fn before_simulation(&self, events: &mut SimEvents, ship_ref: &ShipRef) {
         for module in self.modules.iter() {
-            module.borrow_mut().before_simulation(&mut self.state, &mut events.create_adder(module.clone()));
+            module.borrow_mut().before_simulation(ship_ref, &mut events.create_adder(module.clone()));
         }
     }
     

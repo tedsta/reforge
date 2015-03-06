@@ -3,7 +3,7 @@ use std::rand::Rng;
 use std::rand;
 
 use ship::{Ship, ShipId};
-use module::{IModuleRef, EngineModule, ProjectileWeaponModule, ShieldModule, SolarModule, CommandModule};
+use module::{IModuleRef, EngineModule, ProjectileWeaponModule, ShieldModule, SolarModule, CommandModule, BeamWeaponModule};
 
 pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     if level == 0 {
@@ -24,6 +24,7 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     let num_engines = cmp::min(height, (rng.gen::<u8>()%(level + 1))/2 + 1);
     let num_shields = rng.gen::<u8>()%(level + 1);
     let num_weapons = rng.gen::<u8>()%(level + 1) + 1;
+    let num_beams = rng.gen::<u8>()%(level/2) + 1;
     
     // Add top half engines
     for i in range(0, num_engines/2 + num_engines%2) {
@@ -54,7 +55,7 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     let mut x = 2;
     let mut y = 0;
     
-    let mut module_counts = [num_power, num_shields, num_weapons];
+    let mut module_counts = [num_power, num_shields, num_weapons, num_beams];
     
     // While there's still modules to be placed...
     while module_counts.iter().filter(|x| **x > 0).count() > 0 {
@@ -85,6 +86,11 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
             weapon.get_base_mut().x = x;
             weapon.get_base_mut().y = y;
             ship.add_module(weapon);
+        } else if choice == 3 {
+            let mut beam = BeamWeaponModule::new();
+            beam.get_base_mut().x = x;
+            beam.get_base_mut().y = y;
+            ship.add_module(beam);
         }
         
         // Decrement the chosen module's pool

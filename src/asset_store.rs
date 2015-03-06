@@ -13,6 +13,7 @@ use assets::{
     WEAPON_TEXTURE,
     SHIELD_TEXTURE,
     SOLAR_TEXTURE,
+    REPAIR_TEXTURE,
     COMMAND_TEXTURE,
     LASER_TEXTURE,
     EXPLOSION_TEXTURE,
@@ -40,6 +41,7 @@ impl AssetStore {
             Rc::new(Texture::from_path(&Path::new("content/textures/modules/weapon_sprite.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/modules/shield_sprite.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/modules/solar_panel_sprite.png")).unwrap()),
+            Rc::new(Texture::from_path(&Path::new("content/textures/modules/repair_sprite.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/modules/big_command_sprite.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/effects/laser1.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/effects/explosion1.png")).unwrap()),
@@ -69,6 +71,11 @@ impl AssetStore {
                 texture: textures[SOLAR_TEXTURE as usize].clone(),
                 columns: 5,
                 rows: 3,
+            },
+            SpriteInfo {
+                texture: textures[REPAIR_TEXTURE as usize].clone(),
+                columns: 19,
+                rows: 1,
             },
             SpriteInfo {
                 texture: textures[COMMAND_TEXTURE as usize].clone(),

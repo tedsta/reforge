@@ -36,7 +36,7 @@ impl IModule for SolarModule {
     fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
     }
     
-    fn before_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, events: &mut SimEventAdder) {
+    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEventAdder) {
     }
     
     #[cfg(feature = "client")]

@@ -19,6 +19,7 @@ use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipRef, ShipState};
 use sim::{SimEvent, SimEventAdder};
 use sim_visuals::{LerpVisual, SpriteVisual};
+use sim_events::DamageEvent;
 use vec::{Vec2, Vec2f};
 
 #[cfg(feature = "client")]
@@ -113,7 +114,7 @@ impl IModule for ProjectileWeaponModule {
         }
     }
 
-    fn before_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, events: &mut SimEventAdder) {
+    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEventAdder) {
         if base.powered {
             if let Some(module::TargetData::TargetModule(ref target_ship, ref target_module)) = base.target_data {
                 for (i, projectile) in self.projectiles.iter_mut().enumerate() {                                            
@@ -309,29 +310,4 @@ struct Projectile {
     to_offscreen_pos: Vec2f,
     from_offscreen_pos: Vec2f,
     hit_pos: Vec2f,
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-pub struct DamageEvent {
-    ship: ShipRef,
-    module: ModuleRef,
-    damage: u8,
-}
-
-impl DamageEvent {
-    pub fn new(ship: ShipRef, module: ModuleRef, damage: u8) -> DamageEvent {
-        DamageEvent {
-            ship: ship,
-            module: module,
-            damage: damage,
-        }
-    }
-}
-
-impl SimEvent for DamageEvent {
-    fn apply(&mut self, module: &mut ModuleBox) {
-        let mut ship = self.ship.borrow_mut();
-        ship.deal_damage(self.module.borrow_mut().deref_mut(), self.damage);
-    }
 }

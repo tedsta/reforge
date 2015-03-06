@@ -66,6 +66,7 @@ mod sector_data;
 mod sector_state;
 mod ship;
 mod sim;
+mod sim_events;
 mod sim_visuals;
 mod space_gui;
 mod sprite_sheet;

@@ -4,13 +4,14 @@ use graphics::Context;
 use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
-use assets::WEAPON_TEXTURE;
+use assets::REPAIR_TEXTURE;
 use module;
 use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
-use sim_visuals::SpriteVisual;
+use sim_events::DamageEvent;
+use sim_visuals::{BeamVisual, SpriteVisual};
 use vec::{Vec2, Vec2f};
 
 #[cfg(feature = "client")]
@@ -26,7 +27,7 @@ pub struct BeamWeaponModule;
 impl BeamWeaponModule {
     pub fn new() -> Module<BeamWeaponModule> {
         Module {
-            base: ModuleBase::new(1, 2, 0, 2, 4),
+            base: ModuleBase::new(1, 1, 3, 2, 3),
             module: BeamWeaponModule,
         }
     }
@@ -36,15 +37,26 @@ impl IModule for BeamWeaponModule {
     fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
     }
     
-    fn before_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, events: &mut SimEventAdder) {
+    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEventAdder) {
+        if base.powered {
+            if let Some(module::TargetData::Beam(ref target_ship, beam_start, beam_end)) = base.target_data {
+                target_ship.borrow().beam_hits(beam_start, beam_end, |module, _, _, hit| {
+                    if let Some(hit_dist) = hit {
+                        let hit_tick = 20 + (((3.0 - 1.0)*hit_dist*20.0) as u32);
+                    
+                        events.add(hit_tick, box DamageEvent::new(target_ship.clone(), module.clone(), 1));
+                    }
+                });
+            }
+        }
     }
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
-        let mut sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
+        let mut sprite = SpriteSheet::new(asset_store.get_sprite_info(REPAIR_TEXTURE));
 
         if base.is_active() {
-            sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.2));
+            sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 1, 18, 0.2));
         } else {
             sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
@@ -58,6 +70,26 @@ impl IModule for BeamWeaponModule {
     #[cfg(feature = "client")]
     fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
         self.add_plan_effects(base, asset_store, effects, ship);
+        
+        let ship_id = ship.borrow().id;
+        
+        if base.powered {
+            if let Some(module::TargetData::Beam(ref target_ship, beam_start, beam_end)) = base.target_data {
+                let target_ship_id = target_ship.borrow().id;
+                
+                let start_time = 1.0;
+                let end_time = 3.0;
+                
+                // Add the simulation visual for projectile entering target screen
+                effects.add_visual(target_ship_id, 2, box BeamVisual {
+                    start_time: start_time,
+                    end_time: end_time,
+                    
+                    beam_start: beam_start,
+                    beam_end: beam_end,
+                });
+            }
+        }
     }
     
     fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
@@ -70,6 +102,6 @@ impl IModule for BeamWeaponModule {
     }
     
     fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
-        None
+        Some(module::TargetMode::Beam(3))
     }
 }

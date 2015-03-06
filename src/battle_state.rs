@@ -94,7 +94,7 @@ impl BattleContext {
     
     pub fn before_simulation(&mut self, events: &mut SimEvents) {
         for ship in self.ships_list.iter() {
-            ship.borrow_mut().before_simulation(events);
+            ship.borrow().before_simulation(events, ship);
         }
     }
     

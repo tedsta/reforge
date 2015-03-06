@@ -45,7 +45,7 @@ pub mod damage_visual;
 pub trait IModule : Send {
     fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
 
-    fn before_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, events: &mut SimEventAdder);
+    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEventAdder);
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
     #[cfg(feature = "client")]
@@ -90,7 +90,7 @@ pub trait IModuleRef {
     
     fn server_preprocess(&mut self, ship_state: &mut ShipState);
 
-    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder);
+    fn before_simulation(&mut self, ship: &ShipRef, events: &mut SimEventAdder);
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
     #[cfg(feature = "client")]
@@ -143,8 +143,8 @@ impl<M> IModuleRef for Module<M>
         self.module.server_preprocess(&mut self.base, ship_state);
     }
     
-    fn before_simulation(&mut self, ship_state: &mut ShipState, events: &mut SimEventAdder) {
-        self.module.before_simulation(&mut self.base, ship_state, events);
+    fn before_simulation(&mut self, ship: &ShipRef, events: &mut SimEventAdder) {
+        self.module.before_simulation(&mut self.base, ship, events);
     }
     
     #[cfg(feature = "client")]
