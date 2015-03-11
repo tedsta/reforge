@@ -42,7 +42,7 @@ impl ClientBattleState {
         use window::ShouldClose;
         use quack::Get;
     
-        let ref mut gui = SpaceGui::new(asset_store, &self.context, self.player_ship.borrow().id);
+        let ref mut gui = SpaceGui::new(asset_store, &self.context, sectors, self.player_ship.borrow().id);
     
         let ref mut sim_effects = SimEffects::new();
         

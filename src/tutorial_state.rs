@@ -44,7 +44,7 @@ impl TutorialState {
         use window::ShouldClose;
         use quack::Get;
     
-        let mut gui = SpaceGui::new(asset_store, &self.context, self.player_ship.borrow().id);
+        let mut gui = SpaceGui::new(asset_store, &self.context, vec!(), self.player_ship.borrow().id);
     
         let mut sim_effects = SimEffects::new();
     

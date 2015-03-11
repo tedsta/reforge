@@ -15,6 +15,7 @@ use gui::TextButton;
 use module;
 use module::{IModule, ModuleBox, ModuleRef};
 use net::ClientId;
+use sector_data::SectorData;
 use ship::{Ship, ShipId, ShipRef, ShipState};
 use sim::SimEffects;
 use star_map_gui::{StarMapAction, StarMapGui};
@@ -72,7 +73,7 @@ pub struct SpaceGui<'a> {
 }
 
 impl<'a> SpaceGui<'a> {
-    pub fn new(asset_store: &AssetStore, context: &BattleContext, my_ship_id: ShipId) -> SpaceGui<'a> {
+    pub fn new(asset_store: &AssetStore, context: &BattleContext, sectors: Vec<SectorData>, my_ship_id: ShipId) -> SpaceGui<'a> {
         // Set up the render area
         //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
         //let texture = target.get_texture().expect("Failed to get render texture's texture");
@@ -117,7 +118,7 @@ impl<'a> SpaceGui<'a> {
             space_bg: SpaceStars::new(),
             
             star_map_button: TextButton::new("star map".to_string(), 20, [550.0, 50.0], [120.0, 40.0]),
-            star_map_gui: StarMapGui::new(),
+            star_map_gui: StarMapGui::new(sectors),
             show_star_map: false,
 
             target_icons: target_icons,
@@ -151,6 +152,9 @@ impl<'a> SpaceGui<'a> {
         
         if let Some(star_map_result) = self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]) {
             match star_map_result {
+                StarMapAction::Jump(sector) => {
+                    self.show_star_map = false;
+                },
                 StarMapAction::Close => {
                     self.show_star_map = false;
                 },
