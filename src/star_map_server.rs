@@ -16,8 +16,8 @@ use vec::Vec2;
 
 pub struct Sector {
     pub slot_id: ServerSlotId,
-    pub to_sector_sender: Sender<AccountBox>,
-    pub from_sector_receiver: Receiver<AccountBox>,
+    pub to_sector: Sender<AccountBox>,
+    pub from_sector: Receiver<AccountBox>,
     pub data: SectorData,
 }
 
@@ -37,8 +37,8 @@ impl StarMapServer {
         let sector_id = SectorId(0);
         sectors.insert(sector_id, Sector {
             slot_id: sector_slot.get_id(),
-            to_sector_sender: to_sector_sender,
-            from_sector_receiver: from_sector_receiver,
+            to_sector: to_sector_sender,
+            from_sector: from_sector_receiver,
             data: SectorData {
                 id: sector_id,
                 map_position: Vec2 { x: 50.0, y: 50.0 },
@@ -57,8 +57,8 @@ impl StarMapServer {
         let sector_id = SectorId(1);
         sectors.insert(sector_id, Sector {
             slot_id: sector_slot.get_id(),
-            to_sector_sender: to_sector_sender,
-            from_sector_receiver: from_sector_receiver,
+            to_sector: to_sector_sender,
+            from_sector: from_sector_receiver,
             data: SectorData {
                 id: sector_id,
                 map_position: Vec2 { x: 100.0, y: 100.0 },
@@ -101,7 +101,7 @@ impl StarMapServer {
                 let ref sector = self.sectors[account.sector];
                 
                 self.slot.transfer_client(client_id, sector.slot_id);
-                sector.to_sector_sender.send(account);
+                sector.to_sector.send(account);
             }
         }
     }
