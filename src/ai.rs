@@ -71,7 +71,11 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
                     let target_ship = &enemy_ships[rng.gen::<usize>() % enemy_ships.len()];
                     let target_module = &target_ship.borrow().modules[rng.gen::<usize>() % target_ship.borrow().modules.len()];
                 
-                    module_borrowed.get_base_mut().plan_target_data = Some(module::TargetData::TargetModule(target_ship.clone(), target_module.clone()));
+                    module_borrowed.get_base_mut().plan_target =
+                        Some(module::Target {
+                            ship: target_ship.clone(),
+                            data: module::TargetData::TargetModule(target_module.clone()),
+                        });
                 }
             }
         }

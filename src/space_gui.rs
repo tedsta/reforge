@@ -167,10 +167,6 @@ impl<'a> SpaceGui<'a> {
         }
     }
     
-    pub fn reset_plan_stats(&mut self, client_ship: &mut Ship) {
-        client_ship.state.plan_power = client_ship.state.power;
-    }
-    
     pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_effects: &mut SimEffects, client_ship: &mut Ship, time: f64, dt: f64) {
         use graphics::*;
         
@@ -360,8 +356,11 @@ impl<'a> SpaceGui<'a> {
                     let y = y - self.render_area.y - ENEMY_OFFSET_Y;
                     if let Some(ref ship) = self.render_area.ship {
                         apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
-                            selected_module.borrow_mut().get_base_mut().plan_target_data =
-                                Some(module::TargetData::TargetModule(ship.clone(), module.clone()));
+                            selected_module.borrow_mut().get_base_mut().plan_target =
+                                Some(module::Target {
+                                    ship: ship.clone(),
+                                    data: module::TargetData::TargetModule(module.clone()),
+                                });
                             clear_selection = true;
                         });
                     }
@@ -370,8 +369,11 @@ impl<'a> SpaceGui<'a> {
                     let x = x - SHIP_OFFSET_X;
                     let y = y - SHIP_OFFSET_Y;
                     apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
-                        selected_module.borrow_mut().get_base_mut().plan_target_data =
-                            Some(module::TargetData::OwnModule(client_ship.clone(), module.clone()));
+                        selected_module.borrow_mut().get_base_mut().plan_target =
+                            Some(module::Target {
+                                ship: client_ship.clone(),
+                                data: module::TargetData::OwnModule(module.clone()),
+                            });
                         clear_selection = true;
                     });
                 },
@@ -384,8 +386,11 @@ impl<'a> SpaceGui<'a> {
                         if let Some(ref ship) = self.render_area.ship {
                             if let Some(beam_start) = self.beam_targeting_state {
                                 let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
-                                selected_module.borrow_mut().get_base_mut().plan_target_data =
-                                    Some(module::TargetData::Beam(ship.clone(), beam_start, beam_end));
+                                selected_module.borrow_mut().get_base_mut().plan_target =
+                                    Some(module::Target {
+                                        ship: ship.clone(),
+                                        data: module::TargetData::Beam(beam_start, beam_end),
+                                    });
                                 clear_selection = true;
                                 self.beam_targeting_state = None;
                             } else {

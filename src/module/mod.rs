@@ -27,7 +27,7 @@ pub use self::solar::SolarModule;
 pub use self::command::CommandModule;
 pub use self::beam_weapon::BeamWeaponModule;
 
-pub use self::target_data::{NetworkTargetData, TargetMode, TargetData};
+pub use self::target::{NetworkTarget, NetworkTargetData, Target, TargetMode, TargetData};
 pub use self::damage_visual::{DamageVisual, DamageVisualKind};
 
 pub mod engine;
@@ -37,7 +37,7 @@ pub mod solar;
 pub mod command;
 pub mod beam_weapon;
 
-pub mod target_data;
+pub mod target;
 pub mod damage_visual;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -51,8 +51,6 @@ pub trait IModule : Send {
     #[cfg(feature = "client")]
     fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
     fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
-    
-    fn on_ship_removed(&mut self, base: &mut ModuleBase, _: ShipId) {}
     
     fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {}
     fn read_results(&mut self, base: &mut ModuleBase, packet: &mut InPacket) {}
@@ -96,8 +94,6 @@ pub trait IModuleRef {
     #[cfg(feature = "client")]
     fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
     fn after_simulation(&mut self, ship_state: &mut ShipState);
-    
-    fn on_ship_removed(&mut self, ShipId) {}
     
     fn write_results(&self, packet: &mut OutPacket);
     fn read_results(&mut self, packet: &mut InPacket);
@@ -161,11 +157,6 @@ impl<M> IModuleRef for Module<M>
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {
         self.module.after_simulation(&mut self.base, ship_state);
-    }
-    
-    fn on_ship_removed(&mut self, ship_id: ShipId) {
-        self.base.on_ship_removed(ship_id);
-        self.module.on_ship_removed(&mut self.base, ship_id);
     }
     
     fn write_results(&self, packet: &mut OutPacket) {
@@ -365,7 +356,7 @@ impl Encodable for ModuleBox {
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct ModulePlans {
     pub plan_powered: bool,
-    pub plan_target_data: Option<NetworkTargetData>,
+    pub plan_target: Option<NetworkTarget>,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -387,8 +378,8 @@ pub struct ModuleBase {
     pub powered: bool,      // If the module consumes power, whether or not it's currently powered (useless otherwise)
     pub plan_powered: bool, // Plan to power
     
-    pub target_data: Option<TargetData>,
-    pub plan_target_data: Option<TargetData>,
+    pub target: Option<Target>,
+    pub plan_target: Option<Target>,
     
     // Module damage visuals
     damage_visuals: Vec<DamageVisual>,
@@ -412,8 +403,8 @@ impl ModuleBase {
             powered: false,
             plan_powered: false,
             
-            target_data: None,
-            plan_target_data: None,
+            target: None,
+            plan_target: None,
             
             damage_visuals: vec!(),
             
@@ -496,116 +487,48 @@ impl ModuleBase {
     }
     
     pub fn apply_target_plans(&mut self) {
-        self.target_data.clone_from(&self.plan_target_data);
+        self.target.clone_from(&self.plan_target);
     }
     
     pub fn get_plans(&self) -> ModulePlans {
         ModulePlans {
             plan_powered: self.plan_powered,
-            plan_target_data: self.plan_target_data.as_ref().map(|t| NetworkTargetData::from_target_data(t)),
+            plan_target: self.plan_target.as_ref().map(|t| NetworkTarget::from_target(t)),
         }
     }
     
     pub fn set_plans(&mut self, context: &BattleContext, plans: &ModulePlans) {
         self.plan_powered = plans.plan_powered;
-        self.plan_target_data = plans.plan_target_data.as_ref().map(|t| t.to_target_data(context));
+        self.plan_target = plans.plan_target.as_ref().map(|t| t.to_target(context));
     }
     
-    fn on_ship_removed(&mut self, ship_id: ShipId) {
+    pub fn on_ship_removed(&mut self, ship_id: ShipId) {
         use self::TargetData::*;
     
         // TODO make this prettier
         
         let mut remove = false;
     
-        if let Some(ref target_data) = self.plan_target_data {
-            match target_data {
-                &TargetShip(ref ship) => {
-                    if let Some(TargetData::TargetShip(ref ship)) = self.target_data {
-                        if ship.borrow().id == ship_id {
-                            remove = true;
-                        }
-                    }
-                },
-                &TargetModule(ref ship, _) => {
-                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
-                        if ship.borrow().id == ship_id {
-                            remove = true;
-                        }
-                    }
-                },
-                &OwnModule(ref ship, _) => {
-                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
-                        if ship.borrow().id == ship_id {
-                            remove = true;
-                        }
-                    }
-                },
-                &AnyModule(ref ship, _) => {
-                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
-                        if ship.borrow().id == ship_id {
-                            remove = true;
-                        }
-                    }
-                },
-                &Beam(ref ship, _, _) => {
-                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
-                        if ship.borrow().id == ship_id {
-                            remove = true;
-                        }
-                    }
-                },
+        if let Some(ref target) = self.plan_target {
+            if target.ship.borrow().id == ship_id {
+                remove = true;
             }
         }
         
         if remove {
-            self.plan_target_data = None;
+            self.plan_target = None;
         }
         
         remove = false;
         
-        if let Some(ref target_data) = self.target_data {
-            match target_data {
-                &TargetShip(ref ship) => {
-                    if let Some(TargetData::TargetShip(ref ship)) = self.target_data {
-                        if ship.borrow().id == ship_id {
-                            remove = true;
-                        }
-                    }
-                },
-                &TargetModule(ref ship, ref module) => {
-                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
-                        if ship.borrow().id == ship_id {
-                            remove = true;
-                        }
-                    }
-                },
-                &OwnModule(ref ship, ref module) => {
-                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
-                        if ship.borrow().id == ship_id {
-                            remove = true;
-                        }
-                    }
-                },
-                &AnyModule(ref ship, ref module) => {
-                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
-                        if ship.borrow().id == ship_id {
-                            remove = true;
-                        }
-                    }
-                },
-                &Beam(ref ship, _, _) => {
-                    if let Some(TargetData::TargetModule(ref ship, _)) = self.target_data {
-                        if ship.borrow().id == ship_id {
-                            remove = true;
-                        }
-                    }
-                },
+        if let Some(ref target) = self.target {
+            if target.ship.borrow().id == ship_id {
+                remove = true;
             }
         }
         
         if remove {
-            self.target_data = None;
+            self.target = None;
         }
     }
     
@@ -676,8 +599,8 @@ impl ModuleBaseStored {
             powered: self.powered,
             plan_powered: self.powered,
             
-            target_data: None,
-            plan_target_data: None,
+            target: None,
+            plan_target: None,
             
             damage_visuals: vec!(),
             

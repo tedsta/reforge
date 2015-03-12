@@ -353,7 +353,7 @@ impl Ship {
     
     pub fn on_ship_removed(&self, ship_id: ShipId) {
         for module in self.modules.iter() {
-            module.borrow_mut().on_ship_removed(ship_id);
+            module.borrow_mut().get_base_mut().on_ship_removed(ship_id);
         }
     }
     
@@ -397,7 +397,7 @@ impl Ship {
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Write the base results
             packet.write(&module.get_base().powered);
-            packet.write(&module.get_base().target_data.as_ref().map(|t| module::NetworkTargetData::from_target_data(t)));
+            packet.write(&module.get_base().target.as_ref().map(|t| module::NetworkTarget::from_target(t)));
         
             module.write_results(packet);
         }
@@ -419,8 +419,8 @@ impl Ship {
                 module.on_deactivated(&mut self.state, &self.modules);
             }
             
-            let target_data: Option<module::NetworkTargetData> = packet.read().ok().expect("Failed to read ModuleBase target_data");
-            module.get_base_mut().target_data = target_data.map(|t| t.to_target_data(context));
+            let target: Option<module::NetworkTarget> = packet.read().ok().expect("Failed to read ModuleBase target_data");
+            module.get_base_mut().target = target.map(|t| t.to_target(context));
         
             module.read_results(packet);
         }

@@ -39,14 +39,18 @@ impl IModule for BeamWeaponModule {
     
     fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEventAdder) {
         if base.powered {
-            if let Some(module::TargetData::Beam(ref target_ship, beam_start, beam_end)) = base.target_data {
-                target_ship.borrow().beam_hits(beam_start, beam_end, |module, _, _, hit| {
-                    if let Some(hit_dist) = hit {
-                        let hit_tick = 20 + (((3.0 - 1.0)*hit_dist*20.0) as u32);
-                    
-                        events.add(hit_tick, box DamageEvent::new(target_ship.clone(), module.clone(), 1));
-                    }
-                });
+            if let Some(ref target) = base.target {
+                let ref target_ship = target.ship;
+            
+                if let module::TargetData::Beam(beam_start, beam_end) = target.data {
+                    target_ship.borrow().beam_hits(beam_start, beam_end, |module, _, _, hit| {
+                        if let Some(hit_dist) = hit {
+                            let hit_tick = 20 + (((3.0 - 1.0)*hit_dist*20.0) as u32);
+                        
+                            events.add(hit_tick, box DamageEvent::new(target_ship.clone(), module.clone(), 1));
+                        }
+                    });
+                }
             }
         }
     }
@@ -74,29 +78,31 @@ impl IModule for BeamWeaponModule {
         let ship_id = ship.borrow().id;
         
         if base.powered {
-            if let Some(module::TargetData::Beam(ref target_ship, beam_start, beam_end)) = base.target_data {
-                let target_ship_id = target_ship.borrow().id;
-                
-                let start_time = 1.0;
-                let end_time = 3.0;
-                
-                // Add the simulation visual for beam leaving ship screen
-                effects.add_visual(ship_id, 2, box BeamExitVisual {
-                    start_time: start_time,
-                    end_time: end_time,
+            if let Some(ref target) = base.target {
+                let target_ship_id = target.ship.borrow().id;
+            
+                if let module::TargetData::Beam(beam_start, beam_end) = target.data {
+                    let start_time = 1.0;
+                    let end_time = 3.0;
                     
-                    beam_start: base.get_render_center() + Vec2 { x: 20.0, y: 0.0 },
-                    beam_end: base.get_render_center() + Vec2 { x: 20.0, y: 0.0 } + Vec2 { x: 1500.0, y: 0.0 },
-                });
-                
-                // Add the simulation visual for beam entering target screen
-                effects.add_visual(target_ship_id, 2, box BeamVisual {
-                    start_time: start_time,
-                    end_time: end_time,
+                    // Add the simulation visual for beam leaving ship screen
+                    effects.add_visual(ship_id, 2, box BeamExitVisual {
+                        start_time: start_time,
+                        end_time: end_time,
+                        
+                        beam_start: base.get_render_center() + Vec2 { x: 20.0, y: 0.0 },
+                        beam_end: base.get_render_center() + Vec2 { x: 20.0, y: 0.0 } + Vec2 { x: 1500.0, y: 0.0 },
+                    });
                     
-                    beam_start: beam_start,
-                    beam_end: beam_end,
-                });
+                    // Add the simulation visual for beam entering target screen
+                    effects.add_visual(target_ship_id, 2, box BeamVisual {
+                        start_time: start_time,
+                        end_time: end_time,
+                        
+                        beam_start: beam_start,
+                        beam_end: beam_end,
+                    });
+                }
             }
         }
     }
