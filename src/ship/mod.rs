@@ -506,6 +506,9 @@ pub struct ShipStored {
     height: u8,
     
     pub level: u8, // TODO: This is very temporary only for IC US semifinals
+    
+    // Ship's sector jumping plans
+    pub target_sector: Option<SectorId>,
 }
 
 impl ShipStored {
@@ -520,6 +523,8 @@ impl ShipStored {
             height: 0,
             
             level: level,
+            
+            target_sector: None,
         }
     }
     
@@ -534,6 +539,7 @@ impl ShipStored {
             width: ship.width,
             height: ship.height,
             level: ship.level,
+            target_sector: ship.target_sector,
         }
     }
     
@@ -547,7 +553,7 @@ impl ShipStored {
             width: self.width,
             height: self.height,
             level: self.level,
-            target_sector: None,
+            target_sector: self.target_sector,
         }
     }
 }

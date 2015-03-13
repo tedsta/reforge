@@ -105,6 +105,24 @@ impl StarMapServer {
                 self.slot.transfer_client(client_id, sector.slot_id);
                 sector.to_sector.send(account);
             }
+            
+            // Send any jumping ships to their new sector
+            for sector in self.sectors.values() {
+                if let Ok(mut account) = sector.from_sector.try_recv() {
+                    let client_id = account.client_id.expect("This needs to have a client ID");
+                    
+                    let target_sector =
+                        {
+                            let ship = account.ship.as_mut().expect("Ship must exist");
+                            ship.target_sector.take().expect("There must be a target sector")
+                        };
+                    
+                    let ref sector = self.sectors[target_sector];
+                    
+                    self.slot.transfer_client(client_id, sector.slot_id);
+                    sector.to_sector.send(account);
+                }
+            }
         }
     }
 }
