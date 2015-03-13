@@ -193,6 +193,7 @@ impl ClientBattleState {
             Err(_) => panic!("Failed to write plan packet ID"),
         }
 
+        packet.write(&self.player_ship.borrow().target_sector).ok().expect("Failed to write player's target sector");
         packet.write(&self.player_ship.borrow().get_module_plans()).ok().expect("Failed to write player's plans");
 
         packet
