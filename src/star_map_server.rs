@@ -28,6 +28,8 @@ pub struct StarMapServer {
 
 impl StarMapServer {
     pub fn new(slot: ServerSlot) -> StarMapServer {
+        let slot_id = slot.get_id();
+    
         let mut sectors = HashMap::new();
         
         // Sector 0
@@ -46,7 +48,7 @@ impl StarMapServer {
         });
         
         Builder::new().name(format!("sector_{}_thread", 0)).spawn(move || {
-            let mut sector_state = SectorState::new(sector_slot, BattleContext::new(vec!()));
+            let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()));
             sector_state.run(from_sector_sender, to_sector_receiver);
         });
         
@@ -66,7 +68,7 @@ impl StarMapServer {
         });
         
         Builder::new().name(format!("sector_{}_thread", 1)).spawn(move || {
-            let mut sector_state = SectorState::new(sector_slot, BattleContext::new(vec!()));
+            let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()));
             sector_state.run(from_sector_sender, to_sector_receiver);
         });
         

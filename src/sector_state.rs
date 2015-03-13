@@ -15,6 +15,7 @@ use sim::SimEvents;
 
 pub struct SectorState {
     slot: ServerSlot,
+    star_map_slot_id: ServerSlotId,
 
     // Context holding all the things involved in this battle
     context: BattleContext,
@@ -39,9 +40,10 @@ pub struct SectorState {
 }
 
 impl SectorState {
-    pub fn new(slot: ServerSlot, context: BattleContext) -> SectorState {
+    pub fn new(slot: ServerSlot, star_map_slot_id: ServerSlotId, context: BattleContext) -> SectorState {
         SectorState {
             slot: slot,
+            star_map_slot_id: star_map_slot_id,
             context: context,
             turn_start_time: time::now().to_timespec(),
             sent_new_ships: false,
@@ -74,7 +76,7 @@ impl SectorState {
             }
             
             if turn_time.num_milliseconds() > 11000 {
-                self.simulate_next_turn();
+                self.simulate_next_turn(&to_map_sender);
                 
                 // Reset the turn stuff
                 self.turn_start_time = time::now().to_timespec();
@@ -156,9 +158,36 @@ impl SectorState {
         ship.set_module_plans(&self.context, &plans);
     }
     
-    fn simulate_next_turn(&mut self) {
+    fn simulate_next_turn(&mut self, to_map_sender: &Sender<AccountBox>) {
         // Send new ships to added/removed before simulation
         self.send_new_ships();
+        
+        // Send off all the ships that jumped
+        let mut jumped_ships = vec!();
+        for ship in self.context.ships_list.iter() {
+            if let Some(sector_id) = ship.borrow().target_sector {
+                jumped_ships.push(ship.clone());
+            }
+        }
+        
+        for jumped_ship in jumped_ships.into_iter() {
+            use std::rc::try_unwrap;
+        
+            if let Some(client_id) = jumped_ship.borrow().client_id {
+                self.context.remove_ship(jumped_ship.borrow().id);
+                
+                let ship_ref_cell = try_unwrap(jumped_ship).ok().expect("Failed to unwrap jumping ship");
+                let ship = ship_ref_cell.into_inner();
+                let ship_stored = ShipStored::from_ship(ship);
+                
+                let mut account = self.accounts.remove(&client_id).expect("Client's account must exist here.");
+                account.ship = Some(ship_stored);
+                
+                self.slot.transfer_client(client_id, self.star_map_slot_id);
+                
+                to_map_sender.send(account);
+            }
+        }
     
         // Run AI on ships with no client
         for ship in self.context.ships_list.iter() {
@@ -208,8 +237,8 @@ impl SectorState {
             }
         }
         
-        for dead_ships in dead_ships.into_iter() {
-            self.context.remove_ship(dead_ships);
+        for dead_ship in dead_ships.into_iter() {
+            self.context.remove_ship(dead_ship);
         }
         
         for new_ship in new_ships.into_iter() {
