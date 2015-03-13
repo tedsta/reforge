@@ -6,6 +6,7 @@ use battle_state::BattleContext;
 use module;
 use module::{IModule, IModuleRef, IModuleStored, Module, ModuleBase, ModuleBox, ModuleRef, ModuleStoredBox};
 use net::{ClientId, InPacket, OutPacket};
+use sector_data::SectorId;
 use self::ship_gen::generate_ship;
 use sim::SimEvents;
 use vec::{Vec2, Vec2f};
@@ -176,6 +177,9 @@ pub struct Ship {
     height: u8,
     
     pub level: u8, // TODO: This is very temporary only for IC US semifinals
+    
+    // Ship's sector jumping plans
+    pub target_sector: Option<SectorId>,
 }
 
 impl Ship {
@@ -191,6 +195,8 @@ impl Ship {
             height: 0,
             
             level: level,
+            
+            target_sector: None,
         }
     }
     
@@ -541,6 +547,7 @@ impl ShipStored {
             width: self.width,
             height: self.height,
             level: self.level,
+            target_sector: None,
         }
     }
 }

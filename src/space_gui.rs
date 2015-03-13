@@ -153,6 +153,7 @@ impl<'a> SpaceGui<'a> {
         if let Some(star_map_result) = self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]) {
             match star_map_result {
                 StarMapAction::Jump(sector) => {
+                    client_ship.borrow_mut().target_sector = Some(sector);
                     self.show_star_map = false;
                 },
                 StarMapAction::Close => {
