@@ -533,6 +533,8 @@ fn draw_ship(context: &Context, gl: &mut Gl, sim_effects: &mut SimEffects, ship:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stats_labels: &StatsLabels, ship: &Ship, is_client_ship: bool) {
+    use std::cmp;
+
     use graphics::*;
     use graphics::text::Text;
     
@@ -548,13 +550,13 @@ fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stat
         shield_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 52.0), gl);
     }
     
-    for i in range(0, ship.state.plan_power) {
-        power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
-    }
-    
     if is_client_ship {
         let used_power_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
-        let new_power_rect = Rectangle::new([0.0, 1.0, 0.0, 0.5]);
+        let new_power_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
+        
+        for i in range(0, cmp::min(ship.state.plan_power, ship.state.power)) {
+            power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
+        }
     
         if ship.state.plan_power < ship.state.power {
             for i in range(ship.state.plan_power, ship.state.power) {
@@ -564,6 +566,10 @@ fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stat
             for i in range(ship.state.power, ship.state.plan_power) {
                 new_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
             }
+        }
+    } else {
+        for i in range(0, ship.state.power) {
+            power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
         }
     }
     
