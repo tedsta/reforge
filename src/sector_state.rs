@@ -245,7 +245,11 @@ impl SectorState {
             self.context.remove_ship(id);
             
             let ship_ref_cell = try_unwrap(jumped_ship).ok().expect("Failed to unwrap jumping ship");
-            let ship = ship_ref_cell.into_inner();
+            let mut ship = ship_ref_cell.into_inner();
+            
+            // The plan power needs to be correct when going to the new sector, and any plans the
+            // player made during the last simulation phase are cancelled, so this is safe to do.
+            ship.state.plan_power = ship.state.power;
 
             if let Some(client_id) = ship.client_id {
                 let ship_stored = ShipStored::from_ship(ship);
