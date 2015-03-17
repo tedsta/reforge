@@ -180,6 +180,9 @@ pub struct Ship {
     
     // Ship's sector jumping plans
     pub target_sector: Option<SectorId>,
+    
+    // Whether or not the ship successfully jumped
+    pub jumping: bool,
 }
 
 impl Ship {
@@ -197,6 +200,7 @@ impl Ship {
             level: level,
             
             target_sector: None,
+            jumping: false,
         }
     }
     
@@ -397,6 +401,11 @@ impl Ship {
     
     pub fn write_results(&self, packet: &mut OutPacket) {
         packet.write(&self.state.power);
+        
+        // Jumping stuff
+        packet.write(&self.jumping);
+        
+        // Modoule results
         for module in self.modules.iter() {
             let module = module.borrow();
         
@@ -411,6 +420,7 @@ impl Ship {
     
     pub fn read_results(&mut self, context: &BattleContext, packet: &mut InPacket) {
         self.state.power = packet.read().ok().expect("Failed to read ShipState power");
+        self.jumping = packet.read().ok().expect("Failed to read Ship::jumping");
         for module in self.modules.iter() {
             let mut module = module.borrow_mut();
             
@@ -554,6 +564,7 @@ impl ShipStored {
             height: self.height,
             level: self.level,
             target_sector: self.target_sector,
+            jumping: false,
         }
     }
 }

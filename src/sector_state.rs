@@ -174,6 +174,14 @@ impl SectorState {
             }
         }
         
+        // Let the ships that want to jump jump, if they can
+        for ship in self.context.ships_list.iter() {
+            let mut ship = ship.borrow_mut();
+            if ship.target_sector.is_some() {
+                ship.jumping = true;
+            }
+        }
+        
         // Apply all the plans
         self.context.apply_module_plans();
     

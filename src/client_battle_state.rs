@@ -82,7 +82,7 @@ impl<'a> ClientBattleState<'a> {
             if should_close { break; }
             
             // Check if player jumped
-            if self.player_ship.borrow().target_sector.is_some() {
+            if self.player_ship.borrow().jumping {
                 break;
             }
         }
