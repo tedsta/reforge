@@ -228,12 +228,14 @@ impl SectorState {
         
         for jumped_ship in jumped_ships.into_iter() {
             use std::rc::try_unwrap;
-        
-            if let Some(client_id) = jumped_ship.borrow().client_id {
-                self.context.remove_ship(jumped_ship.borrow().id);
-                
-                let ship_ref_cell = try_unwrap(jumped_ship).ok().expect("Failed to unwrap jumping ship");
-                let ship = ship_ref_cell.into_inner();
+            
+            let id = jumped_ship.borrow().id;
+            self.context.remove_ship(id);
+            
+            let ship_ref_cell = try_unwrap(jumped_ship).ok().expect("Failed to unwrap jumping ship");
+            let ship = ship_ref_cell.into_inner();
+
+            if let Some(client_id) = ship.client_id {
                 let ship_stored = ShipStored::from_ship(ship);
                 
                 let mut account = self.accounts.remove(&client_id).expect("Client's account must exist here.");
