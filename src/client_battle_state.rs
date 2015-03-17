@@ -18,8 +18,8 @@ use ship::{Ship, ShipId, ShipRef};
 use sim::{SimEvents, SimEffects};
 use space_gui::SpaceGui;
 
-pub struct ClientBattleState {
-    client: Client,
+pub struct ClientBattleState<'a> {
+    client: &'a mut Client,
     
     // Context holding all the things involved in this battle
     context: BattleContext,
@@ -28,8 +28,8 @@ pub struct ClientBattleState {
     player_ship: ShipRef,
 }
 
-impl ClientBattleState {
-    pub fn new(client: Client, context: BattleContext) -> ClientBattleState {
+impl<'a> ClientBattleState<'a> {
+    pub fn new(client: &'a mut Client, context: BattleContext) -> ClientBattleState<'a> {
         let player_ship = context.get_ship_by_client_id(client.get_id()).clone();
         ClientBattleState {
             client: client,
@@ -80,6 +80,11 @@ impl ClientBattleState {
             // Check if it's time to exit
             let ShouldClose(should_close) = window.borrow().get();
             if should_close { break; }
+            
+            // Check if player jumped
+            if self.player_ship.borrow().target_sector.is_some() {
+                break;
+            }
         }
     }
     

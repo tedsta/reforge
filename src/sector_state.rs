@@ -223,8 +223,12 @@ impl SectorState {
         for ship in self.context.ships_list.iter() {
             if let Some(sector_id) = ship.borrow().target_sector {
                 jumped_ships.push(ship.clone());
+                self.ships_to_remove.push(ship.borrow().id);
             }
         }
+        
+        // Send new ships
+        self.send_new_ships();
         
         for jumped_ship in jumped_ships.into_iter() {
             use std::rc::try_unwrap;
@@ -246,9 +250,6 @@ impl SectorState {
                 to_map_sender.send(account);
             }
         }
-        
-        // Send new ships
-        self.send_new_ships();
         
         // Reset everything for the next turn
         self.received_plans.clear();

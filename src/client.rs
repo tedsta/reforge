@@ -35,6 +35,7 @@ use asset_store::AssetStore;
 use battle_state::BattleContext;
 use battle_type::BattleType;
 use client_battle_state::ClientBattleState;
+use client_state::run_client_state_manager;
 use login::LoginPacket;
 use login_screen::LoginScreen;
 use main_menu::{MainMenu, MainMenuSelection};
@@ -56,6 +57,7 @@ mod asset_store;
 mod battle_state;
 mod battle_type;
 mod client_battle_state;
+mod client_state;
 mod gui;
 mod login;
 mod login_screen;
@@ -208,25 +210,7 @@ fn main () {
                     packet.write(&LoginPacket{username: username, password: password});
                     client.send(&packet);
                     
-                    // Receive the star map
-                    let mut packet = client.receive();
-                    let sectors = packet.read().ok().expect("Failed to read star map");
-                    
-                    // Receive the ships from the server
-                    let mut packet = client.receive();
-                    let my_ship = packet.read().ok().expect("Failed to read my Ship");
-                    let start_at_sim = packet.read().ok().expect("Failed to read start_at_sim from server");
-                    let ships = match packet.read() {
-                        Ok(ships) => ships,
-                        Err(e) => panic!("Unable to receive ships froms server: {}", e),
-                    };
-                    
-                    // Create the battle state
-                    let mut battle_context = BattleContext::new(ships);
-                    battle_context.add_ship(my_ship);
-                    let mut battle = ClientBattleState::new(client, battle_context);
-
-                    battle.run(window, gl, &mut glyph_cache, &asset_store, sectors, start_at_sim);
+                    run_client_state_manager(window, gl, &mut glyph_cache, &asset_store, client);
                 }
             },
             MainMenuSelection::Tutorial => {                
