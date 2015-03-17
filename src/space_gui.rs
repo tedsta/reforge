@@ -136,35 +136,38 @@ impl<'a> SpaceGui<'a> {
             self.mouse_x = x;
             self.mouse_y = y;
         });
-        e.press(|button| {
-            match button {
-                Button::Keyboard(key) => self.on_key_pressed(key), 
-                Button::Mouse(button) => {
-                    let (mouse_x, mouse_y) = (self.mouse_x, self.mouse_y);
-                    match button {
-                        mouse::MouseButton::Left => self.on_mouse_left_pressed(mouse_x, mouse_y, client_ship),
-                        mouse::MouseButton::Right => self.on_mouse_right_pressed(mouse_x, mouse_y, client_ship),
-                        _ => {},
-                    }
-                },
-            }
-        });
-        
-        if let Some(star_map_result) = self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]) {
-            match star_map_result {
-                StarMapAction::Jump(sector) => {
-                    client_ship.borrow_mut().target_sector = Some(sector);
-                    self.show_star_map = false;
-                },
-                StarMapAction::Close => {
-                    self.show_star_map = false;
-                },
-            }
-        }
         
         self.star_map_button.event(e, [self.mouse_x, self.mouse_y]);
         if self.star_map_button.get_clicked() {
             self.show_star_map = true;
+        }
+        
+        if self.show_star_map {
+            if let Some(star_map_result) = self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]) {
+                match star_map_result {
+                    StarMapAction::Jump(sector) => {
+                        client_ship.borrow_mut().target_sector = Some(sector);
+                        self.show_star_map = false;
+                    },
+                    StarMapAction::Close => {
+                        self.show_star_map = false;
+                    },
+                }
+            }
+        } else {
+            e.press(|button| {
+                match button {
+                    Button::Keyboard(key) => self.on_key_pressed(key), 
+                    Button::Mouse(button) => {
+                        let (mouse_x, mouse_y) = (self.mouse_x, self.mouse_y);
+                        match button {
+                            mouse::MouseButton::Left => self.on_mouse_left_pressed(mouse_x, mouse_y, client_ship),
+                            mouse::MouseButton::Right => self.on_mouse_right_pressed(mouse_x, mouse_y, client_ship),
+                            _ => {},
+                        }
+                    },
+                }
+            });
         }
     }
     
