@@ -4,7 +4,7 @@ use graphics::Context;
 use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
-use assets::REPAIR_TEXTURE;
+use assets::BEAM_WEAPON_TEXTURE;
 use module;
 use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
@@ -57,10 +57,10 @@ impl IModule for BeamWeaponModule {
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
-        let mut sprite = SpriteSheet::new(asset_store.get_sprite_info(REPAIR_TEXTURE));
+        let mut sprite = SpriteSheet::new(asset_store.get_sprite_info(BEAM_WEAPON_TEXTURE));
 
         if base.is_active() {
-            sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 1, 18, 0.2));
+            sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 1, 23, 0.2));
         } else {
             sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }

@@ -17,6 +17,7 @@ pub static PROPULSION_TEXTURE: u16 = 8;
 pub static FIRE_TEXTURE: u16 = 9;
 pub static SMOKE_TEXTURE: u16 = 10;
 pub static GUI_TEXTURE: u16 = 11;
+pub static BEAM_WEAPON_TEXTURE: u16 = 12;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

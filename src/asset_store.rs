@@ -21,6 +21,7 @@ use assets::{
     FIRE_TEXTURE,
     SMOKE_TEXTURE,
     GUI_TEXTURE,
+    BEAM_WEAPON_TEXTURE,
 };
 
 pub struct AssetStore {
@@ -49,6 +50,7 @@ impl AssetStore {
             Rc::new(Texture::from_path(&Path::new("content/textures/effects/fire_sprite.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/effects/smoke_sprite.png")).unwrap()),
             Rc::new(Texture::from_path(&Path::new("content/textures/gui/module_button.png")).unwrap()),
+            Rc::new(Texture::from_path(&Path::new("content/textures/modules/small_beam_sprite.png")).unwrap()),
         ];
         
         let sprite_info = vec![
@@ -111,6 +113,11 @@ impl AssetStore {
                 texture: textures[GUI_TEXTURE as usize].clone(),
                 columns: 1,
                 rows: 1,
+            },
+            SpriteInfo {
+                texture: textures[BEAM_WEAPON_TEXTURE as usize].clone(),
+                columns: 6,
+                rows: 4,
             },
         ];
         
