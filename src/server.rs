@@ -23,6 +23,7 @@ mod sector_data;
 mod sector_state;
 mod ship;
 mod sim;
+mod sim_events;
 mod vec;
 
 mod battle_scheduler;

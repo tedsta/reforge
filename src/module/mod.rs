@@ -470,6 +470,7 @@ impl ModuleBase {
         dealt_damage
     }
     
+    #[cfg(feature = "client")]
     pub fn add_damage_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship_id: ShipId) {
         use assets::FIRE_TEXTURE;
         use sim_visuals::SpriteVisual;

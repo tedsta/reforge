@@ -11,9 +11,10 @@ use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
 use sim_events::DamageEvent;
-use sim_visuals::{BeamExitVisual, BeamVisual, SpriteVisual};
 use vec::{Vec2, Vec2f};
 
+#[cfg(feature = "client")]
+use sim_visuals::{BeamExitVisual, BeamVisual, SpriteVisual};
 #[cfg(feature = "client")]
 use sim::{SimEffects, SimVisual};
 #[cfg(feature = "client")]

@@ -10,9 +10,10 @@ use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEventAdder;
-use sim_visuals::SpriteVisual;
 use vec::{Vec2, Vec2f};
 
+#[cfg(feature = "client")]
+use sim_visuals::SpriteVisual;
 #[cfg(feature = "client")]
 use sim::{SimEffects, SimVisual};
 #[cfg(feature = "client")]

@@ -18,10 +18,11 @@ use module::{IModule, Module, ModuleRef, ModuleBase, ModuleBox};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipRef, ShipState};
 use sim::{SimEvent, SimEventAdder};
-use sim_visuals::{LerpVisual, SpriteVisual};
 use sim_events::DamageEvent;
 use vec::{Vec2, Vec2f};
 
+#[cfg(feature = "client")]
+use sim_visuals::{LerpVisual, SpriteVisual};
 #[cfg(feature = "client")]
 use sim::{SimEffects, SimVisual};
 #[cfg(feature = "client")]
