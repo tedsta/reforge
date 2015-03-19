@@ -50,6 +50,8 @@ impl AssetStore {
         asset_store.load_texture("effects/propulsion_sprite.png", 1, 7);
         asset_store.load_texture("effects/fire_sprite.png", 8, 1);
         asset_store.load_texture("effects/smoke_sprite.png", 8, 1);
+        asset_store.load_texture("effects/small_beam_part.png", 1, 1);
+        asset_store.load_texture("effects/small_beam_end.png", 1, 4);
         asset_store.load_texture("gui/module_button.png", 1, 1);
         
         asset_store
@@ -77,8 +79,16 @@ impl AssetStore {
         &self.sprite_info[*texture].texture
     }
     
+    pub fn get_texture_str<'a>(&'a self, texture: &str) -> &'a Rc<Texture> {
+        &self.sprite_info[texture.to_string()].texture
+    }
+    
     pub fn get_texture_size(&self, texture: &String) -> (u32, u32) {
         self.sprite_info[*texture].texture.get_size()
+    }
+    
+    pub fn get_texture_size_str(&self, texture: &str) -> (u32, u32) {
+        self.sprite_info[texture.to_string()].texture.get_size()
     }
     
     pub fn get_sprite_info<'a>(&'a self, texture: &String) -> &'a SpriteInfo {

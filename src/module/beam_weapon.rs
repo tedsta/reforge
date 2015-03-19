@@ -90,18 +90,24 @@ impl IModule for BeamWeaponModule {
                         start_time: start_time,
                         end_time: end_time,
                         
-                        beam_start: base.get_render_center() + Vec2 { x: 20.0, y: 0.0 },
-                        beam_end: base.get_render_center() + Vec2 { x: 20.0, y: 0.0 } + Vec2 { x: 1500.0, y: 0.0 },
+                        beam_start: base.get_render_center() + Vec2 { x: 12.0, y: 0.0 },
+                        
+                        texture: asset_store.get_texture_str("effects/small_beam_part.png").clone(),
                     });
                     
                     // Add the simulation visual for beam entering target screen
-                    effects.add_visual(target_ship_id, 2, box BeamVisual {
-                        start_time: start_time,
-                        end_time: end_time,
-                        
-                        beam_start: beam_start,
-                        beam_end: beam_end,
-                    });
+                    let mut beam_end_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/small_beam_end.png"));
+                    beam_end_sprite.add_animation(SpriteAnimation::Loop(0.0, 2.0, 0, 3, 0.1)); // 2 second beam duration
+                    
+                    let beam_visual =
+                        BeamVisual::new(
+                            start_time, end_time,
+                            beam_start, beam_end,
+                            asset_store.get_texture_str("effects/small_beam_part.png").clone(),
+                            beam_end_sprite
+                        );
+                    
+                    effects.add_visual(target_ship_id, 2, box beam_visual);
                 }
             }
         }

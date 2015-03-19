@@ -51,6 +51,10 @@ impl SpriteSheet {
         }
     }
     
+    pub fn get_frame_size(&self) -> (u32, u32) {
+        (self.frame_width, self.frame_height)
+    }
+    
     pub fn add_animation(&mut self, animation: SpriteAnimation) {
         self.animations.push_back(animation);
     }

@@ -1,5 +1,7 @@
+use std::rc::Rc;
+
 use graphics::Context;
-use opengl_graphics::Gl;
+use opengl_graphics::{Gl, Texture};
 
 use sim::SimVisual;
 use sprite_sheet::SpriteSheet;
@@ -35,16 +37,23 @@ pub struct BeamExitVisual {
     pub end_time: f64,
     
     pub beam_start: Vec2f,
-    pub beam_end: Vec2f,
+    
+    pub texture: Rc<Texture>,
 }
 
 impl SimVisual for BeamExitVisual {
     fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
-        use graphics::Line;
+        use graphics::Image;
+        use graphics::ImageSize;
+        use graphics::Rect;
+        use quack::Set;
+        use std::ops::Deref;
     
         if time >= self.start_time && time <= self.end_time {
-            Line::new([1.0, 0.0, 0.0, 1.0], 1.0)
-                .draw([self.beam_start.x, self.beam_start.y, self.beam_end.x, self.beam_end.y], &context, gl);
+            let (_, height) = self.texture.get_size();
+        
+            Image::new().set(Rect([self.beam_start.x, self.beam_start.y, 1500.0, height as f64]))
+                .draw(self.texture.deref(), &context, gl);
         }
     }
 }
@@ -58,24 +67,51 @@ pub struct BeamVisual {
     
     pub beam_start: Vec2f,
     pub beam_end: Vec2f,
+    
+    pub part: Rc<Texture>,
+    pub end: SpriteSheet,
+}
+
+impl BeamVisual {
+    pub fn new(start_time: f64, end_time: f64, beam_start: Vec2f, beam_end: Vec2f, part: Rc<Texture>, mut end: SpriteSheet) -> BeamVisual {
+        end.centered = true;
+    
+        BeamVisual {
+            start_time: start_time,
+            end_time: end_time,
+            
+            beam_start: beam_start,
+            beam_end: beam_end,
+            
+            part: part,
+            end: end,
+        }
+    }
 }
 
 impl SimVisual for BeamVisual {
     fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
-        use graphics::Line;
+        use graphics::Image;
+        use graphics::ImageSize;
+        use graphics::Rect;
+        use quack::Set;
+        use std::ops::Deref;
+        use std::num::Float;
     
         if time >= self.start_time && time <= self.end_time {
             let interp = (time-self.start_time)/(self.end_time-self.start_time);
             
             let beam_pos = self.beam_start + (self.beam_end - self.beam_start)*interp;
             
-            let start_pos = beam_pos + Vec2 { x: 1000.0, y: 0.0 };
-            
-            Line::new([1.0, 0.0, 0.0, 1.0], 1.0)
-                .draw([self.beam_start.x, self.beam_start.y, self.beam_end.x, self.beam_end.y], &context, gl);
-            
-            Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
-                .draw([start_pos.x, start_pos.y, beam_pos.x, beam_pos.y], &context, gl);
+            let (width, height) = self.end.get_frame_size();
+            let (width, height) = (width as f64, height as f64);
+        
+            // Draw beam part
+            Image::new().set(Rect([beam_pos.x, beam_pos.y - (height/2.0), 1500.0, height as f64]))
+                .draw(self.part.deref(), &context, gl);
+                
+            // Draw beam end
+            self.end.draw(&context, gl, beam_pos.x, beam_pos.y, (180.0).to_radians(), time - self.start_time);
         }
     }
 }
