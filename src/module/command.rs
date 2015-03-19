@@ -4,7 +4,6 @@ use graphics::Context;
 use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
-use assets::COMMAND_TEXTURE;
 use module;
 use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
@@ -42,7 +41,7 @@ impl IModule for CommandModule {
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
-        let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info(COMMAND_TEXTURE));
+        let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/big_command_sprite.png"));
 
         if base.is_active() {
             command_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.2));

@@ -4,7 +4,6 @@ use graphics::Context;
 use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
-use assets::SOLAR_TEXTURE;
 use module;
 use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
@@ -42,7 +41,7 @@ impl IModule for SolarModule {
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
-        let mut solar_sprite = SpriteSheet::new(asset_store.get_sprite_info(SOLAR_TEXTURE));
+        let mut solar_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/solar_panel_sprite.png"));
         
         if base.is_active() {
             solar_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 1, 4, 0.1));

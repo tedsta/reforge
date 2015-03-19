@@ -11,7 +11,6 @@ use graphics::Context;
 #[cfg(feature = "client")]
 use opengl_graphics::Gl;
 
-use assets::{WEAPON_TEXTURE, LASER_TEXTURE, EXPLOSION_TEXTURE, TextureId};
 use battle_state::{BattleContext, TICKS_PER_SECOND};
 use module;
 use module::{IModule, Module, ModuleRef, ModuleBase, ModuleBox};
@@ -151,7 +150,7 @@ impl IModule for ProjectileWeaponModule {
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
-        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/weapon_sprite.png"));
         
         if base.is_active() {
             weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 1));
@@ -169,7 +168,7 @@ impl IModule for ProjectileWeaponModule {
     fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
         let ship_id = ship.borrow().id;
     
-        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(WEAPON_TEXTURE));
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/weapon_sprite.png"));
         
         if base.powered {
             if let Some(ref target) = base.target {
@@ -190,7 +189,7 @@ impl IModule for ProjectileWeaponModule {
                         let dist = end_pos - start_pos;
                         let rotation = dist.y.atan2(dist.x);
                         
-                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
+                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/laser1.png"));
                         laser_sprite.centered = true;
                         laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
                         
@@ -227,7 +226,7 @@ impl IModule for ProjectileWeaponModule {
                         let dist = end_pos - start_pos;
                         let rotation = dist.y.atan2(dist.x);
 
-                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(LASER_TEXTURE));
+                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/laser1.png"));
                         laser_sprite.centered = true;
                         laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
                         
@@ -246,7 +245,7 @@ impl IModule for ProjectileWeaponModule {
                         let start_time = (projectile.hit_tick as f64)/(TICKS_PER_SECOND as f64);
                         let end_time = start_time + 0.7;
                         
-                        let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info(EXPLOSION_TEXTURE));
+                        let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info_str("effects/explosion1.png"));
                         explosion_sprite.centered = true;
                         explosion_sprite.add_animation(SpriteAnimation::PlayOnce(start_time, end_time, 0, 9));
                         

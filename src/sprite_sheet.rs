@@ -6,7 +6,7 @@ use std::ops::{Deref};
 use graphics::{Context, ImageSize};
 use opengl_graphics::{Gl, Texture};
 
-use assets::{TextureId, SpriteInfo};
+use asset_store::SpriteInfo;
 
 pub enum SpriteAnimation {
     PlayOnce(f64, f64, u32, u32),

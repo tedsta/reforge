@@ -4,7 +4,6 @@ use graphics::Context;
 use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
-use assets::{ENGINE_TEXTURE, PROPULSION_TEXTURE};
 use module;
 use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
@@ -42,7 +41,7 @@ impl IModule for EngineModule {
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
-        let mut engine_sprite = SpriteSheet::new(asset_store.get_sprite_info(ENGINE_TEXTURE));
+        let mut engine_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/engine1.png"));
         engine_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
     
         effects.add_visual(ship.borrow().id, 0, box SpriteVisual {
@@ -52,7 +51,7 @@ impl IModule for EngineModule {
         
         // Propulsion sprite
         if base.is_active() {
-            let mut prop_sprite = SpriteSheet::new(asset_store.get_sprite_info(PROPULSION_TEXTURE));
+            let mut prop_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/propulsion_sprite.png"));
             prop_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.05));
         
             effects.add_visual(ship.borrow().id, 0, box SpriteVisual {

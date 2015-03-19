@@ -13,7 +13,6 @@ use net::Server;
 use star_map_server::StarMapServer;
 
 mod ai;
-mod assets;
 mod battle_state;
 mod battle_type;
 mod login;

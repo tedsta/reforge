@@ -6,121 +6,20 @@ use graphics::ImageSize;
 use opengl_graphics::Texture;
 use sdl2_mixer;
 
-use assets::{
-    SpriteInfo,
-    TextureId,
-    ENGINE_TEXTURE,
-    WEAPON_TEXTURE,
-    SHIELD_TEXTURE,
-    SOLAR_TEXTURE,
-    REPAIR_TEXTURE,
-    COMMAND_TEXTURE,
-    LASER_TEXTURE,
-    EXPLOSION_TEXTURE,
-    PROPULSION_TEXTURE,
-    FIRE_TEXTURE,
-    SMOKE_TEXTURE,
-    GUI_TEXTURE,
-    BEAM_WEAPON_TEXTURE,
-};
+pub struct SpriteInfo {
+    pub texture: Rc<Texture>,
+    pub columns: u8, 
+    pub rows: u8,
+}
 
 pub struct AssetStore {
-    texture_ids: HashMap<String, TextureId>,
-    textures: Vec<Rc<Texture>>,
-    sprite_info: Vec<SpriteInfo>,
+    sprite_info: HashMap<String, SpriteInfo>,
     
     sounds: HashMap<String, Rc<sdl2_mixer::Chunk>>,
 }
 
 impl AssetStore {
     pub fn new() -> AssetStore {
-        let mut texture_ids = HashMap::new();
-        texture_ids.insert(String::from_str("WEAPON"), WEAPON_TEXTURE);
-    
-        let textures = vec![
-            Rc::new(Texture::from_path(&Path::new("content/textures/modules/engine1.png")).unwrap()),
-            Rc::new(Texture::from_path(&Path::new("content/textures/modules/weapon_sprite.png")).unwrap()),
-            Rc::new(Texture::from_path(&Path::new("content/textures/modules/shield_sprite.png")).unwrap()),
-            Rc::new(Texture::from_path(&Path::new("content/textures/modules/solar_panel_sprite.png")).unwrap()),
-            Rc::new(Texture::from_path(&Path::new("content/textures/modules/repair_sprite.png")).unwrap()),
-            Rc::new(Texture::from_path(&Path::new("content/textures/modules/big_command_sprite.png")).unwrap()),
-            Rc::new(Texture::from_path(&Path::new("content/textures/effects/laser1.png")).unwrap()),
-            Rc::new(Texture::from_path(&Path::new("content/textures/effects/explosion1.png")).unwrap()),
-            Rc::new(Texture::from_path(&Path::new("content/textures/effects/propulsion_sprite.png")).unwrap()),
-            Rc::new(Texture::from_path(&Path::new("content/textures/effects/fire_sprite.png")).unwrap()),
-            Rc::new(Texture::from_path(&Path::new("content/textures/effects/smoke_sprite.png")).unwrap()),
-            Rc::new(Texture::from_path(&Path::new("content/textures/gui/module_button.png")).unwrap()),
-            Rc::new(Texture::from_path(&Path::new("content/textures/modules/small_beam_sprite.png")).unwrap()),
-        ];
-        
-        let sprite_info = vec![
-            SpriteInfo {
-                texture: textures[ENGINE_TEXTURE as usize].clone(),
-                columns: 1,
-                rows: 1,
-            },
-            SpriteInfo {
-                texture: textures[WEAPON_TEXTURE as usize].clone(),
-                columns: 7,
-                rows: 1,
-            },
-            SpriteInfo {
-                texture: textures[SHIELD_TEXTURE as usize].clone(),
-                columns: 5,
-                rows: 2,
-            },
-            SpriteInfo {
-                texture: textures[SOLAR_TEXTURE as usize].clone(),
-                columns: 5,
-                rows: 3,
-            },
-            SpriteInfo {
-                texture: textures[REPAIR_TEXTURE as usize].clone(),
-                columns: 19,
-                rows: 1,
-            },
-            SpriteInfo {
-                texture: textures[COMMAND_TEXTURE as usize].clone(),
-                columns: 8,
-                rows: 1,
-            },
-            SpriteInfo {
-                texture: textures[LASER_TEXTURE as usize].clone(),
-                columns: 1,
-                rows: 4,
-            },
-            SpriteInfo {
-                texture: textures[EXPLOSION_TEXTURE as usize].clone(),
-                columns: 1,
-                rows: 10,
-            },
-            SpriteInfo {
-                texture: textures[PROPULSION_TEXTURE as usize].clone(),
-                columns: 1,
-                rows: 7,
-            },
-            SpriteInfo {
-                texture: textures[FIRE_TEXTURE as usize].clone(),
-                columns: 8,
-                rows: 1,
-            },
-            SpriteInfo {
-                texture: textures[SMOKE_TEXTURE as usize].clone(),
-                columns: 8,
-                rows: 1,
-            },
-            SpriteInfo {
-                texture: textures[GUI_TEXTURE as usize].clone(),
-                columns: 1,
-                rows: 1,
-            },
-            SpriteInfo {
-                texture: textures[BEAM_WEAPON_TEXTURE as usize].clone(),
-                columns: 6,
-                rows: 4,
-            },
-        ];
-        
         let mut sounds = HashMap::new();
         sounds.insert(
             "content/audio/effects/small_explosion.wav".to_string(),
@@ -133,25 +32,61 @@ impl AssetStore {
                 .ok().expect("Failed to load sound"))
         );
     
-        AssetStore {
-            texture_ids: texture_ids,
-            textures: textures,
-            sprite_info: sprite_info,
+        let mut asset_store = AssetStore {
+            sprite_info: HashMap::new(),
             
             sounds: sounds,
-        }
+        };
+        
+        asset_store.load_texture("modules/engine1.png", 1, 1);
+        asset_store.load_texture("modules/weapon_sprite.png", 7, 1);
+        asset_store.load_texture("modules/shield_sprite.png", 5, 2);
+        asset_store.load_texture("modules/solar_panel_sprite.png", 5, 3);
+        asset_store.load_texture("modules/repair_sprite.png", 19, 1);
+        asset_store.load_texture("modules/big_command_sprite.png", 8, 1);
+        asset_store.load_texture("modules/small_beam_sprite.png", 6, 4);
+        asset_store.load_texture("effects/laser1.png", 1, 4);
+        asset_store.load_texture("effects/explosion1.png", 1, 10);
+        asset_store.load_texture("effects/propulsion_sprite.png", 1, 7);
+        asset_store.load_texture("effects/fire_sprite.png", 8, 1);
+        asset_store.load_texture("effects/smoke_sprite.png", 8, 1);
+        asset_store.load_texture("gui/module_button.png", 1, 1);
+        
+        asset_store
     }
     
-    pub fn get_texture<'a>(&'a self, texture: TextureId) -> &'a Rc<Texture> {
-        &self.textures[texture as usize]
+    fn load_texture(&mut self, name: &str, columns: u8, rows: u8) {
+        let name = name.to_string();
+        let texture_path = "content/textures/".to_string() + &name;
+        let texture =
+            Rc::new(
+                Texture::from_path(&Path::new(texture_path.as_slice()))
+                    .ok().expect(format!("Failed to load {}", name).as_slice())
+            );
+        self.sprite_info.insert(
+            name,
+            SpriteInfo {
+                texture: texture,
+                columns: columns,
+                rows: rows,
+            },
+        );
     }
     
-    pub fn get_texture_size(&self, texture: TextureId) -> (u32, u32) {
-        self.textures[texture as usize].get_size()
+    pub fn get_texture<'a>(&'a self, texture: &String) -> &'a Rc<Texture> {
+        &self.sprite_info[*texture].texture
     }
     
-    pub fn get_sprite_info<'a>(&'a self, texture: TextureId) -> &'a SpriteInfo {
-        &self.sprite_info[texture as usize]
+    pub fn get_texture_size(&self, texture: &String) -> (u32, u32) {
+        self.sprite_info[*texture].texture.get_size()
+    }
+    
+    pub fn get_sprite_info<'a>(&'a self, texture: &String) -> &'a SpriteInfo {
+        &self.sprite_info[*texture]
+    }
+    
+    pub fn get_sprite_info_str<'a>(&'a self, texture: &str) -> &'a SpriteInfo {
+        &self.sprite_info[texture.to_string()]
     }
     
     pub fn get_sound(&self, name: &String) -> &Rc<sdl2_mixer::Chunk> {

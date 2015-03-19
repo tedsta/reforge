@@ -4,7 +4,6 @@ use graphics::Context;
 use opengl_graphics::Gl;
 
 use battle_state::BattleContext;
-use assets::SHIELD_TEXTURE;
 use module;
 use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
@@ -42,7 +41,7 @@ impl IModule for ShieldModule {
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
-        let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info(SHIELD_TEXTURE));
+        let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/shield_sprite.png"));
         
         if base.is_active() {
             shield_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 9, 0.05));

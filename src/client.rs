@@ -52,7 +52,6 @@ use star_map_server::StarMapServer;
 mod util;
 
 mod ai;
-mod assets;
 mod asset_store;
 mod battle_state;
 mod battle_type;

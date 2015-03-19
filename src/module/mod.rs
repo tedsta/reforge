@@ -7,7 +7,6 @@ use std::rand::Rng;
 
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
-use assets::TextureId;
 use battle_state::BattleContext;
 use net::{InPacket, OutPacket};
 use ship::{ShipId, ShipRef, ShipState};
@@ -472,12 +471,11 @@ impl ModuleBase {
     
     #[cfg(feature = "client")]
     pub fn add_damage_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship_id: ShipId) {
-        use assets::FIRE_TEXTURE;
         use sim_visuals::SpriteVisual;
         use sprite_sheet::{SpriteSheet, SpriteAnimation};
     
         for visual in &self.damage_visuals {
-            let mut sprite = SpriteSheet::new(asset_store.get_sprite_info(FIRE_TEXTURE));
+            let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/fire_sprite.png"));
             sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.05));
         
             effects.add_visual(ship_id, 1, box SpriteVisual {
