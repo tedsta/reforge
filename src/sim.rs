@@ -78,7 +78,7 @@ pub struct SimEffects<'a> {
     effects: [Vec<(ShipId, Box<SimVisual+'a>)>; 4],
     
     // Audio stuff
-    sounds: Vec<(f64, Rc<sdl2_mixer::Chunk>)>,
+    sounds: Vec<(f64, isize, Rc<sdl2_mixer::Chunk>)>,
     next_sound: usize,
 }
 
@@ -102,30 +102,30 @@ impl<'a> SimEffects<'a> {
         self.effects[layer as usize].push((ship, visual));
     }
     
-    pub fn add_sound(&mut self, time: f64, sound: Rc<sdl2_mixer::Chunk>) {
+    pub fn add_sound(&mut self, time: f64, loops: isize, sound: Rc<sdl2_mixer::Chunk>) {
         let mut index = 0;
-        for &(sound_time, _) in self.sounds.iter() {
+        for &(sound_time, _, _) in self.sounds.iter() {
             if sound_time > time {
                 break;
             }
             index += 1;
         }
         
-        self.sounds.insert(index, (time, sound));
+        self.sounds.insert(index, (time, loops, sound));
     }
     
     pub fn update(&mut self, context: &Context, gl: &mut Gl, ship: ShipId, time: f64) {
         use std::default::Default;
     
         while self.next_sound < self.sounds.len() {
-            let (sound_time, ref sound) = self.sounds[self.next_sound];
+            let (sound_time, loops, ref sound) = self.sounds[self.next_sound];
             if sound_time > time {
                 break;
             }
             let sound_group: sdl2_mixer::Group = Default::default();
             if let Some(channel) = sound_group.find_available() {
                 
-                channel.play(sound, 0);
+                channel.play(sound, (loops as isize) - 1);
             } else {
                 println!("Failed to play sound");
             }

@@ -22,13 +22,18 @@ impl AssetStore {
     pub fn new() -> AssetStore {
         let mut sounds = HashMap::new();
         sounds.insert(
-            "content/audio/effects/small_explosion.wav".to_string(),
+            "effects/small_explosion.wav".to_string(),
             Rc::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/small_explosion.wav"))
                 .ok().expect("Failed to load sound"))
         );
         sounds.insert(
-            "content/audio/effects/laser.wav".to_string(),
+            "effects/laser.wav".to_string(),
             Rc::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/laser.wav"))
+                .ok().expect("Failed to load sound"))
+        );
+        sounds.insert(
+            "effects/beam1.ogg".to_string(),
+            Rc::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/beam1.ogg"))
                 .ok().expect("Failed to load sound"))
         );
     

@@ -108,6 +108,8 @@ impl IModule for BeamWeaponModule {
                         );
                     
                     effects.add_visual(target_ship_id, 2, box beam_visual);
+                    
+                    effects.add_sound(start_time, 2, asset_store.get_sound(&"effects/beam1.ogg".to_string()).clone());
                 }
             }
         }
