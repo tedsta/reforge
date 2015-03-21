@@ -88,7 +88,7 @@ fn main () {
     let window = Sdl2Window::new(
         opengl,
         WindowSettings {
-            title: "reForge".to_string(),
+            title: "Reforge".to_string(),
             size: [1280, 720],
             samples: 0,
             fullscreen: false,
@@ -126,39 +126,6 @@ fn main () {
     let mut main_menu = MainMenu::new();
     main_menu.run(&window, &mut gl, |window, gl, menu_bg, selection| {
         match selection {
-            MainMenuSelection::SinglePlayer => {
-                // Start a local server
-                /*let mut server = Server::new();
-                let slot = server.create_slot();
-                
-                Thread::spawn(move || {
-                    server.listen("localhost:30000");
-                });
-                
-                Thread::spawn(move || {
-                    let mut scheduler = BattleScheduler::new(slot);
-                    scheduler.run();
-                });
-            
-                // Connect to server
-                let mut client = Client::new("localhost:30000");
-
-                let mut packet = OutPacket::new();
-                packet.write(&BattleType::Ai);
-                client.send(&packet);
-                
-                // Receive the ships from the server
-                let mut packet = client.receive();
-                let ships = match packet.read() {
-                    Ok(ships) => ships,
-                    Err(e) => panic!("Unable to receive ships froms server: {}", e),
-                };
-                
-                // Create the battle state
-                let mut battle = ClientBattleState::new(client, BattleContext::new(ships));
-
-                battle.run(window, gl, &mut glyph_cache, &asset_store, 0);*/
-            },
             MainMenuSelection::Multiplayer => {
                 use std::str::StrExt;
                 use std::string::String;

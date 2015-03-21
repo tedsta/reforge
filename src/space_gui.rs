@@ -252,35 +252,56 @@ impl<'a> SpaceGui<'a> {
                 .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
             
             // Draw beam targeting visual
-            if let &module::TargetMode::Beam(beam_length) = target_mode {
-                if let Some(beam_start) = self.beam_targeting_state {
-                    let x = self.mouse_x - self.render_area.x - ENEMY_OFFSET_X;
-                    let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
-                    let beam_length = (beam_length as f64) * 48.0;
-                    
-                    let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
-                    
-                    let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
-                    
-                    // Draw targeting circles
+            match target_mode {
+                &module::TargetMode::Beam(beam_length) => {
+                    if let Some(beam_start) = self.beam_targeting_state {
+                        let x = self.mouse_x - self.render_area.x - ENEMY_OFFSET_X;
+                        let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
+                        let beam_length = (beam_length as f64) * 48.0;
+                        
+                        let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
+                        
+                        let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
+                        
+                        // Draw targeting circles
+                        if let Some(ref ship) = self.render_area.ship {
+                            ship.borrow().beam_hits(beam_start, beam_end, |_, circle_pos, radius, hit| {
+                                let circle =
+                                    if let Some(hit_dist) = hit {
+                                        Ellipse::new([1.0, 0.0, 0.0, 0.5])
+                                    } else {
+                                        Ellipse::new([0.0, 0.0, 1.0, 0.5])
+                                    };
+                                
+                                let size = radius * 2.0;
+                                
+                                circle.draw([circle_pos.x - radius, circle_pos.y - radius, size, size], &context, gl);
+                            });
+                        }
+                        
+                        Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
+                            .draw([beam_start.x, beam_start.y, beam_end.x, beam_end.y], &context, gl);
+                    }
+                },
+                &module::TargetMode::TargetModule => {
                     if let Some(ref ship) = self.render_area.ship {
-                        ship.borrow().beam_hits(beam_start, beam_end, |_, circle_pos, radius, hit| {
-                            let circle =
-                                if let Some(hit_dist) = hit {
-                                    Ellipse::new([1.0, 0.0, 0.0, 0.5])
-                                } else {
-                                    Ellipse::new([0.0, 0.0, 1.0, 0.5])
-                                };
+                        // Highlight target modules the user mouses-over red
+                        let x = self.mouse_x - self.render_area.x - ENEMY_OFFSET_X;
+                        let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
+
+                        apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |ship_state, _, module_borrowed| {
+                            let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
+                            let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
+                            let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
                             
-                            let size = radius * 2.0;
-                            
-                            circle.draw([circle_pos.x - radius, circle_pos.y - radius, size, size], &context, gl);
+                            let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
+
+                            Rectangle::new([1.0, 0.0, 0.0, 0.5])
+                                .draw([module_x, module_y, module_w, module_h], &context, gl);
                         });
                     }
-                    
-                    Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
-                        .draw([beam_start.x, beam_start.y, beam_end.x, beam_end.y], &context, gl);
-                }
+                },
+                _ => { },
             }
         } else {
             // If not currently selecting a module, highlight modules the user mouses-over
