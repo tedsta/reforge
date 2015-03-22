@@ -57,6 +57,10 @@ pub struct SpaceGui<'a> {
     win_texture: Texture,
     lose_texture: Texture,
     
+    small_ship_icon: Texture,
+    medium_ship_icon: Texture,
+    big_ship_icon: Texture,
+    
     stats_labels: StatsLabels,
     
     module_icons: ModuleIcons,
@@ -103,6 +107,10 @@ impl<'a> SpaceGui<'a> {
             simulate_texture: Texture::from_path(&Path::new("content/textures/gui/simulating.png")).unwrap(),
             win_texture: Texture::from_path(&Path::new("content/textures/gui/win.png")).unwrap(),
             lose_texture: Texture::from_path(&Path::new("content/textures/gui/lose.png")).unwrap(),
+            
+            small_ship_icon: Texture::from_path(&Path::new("content/textures/gui/small_target.png")).unwrap(),
+            medium_ship_icon: Texture::from_path(&Path::new("content/textures/gui/medium_target.png")).unwrap(),
+            big_ship_icon: Texture::from_path(&Path::new("content/textures/gui/big_target.png")).unwrap(),
             
             stats_labels: StatsLabels {
                 hp_texture: Texture::from_path(&Path::new("content/textures/gui/hp_text.png")).unwrap(),
@@ -331,21 +339,30 @@ impl<'a> SpaceGui<'a> {
         
         self.star_map_button.draw(context, gl, glyph_cache);
 
-        // draw target icons
+        // Draw target icons
         for (i, icon) in self.target_icons.iter().enumerate() {
             let i = i as f64;
-
-            if let Some(ref ship) = self.render_area.ship {
-                if ship.borrow().id == icon.ship.borrow().id {
-                    Rectangle::new([0.0, 0.0, 1.0, 1.0])
-                        .draw([715.0+(i*100.0), 5.0, 96.0, 96.0], context, gl);
-                } else {
-                    Rectangle::new([1.0, 0.0, 0.0, 1.0])
-                        .draw([715.0+(i*100.0), 5.0, 96.0, 96.0], context, gl);
-                }
-            } else {
-                Rectangle::new([1.0, 0.0, 0.0, 1.0])
-                    .draw([715.0+(i*100.0), 5.0, 96.0, 96.0], context, gl);
+            
+            let icon_x = 715.0+(i*100.0);
+            let icon_y = 5.0;
+            
+            let ref context = context.trans(icon_x, icon_y);
+            
+            icon.draw(context, gl, glyph_cache, asset_store);
+            
+            match self.render_area.ship {
+                Some(ref ship) if ship.borrow().id == icon.ship.borrow().id => {
+                    Rectangle::new([1.0, 0.0, 0.0, 0.5])
+                        .draw([0.0, 0.0, 96.0, 96.0], context, gl);
+                },
+                _ => {
+                    if self.mouse_x >= icon_x && self.mouse_x <= icon_x+96.0 &&
+                        self.mouse_y >= icon_y && self.mouse_y <= icon_y+96.0
+                    {
+                        Rectangle::new([0.0, 0.0, 1.0, 0.5])
+                            .draw([0.0, 0.0, 96.0, 96.0], context, gl);
+                    }
+                },
             }
         }
     }
@@ -530,6 +547,64 @@ fn calculate_beam_end(beam_start: Vec2f, mouse_pos: Vec2f, beam_length: f64) -> 
 
 struct TargetIcon {
     ship: ShipRef,
+}
+
+impl TargetIcon {
+    fn draw(&self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore) {
+        use graphics::*;
+        use graphics::text::Text;
+    
+        let ship = self.ship.borrow();
+        
+        let icon =
+            match ship.get_height() {
+                1...2 => asset_store.get_texture_str("gui/small_target.png"),
+                3 => asset_store.get_texture_str("gui/medium_target.png"),
+                4...8 => asset_store.get_texture_str("gui/big_target.png"),
+                _ => unreachable!(),
+            };
+        
+        let (icon_w, icon_h) = icon.get_size();
+        let (half_icon_w, half_icon_h) = ((icon_w/2) as f64, (icon_h/2) as f64);
+        
+        image(icon.deref(), &context.trans(48.0 - half_icon_w, 34.0 - half_icon_h), gl);
+        
+        // Draw stats bars
+        
+        let hp = ship.state.hp as f64;
+        //let max_hp = ship.state.max_hp as f64;
+        let shields = ship.state.shields as f64;
+        let max_shields = ship.state.max_shields as f64;
+        let power = ship.state.power as f64;
+        let max_power = ship.state.max_power as f64;
+        
+        // HP
+        //Rectangle::new([0.0, 1.0, 0.0, 0.5])
+        //    .draw([2.0, 72.0, max_hp, 2.0], context, gl);
+        Rectangle::new([0.0, 1.0, 0.0, 1.0])
+            .draw([2.0, 72.0, hp, 2.0], context, gl);
+        
+        // Shields
+        Rectangle::new([0.0, 0.0, 1.0, 0.5])
+            .draw([2.0, 76.0, max_shields, 2.0], context, gl);
+        Rectangle::new([0.0, 0.0, 1.0, 1.0])
+            .draw([2.0, 76.0, shields, 2.0], context, gl);
+        
+        // Power
+        Rectangle::new([1.0, 1.0, 0.0, 0.5])
+            .draw([2.0, 80.0, max_power, 2.0], context, gl);
+        Rectangle::new([1.0, 1.0, 0.0, 1.0])
+            .draw([2.0, 80.0, power, 2.0], context, gl);
+        
+        
+        // Draw ship's name
+        Text::colored([1.0; 4], 10).draw(
+            ship.name.as_slice(),
+            glyph_cache,
+            &context.trans(2.0, 94.0),
+            gl,
+        );
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

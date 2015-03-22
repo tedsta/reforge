@@ -29,9 +29,10 @@ mod ship_gen;
 // Holds everything about the ship's damage, capabilities, etc.
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct ShipState {
-    hp: u8,
+    pub hp: u8,
     total_module_hp: u8, // Sum of HP of all modules, used to recalculate HP when damaged
     pub power: u8,
+    pub max_power: u8,
     pub plan_power: u8, // Keeps track of power for planning
     pub thrust: u8,
     pub shields: u8,
@@ -44,6 +45,7 @@ impl ShipState {
             hp: 0,
             total_module_hp: 0,
             power: 0,
+            max_power: 0,
             plan_power: 0,
             thrust: 0,
             shields: 0,
@@ -114,6 +116,7 @@ impl ShipState {
     
     pub fn add_power(&mut self, power: u8) {
         self.power += power;
+        self.max_power += power;
         self.plan_power += power;
     }
     
@@ -142,6 +145,7 @@ impl ShipState {
         }
         
         self.power -= power;
+        self.max_power -= power;
         self.plan_power -= power;
     }
     
@@ -239,7 +243,7 @@ impl Ship {
         
         // Modify the ship's dimensions
         self.width = cmp::max(self.width, module.get_base().x + module.get_base().width);
-        self.height = cmp::max(self.height, module.get_base().x + module.get_base().height);
+        self.height = cmp::max(self.height, module.get_base().y + module.get_base().height);
         
         // Setup module's index
         module.get_base_mut().index = self.modules.len() as u32;

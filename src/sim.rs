@@ -125,7 +125,7 @@ impl<'a> SimEffects<'a> {
             let sound_group: sdl2_mixer::Group = Default::default();
             if let Some(channel) = sound_group.find_available() {
                 
-                channel.play(sound, (loops as isize) - 1);
+                channel.play(sound, loops);
             } else {
                 println!("Failed to play sound");
             }

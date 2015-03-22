@@ -57,7 +57,9 @@ impl AssetStore {
         asset_store.load_texture("effects/smoke_sprite.png", 8, 1);
         asset_store.load_texture("effects/small_beam_part.png", 1, 1);
         asset_store.load_texture("effects/small_beam_end.png", 1, 4);
-        asset_store.load_texture("gui/module_button.png", 1, 1);
+        asset_store.load_texture("gui/small_target.png", 1, 1);
+        asset_store.load_texture("gui/medium_target.png", 1, 1);
+        asset_store.load_texture("gui/big_target.png", 1, 1);
         
         asset_store
     }

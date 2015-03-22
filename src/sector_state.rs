@@ -59,7 +59,16 @@ impl SectorState {
     
     pub fn run(&mut self, to_map_sender: Sender<AccountBox>, from_map_receiver: Receiver<AccountBox>) {
         // TODO: come up with better way to generate AI ship IDs
-        let ai_ship = Ship::generate((100000000) as ShipId, "bot1".to_string(), 2);
+        let ai_ship = Ship::generate((100000000) as ShipId, "n00bslayer808".to_string(), 2);
+        self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+        
+        let ai_ship = Ship::generate((100000001) as ShipId, "thing1".to_string(), 2);
+        self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+        
+        let ai_ship = Ship::generate((100000002) as ShipId, "thing2".to_string(), 2);
+        self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+        
+        let ai_ship = Ship::generate((100000003) as ShipId, "daisy_girl".to_string(), 2);
         self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
     
         loop {

@@ -215,7 +215,7 @@ impl IModule for ProjectileWeaponModule {
                         });
                         
                         // Add the sound for projectile firing
-                        effects.add_sound(start_time, 1, asset_store.get_sound(&"effects/laser.wav".to_string()).clone());
+                        effects.add_sound(start_time, 0, asset_store.get_sound(&"effects/laser.wav".to_string()).clone());
                         
                         // Set up interpolation stuff to send projectile from offscreen to target
                         let start_time = (projectile.offscreen_tick as f64)/(TICKS_PER_SECOND as f64);
@@ -255,7 +255,7 @@ impl IModule for ProjectileWeaponModule {
                         });
                         
                         // Add the sound for projectile exploding
-                        effects.add_sound(start_time, 1, asset_store.get_sound(&"effects/small_explosion.wav".to_string()).clone());
+                        effects.add_sound(start_time, 0, asset_store.get_sound(&"effects/small_explosion.wav".to_string()).clone());
                     }
                     
                     // Add last stay animation
