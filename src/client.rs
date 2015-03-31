@@ -1,10 +1,18 @@
 #![crate_name = "reforge_client"]
 #![crate_type = "bin"]
 #![feature(box_syntax)]
+#![feature(rand)]
+#![feature(core)]
+#![feature(os)]
+#![feature(io)]
+#![feature(old_io)]
+#![feature(alloc)]
+#![feature(collections)]
+#![feature(std_misc)]
 
 extern crate bincode;
 extern crate time;
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize;
 
 // Piston stuff
 extern crate sdl2;
@@ -19,10 +27,10 @@ extern crate shader_version;
 extern crate vecmath;
 extern crate window;
 
-use std::old_io;
 use std::os;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::path::Path;
 use std::thread::{Builder, Thread};
 use std::sync::mpsc::channel;
 
@@ -116,7 +124,7 @@ fn main () {
     let asset_store = AssetStore::new();
 
     // Wrap window in RefCell
-    let window = RefCell::new(window);
+    let window = Rc::new(RefCell::new(window));
     
     let music = sdl2_mixer::Music::from_file(&Path::new("content/audio/music/space.wav")).unwrap();
     
@@ -127,10 +135,7 @@ fn main () {
     main_menu.run(&window, &mut gl, |window, gl, menu_bg, selection| {
         match selection {
             MainMenuSelection::Multiplayer => {
-                use std::str::StrExt;
-                use std::string::String;
-                
-                if let Some((username, password)) = LoginScreen::new().run(window, gl, &mut glyph_cache, menu_bg) {
+                if let Some((username, password)) = LoginScreen::new().run(&window, gl, &mut glyph_cache, menu_bg) {
                     // Check for IP address in args
                     /*
                     let mut ip_address =
@@ -176,14 +181,14 @@ fn main () {
                     packet.write(&LoginPacket{username: username, password: password});
                     client.send(&packet);
                     
-                    run_client_state_manager(window, gl, &mut glyph_cache, &asset_store, client);
+                    run_client_state_manager(&window, gl, &mut glyph_cache, &asset_store, client);
                 }
             },
             MainMenuSelection::Tutorial => {                
                 // Create the tutorial state
                 let mut battle = TutorialState::new();
 
-                battle.run(window, gl, &mut glyph_cache, &asset_store);
+                battle.run(&window, gl, &mut glyph_cache, &asset_store);
             },
             MainMenuSelection::Exit => {
                 

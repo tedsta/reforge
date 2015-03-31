@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use std::old_io::IoResult;
+use std::io;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::time::Duration;
@@ -38,7 +38,7 @@ impl<'a> ClientBattleState<'a> {
         }
     }
     
-    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>, start_at_sim: bool) {
+    pub fn run(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>, start_at_sim: bool) {
         use window::ShouldClose;
         use quack::Get;
     
@@ -88,7 +88,7 @@ impl<'a> ClientBattleState<'a> {
         }
     }
     
-    fn run_planning_phase(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
+    fn run_planning_phase(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
         // Add planning effects
         sim_effects.reset();
         self.context.add_plan_effects(asset_store, &mut sim_effects);
@@ -99,7 +99,7 @@ impl<'a> ClientBattleState<'a> {
         let mut plans_sent = false;
         
         // Run planning loop
-        for e in Events::new(window) {
+        for e in Events::new(window.clone()) {
             use event;
             use input;
             use event::*;
@@ -139,7 +139,7 @@ impl<'a> ClientBattleState<'a> {
         }
     }
     
-    fn run_simulation_phase(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
+    fn run_simulation_phase(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
         let mut sim_events = SimEvents::new();
             
         // Before simulation
@@ -150,7 +150,7 @@ impl<'a> ClientBattleState<'a> {
         // Simulation
         let start_time = time::now().to_timespec();
         let mut next_tick = 0;
-        for e in Events::new(window) {
+        for e in Events::new(window.clone()) {
             use event;
             use input;
             use event::*;
@@ -169,7 +169,7 @@ impl<'a> ClientBattleState<'a> {
             let tick = (elapsed_time.num_milliseconds() as u32)/(1000/TICKS_PER_SECOND);
             
             // Simulate any new ticks
-            for t in range(next_tick, next_tick + tick-next_tick+1) {
+            for t in next_tick .. next_tick+tick-next_tick+1 {
                 sim_events.apply_tick(t);
             }
             next_tick = tick+1;
@@ -204,7 +204,7 @@ impl<'a> ClientBattleState<'a> {
         packet
     }
     
-    fn try_receive_simulation_results(&mut self) -> IoResult<()> {
+    fn try_receive_simulation_results(&mut self) -> io::Result<()> {
         let mut packet = try!(self.client.try_receive());
         match packet.read::<ClientPacketId>() {
             Ok(ref id) if *id != ClientPacketId::SimResults => panic!("Expected SimResults, got something else"),
@@ -218,7 +218,7 @@ impl<'a> ClientBattleState<'a> {
         Ok(())
     }
     
-    fn try_receive_new_ships(&mut self, gui: &mut SpaceGui) -> IoResult<()> {
+    fn try_receive_new_ships(&mut self, gui: &mut SpaceGui) -> io::Result<()> {
         let mut packet = try!(self.client.try_receive());
         
         let ships_to_add: Vec<Ship> = packet.read().ok().expect("Failed to read ships to add from packet");
@@ -236,9 +236,11 @@ impl<'a> ClientBattleState<'a> {
             let ship = Rc::new(RefCell::new(ship));
             
             println!("Got a new ship {:?}", ship.borrow().id);
-            
-            if ship.borrow().id == self.player_ship.borrow().id {
-                if self.player_ship.borrow().state.get_hp() == 0 {
+            let ship_id = ship.borrow().id;
+            let player_ship_id = self.player_ship.borrow().id;
+            if ship_id == player_ship_id {
+                let hp = self.player_ship.borrow().state.get_hp();
+                if hp == 0 {
                     println!("Replacing player's ship");
                     self.player_ship = ship.clone();
                     self.context.add_ship(ship);

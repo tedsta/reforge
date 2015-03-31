@@ -4,6 +4,7 @@ use std::any::TypeId;
 use std::ops::{Deref, DerefMut};
 use std::rand;
 use std::rand::Rng;
+use std::marker::Reflect;
 
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
@@ -107,7 +108,7 @@ pub trait IModuleRef {
 }
 
 impl<M> IModuleRef for Module<M>
-    where M: IModule + Clone + 'static
+    where M: IModule + Reflect + Clone + 'static
 {
     fn get_type_id(&self) -> TypeId {
         TypeId::of::<M>()
@@ -201,7 +202,7 @@ impl ModuleStoredBox {
 }
 
 impl<M> IModuleStored for ModuleStored<M>
-    where M: IModule+Clone + 'static
+    where M: IModule+Reflect+Clone + 'static
 {   
     fn to_module(&self) -> ModuleBox {
         let base = self.base.to_module_base();
@@ -479,7 +480,7 @@ impl ModuleBase {
             sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.05));
         
             effects.add_visual(ship_id, 1, box SpriteVisual {
-                position: self.get_render_position().clone(),
+                position: self.get_render_position().clone() + Vec2 { x: 10.0, y: 0.0 },
                 sprite_sheet: sprite,
             });
         }

@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::cell::RefCell;
 
 use opengl_graphics::Gl;
@@ -15,7 +16,7 @@ pub enum ClientState {
     Respawn,
 }
 
-pub fn run_client_state_manager(window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, mut client: Client) {
+pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, mut client: Client) {
     // Receive the star map
     let mut packet = client.receive();
     let sectors: Vec<SectorData> = packet.read().ok().expect("Failed to read star map");

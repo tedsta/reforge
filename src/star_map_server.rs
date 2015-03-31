@@ -47,10 +47,13 @@ impl StarMapServer {
             },
         });
         
-        Builder::new().name(format!("sector_{}_thread", 0)).spawn(move || {
-            let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()));
-            sector_state.run(from_sector_sender, to_sector_receiver);
-        });
+        Builder::new()
+            .name(format!("sector_{}_thread", 0))
+            .stack_size(8388608)
+            .spawn(move || {
+                let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
+                sector_state.run(from_sector_sender, to_sector_receiver);
+            });
         
         // Sector 1
         let (to_sector_sender, to_sector_receiver) = channel();
@@ -67,10 +70,13 @@ impl StarMapServer {
             },
         });
         
-        Builder::new().name(format!("sector_{}_thread", 1)).spawn(move || {
-            let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()));
-            sector_state.run(from_sector_sender, to_sector_receiver);
-        });
+        Builder::new()
+            .name(format!("sector_{}_thread", 1))
+            .stack_size(8388608)
+            .spawn(move || {
+                let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), true);
+                sector_state.run(from_sector_sender, to_sector_receiver);
+            });
         
         StarMapServer {
             slot: slot,
@@ -100,7 +106,7 @@ impl StarMapServer {
                 sectors_packet.write(&sector_data).ok().expect("Failed to write SectorData");
                 self.slot.send(client_id, sectors_packet);
             
-                let ref sector = self.sectors[account.sector];
+                let ref sector = self.sectors[&account.sector];
                 
                 self.slot.transfer_client(client_id, sector.slot_id);
                 sector.to_sector.send(account);
@@ -117,7 +123,7 @@ impl StarMapServer {
                             ship.target_sector.take().expect("There must be a target sector")
                         };
                     
-                    let ref sector = self.sectors[target_sector];
+                    let ref sector = self.sectors[&target_sector];
                     
                     self.slot.transfer_client(client_id, sector.slot_id);
                     sector.to_sector.send(account);

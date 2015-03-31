@@ -94,14 +94,14 @@ impl StarMapGui {
         use graphics::text::Text;
         
         Rectangle::new([0.2, 0.05, 0.3, 0.8])
-            .draw([0.0, 0.0, 800.0, 450.0], context, gl);
+            .draw([0.0, 0.0, 800.0, 450.0], &context.draw_state, context.transform, gl);
         
         // Render actual star map
         {
             let ref context = context.trans(5.0, 25.0);
         
             Rectangle::new([0.0, 0.0, 0.0, 1.0])
-                .draw([0.0, 0.0, 800.0 - 10.0, 400.0 - 30.0], context, gl);
+                .draw([0.0, 0.0, 800.0 - 10.0, 400.0 - 30.0], &context.draw_state, context.transform, gl);
             
             for sector in &self.sectors {
                 let radius = 10.0;
@@ -113,16 +113,24 @@ impl StarMapGui {
                         _ => Ellipse::new([0.0, 0.0, 1.0, 1.0]),
                     };
             
-                sector_circle.draw([map_pos.x - radius, map_pos.y - radius, radius, radius], &context, gl);
+                sector_circle
+                    .draw(
+                        [map_pos.x - radius, map_pos.y - radius, radius, radius],
+                        &context.draw_state, context.transform,
+                        gl
+                    );
             }
         }
         
-        Text::colored([1.0; 4], 15).draw(
-            "star map",
-            glyph_cache,
-            &context.trans(5.0, 20.0),
-            gl,
-        );
+        {
+            let context = context.trans(5.0, 20.0);
+            Text::colored([1.0; 4], 15).draw(
+                "star map",
+                glyph_cache,
+                &context.draw_state, context.transform,
+                gl,
+            );
+        }
         
         // Draw the buttons
         self.close_button.draw(context, gl, glyph_cache);

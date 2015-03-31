@@ -59,7 +59,8 @@ impl BattleContext {
     pub fn add_ship(&mut self, ship: ShipRef) {
         self.ships_list.push(ship.clone());
         self.ships.insert(ship.borrow().id, ship.clone());
-        if let Some(client_id) = ship.borrow().client_id {
+        let client_id = ship.borrow().client_id;
+        if let Some(client_id) = client_id {
             self.ships_client_id.insert(client_id, ship);
         }
     }
@@ -140,7 +141,7 @@ impl BattleContext {
     
     pub fn read_results(&self, packet: &mut InPacket) {
         let num_ships: u32 = packet.read().unwrap();
-        for _ in range(0, num_ships) {
+        for _ in 0 .. num_ships {
             let ship_id = packet.read().unwrap();
             let ship = self.get_ship(ship_id);
             

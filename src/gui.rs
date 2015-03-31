@@ -61,16 +61,23 @@ impl TextButton {
     
         // Draw background rectangle
         Rectangle::new(bg_color)
-            .draw([self.position[0], self.position[1], self.size[0], self.size[1]], context, gl);
+            .draw(
+                [self.position[0], self.position[1], self.size[0], self.size[1]],
+                &context.draw_state, context.transform,
+                gl
+            );
         
         // Draw text
-        let buffer = (self.size[1] - (self.font_size as f64)) / 2.0;
-        Text::colored(self.text_color, self.font_size).draw(
-            self.text.as_slice(),
-            glyph_cache,
-            &context.trans(self.position[0] + buffer, self.position[1] + self.size[1] - buffer),
-            gl,
-        );
+        {
+            let buffer = (self.size[1] - (self.font_size as f64)) / 2.0;
+            let context = context.trans(self.position[0] + buffer, self.position[1] + self.size[1] - buffer);
+            Text::colored(self.text_color, self.font_size).draw(
+                self.text.as_slice(),
+                glyph_cache,
+                &context.draw_state, context.transform,
+                gl,
+            );
+        }
     }
     
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) {
@@ -179,16 +186,23 @@ impl TextBox {
     
         // Draw background rectangle
         Rectangle::new(bg_color)
-            .draw([self.position[0], self.position[1], self.size[0], self.size[1]], context, gl);
+            .draw(
+                [self.position[0], self.position[1], self.size[0], self.size[1]],
+                &context.draw_state, context.transform,
+                gl
+            );
         
         // Draw text
-        let buffer = (self.size[1] - (self.font_size as f64)) / 2.0;
-        Text::colored(self.text_color, self.font_size).draw(
-            self.text.as_slice(),
-            glyph_cache,
-            &context.trans(self.position[0] + buffer, self.position[1] + self.size[1] - buffer),
-            gl,
-        );
+        {
+            let buffer = (self.size[1] - (self.font_size as f64)) / 2.0;
+            let context = context.trans(self.position[0] + buffer, self.position[1] + self.size[1] - buffer);
+            Text::colored(self.text_color, self.font_size).draw(
+                self.text.as_slice(),
+                glyph_cache,
+                &context.draw_state, context.transform,
+                gl,
+            );
+        }
     }
     
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) {

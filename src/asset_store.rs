@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::string::String;
+use std::path::Path;
 
 use graphics::ImageSize;
 use opengl_graphics::Texture;
@@ -83,30 +83,30 @@ impl AssetStore {
     }
     
     pub fn get_texture<'a>(&'a self, texture: &String) -> &'a Rc<Texture> {
-        &self.sprite_info[*texture].texture
+        &self.sprite_info[texture].texture
     }
     
     pub fn get_texture_str<'a>(&'a self, texture: &str) -> &'a Rc<Texture> {
-        &self.sprite_info[texture.to_string()].texture
+        &self.sprite_info[&texture.to_string()].texture
     }
     
     pub fn get_texture_size(&self, texture: &String) -> (u32, u32) {
-        self.sprite_info[*texture].texture.get_size()
+        self.sprite_info[texture].texture.get_size()
     }
     
     pub fn get_texture_size_str(&self, texture: &str) -> (u32, u32) {
-        self.sprite_info[texture.to_string()].texture.get_size()
+        self.sprite_info[&texture.to_string()].texture.get_size()
     }
     
     pub fn get_sprite_info<'a>(&'a self, texture: &String) -> &'a SpriteInfo {
-        &self.sprite_info[*texture]
+        &self.sprite_info[texture]
     }
     
     pub fn get_sprite_info_str<'a>(&'a self, texture: &str) -> &'a SpriteInfo {
-        &self.sprite_info[texture.to_string()]
+        &self.sprite_info[&texture.to_string()]
     }
     
     pub fn get_sound(&self, name: &String) -> &Rc<sdl2_mixer::Chunk> {
-        &self.sounds[*name]
+        &self.sounds[name]
     }
 }

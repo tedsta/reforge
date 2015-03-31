@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use std::cell::RefCell;
 
 use sdl2_window::Sdl2Window;
@@ -42,9 +43,9 @@ impl LoginScreen {
         }
     }
 
-    pub fn run(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, bg_texture: &Texture) -> Option<(String, String)> {
+    pub fn run(mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, bg_texture: &Texture) -> Option<(String, String)> {
         // Main loop
-        for e in Events::new(window) {
+        for e in Events::new(window.clone()) {
             use event;
             use input;
             use event::*;
@@ -123,22 +124,28 @@ impl LoginScreen {
         // Clear the screen
         clear([0.0; 4], gl);
 
-        image(bg_texture, context, gl);
+        image(bg_texture, context.transform, gl);
         
         // Draw the username and password labels
-        Text::colored([1.0; 4], 30).draw(
-            "Username",
-            glyph_cache,
-            &context.trans(400.0, 330.0),
-            gl,
-        );
+        {
+            let context = context.trans(400.0, 330.0);
+            Text::colored([1.0; 4], 30).draw(
+                "Username",
+                glyph_cache,
+                &context.draw_state, context.transform,
+                gl,
+            );
+        }
         
-        Text::colored([1.0; 4], 30).draw(
-            "Password",
-            glyph_cache,
-            &context.trans(400.0, 400.0),
-            gl,
-        );
+        {
+            let context = context.trans(400.0, 400.0);
+            Text::colored([1.0; 4], 30).draw(
+                "Password",
+                glyph_cache,
+                &context.draw_state, context.transform,
+                gl,
+            );
+        }
         
         // Draw the text boxes
         self.username_box.draw(context, gl, glyph_cache);

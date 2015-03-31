@@ -161,7 +161,7 @@ impl ServerBattleState {
     }
     
     fn simulate(&mut self, sim_events: &mut SimEvents) {
-        for tick in range(0u32, 100) {
+        for tick in 0 .. 100 {
             sim_events.apply_tick(tick);
         }
     }

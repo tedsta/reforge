@@ -1,4 +1,4 @@
-use std::collections::RingBuf;
+use std::collections::VecDeque;
 use std::rc::Rc;
 use std::num::Float;
 use std::ops::{Deref};
@@ -27,7 +27,7 @@ pub struct SpriteSheet {
     current_frame: u32,
     
     // Time stuff
-    animations: RingBuf<SpriteAnimation>,
+    animations: VecDeque<SpriteAnimation>,
     
     // Whether or not to center the texture
     pub centered: bool,
@@ -46,7 +46,7 @@ impl SpriteSheet {
             frame_width: texture_width/(columns as u32),
             frame_height: texture_height/(rows as u32),
             current_frame: 0,
-            animations: RingBuf::new(),
+            animations: VecDeque::new(),
             centered: false,
         }
     }
@@ -116,6 +116,9 @@ impl SpriteSheet {
         let source_x = ((self.current_frame % (self.columns as u32)) as f64) * (self.frame_width as f64);
         let source_y = ((self.current_frame / (self.columns as u32)) as f64) * (self.frame_height as f64);
         
+        let source_end_x = source_x + (self.frame_width as f64);
+        let source_end_y = source_y + (self.frame_height as f64);
+        
         let half_frame_x = (self.frame_width / 2) as f64;
         let half_frame_y = (self.frame_height / 2) as f64;
         
@@ -133,8 +136,9 @@ impl SpriteSheet {
         let context = context.set(context::Transform(row_mat2x3_mul(transform, rotation_matrix)));
 
         Image::new()
-            .set(SrcRect([source_x as i32, source_y as i32, self.frame_width as i32, self.frame_height as i32]))
-            .draw(self.texture.deref(), &context, gl);
+            .set(SrcRect([source_x as i32, source_y as i32, source_end_x as i32, source_end_y as i32]))
+            .set(Rect([0.0, 0.0, self.frame_width as f64, self.frame_height as f64]))
+            .draw(self.texture.deref(), &context.draw_state, context.transform, gl);
     }
     
     pub fn set_frame(&mut self, frame: u32) {

@@ -24,6 +24,10 @@ path = "src/client.rs"
 #name = "reforge_server"
 #path = "src/server.rs"
 
+[dependencies.sdl2]
+
+git = "https://github.com/AngryLawyer/rust-sdl2"
+
 [dependencies.pistoncore-sdl2_window]
 
 git = "https://github.com/pistondevelopers/sdl2_window"
@@ -64,11 +68,6 @@ git = "https://github.com/pistondevelopers/vecmath"
 
 git = "https://github.com/pistondevelopers/freetype-rs"
 
-[dependencies.sdl2]
-
-git = "https://github.com/AngryLawyer/rust-sdl2"
-#version = "~0.0.3"
-
 [dependencies.sdl2_mixer]
 
 git = "https://github.com/tedsta/rust-sdl2_mixer"
@@ -77,10 +76,7 @@ git = "https://github.com/tedsta/rust-sdl2_mixer"
 
 git = "https://github.com/tyoverby/bincode.git"
 
-[dependencies.time]
-
-git = "https://github.com/rust-lang/time"
-
 [dependencies]
 
-rustc-serialize = "0.2.7"
+time = "0.1.*"
+rustc-serialize = "0.3.*"

@@ -1,5 +1,7 @@
+use std::rc::Rc;
 use std::cell::RefCell;
 use std::num::FromPrimitive;
+use std::path::Path;
 
 use sdl2_window::Sdl2Window;
 use event::{Events, GenericEvent};
@@ -42,12 +44,12 @@ impl MainMenu {
         }
     }
 
-    pub fn run<F>(mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, mut f: F)
+    pub fn run<F>(mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, mut f: F)
         where
-            F: FnMut(&RefCell<Sdl2Window>, &mut Gl, &Texture, MainMenuSelection)
+            F: FnMut(&Rc<RefCell<Sdl2Window>>, &mut Gl, &Texture, MainMenuSelection)
     {
         // Main loop
-        for e in Events::new(window) {
+        for e in Events::new(window.clone()) {
             use event;
             use input;
             use event::*;
@@ -154,25 +156,28 @@ impl MainMenu {
         // Clear the screen
         clear([0.0; 4], gl);
 
-        image(&self.bg_texture, context, gl);
-        image(&self.multiplayer_texture, &context.trans(550.0, 300.0), gl);
-        image(&self.tutorial_texture, &context.trans(550.0, 400.0), gl);
-        image(&self.exit_texture, &context.trans(550.0, 500.0), gl);
+        image(&self.bg_texture, context.transform, gl);
+        image(&self.multiplayer_texture, context.trans(550.0, 300.0).transform, gl);
+        image(&self.tutorial_texture, context.trans(550.0, 400.0).transform, gl);
+        image(&self.exit_texture, context.trans(550.0, 500.0).transform, gl);
 
         if self.selected == 0 {
+            let context = context.trans(550.0, 300.0);
             Image::new()
                 .set(Color([1.0, 0.0, 0.0, 1.0]))
-                .draw(&self.multiplayer_texture, &context.trans(550.0, 300.0), gl);
+                .draw(&self.multiplayer_texture, &context.draw_state, context.transform, gl);
         }
         if self.selected == 1 {
+            let context = context.trans(550.0, 400.0);
             Image::new()
                 .set(Color([1.0, 0.0, 0.0, 1.0]))
-                .draw(&self.tutorial_texture, &context.trans(550.0, 400.0), gl);
+                .draw(&self.tutorial_texture, &context.draw_state, context.transform, gl);
         }
         if self.selected == 2 {
+            let context = context.trans(550.0, 500.0);
             Image::new()
                 .set(Color([1.0, 0.0, 0.0, 1.0]))
-                .draw(&self.exit_texture, &context.trans(550.0, 500.0), gl);
+                .draw(&self.exit_texture, &context.draw_state, context.transform, gl);
         }
     }
 }

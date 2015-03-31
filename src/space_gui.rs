@@ -2,6 +2,7 @@ use std::rand::Rng;
 use std::rand;
 use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
+use std::path::Path;
 
 use event::{Events, GenericEvent, RenderArgs};
 use graphics::{Context, Rectangle};
@@ -38,7 +39,7 @@ pub struct StatsLabels {
     power_texture: Texture,
 }
 
-pub struct SpaceGui<'a> {
+pub struct SpaceGui {
     // The target ships' render areas
     render_area: ShipRenderArea,
     
@@ -76,8 +77,8 @@ pub struct SpaceGui<'a> {
     target_icons: Vec<TargetIcon>,
 }
 
-impl<'a> SpaceGui<'a> {
-    pub fn new(asset_store: &AssetStore, context: &BattleContext, sectors: Vec<SectorData>, my_ship_id: ShipId) -> SpaceGui<'a> {
+impl SpaceGui {
+    pub fn new(asset_store: &AssetStore, context: &BattleContext, sectors: Vec<SectorData>, my_ship_id: ShipId) -> SpaceGui {
         // Set up the render area
         //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
         //let texture = target.get_texture().expect("Failed to get render texture's texture");
@@ -188,7 +189,7 @@ impl<'a> SpaceGui<'a> {
         self.draw_screen(context, gl, glyph_cache, asset_store, sim_effects, client_ship, time, dt);
         
         // Draw planning text
-        image(&self.plan_texture, &context.trans(550.0, 10.0), gl);
+        image(&self.plan_texture, context.trans(550.0, 10.0).transform, gl);
         
         if self.show_star_map {
             self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
@@ -204,7 +205,7 @@ impl<'a> SpaceGui<'a> {
         self.draw_screen(context, gl, glyph_cache, asset_store, sim_effects, client_ship, time, dt);
         
         // Draw simulating text
-        image(&self.simulate_texture, &context.trans(550.0, 10.0), gl);
+        image(&self.simulate_texture, context.trans(550.0, 10.0).transform, gl);
         
         if self.show_star_map {
             self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
@@ -227,7 +228,12 @@ impl<'a> SpaceGui<'a> {
         if let Some(ref ship) = self.render_area.ship {
             // TODO clear render texture
             
-            Rectangle::new([1.0, 0.7, 0.2, 0.5]).draw([self.render_area.x, self.render_area.y, self.render_area.width, self.render_area.height], context, gl);
+            Rectangle::new([1.0, 0.7, 0.2, 0.5])
+                .draw(
+                    [self.render_area.x, self.render_area.y, self.render_area.width, self.render_area.height],
+                    &context.draw_state, context.transform,
+                    gl
+                );
         
             {
                 let context = context.trans(self.render_area.x, self.render_area.y);
@@ -256,8 +262,15 @@ impl<'a> SpaceGui<'a> {
             let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
             let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
         
-            Rectangle::new([0.0, 1.0, 0.0, 0.5])
-                .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
+            {
+                let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
+                Rectangle::new([0.0, 1.0, 0.0, 0.5])
+                    .draw(
+                        [module_x, module_y, module_w, module_h],
+                        &context.draw_state, context.transform,
+                        gl
+                    );
+            }
             
             // Draw beam targeting visual
             match target_mode {
@@ -283,12 +296,20 @@ impl<'a> SpaceGui<'a> {
                                 
                                 let size = radius * 2.0;
                                 
-                                circle.draw([circle_pos.x - radius, circle_pos.y - radius, size, size], &context, gl);
+                                circle.draw(
+                                    [circle_pos.x - radius, circle_pos.y - radius, size, size],
+                                    &context.draw_state, context.transform,
+                                    gl
+                                );
                             });
                         }
                         
                         Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
-                            .draw([beam_start.x, beam_start.y, beam_end.x, beam_end.y], &context, gl);
+                            .draw(
+                                [beam_start.x, beam_start.y, beam_end.x, beam_end.y],
+                                &context.draw_state, context.transform,
+                                gl
+                            );
                     }
                 },
                 &module::TargetMode::TargetModule => {
@@ -305,7 +326,11 @@ impl<'a> SpaceGui<'a> {
                             let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
 
                             Rectangle::new([1.0, 0.0, 0.0, 0.5])
-                                .draw([module_x, module_y, module_w, module_h], &context, gl);
+                                .draw(
+                                    [module_x, module_y, module_w, module_h],
+                                    &context.draw_state, context.transform,
+                                    gl
+                                );
                         });
                     }
                 },
@@ -321,20 +346,32 @@ impl<'a> SpaceGui<'a> {
                 let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
                 let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
             
+                let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
                 if module_borrowed.get_base().plan_powered {
                     Rectangle::new([0.0, 0.0, 1.0, 0.5])
-                        .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
+                        .draw(
+                            [module_x, module_y, module_w, module_h],
+                            &context.draw_state, context.transform,
+                            gl
+                        );
                 } else if ship_state.can_plan_activate_module(module_borrowed.get_base()) {
                     Rectangle::new([1.0, 1.0, 0.0, 0.5])
-                        .draw([module_x, module_y, module_w, module_h], &context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl);
+                        .draw(
+                            [module_x, module_y, module_w, module_h],
+                            &context.draw_state, context.transform,
+                            gl
+                        );
                 }
             });
         }
         
-        if client_ship.state.get_hp() == 0 {
-            image(&self.lose_texture, &context.trans(550.0, 100.0), gl);
-        } else if !enemy_alive {
-            image(&self.win_texture, &context.trans(550.0, 100.0), gl);
+        {
+            let context = context.trans(550.0, 100.0);
+            if client_ship.state.get_hp() == 0 {
+                image(&self.lose_texture, context.transform, gl);
+            } else if !enemy_alive {
+                image(&self.win_texture, context.transform, gl);
+            }
         }
         
         self.star_map_button.draw(context, gl, glyph_cache);
@@ -353,14 +390,14 @@ impl<'a> SpaceGui<'a> {
             match self.render_area.ship {
                 Some(ref ship) if ship.borrow().id == icon.ship.borrow().id => {
                     Rectangle::new([1.0, 0.0, 0.0, 0.5])
-                        .draw([0.0, 0.0, 96.0, 96.0], context, gl);
+                        .draw([0.0, 0.0, 96.0, 96.0], &context.draw_state, context.transform, gl);
                 },
                 _ => {
                     if self.mouse_x >= icon_x && self.mouse_x <= icon_x+96.0 &&
                         self.mouse_y >= icon_y && self.mouse_y <= icon_y+96.0
                     {
                         Rectangle::new([0.0, 0.0, 1.0, 0.5])
-                            .draw([0.0, 0.0, 96.0, 96.0], context, gl);
+                            .draw([0.0, 0.0, 96.0, 96.0], &context.draw_state, context.transform, gl);
                     }
                 },
             }
@@ -567,7 +604,7 @@ impl TargetIcon {
         let (icon_w, icon_h) = icon.get_size();
         let (half_icon_w, half_icon_h) = ((icon_w/2) as f64, (icon_h/2) as f64);
         
-        image(icon.deref(), &context.trans(48.0 - half_icon_w, 34.0 - half_icon_h), gl);
+        image(icon.deref(), context.trans(48.0 - half_icon_w, 34.0 - half_icon_h).transform, gl);
         
         // Draw stats bars
         
@@ -580,30 +617,33 @@ impl TargetIcon {
         
         // HP
         //Rectangle::new([0.0, 1.0, 0.0, 0.5])
-        //    .draw([2.0, 72.0, max_hp, 2.0], context, gl);
+        //    .draw([2.0, 72.0, max_hp, 3.0], &context.draw_state, context.transform, gl);
         Rectangle::new([0.0, 1.0, 0.0, 1.0])
-            .draw([2.0, 72.0, hp, 2.0], context, gl);
+            .draw([2.0, 72.0, hp, 3.0], &context.draw_state, context.transform, gl);
         
         // Shields
         Rectangle::new([0.0, 0.0, 1.0, 0.5])
-            .draw([2.0, 76.0, max_shields, 2.0], context, gl);
+            .draw([2.0, 76.0, max_shields, 3.0], &context.draw_state, context.transform, gl);
         Rectangle::new([0.0, 0.0, 1.0, 1.0])
-            .draw([2.0, 76.0, shields, 2.0], context, gl);
+            .draw([2.0, 76.0, shields, 3.0], &context.draw_state, context.transform, gl);
         
         // Power
         Rectangle::new([1.0, 1.0, 0.0, 0.5])
-            .draw([2.0, 80.0, max_power, 2.0], context, gl);
+            .draw([2.0, 80.0, max_power, 3.0], &context.draw_state, context.transform, gl);
         Rectangle::new([1.0, 1.0, 0.0, 1.0])
-            .draw([2.0, 80.0, power, 2.0], context, gl);
+            .draw([2.0, 80.0, power, 3.0], &context.draw_state, context.transform, gl);
         
         
         // Draw ship's name
-        Text::colored([1.0; 4], 10).draw(
-            ship.name.as_slice(),
-            glyph_cache,
-            &context.trans(2.0, 94.0),
-            gl,
-        );
+        {
+            let context = context.trans(2.0, 94.0);
+            Text::colored([1.0; 4], 10).draw(
+                ship.name.as_slice(),
+                glyph_cache,
+                &context.draw_state, context.transform,
+                gl,
+            );
+        }
     }
 }
 
@@ -638,48 +678,60 @@ fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stat
     let shield_rect = Rectangle::new([0.0, 0.0, 1.0, 1.0]);
     let power_rect = Rectangle::new([1.0, 1.0, 0.0, 1.0]);
     
-    for i in range(0, ship.state.get_hp()) {
-        hp_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 14.0), gl);
+    {
+        let context = context.trans(5.0, 5.0 + 14.0);
+        for i in 0..ship.state.get_hp() {
+            hp_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
+        }
     }
     
-    for i in range(0, ship.state.shields) {
-        shield_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 52.0), gl);
+    {
+        let context = context.trans(5.0, 5.0 + 52.0);
+        for i in 0..ship.state.shields {
+            shield_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
+        }
     }
     
-    if is_client_ship {
-        let used_power_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
-        let new_power_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
+    {
+        let context = context.trans(5.0, 5.0 + 90.0);
+        if is_client_ship {
+            let used_power_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
+            let new_power_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
+            
+            for i in 0..cmp::min(ship.state.plan_power, ship.state.power) {
+                power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
+            }
         
-        for i in range(0, cmp::min(ship.state.plan_power, ship.state.power)) {
-            power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
-        }
-    
-        if ship.state.plan_power < ship.state.power {
-            for i in range(ship.state.plan_power, ship.state.power) {
-                used_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
+            if ship.state.plan_power < ship.state.power {
+                for i in ship.state.plan_power..ship.state.power {
+                    used_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
+                }
+            } else if ship.state.plan_power > ship.state.power {
+                for i in ship.state.power..ship.state.plan_power {
+                    new_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
+                }
             }
-        } else if ship.state.plan_power > ship.state.power {
-            for i in range(ship.state.power, ship.state.plan_power) {
-                new_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
+        } else {
+            for i in 0..ship.state.power {
+                power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
             }
-        }
-    } else {
-        for i in range(0, ship.state.power) {
-            power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.trans(5.0, 5.0 + 90.0), gl);
         }
     }
     
     // Draw labels for hp, shields and power meters
-    image(&stats_labels.hp_texture, &context.trans(5.0, 4.0), gl);
-    image(&stats_labels.shield_texture, &context.trans(5.0, 42.0), gl);
-    image(&stats_labels.power_texture, &context.trans(5.0, 80.0), gl);
+    image(&stats_labels.hp_texture, context.trans(5.0, 4.0).transform, gl);
+    image(&stats_labels.shield_texture, context.trans(5.0, 42.0).transform, gl);
+    image(&stats_labels.power_texture, context.trans(5.0, 80.0).transform, gl);
     
-    Text::colored([1.0; 4], 30).draw(
-        ship.name.as_slice(),
-        glyph_cache,
-        &context.trans(5.0, 160.0),
-        gl,
-    );
+    {
+        let context = context.trans(5.0, 160.0);
+        Text::colored([1.0; 4], 30).draw(
+            ship.name.as_slice(),
+            glyph_cache,
+            &context.draw_state, context.transform,
+            gl,
+        );
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -701,9 +753,9 @@ impl SpaceStars {
         
         // Generate a bunch of stars
         let mut stars = Vec::with_capacity(5); // Five layers of stars
-        for _ in range(0, stars.capacity()) {
+        for _ in 0..stars.capacity() {
             let mut layer = Vec::with_capacity(50);
-            for _ in range(0u8, 20) {
+            for _ in 0u8..20 {
                 layer.push(Star {
                     position: [rng.gen::<f64>() * 1290.0, rng.gen::<f64>() * 730.0],
                     size: (rng.gen::<u8>() % 5 + 1) as f64,
@@ -736,7 +788,11 @@ impl SpaceStars {
         let star_rect = Rectangle::new([1.0, 1.0, 1.0, 1.0]);
         for stars in self.stars.iter() {
             for star in stars.iter() {
-                star_rect.draw([star.position[0], star.position[1], star.size, star.size], context, gl);
+                star_rect.draw(
+                    [star.position[0], star.position[1], star.size, star.size],
+                    &context.draw_state, context.transform,
+                    gl
+                );
             }
         }
     }

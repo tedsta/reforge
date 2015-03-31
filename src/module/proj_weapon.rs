@@ -1,5 +1,4 @@
 use std::cmp;
-use std::old_io::File;
 use std::iter::repeat;
 use std::num::Float;
 use std::ops::DerefMut;
@@ -40,39 +39,6 @@ impl ProjectileWeaponModule {
     pub fn new() -> Module<ProjectileWeaponModule> {
         let projectile = Projectile {
             damage: 1,
-            hit: false,
-            
-            fire_tick: 0,
-            offscreen_tick: 0,
-            hit_tick: 0,
-            
-            fire_pos: Vec2{x: 0f64, y: 0f64},
-            to_offscreen_pos: Vec2{x: 0f64, y: 0f64},
-            from_offscreen_pos: Vec2{x: 0f64, y: 0f64},
-            hit_pos: Vec2{x: 0f64, y: 0f64},
-        };
-    
-        Module {
-            base: ModuleBase::new(1, 1, 2, 2, 3),
-            module: ProjectileWeaponModule {
-                projectiles: repeat(projectile).take(3).collect(),
-            },
-        }
-    }
-    
-    pub fn from_file(path: &Path) -> Module<ProjectileWeaponModule> {
-        let mut damage = 1;
-        let mut num_shots = 1;
-        let mut texture = String::from_str("WEAPON");
-    
-        if let Ok(mut file) = File::open(path) {
-            let contents = file.read_to_end();
-        } else {
-            panic!("Failed to read projectile weapon file");
-        }
-    
-        let projectile = Projectile {
-            damage: damage,
             hit: false,
             
             fire_tick: 0,

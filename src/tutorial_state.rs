@@ -40,7 +40,7 @@ impl TutorialState {
         }
     }
     
-    pub fn run(&mut self, window: &RefCell<Sdl2Window>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore) {
+    pub fn run(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore) {
         use window::ShouldClose;
         use quack::Get;
     
@@ -60,7 +60,7 @@ impl TutorialState {
             let start_time = time::now().to_timespec();
             
             // Run planning loop
-            for e in Events::new(window) {
+            for e in Events::new(window.clone()) {
                 use std::old_io::timer::sleep;
                 use std::time::Duration;
             
@@ -114,7 +114,7 @@ impl TutorialState {
             // Simulation
             let start_time = time::now().to_timespec();
             let mut next_tick = 0;
-            for e in Events::new(window) {
+            for e in Events::new(window.clone()) {
                 use std::old_io::timer::sleep;
                 use std::time::Duration;
             
@@ -136,7 +136,7 @@ impl TutorialState {
                 let tick = (elapsed_time.num_milliseconds() as u32)/(1000/TICKS_PER_SECOND);
                 
                 // Simulate any new ticks
-                for t in range(next_tick, next_tick + tick-next_tick+1) {
+                for t in next_tick .. next_tick+tick-next_tick+1 {
                     sim_events.apply_tick(t);
                 }
                 next_tick = tick+1;

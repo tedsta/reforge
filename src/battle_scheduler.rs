@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::{RingBuf, HashMap};
+use std::collections::{VecDeque, HashMap};
 use std::collections::hash_map::Entry;
 use std::thread::Thread;
 

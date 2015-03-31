@@ -53,7 +53,7 @@ impl SimVisual for BeamExitVisual {
             let (_, height) = self.texture.get_size();
         
             Image::new().set(Rect([self.beam_start.x, self.beam_start.y, 1500.0, height as f64]))
-                .draw(self.texture.deref(), &context, gl);
+                .draw(self.texture.deref(), &context.draw_state, context.transform, gl);
         }
     }
 }
@@ -108,7 +108,7 @@ impl SimVisual for BeamVisual {
         
             // Draw beam part
             Image::new().set(Rect([beam_pos.x, beam_pos.y - (height/2.0), 1500.0, height as f64]))
-                .draw(self.part.deref(), &context, gl);
+                .draw(self.part.deref(), &context.draw_state, context.transform, gl);
                 
             // Draw beam end
             self.end.draw(&context, gl, beam_pos.x, beam_pos.y, (180.0).to_radians(), time - self.start_time);

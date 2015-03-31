@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::cmp;
+use std::marker::Reflect;
 
 use battle_state::BattleContext;
 use module;
@@ -235,7 +236,7 @@ impl Ship {
     
     // Returns true if adding the module was successful, false if it failed.
     pub fn add_module<M>(&mut self, mut module: Module<M>) -> bool
-        where M: IModule + Clone + 'static
+        where M: IModule + Reflect + Clone + 'static
     {
         // Add to state hp
         self.state.total_module_hp += module.get_base().get_hp();
@@ -458,24 +459,24 @@ impl Ship {
             let context = context.trans((module.x as f64) * 48.0, (module.y as f64) * 48.0);
             
             let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
-            let hp_dmg_rect = Rectangle::border([0.8, 0.3, 0.3, 1.0], 1.0);
+            let hp_dmg_rect = Rectangle::new([1.0, 0.0, 0.0, 0.5]);
             let armor_rect = Rectangle::new([1.0, 1.0, 0.0, 1.0]);
-            let armor_dmg_rect = Rectangle::border([0.8, 0.8, 0.3, 1.0], 1.0);
+            let armor_dmg_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
         
-            for i in range(0, module.get_min_hp()) {
+            for i in 0..module.get_min_hp() {
                 if i < module.get_hp() {
-                    hp_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context, gl);
+                    hp_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context.draw_state, context.transform, gl);
                 } else {
-                    hp_dmg_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context, gl);
+                    hp_dmg_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context.draw_state, context.transform, gl);
                 }
             }
             
-            for i in range(module.get_min_hp(), module.get_hp()) {
-                armor_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context, gl);
+            for i in module.get_min_hp()..module.get_hp() {
+                armor_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context.draw_state, context.transform, gl);
             }
             
-            for i in range(cmp::max(module.get_min_hp(), module.get_hp()), module.get_max_hp()) {
-                armor_dmg_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context, gl);
+            for i in cmp::max(module.get_min_hp(), module.get_hp())..module.get_max_hp() {
+                armor_dmg_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context.draw_state, context.transform, gl);
             }
         }
     }
@@ -498,10 +499,10 @@ impl Ship {
             
             if module.plan_powered {
                 // Module is powering up, draw on icon
-                image(&module_icons.power_on_texture, &context, gl);
+                image(&module_icons.power_on_texture, context.transform, gl);
             } else {
                 // Module is powering down, draw off icon
-                image(&module_icons.power_off_texture, &context, gl);
+                image(&module_icons.power_off_texture, context.transform, gl);
             }
         }
     }

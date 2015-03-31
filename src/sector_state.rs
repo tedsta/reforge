@@ -37,10 +37,12 @@ pub struct SectorState {
     ships_to_remove: Vec<ShipId>,
     
     turn_number: u32,
+    
+    debug: bool,
 }
 
 impl SectorState {
-    pub fn new(slot: ServerSlot, star_map_slot_id: ServerSlotId, context: BattleContext) -> SectorState {
+    pub fn new(slot: ServerSlot, star_map_slot_id: ServerSlotId, context: BattleContext, debug: bool) -> SectorState {
         SectorState {
             slot: slot,
             star_map_slot_id: star_map_slot_id,
@@ -54,6 +56,7 @@ impl SectorState {
             ships_to_add: vec!(),
             ships_to_remove: vec!(),
             turn_number: 0,
+            debug: debug,
         }
     }
     
@@ -107,29 +110,64 @@ impl SectorState {
             ///////////////////////////////////////////////////////////
             // Receive new clients
             if let Ok(mut account) = from_map_receiver.try_recv() {
+                if self.debug {
+                    println!("Receiving account");
+                }
                 let client_id = account.client_id.expect("This must have a client ID");
                 
                 // Add the client to the waiting list
                 self.clients_waiting.insert(client_id);
                 
+                if self.debug {
+                    println!("1");
+                }
+                
                 // Get the ship out of storage
                 let ship_stored = account.ship.take().expect("This account must have a ship");
                 let ship = ship_stored.to_ship(Some(client_id));
                 
+                if self.debug {
+                    println!("2");
+                }
+                
                 // Add the player's account
                 self.accounts.insert(client_id, account);
                 
+                if self.debug {
+                    println!("3");
+                }
+                
                 // Send initial join packet
                 let mut packet = OutPacket::new();
+                if self.debug {
+                    println!("3a {}", packet.len());
+                }
                 packet.write(&ship);
+                if self.debug {
+                    println!("3b {}", packet.len());
+                }
                 packet.write(&self.sent_new_ships); // Whether or not to start at simulation instead of planning phase
+                if self.debug {
+                    println!("3c {}", packet.len());
+                }
                 packet.write(&self.context.ships_list).unwrap();
+                if self.debug {
+                    println!("3d");
+                }
                 self.slot.send(client_id, packet);
+                
+                if self.debug {
+                    println!("4");
+                }
                 
                 // Add the player's ship
                 let ship = Rc::new(RefCell::new(ship));
                 self.context.add_ship(ship.clone());
                 self.ships_to_add.push(ship);
+                
+                if self.debug {
+                    println!("5");
+                }
             }
         }
     }
@@ -145,6 +183,10 @@ impl SectorState {
         
         match id {
             ServerPacketId::Plan => {
+                if self.debug {
+                    println!("Handling plans packet");
+                }
+            
                 self.received_plans.insert(client_id);
                 
                 // Handle the plans
@@ -168,6 +210,10 @@ impl SectorState {
     }
     
     fn simulate_next_turn(&mut self, to_map_sender: &Sender<AccountBox>) {
+        if self.debug {
+            println!("Simulating next turn");
+        }
+    
         // Send new ships to added/removed before simulation
         self.send_new_ships();
     
@@ -294,7 +340,7 @@ impl SectorState {
     }
     
     fn simulate(&mut self, sim_events: &mut SimEvents) {
-        for tick in range(0u32, 100) {
+        for tick in 0..100 {
             sim_events.apply_tick(tick);
         }
     }
@@ -313,6 +359,10 @@ impl SectorState {
     }
     
     fn send_new_ships(&mut self) {
+        if self.debug {
+            println!("Sending new ships");
+        }
+    
         let mut ships_packet = OutPacket::new();
         ships_packet.write(&self.ships_to_add);
         ships_packet.write(&self.ships_to_remove);

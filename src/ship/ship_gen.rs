@@ -27,7 +27,7 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     let num_beams = rng.gen::<u8>()%(level/2) + 1;
     
     // Add top half engines
-    for i in range(0, num_engines/2 + num_engines%2) {
+    for i in 0 .. num_engines/2 + num_engines%2 {
         let mut engine = EngineModule::new();
         engine.get_base_mut().x = 0;
         engine.get_base_mut().y = i;
@@ -35,7 +35,7 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     }
     
     // Add bottom half engines
-    for i in range(0, num_engines/2) {
+    for i in 0 .. num_engines/2 {
         let mut engine = EngineModule::new();
         engine.get_base_mut().x = 0;
         engine.get_base_mut().y = height - 1 - i;
@@ -43,7 +43,7 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     }
     
     // Fill in any remaining space between engines with power modules
-    for i in range(0, height - num_engines) {
+    for i in 0 .. height - num_engines {
         let mut solar = SolarModule::new();
         solar.get_base_mut().x = 1;
         solar.get_base_mut().y = num_engines/2 + num_engines%2 + i;
