@@ -5,7 +5,19 @@ use std::marker::Reflect;
 
 use battle_state::BattleContext;
 use module;
-use module::{IModule, IModuleRef, IModuleStored, Module, ModuleBase, ModuleBox, ModuleRef, ModuleStoredBox};
+use module::{
+    IModule,
+    IModuleRef,
+    IModuleStored,
+    IModuleNetworked,
+    Module,
+    ModuleBase,
+    ModuleBox,
+    ModuleRef,
+    ModuleStoredBox,
+    ModuleNetworkedBox,
+    NetworkTarget,
+};
 use net::{ClientId, InPacket, OutPacket};
 use sector_data::SectorId;
 use self::ship_gen::generate_ship;
@@ -28,7 +40,7 @@ use space_gui::ModuleIcons;
 mod ship_gen;
 
 // Holds everything about the ship's damage, capabilities, etc.
-#[derive(RustcEncodable, RustcDecodable)]
+#[derive(Clone, Copy, RustcEncodable, RustcDecodable)]
 pub struct ShipState {
     pub hp: u8,
     total_module_hp: u8, // Sum of HP of all modules, used to recalculate HP when damaged
@@ -169,7 +181,6 @@ pub type ShipRef = Rc<RefCell<Ship>>;
 // Type for the ID of a ship
 pub type ShipId = u64;
 
-#[derive(RustcEncodable, RustcDecodable)]
 pub struct Ship {
     pub id: ShipId,
     pub name: String,
@@ -404,6 +415,13 @@ impl Ship {
         }
     }
     
+    pub fn set_targets(&self, context: &BattleContext, targets: &Vec<(Option<NetworkTarget>, Option<NetworkTarget>)>) {
+        for (module, targets) in self.modules.iter().zip(targets.iter()) {
+            let &(ref target, ref plan_target) = targets;
+            module.borrow_mut().get_base_mut().set_targets(context, target, plan_target);
+        }
+    }
+    
     pub fn write_results(&self, packet: &mut OutPacket) {
         packet.write(&self.state.power);
         
@@ -572,4 +590,73 @@ impl ShipStored {
             jumping: false,
         }
     }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[derive(RustcEncodable, RustcDecodable)]
+pub struct ShipNetworked {
+    pub id: ShipId,
+    pub name: String,
+    pub client_id: Option<ClientId>,
+    pub state: ShipState,
+    pub modules: Vec<ModuleNetworkedBox>,
+    
+    // Ship dimensions in module blocks
+    width: u8,
+    height: u8,
+    
+    pub level: u8, // TODO: This is very temporary only for IC US semifinals
+    
+    // Ship's sector jumping plans
+    pub target_sector: Option<SectorId>,
+    
+    // Whether or not the ship successfully jumped
+    pub jumping: bool,
+}
+
+impl ShipNetworked {
+    pub fn from_ship(ship: &Ship) -> ShipNetworked {
+        use std::rc::try_unwrap;
+    
+        ShipNetworked {
+            id: ship.id,
+            name: ship.name.clone(),
+            client_id: ship.client_id,
+            state: ship.state,
+            modules: ship.modules.iter().map(|m| m.borrow().to_module_networked()).collect(),
+            width: ship.width,
+            height: ship.height,
+            level: ship.level,
+            target_sector: ship.target_sector,
+            jumping: ship.jumping,
+        }
+    }
+    
+    pub fn to_ship(self) -> (Ship, Vec<(Option<NetworkTarget>, Option<NetworkTarget>)>) {
+        let modules: Vec<(ModuleBox, Option<NetworkTarget>, Option<NetworkTarget>)> =
+            self.modules.into_iter().map(|m| m.to_module()).collect();
+        
+        let module_targets = modules.iter().map(|&(_, t, pt)| (t, pt)).collect();
+        let modules = modules.into_iter().map(|(m, _, _)| Rc::new(RefCell::new(m))).collect();
+    
+        (Ship {
+            id: self.id,
+            name: self.name,
+            client_id: self.client_id,
+            state: self.state,
+            modules: modules,
+            width: self.width,
+            height: self.height,
+            level: self.level,
+            target_sector: self.target_sector,
+            jumping: self.jumping,
+        }, module_targets)
+    }
+}
+
+pub fn as_networked_ships(ships: &Vec<ShipRef>) -> Vec<ShipNetworked> {
+    use std::ops::Deref;
+
+    ships.iter().map(|s| ShipNetworked::from_ship(s.borrow().deref())).collect()
 }

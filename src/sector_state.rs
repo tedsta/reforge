@@ -10,7 +10,7 @@ use battle_state::{BattleContext, ClientPacketId, ServerPacketId};
 use login::AccountBox;
 use module::Module;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
-use ship::{Ship, ShipId, ShipRef, ShipStored};
+use ship::{Ship, ShipId, ShipRef, ShipStored, ShipNetworked, as_networked_ships};
 use sim::SimEvents;
 
 pub struct SectorState {
@@ -142,7 +142,7 @@ impl SectorState {
                 if self.debug {
                     println!("3a {}", packet.len());
                 }
-                packet.write(&ship);
+                packet.write(&ShipNetworked::from_ship(&ship));
                 if self.debug {
                     println!("3b {}", packet.len());
                 }
@@ -150,7 +150,7 @@ impl SectorState {
                 if self.debug {
                     println!("3c {}", packet.len());
                 }
-                packet.write(&self.context.ships_list).unwrap();
+                packet.write(&as_networked_ships(&self.context.ships_list)).unwrap();
                 if self.debug {
                     println!("3d");
                 }
@@ -364,7 +364,7 @@ impl SectorState {
         }
     
         let mut ships_packet = OutPacket::new();
-        ships_packet.write(&self.ships_to_add);
+        ships_packet.write(&as_networked_ships(&self.ships_to_add));
         ships_packet.write(&self.ships_to_remove);
         self.slot.broadcast(ships_packet);
         

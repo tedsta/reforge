@@ -13,13 +13,13 @@ pub enum TargetMode {
     Beam(u8),
 }
 
-#[derive(Clone, RustcEncodable, RustcDecodable)]
+#[derive(Clone)]
 pub struct Target {
     pub ship: ShipRef,
     pub data: TargetData,
 }
 
-#[derive(Clone, RustcEncodable, RustcDecodable)]
+#[derive(Clone)]
 pub enum TargetData {
     TargetShip,
     TargetModule(ModuleRef),
@@ -29,7 +29,7 @@ pub enum TargetData {
 }
 
 // Target data suitable for sending over the network
-#[derive(Clone, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Copy, RustcEncodable, RustcDecodable)]
 pub struct NetworkTarget {
     pub ship: ShipId,
     pub data: NetworkTargetData,
@@ -55,7 +55,7 @@ impl NetworkTarget {
     }
 }
 
-#[derive(Clone, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Copy, RustcEncodable, RustcDecodable)]
 pub enum NetworkTargetData {
     TargetShip,
     TargetModule(u32),

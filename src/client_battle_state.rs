@@ -14,7 +14,7 @@ use asset_store::AssetStore;
 use battle_state::{BattleContext, ClientPacketId, ServerPacketId, TICKS_PER_SECOND};
 use net::{Client, OutPacket};
 use sector_data::SectorData;
-use ship::{Ship, ShipId, ShipRef};
+use ship::{Ship, ShipId, ShipNetworked, ShipRef};
 use sim::{SimEvents, SimEffects};
 use space_gui::SpaceGui;
 
@@ -221,7 +221,7 @@ impl<'a> ClientBattleState<'a> {
     fn try_receive_new_ships(&mut self, gui: &mut SpaceGui) -> io::Result<()> {
         let mut packet = try!(self.client.try_receive());
         
-        let ships_to_add: Vec<Ship> = packet.read().ok().expect("Failed to read ships to add from packet");
+        let ships_to_add: Vec<ShipNetworked> = packet.read().ok().expect("Failed to read ships to add from packet");
         let ships_to_remove: Vec<ShipId> = packet.read().ok().expect("Failed to read ships to remove from packet");
         
         for ship in ships_to_remove.into_iter() {
@@ -233,22 +233,19 @@ impl<'a> ClientBattleState<'a> {
         }
     
         for ship in ships_to_add.into_iter() {
-            let ship = Rc::new(RefCell::new(ship));
-            
-            println!("Got a new ship {:?}", ship.borrow().id);
-            let ship_id = ship.borrow().id;
+            println!("Got a new ship {:?}", ship.id);
+            let ship_id = ship.id;
             let player_ship_id = self.player_ship.borrow().id;
             if ship_id == player_ship_id {
                 let hp = self.player_ship.borrow().state.get_hp();
                 if hp == 0 {
                     println!("Replacing player's ship");
-                    self.player_ship = ship.clone();
-                    self.context.add_ship(ship);
+                    self.player_ship = self.context.add_networked_ship(ship);
                 }
             } else {
                 println!("Trying to lock");
+                let ship = self.context.add_networked_ship(ship);
                 gui.try_lock(&ship);
-                self.context.add_ship(ship);
             }
         }
         

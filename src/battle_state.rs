@@ -1,8 +1,10 @@
+use std::rc::Rc;
+use std::cell::RefCell;
 use std::collections::HashMap;
 
-use module::ModulePlans;
+use module::{ModulePlans, NetworkTarget};
 use net::{ClientId, InPacket, OutPacket};
-use ship::{ShipId, ShipRef};
+use ship::{ShipId, ShipNetworked, ShipRef};
 use sim::SimEvents;
 
 #[cfg(feature = "client")]
@@ -13,7 +15,6 @@ use asset_store::AssetStore;
 // Time value of 1 tick in seconds
 pub static TICKS_PER_SECOND: u32 = 20;
 
-#[derive(RustcEncodable, RustcDecodable)]
 pub struct BattleContext {
     pub ships: HashMap<ShipId, ShipRef>,
     pub ships_client_id: HashMap<ClientId, ShipRef>,
@@ -62,6 +63,41 @@ impl BattleContext {
         let client_id = ship.borrow().client_id;
         if let Some(client_id) = client_id {
             self.ships_client_id.insert(client_id, ship);
+        }
+    }
+    
+    pub fn add_ships(&mut self, ships: Vec<ShipRef>) {
+        for ship in ships {
+            self.add_ship(ship);
+        }
+    }
+    
+    pub fn add_networked_ship(&mut self, ship: ShipNetworked) -> ShipRef {
+        let (ship, targets) = ship.to_ship();
+        let ship = Rc::new(RefCell::new(ship));
+        
+        self.add_ship(ship.clone());
+        
+        ship.borrow_mut().set_targets(self, &targets);
+        
+        ship
+    }
+    
+    pub fn add_networked_ships(&mut self, ships: Vec<ShipNetworked>) {
+        let ships: Vec<(ShipRef, Vec<(Option<NetworkTarget>, Option<NetworkTarget>)>)> =
+            ships.into_iter().map(
+                |s| {
+                    let (ship, targets) = s.to_ship();
+                    let ship = Rc::new(RefCell::new(ship));
+                    
+                    self.add_ship(ship.clone());
+                    
+                    (ship, targets)
+                }
+            ).collect();
+        
+        for (ship, targets) in ships {
+            ship.borrow_mut().set_targets(self, &targets);
         }
     }
     

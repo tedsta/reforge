@@ -52,7 +52,6 @@ use star_map_gui::StarMapGui;
 use tutorial_state::TutorialState;
 
 // Server stuff
-use battle_scheduler::BattleScheduler;
 use net::Server;
 use star_map_server::StarMapServer;
 
@@ -84,8 +83,6 @@ mod tutorial_state;
 mod vec;
 
 // server stuff
-mod battle_scheduler;
-mod server_battle_state;
 mod star_map_server;
 
 #[cfg(feature = "client")]
