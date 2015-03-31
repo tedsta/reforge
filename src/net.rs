@@ -240,11 +240,12 @@ impl Server {
                         match msg {
                             SlotOutMsg::SendPacket(slot_id, client_id, packet) => match client_outs.get(&client_id) {
                                 Some(&(ref client_slot_id, ref c)) => {
-                                    if slot_id == *client_slot_id {
+                                    c.send(packet);
+                                    /*if slot_id == *client_slot_id {
                                         c.send(packet);
                                     } else {
                                         println!("Failed to send packet to client {} from server slot {} because the client's server slot is {}", client_id, slot_id, client_slot_id);
-                                    }
+                                    }*/
                                 },
                                 None => { println!("Failed to send packet to invalid client ID {}", client_id); }
                             },

@@ -60,7 +60,7 @@ impl SectorState {
         }
     }
     
-    pub fn run(&mut self, to_map_sender: Sender<AccountBox>, from_map_receiver: Receiver<AccountBox>) {
+    pub fn run(&mut self, to_map_sender: Sender<AccountBox>, from_map_receiver: Receiver<AccountBox>, ack: Sender<()>) {
         // TODO: come up with better way to generate AI ship IDs
         let ai_ship = Ship::generate((100000000) as ShipId, "n00bslayer808".to_string(), 2);
         self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
@@ -118,56 +118,26 @@ impl SectorState {
                 // Add the client to the waiting list
                 self.clients_waiting.insert(client_id);
                 
-                if self.debug {
-                    println!("1");
-                }
-                
                 // Get the ship out of storage
                 let ship_stored = account.ship.take().expect("This account must have a ship");
                 let ship = ship_stored.to_ship(Some(client_id));
                 
-                if self.debug {
-                    println!("2");
-                }
-                
                 // Add the player's account
                 self.accounts.insert(client_id, account);
                 
-                if self.debug {
-                    println!("3");
-                }
-                
                 // Send initial join packet
                 let mut packet = OutPacket::new();
-                if self.debug {
-                    println!("3a {}", packet.len());
-                }
                 packet.write(&ShipNetworked::from_ship(&ship));
-                if self.debug {
-                    println!("3b {}", packet.len());
-                }
                 packet.write(&self.sent_new_ships); // Whether or not to start at simulation instead of planning phase
-                if self.debug {
-                    println!("3c {}", packet.len());
-                }
                 packet.write(&as_networked_ships(&self.context.ships_list)).unwrap();
-                if self.debug {
-                    println!("3d");
-                }
                 self.slot.send(client_id, packet);
-                
-                if self.debug {
-                    println!("4");
-                }
                 
                 // Add the player's ship
                 let ship = Rc::new(RefCell::new(ship));
                 self.context.add_ship(ship.clone());
                 self.ships_to_add.push(ship);
                 
-                if self.debug {
-                    println!("5");
-                }
+                ack.send(());
             }
         }
     }

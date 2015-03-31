@@ -18,6 +18,7 @@ pub struct Sector {
     pub slot_id: ServerSlotId,
     pub to_sector: Sender<AccountBox>,
     pub from_sector: Receiver<AccountBox>,
+    pub ack: Receiver<()>,
     pub data: SectorData,
 }
 
@@ -35,12 +36,14 @@ impl StarMapServer {
         // Sector 0
         let (to_sector_sender, to_sector_receiver) = channel();
         let (from_sector_sender, from_sector_receiver) = channel();
+        let (ack_sender, ack_receiver) = channel();
         let sector_slot = slot.create_slot();
         let sector_id = SectorId(0);
         sectors.insert(sector_id, Sector {
             slot_id: sector_slot.get_id(),
             to_sector: to_sector_sender,
             from_sector: from_sector_receiver,
+            ack: ack_receiver,
             data: SectorData {
                 id: sector_id,
                 map_position: Vec2 { x: 50.0, y: 50.0 },
@@ -52,18 +55,20 @@ impl StarMapServer {
             .stack_size(8388608)
             .spawn(move || {
                 let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
-                sector_state.run(from_sector_sender, to_sector_receiver);
+                sector_state.run(from_sector_sender, to_sector_receiver, ack_sender);
             });
         
         // Sector 1
         let (to_sector_sender, to_sector_receiver) = channel();
         let (from_sector_sender, from_sector_receiver) = channel();
+        let (ack_sender, ack_receiver) = channel();
         let sector_slot = slot.create_slot();
         let sector_id = SectorId(1);
         sectors.insert(sector_id, Sector {
             slot_id: sector_slot.get_id(),
             to_sector: to_sector_sender,
             from_sector: from_sector_receiver,
+            ack: ack_receiver,
             data: SectorData {
                 id: sector_id,
                 map_position: Vec2 { x: 100.0, y: 100.0 },
@@ -74,8 +79,8 @@ impl StarMapServer {
             .name(format!("sector_{}_thread", 1))
             .stack_size(8388608)
             .spawn(move || {
-                let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), true);
-                sector_state.run(from_sector_sender, to_sector_receiver);
+                let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
+                sector_state.run(from_sector_sender, to_sector_receiver, ack_sender);
             });
         
         StarMapServer {
@@ -108,8 +113,9 @@ impl StarMapServer {
             
                 let ref sector = self.sectors[&account.sector];
                 
-                self.slot.transfer_client(client_id, sector.slot_id);
                 sector.to_sector.send(account);
+                sector.ack.recv();
+                self.slot.transfer_client(client_id, sector.slot_id);
             }
             
             // Send any jumping ships to their new sector
@@ -125,8 +131,9 @@ impl StarMapServer {
                     
                     let ref sector = self.sectors[&target_sector];
                     
-                    self.slot.transfer_client(client_id, sector.slot_id);
                     sector.to_sector.send(account);
+                    sector.ack.recv();
+                    self.slot.transfer_client(client_id, sector.slot_id);
                 }
             }
         }
