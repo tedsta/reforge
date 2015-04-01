@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::rc::Rc;
+use std::cell::RefCell;
 use std::path::Path;
 
 use graphics::ImageSize;
@@ -15,7 +16,7 @@ pub struct SpriteInfo {
 pub struct AssetStore {
     sprite_info: HashMap<String, SpriteInfo>,
     
-    sounds: HashMap<String, Rc<sdl2_mixer::Chunk>>,
+    sounds: HashMap<String, Rc<RefCell<sdl2_mixer::Chunk>>>,
 }
 
 impl AssetStore {
@@ -23,19 +24,22 @@ impl AssetStore {
         let mut sounds = HashMap::new();
         sounds.insert(
             "effects/small_explosion.wav".to_string(),
-            Rc::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/small_explosion.wav"))
-                .ok().expect("Failed to load sound"))
+            Rc::new(RefCell::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/small_explosion.wav"))
+                .ok().expect("Failed to load sound")))
         );
         sounds.insert(
             "effects/laser.wav".to_string(),
-            Rc::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/laser.wav"))
-                .ok().expect("Failed to load sound"))
+            Rc::new(RefCell::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/laser.wav"))
+                .ok().expect("Failed to load sound")))
         );
         sounds.insert(
             "effects/beam1.ogg".to_string(),
-            Rc::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/beam1.ogg"))
-                .ok().expect("Failed to load sound"))
+            Rc::new(RefCell::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/beam1.ogg"))
+                .ok().expect("Failed to load sound")))
         );
+        
+        sounds.get_mut("effects/laser.wav").expect("This should exist").borrow_mut().set_volume(32);
+        sounds.get_mut("effects/small_explosion.wav").expect("This should exist").borrow_mut().set_volume(32);
     
         let mut asset_store = AssetStore {
             sprite_info: HashMap::new(),
@@ -106,7 +110,7 @@ impl AssetStore {
         &self.sprite_info[&texture.to_string()]
     }
     
-    pub fn get_sound(&self, name: &String) -> &Rc<sdl2_mixer::Chunk> {
+    pub fn get_sound(&self, name: &String) -> &Rc<RefCell<sdl2_mixer::Chunk>> {
         &self.sounds[name]
     }
 }
