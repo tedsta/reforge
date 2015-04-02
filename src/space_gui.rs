@@ -69,9 +69,13 @@ pub struct SpaceGui {
     // Space background
     space_bg: SpaceStars,
     
+    // Star map stuff
     star_map_button: TextButton,
     star_map_gui: StarMapGui,
     show_star_map: bool,
+    
+    // Logout button
+    logout_button: TextButton,
 
     // targets
     target_icons: Vec<TargetIcon>,
@@ -129,6 +133,8 @@ impl SpaceGui {
             star_map_button: TextButton::new("star map".to_string(), 20, [550.0, 50.0], [120.0, 40.0]),
             star_map_gui: StarMapGui::new(sectors),
             show_star_map: false,
+            
+            logout_button: TextButton::new("logout".to_string(), 20, [550.0, 100.0], [120.0, 40.0]),
 
             target_icons: target_icons,
         }
@@ -178,6 +184,11 @@ impl SpaceGui {
                 }
             });
         }
+        
+        self.logout_button.event(e, [self.mouse_x, self.mouse_y]);
+        if self.logout_button.get_clicked() {
+            // TODO: Logout
+        }
     }
     
     pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_effects: &mut SimEffects, client_ship: &mut Ship, time: f64, dt: f64) {
@@ -220,7 +231,7 @@ impl SpaceGui {
         self.space_bg.draw(context, gl);
         
         // Draw player ship
-        draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, sim_effects, client_ship, time);
+        draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, asset_store, sim_effects, client_ship, time);
         client_ship.draw_module_powered_icons(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, &self.module_icons);
         draw_stats(context, gl, glyph_cache, &self.stats_labels, client_ship.deref(), true);
     
@@ -238,7 +249,7 @@ impl SpaceGui {
             {
                 let context = context.trans(self.render_area.x, self.render_area.y);
                 
-                draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, sim_effects, ship.borrow().deref(), time);
+                draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, asset_store, sim_effects, ship.borrow().deref(), time);
                 draw_stats(&context.trans(0.0, 400.0), gl, glyph_cache, &self.stats_labels, ship.borrow().deref(), false);
             }
             
@@ -366,7 +377,7 @@ impl SpaceGui {
         }
         
         {
-            let context = context.trans(550.0, 100.0);
+            let context = context.trans(550.0, 150.0);
             if client_ship.state.get_hp() == 0 {
                 image(&self.lose_texture, context.transform, gl);
             } else if !enemy_alive {
@@ -375,6 +386,7 @@ impl SpaceGui {
         }
         
         self.star_map_button.draw(context, gl, glyph_cache);
+        self.logout_button.draw(context, gl, glyph_cache);
 
         // Draw target icons
         for (i, icon) in self.target_icons.iter().enumerate() {
@@ -661,7 +673,8 @@ struct ShipRenderArea {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-fn draw_ship(context: &Context, gl: &mut Gl, sim_effects: &mut SimEffects, ship: &Ship, time: f64) {
+fn draw_ship(context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_effects: &mut SimEffects, ship: &Ship, time: f64) {
+    ship.draw(context, gl, asset_store);
     sim_effects.update(context, gl, ship.id, time);
     ship.draw_module_hp(context, gl);
 }

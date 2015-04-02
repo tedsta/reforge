@@ -466,6 +466,33 @@ impl Ship {
     }
     
     #[cfg(feature = "client")]
+    pub fn draw(&self, context: &Context, gl: &mut Gl, asset_store: &AssetStore) {
+        use std::ops::Deref;
+        use graphics::*;
+        
+        let opacity = (self.state.shields as f32)/8.0;
+    
+        for module in self.modules.iter() {
+            let module = module.borrow();
+            let module = module.get_base();
+            
+            let shield_texture = asset_store.get_texture_str("effects/1_module_shield.png");
+            let (shield_size_x, shield_size_y) = shield_texture.get_size();
+            let (shield_size_x, shield_size_y) = (shield_size_x as f64, shield_size_y as f64);
+            
+            for x in module.x..module.x+module.width {
+                for y in module.y..module.y+module.height {
+                    let context = context.trans((x as f64) * 48.0, (y as f64) * 48.0);
+                    let context = context.trans(24.0 - shield_size_x/2.0, 24.0 - shield_size_y/2.0);
+                    
+                    Image::colored([1.0, 1.0, 1.0, opacity])
+                        .draw(shield_texture.deref(), &context.draw_state, context.transform, gl);
+                }
+            }
+        }
+    }
+    
+    #[cfg(feature = "client")]
     pub fn draw_module_hp(&self, context: &Context, gl: &mut Gl) {
         use quack::Set;
         use graphics::*;
