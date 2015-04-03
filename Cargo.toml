@@ -9,6 +9,7 @@ authors = [
 [features]
 
 default = ["client"]
+#default = ["server"]
 
 client = []
 
@@ -18,8 +19,6 @@ server = []
 
 name = "reforge_client"
 path = "src/client.rs"
-
-#[[bin]]
 
 #name = "reforge_server"
 #path = "src/server.rs"

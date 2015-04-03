@@ -21,7 +21,7 @@ pub struct SectorState {
     context: BattleContext,
     
     turn_start_time: time::Timespec,
-    sent_new_ships: bool,
+    sent_results: bool,
     
     received_plans: HashSet<ClientId>,
     clients_waiting: HashSet<ClientId>,
@@ -48,7 +48,7 @@ impl SectorState {
             star_map_slot_id: star_map_slot_id,
             context: context,
             turn_start_time: time::now().to_timespec(),
-            sent_new_ships: false,
+            sent_results: false,
             received_plans: HashSet::new(),
             clients_waiting: HashSet::new(),
             clients_active: HashSet::new(),
@@ -60,19 +60,21 @@ impl SectorState {
         }
     }
     
-    pub fn run(&mut self, to_map_sender: Sender<AccountBox>, from_map_receiver: Receiver<AccountBox>, ack: Sender<()>) {
-        // TODO: come up with better way to generate AI ship IDs
-        let ai_ship = Ship::generate((100000000) as ShipId, "n00bslayer808".to_string(), 2);
-        self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
-        
-        let ai_ship = Ship::generate((100000001) as ShipId, "thing1".to_string(), 2);
-        self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
-        
-        let ai_ship = Ship::generate((100000002) as ShipId, "thing2".to_string(), 2);
-        self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
-        
-        let ai_ship = Ship::generate((100000003) as ShipId, "daisy_girl".to_string(), 2);
-        self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+    pub fn run(&mut self, to_map_sender: Sender<AccountBox>, from_map_receiver: Receiver<AccountBox>, ack: Sender<()>, create_ai: bool) {
+        if create_ai {
+            // TODO: come up with better way to generate AI ship IDs
+            let ai_ship = Ship::generate((100000000) as ShipId, "n00bslayer808".to_string(), 2);
+            self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+            
+            let ai_ship = Ship::generate((100000001) as ShipId, "thing1".to_string(), 2);
+            self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+            
+            let ai_ship = Ship::generate((100000002) as ShipId, "thing2".to_string(), 2);
+            self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+            
+            let ai_ship = Ship::generate((100000003) as ShipId, "daisy_girl".to_string(), 2);
+            self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+        }
     
         loop {
             ///////////////////////////////////////////////////////////
@@ -81,18 +83,12 @@ impl SectorState {
             // Get the current time from our turn timer
             let turn_time = time::now().to_timespec() - self.turn_start_time;
             
-            if !self.sent_new_ships && turn_time.num_milliseconds() > 4500 {
-                self.send_new_ships();
-                
-                self.sent_new_ships = true;
-            }
-            
-            if turn_time.num_milliseconds() > 11000 {
+            if turn_time.num_milliseconds() > 3500 {
                 self.simulate_next_turn(&to_map_sender);
                 
                 // Reset the turn stuff
                 self.turn_start_time = time::now().to_timespec();
-                self.sent_new_ships = false;
+                self.sent_results = false;
             }
         
             ///////////////////////////////////////////////////////////
@@ -128,7 +124,7 @@ impl SectorState {
                 // Send initial join packet
                 let mut packet = OutPacket::new();
                 packet.write(&ShipNetworked::from_ship(&ship));
-                packet.write(&self.sent_new_ships); // Whether or not to start at simulation instead of planning phase
+                packet.write(&self.sent_results); // Whether or not to start at simulation instead of planning phase
                 packet.write(&as_networked_ships(&self.context.ships_list)).unwrap();
                 self.slot.send(client_id, packet);
                 

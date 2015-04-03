@@ -55,7 +55,7 @@ impl StarMapServer {
             .stack_size(8388608)
             .spawn(move || {
                 let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
-                sector_state.run(from_sector_sender, to_sector_receiver, ack_sender);
+                sector_state.run(from_sector_sender, to_sector_receiver, ack_sender, false);
             });
         
         // Sector 1
@@ -80,7 +80,7 @@ impl StarMapServer {
             .stack_size(8388608)
             .spawn(move || {
                 let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
-                sector_state.run(from_sector_sender, to_sector_receiver, ack_sender);
+                sector_state.run(from_sector_sender, to_sector_receiver, ack_sender, true);
             });
         
         StarMapServer {

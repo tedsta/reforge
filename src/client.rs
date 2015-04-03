@@ -7,6 +7,7 @@
 #![feature(io)]
 #![feature(old_io)]
 #![feature(alloc)]
+#![feature(thread_sleep)]
 #![feature(collections)]
 #![feature(std_misc)]
 
@@ -148,8 +149,8 @@ fn main () {
                         };
                     ip_address.push_str(":30000"); // Add the port to the end of the address
                     */
-                    let ip_address = String::from_str("localhost:30000");
-                    //let ip_address = String::from_str("104.131.129.181:30000");
+                    //let ip_address = String::from_str("localhost:30000");
+                    let ip_address = String::from_str("104.131.129.181:30000");
                     
                     // Start a local server
                     let mut server = Server::new();

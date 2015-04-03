@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::io;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
+use std::thread;
 use std::time::Duration;
 use time;
 
@@ -12,7 +13,7 @@ use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
 use battle_state::{BattleContext, ClientPacketId, ServerPacketId, TICKS_PER_SECOND};
-use net::{Client, OutPacket};
+use net::{Client, InPacket, OutPacket};
 use sector_data::SectorData;
 use ship::{Ship, ShipId, ShipNetworked, ShipRef};
 use sim::{SimEvents, SimEffects};
@@ -48,30 +49,13 @@ impl<'a> ClientBattleState<'a> {
         
         // TODO display joining screen here
         
-        // If we joined during a planning phase, wait for simulation to start
-        if start_at_sim {
-            while self.try_receive_new_ships(gui).is_err() {}
-            while self.try_receive_simulation_results().is_err() {}
-            
-            self.run_simulation_phase(window, gl, glyph_cache, asset_store, gui, sim_effects);
-            
-            // Check if it's time to exit
-            let ShouldClose(should_close) = window.borrow().get();
-            if should_close { return; }
-        }
+        // Get first turn's results
+        self.receive_new_ships(gui);
+        while self.try_receive_simulation_results().is_err() { }
+        self.receive_new_ships(gui);
+        thread::sleep(Duration::milliseconds(1500));
     
         loop {
-            ////////////////////////////////
-            // Plan
-            
-            while self.try_receive_new_ships(gui).is_err() {}
-            
-            self.run_planning_phase(window, gl, glyph_cache, asset_store, gui, sim_effects);
-            
-            // Check if it's time to exit
-            let ShouldClose(should_close) = window.borrow().get();
-            if should_close { break; }
-            
             ////////////////////////////////
             // Simulate
             
@@ -88,57 +72,6 @@ impl<'a> ClientBattleState<'a> {
         }
     }
     
-    fn run_planning_phase(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
-        // Add planning effects
-        sim_effects.reset();
-        self.context.add_plan_effects(asset_store, &mut sim_effects);
-        
-        // Record start time
-        let start_time = time::now().to_timespec();
-        
-        let mut plans_sent = false;
-        
-        // Run planning loop
-        for e in Events::new(window.clone()) {
-            use event;
-            use input;
-            use event::*;
-
-            let e: event::Event<input::Input> = e;
-        
-            // Calculate a bunch of time stuff
-            let current_time = time::now().to_timespec();
-            let elapsed_time = current_time - start_time;
-            let mut elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000.0;
-            if !plans_sent && elapsed_time.num_seconds() >= 5 {
-                // Send plans
-                let packet = self.build_plans_packet();
-                self.client.send(&packet);
-                plans_sent = true;
-                println!("Sent plans at {}", elapsed_time.num_milliseconds());
-            }
-            
-            // Break once we receive sim results
-            if plans_sent && self.try_receive_new_ships(gui).is_ok() {
-                println!("Receiving results");
-                while self.try_receive_simulation_results().is_err() { }
-                println!("Received results at {}", elapsed_time.num_milliseconds());
-                break;
-            } else {
-            }
-        
-            // Forward events to GUI
-            gui.event(&e, &self.player_ship);
-            
-            // Render GUI
-            e.render(|args: &RenderArgs| {
-                gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-                    gui.draw_planning(&c, gl, glyph_cache, asset_store, &mut sim_effects, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
-                });
-            });
-        }
-    }
-    
     fn run_simulation_phase(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
         let mut sim_events = SimEvents::new();
             
@@ -150,6 +83,8 @@ impl<'a> ClientBattleState<'a> {
         // Simulation
         let start_time = time::now().to_timespec();
         let mut next_tick = 0;
+        let mut plans_sent = false;
+        let mut results_received = false;
         for e in Events::new(window.clone()) {
             use event;
             use input;
@@ -161,7 +96,24 @@ impl<'a> ClientBattleState<'a> {
             let current_time = time::now().to_timespec();
             let elapsed_time = current_time - start_time;
             let elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000.0;
-            if elapsed_time.num_seconds() >= 5 {
+            
+            if !plans_sent && elapsed_seconds >= 2.5 {
+                // Send plans
+                let packet = self.build_plans_packet();
+                self.client.send(&packet);
+                plans_sent = true;
+                println!("Sent plans at {}", elapsed_seconds);
+            }
+            
+            // Break once we receive sim results
+            if plans_sent && !results_received && self.try_receive_new_ships(gui).is_ok() {
+                println!("Receiving results");
+                while self.try_receive_simulation_results().is_err() { }
+                println!("Received results at {}", elapsed_seconds);
+                results_received = true;
+            }
+            
+            if results_received && elapsed_seconds >= 5.0 {
                 break;
             }
             
@@ -188,7 +140,7 @@ impl<'a> ClientBattleState<'a> {
         // After simulation
         self.context.after_simulation();
         
-        while self.try_receive_new_ships(gui).is_err() { }
+        self.receive_new_ships(gui);
     }
     
     fn build_plans_packet(&mut self) -> OutPacket {
@@ -221,6 +173,18 @@ impl<'a> ClientBattleState<'a> {
     fn try_receive_new_ships(&mut self, gui: &mut SpaceGui) -> io::Result<()> {
         let mut packet = try!(self.client.try_receive());
         
+        self.handle_new_ships_packet(gui, &mut packet);
+        
+        Ok(())
+    }
+    
+    fn receive_new_ships(&mut self, gui: &mut SpaceGui) {
+        let mut packet = self.client.receive();
+        
+        self.handle_new_ships_packet(gui, &mut packet);
+    }
+    
+    fn handle_new_ships_packet(&mut self, gui: &mut SpaceGui, packet: &mut InPacket) {
         let ships_to_add: Vec<ShipNetworked> = packet.read().ok().expect("Failed to read ships to add from packet");
         let ships_to_remove: Vec<ShipId> = packet.read().ok().expect("Failed to read ships to remove from packet");
         
@@ -248,7 +212,5 @@ impl<'a> ClientBattleState<'a> {
                 gui.try_lock(&ship);
             }
         }
-        
-        Ok(())
     }
 }

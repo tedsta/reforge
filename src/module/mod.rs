@@ -46,10 +46,12 @@ pub trait IModule : Send {
     fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
 
     fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEventAdder);
+    
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
     #[cfg(feature = "client")]
     fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
+    
     fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
     
     fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {}

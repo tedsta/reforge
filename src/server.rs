@@ -1,10 +1,19 @@
 #![crate_name = "reforge_server"]
 #![crate_type = "bin"]
 #![feature(box_syntax)]
+#![feature(rand)]
+#![feature(core)]
+#![feature(os)]
+#![feature(io)]
+#![feature(old_io)]
+#![feature(alloc)]
+#![feature(thread_sleep)]
+#![feature(collections)]
+#![feature(std_misc)]
 
 extern crate bincode;
 extern crate time;
-extern crate "rustc-serialize" as rustc_serialize;
+extern crate rustc_serialize;
 
 use std::thread::Thread;
 use std::sync::mpsc::channel;
@@ -25,8 +34,6 @@ mod sim;
 mod sim_events;
 mod vec;
 
-mod battle_scheduler;
-mod server_battle_state;
 mod star_map_server;
 
 fn main() {
