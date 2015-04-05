@@ -53,8 +53,6 @@ pub struct SpaceGui {
     mouse_y: f64,
     
     // Textures
-    plan_texture: Texture,
-    simulate_texture: Texture,
     win_texture: Texture,
     lose_texture: Texture,
     
@@ -108,8 +106,6 @@ impl SpaceGui {
             mouse_x: 0.0,
             mouse_y: 0.0,
             
-            plan_texture: Texture::from_path(&Path::new("content/textures/gui/planning.png")).unwrap(),
-            simulate_texture: Texture::from_path(&Path::new("content/textures/gui/simulating.png")).unwrap(),
             win_texture: Texture::from_path(&Path::new("content/textures/gui/win.png")).unwrap(),
             lose_texture: Texture::from_path(&Path::new("content/textures/gui/lose.png")).unwrap(),
             
@@ -191,22 +187,6 @@ impl SpaceGui {
         }
     }
     
-    pub fn draw_planning(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_effects: &mut SimEffects, client_ship: &mut Ship, time: f64, dt: f64) {
-        use graphics::*;
-        
-        // Clear the screen
-        clear([0.0; 4], gl);
-        
-        self.draw_screen(context, gl, glyph_cache, asset_store, sim_effects, client_ship, time, dt);
-        
-        // Draw planning text
-        image(&self.plan_texture, context.trans(550.0, 10.0).transform, gl);
-        
-        if self.show_star_map {
-            self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
-        }
-    }
-    
     pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_effects: &mut SimEffects, client_ship: &mut Ship, time: f64, dt: f64) {
         use graphics::*;
         
@@ -215,8 +195,26 @@ impl SpaceGui {
         
         self.draw_screen(context, gl, glyph_cache, asset_store, sim_effects, client_ship, time, dt);
         
-        // Draw simulating text
-        image(&self.simulate_texture, context.trans(550.0, 10.0).transform, gl);
+        // Draw plan timer bar
+        let plan_timer =
+            if time < 2.5 {
+                (2.5 + time) / 5.0
+            } else {
+                (time - 2.5) / 5.0
+            };
+        
+        Rectangle::new([0.0, 0.0, 1.0, 0.5])
+                .draw(
+                    [550.0, 10.0, 100.0, 32.0],
+                    &context.draw_state, context.transform,
+                    gl
+                );
+        Rectangle::new([0.0, 0.0, 1.0, 1.0])
+                .draw(
+                    [550.0, 10.0, plan_timer * 100.0, 32.0],
+                    &context.draw_state, context.transform,
+                    gl
+                );
         
         if self.show_star_map {
             self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
