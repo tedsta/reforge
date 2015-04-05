@@ -53,9 +53,6 @@ pub struct SpaceGui {
     mouse_y: f64,
     
     // Textures
-    win_texture: Texture,
-    lose_texture: Texture,
-    
     small_ship_icon: Texture,
     medium_ship_icon: Texture,
     big_ship_icon: Texture,
@@ -105,9 +102,6 @@ impl SpaceGui {
             beam_targeting_state: None,
             mouse_x: 0.0,
             mouse_y: 0.0,
-            
-            win_texture: Texture::from_path(&Path::new("content/textures/gui/win.png")).unwrap(),
-            lose_texture: Texture::from_path(&Path::new("content/textures/gui/lose.png")).unwrap(),
             
             small_ship_icon: Texture::from_path(&Path::new("content/textures/gui/small_target.png")).unwrap(),
             medium_ship_icon: Texture::from_path(&Path::new("content/textures/gui/medium_target.png")).unwrap(),
@@ -372,15 +366,6 @@ impl SpaceGui {
                         );
                 }
             });
-        }
-        
-        {
-            let context = context.trans(550.0, 150.0);
-            if client_ship.state.get_hp() == 0 {
-                image(&self.lose_texture, context.transform, gl);
-            } else if !enemy_alive {
-                image(&self.win_texture, context.transform, gl);
-            }
         }
         
         self.star_map_button.draw(context, gl, glyph_cache);
