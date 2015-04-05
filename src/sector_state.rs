@@ -113,6 +113,7 @@ impl SectorState {
                 if self.debug {
                     println!("Receiving account");
                 }
+                println!("Receiving account {}", self.simulated_turn);
                 let client_id = account.client_id.expect("This must have a client ID");
                 
                 // Add the client to the waiting list
