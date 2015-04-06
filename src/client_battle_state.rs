@@ -51,15 +51,28 @@ impl<'a> ClientBattleState<'a> {
         
         // Get first turn's results
         self.receive_new_ships(gui);
-        while self.try_receive_simulation_results().is_err() { }
-        self.receive_new_ships(gui);
+        self.receive_simulation_results();
         thread::sleep(Duration::milliseconds(1500));
+        self.run_simulation_phase(window, gl, glyph_cache, asset_store, gui, sim_effects);
+        self.receive_new_ships(gui);
+        
+        // Check if player jumped
+        if self.player_ship.borrow().jumping {
+            return;
+        }
     
         loop {
             ////////////////////////////////
             // Simulate
             
+            // Receive simulation results
+            self.receive_new_ships(gui);
+            self.receive_simulation_results();
+            
             self.run_simulation_phase(window, gl, glyph_cache, asset_store, gui, sim_effects);
+            
+            // Receive ships after sim
+            self.receive_new_ships(gui);
             
             // Check if it's time to exit
             let ShouldClose(should_close) = window.borrow().get();
@@ -84,7 +97,6 @@ impl<'a> ClientBattleState<'a> {
         let start_time = time::now().to_timespec();
         let mut next_tick = 0;
         let mut plans_sent = false;
-        let mut results_received = false;
         for e in Events::new(window.clone()) {
             use event;
             use input;
@@ -97,7 +109,7 @@ impl<'a> ClientBattleState<'a> {
             let elapsed_time = current_time - start_time;
             let elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000.0;
             
-            if !plans_sent && elapsed_seconds >= 2.5 {
+            if !self.player_ship.borrow().jumping && !plans_sent && elapsed_seconds >= 2.5 {
                 // Send plans
                 let packet = self.build_plans_packet();
                 self.client.send(&packet);
@@ -105,15 +117,7 @@ impl<'a> ClientBattleState<'a> {
                 println!("Sent plans at {}", elapsed_seconds);
             }
             
-            // Break once we receive sim results
-            if plans_sent && !results_received && self.try_receive_new_ships(gui).is_ok() {
-                println!("Receiving results");
-                while self.try_receive_simulation_results().is_err() { }
-                println!("Received results at {}", elapsed_seconds);
-                results_received = true;
-            }
-            
-            if results_received && elapsed_seconds >= 5.0 {
+            if elapsed_seconds >= 5.0 {
                 break;
             }
             
@@ -139,8 +143,6 @@ impl<'a> ClientBattleState<'a> {
         
         // After simulation
         self.context.after_simulation();
-        
-        self.receive_new_ships(gui);
     }
     
     fn build_plans_packet(&mut self) -> OutPacket {
@@ -156,8 +158,8 @@ impl<'a> ClientBattleState<'a> {
         packet
     }
     
-    fn try_receive_simulation_results(&mut self) -> io::Result<()> {
-        let mut packet = try!(self.client.try_receive());
+    fn receive_simulation_results(&mut self) {
+        let mut packet = self.client.receive();
         match packet.read::<ClientPacketId>() {
             Ok(ref id) if *id != ClientPacketId::SimResults => panic!("Expected SimResults, got something else"),
             Err(e) => panic!("Failed to read simulation results packet ID: {}", e),
@@ -166,8 +168,6 @@ impl<'a> ClientBattleState<'a> {
         
         // Results packet has both plans and results
         self.context.read_results(&mut packet);
-        
-        Ok(())
     }
     
     fn try_receive_new_ships(&mut self, gui: &mut SpaceGui) -> io::Result<()> {
