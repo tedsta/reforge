@@ -116,7 +116,7 @@ impl ShipState {
             if !module.get_base().is_active() {
                 if was_active {
                     // Module just got deactivated
-                    self.add_power(module.get_base().get_power());
+                    self.return_power(module.get_base().get_power());
                     module.get_base_mut().plan_powered = false;
                     module.get_base_mut().powered = false;
                     module.on_deactivated(self, modules);
@@ -133,6 +133,11 @@ impl ShipState {
         self.plan_power += power;
     }
     
+    pub fn return_power(&mut self, power: u8) {
+        self.power += power;
+        self.plan_power += power;
+    }
+    
     pub fn remove_power(&mut self, power: u8, modules: &Vec<ModuleRef>) {
         for module in modules.iter() {
             if power <= self.power && power <= self.plan_power {
@@ -143,7 +148,7 @@ impl ShipState {
                     Some(mut module) => {
                         if module.get_base().get_power() > 0 {
                             if power > self.power && module.get_base().powered {
-                                self.add_power(module.get_base().get_power());
+                                self.return_power(module.get_base().get_power());
                                 module.get_base_mut().plan_powered = false;
                                 module.get_base_mut().powered = false;
                                 module.on_deactivated(self, modules);
@@ -374,6 +379,12 @@ impl Ship {
     pub fn after_simulation(&mut self) {
         for module in self.modules.iter() {
             module.borrow_mut().after_simulation(&mut self.state);
+        }
+    }
+    
+    pub fn deactivate_broken_modules(&mut self) {
+        for module in &self.modules {
+            
         }
     }
     

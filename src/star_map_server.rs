@@ -1,6 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::Builder;
+use time;
 
 use battle_state::BattleContext;
 use login::AccountBox;
@@ -25,6 +26,8 @@ pub struct Sector {
 pub struct StarMapServer {
     slot: ServerSlot,
     sectors: HashMap<SectorId, Sector>,
+    
+    jumping_accounts: VecDeque<(AccountBox, time::Timespec)>,
 }
 
 impl StarMapServer {
@@ -86,6 +89,7 @@ impl StarMapServer {
         StarMapServer {
             slot: slot,
             sectors: sectors,
+            jumping_accounts: VecDeque::new(),
         }
     }
     
@@ -120,9 +124,18 @@ impl StarMapServer {
             
             // Send any jumping ships to their new sector
             for sector in self.sectors.values() {
-                if let Ok(mut account) = sector.from_sector.try_recv() {
+                if let Ok(account) = sector.from_sector.try_recv() {
+                    self.jumping_accounts.push_back((account, time::now().to_timespec() + time::Duration::milliseconds(6500)));
+                }
+            }
+            
+            while let Some((mut account, jump_time)) = self.jumping_accounts.pop_front() {
+                if (time::now().to_timespec() - jump_time).num_milliseconds() < 0 {
+                    self.jumping_accounts.push_front((account, jump_time));
+                    break;
+                } else {
                     let client_id = account.client_id.expect("This needs to have a client ID");
-                    
+                        
                     let target_sector =
                         {
                             let ship = account.ship.as_mut().expect("Ship must exist");

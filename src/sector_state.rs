@@ -83,16 +83,18 @@ impl SectorState {
             // Get the current time from our turn timer
             let turn_time = time::now().to_timespec() - self.turn_start_time;
             
-            if !self.simulated_turn && turn_time.num_milliseconds() > 3500 {
+            if !self.simulated_turn && turn_time.num_milliseconds() >= 3500 {
                 self.simulate_next_turn(&to_map_sender);
 
                 self.simulated_turn = true;
             }
             
-            if turn_time.num_milliseconds() >= 5000 {
+            if turn_time.num_milliseconds() >= 5500 {
                 // Reset the turn stuff
                 self.simulated_turn = false;
                 self.turn_start_time = time::now().to_timespec();
+                
+                self.send_turn_tick();
             }
         
             ///////////////////////////////////////////////////////////
@@ -341,5 +343,13 @@ impl SectorState {
         
         self.ships_to_add.clear();
         self.ships_to_remove.clear();
+    }
+    
+    fn send_turn_tick(&mut self) {
+        if self.debug {
+            println!("Sending tick");
+        }
+
+        self.slot.broadcast(OutPacket::new());
     }
 }

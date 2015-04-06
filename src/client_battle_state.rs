@@ -39,7 +39,7 @@ impl<'a> ClientBattleState<'a> {
         }
     }
     
-    pub fn run(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>, start_at_sim: bool) {
+    pub fn run(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>, server_results_sent: bool) {
         use window::ShouldClose;
         use quack::Get;
     
@@ -48,6 +48,11 @@ impl<'a> ClientBattleState<'a> {
         let ref mut sim_effects = SimEffects::new();
         
         // TODO display joining screen here
+        
+        if server_results_sent {
+            // Wait for the tick
+            self.client.receive();
+        }
         
         // Get first turn's results
         self.receive_new_ships(gui);
@@ -64,6 +69,9 @@ impl<'a> ClientBattleState<'a> {
         loop {
             ////////////////////////////////
             // Simulate
+            
+            // Wait for the tick
+            self.client.receive();
             
             // Receive simulation results
             self.receive_new_ships(gui);

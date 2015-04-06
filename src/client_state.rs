@@ -26,7 +26,7 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, g
         // Receive the ships from the server
         let mut packet = client.receive();
         let my_ship: ShipNetworked = packet.read().ok().expect("Failed to read my Ship");
-        let start_at_sim = packet.read().ok().expect("Failed to read start_at_sim from server");
+        let server_results_sent = packet.read().ok().expect("Failed to read server_results_sent from server");
         let ships: Vec<ShipNetworked> = match packet.read() {
             Ok(ships) => ships,
             Err(e) => panic!("Unable to receive ships froms server: {}", e),
@@ -41,6 +41,6 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, g
         
         let mut battle = ClientBattleState::new(&mut client, battle_context);
 
-        battle.run(window, gl, glyph_cache, asset_store, sectors.clone(), start_at_sim);
+        battle.run(window, gl, glyph_cache, asset_store, sectors.clone(), server_results_sent);
     }
 }
