@@ -89,7 +89,7 @@ impl SectorState {
                 self.simulated_turn = true;
             }
             
-            if turn_time.num_milliseconds() >= 5500 {
+            if turn_time.num_milliseconds() >= 5000 {
                 // Reset the turn stuff
                 self.simulated_turn = false;
                 self.turn_start_time = time::now().to_timespec();
@@ -280,6 +280,9 @@ impl SectorState {
             ship.state.plan_power = ship.state.power;
 
             if let Some(client_id) = ship.client_id {
+                // Send the last tick
+                self.send_last_tick(client_id);
+            
                 let ship_stored = ShipStored::from_ship(ship);
                 
                 let mut account = self.accounts.remove(&client_id).expect("Client's account must exist here.");
@@ -350,6 +353,18 @@ impl SectorState {
             println!("Sending tick");
         }
 
-        self.slot.broadcast(OutPacket::new());
+        let mut packet = OutPacket::new();
+        packet.write(&ClientPacketId::Tick);
+        self.slot.broadcast(packet);
+    }
+    
+    fn send_last_tick(&mut self, client_id: ClientId) {
+        if self.debug {
+            println!("Sending tick");
+        }
+
+        let mut packet = OutPacket::new();
+        packet.write(&ClientPacketId::LastTick);
+        self.slot.send(client_id, packet);
     }
 }

@@ -196,4 +196,6 @@ pub enum ServerPacketId {
 #[derive(Debug, PartialEq, RustcEncodable, RustcDecodable)]
 pub enum ClientPacketId {
     SimResults, // Calculated simulation results from server
+    Tick,
+    LastTick,
 }

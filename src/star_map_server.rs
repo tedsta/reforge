@@ -125,7 +125,7 @@ impl StarMapServer {
             // Send any jumping ships to their new sector
             for sector in self.sectors.values() {
                 if let Ok(account) = sector.from_sector.try_recv() {
-                    self.jumping_accounts.push_back((account, time::now().to_timespec() + time::Duration::milliseconds(6500)));
+                    self.jumping_accounts.push_back((account, time::now().to_timespec() + time::Duration::milliseconds(6000)));
                 }
             }
             

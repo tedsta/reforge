@@ -592,7 +592,7 @@ impl TargetIcon {
             match ship.get_height() {
                 1...2 => asset_store.get_texture_str("gui/small_target.png"),
                 3 => asset_store.get_texture_str("gui/medium_target.png"),
-                4...8 => asset_store.get_texture_str("gui/big_target.png"),
+                4...255 => asset_store.get_texture_str("gui/big_target.png"),
                 _ => unreachable!(),
             };
         
