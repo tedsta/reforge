@@ -132,7 +132,7 @@ impl SectorState {
                 let mut packet = OutPacket::new();
                 packet.write(&ShipNetworked::from_ship(&ship));
                 packet.write(&self.simulated_turn); // Whether or not to start at simulation instead of planning phase
-                packet.write(&as_networked_ships(&self.context.ships_list)).unwrap();
+                packet.write(&as_networked_ships(&self.context.ships)).unwrap();
                 self.slot.send(client_id, packet);
                 
                 // Add the player's ship
@@ -191,9 +191,9 @@ impl SectorState {
         self.send_new_ships();
     
         // Run AI on ships with no client
-        for ship in self.context.ships_list.iter() {
+        for ship in self.context.ships.iter() {
             let ship_id = ship.borrow().id;
-            let enemies = &self.context.ships_list.iter().filter(|s| s.borrow().id != ship_id).map(|s| s.clone()).collect();
+            let enemies = &self.context.ships.iter().filter(|s| s.borrow().id != ship_id).map(|s| s.clone()).collect();
             
             let mut ship = ship.borrow_mut();
             if ship.client_id.is_none() {
@@ -203,7 +203,7 @@ impl SectorState {
         }
         
         // Let the ships that want to jump jump, if they can
-        for ship in self.context.ships_list.iter() {
+        for ship in self.context.ships.iter() {
             let mut ship = ship.borrow_mut();
             if ship.target_sector.is_some() {
                 ship.jumping = true;
@@ -226,7 +226,7 @@ impl SectorState {
         // Finish the results packet with ships to add and remove
         let mut new_ships = vec!();
         let mut dead_ships = vec!();
-        for ship in self.context.ships_list.iter() {
+        for ship in self.context.ships.iter() {
             let ship = ship.borrow();
             
             // Replace dead ships with better ships
@@ -256,7 +256,7 @@ impl SectorState {
         
         // Send off all the ships that jumped
         let mut jumped_ships = vec!();
-        for ship in self.context.ships_list.iter() {
+        for ship in self.context.ships.iter() {
             if let Some(sector_id) = ship.borrow().target_sector {
                 jumped_ships.push(ship.clone());
                 self.ships_to_remove.push(ship.borrow().id);
