@@ -147,7 +147,7 @@ impl<'a> ClientBattleState<'a> {
             let elapsed_time = current_time - start_time;
             let elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000.0;
             
-            if !self.last_tick && !plans_sent && elapsed_seconds >= 2.5 {
+            if !self.last_tick && !self.player_ship.borrow().exploding && !plans_sent && elapsed_seconds >= 2.5 {
                 // Send plans
                 let packet = self.build_plans_packet();
                 self.client.send(&packet);
@@ -156,7 +156,7 @@ impl<'a> ClientBattleState<'a> {
             }
             
             if !self.last_tick {
-                if plans_sent {
+                if plans_sent || self.player_ship.borrow().exploding {
                     if !new_ships_pre_received {
                         if let Ok(packet) = self.client.try_receive() {
                             self.new_ships_pre = Some(packet);
