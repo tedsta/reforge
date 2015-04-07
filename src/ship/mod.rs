@@ -382,12 +382,6 @@ impl Ship {
         }
     }
     
-    pub fn deactivate_broken_modules(&mut self) {
-        for module in &self.modules {
-            
-        }
-    }
-    
     pub fn on_ship_removed(&self, ship_id: ShipId) {
         for module in self.modules.iter() {
             module.borrow_mut().get_base_mut().on_ship_removed(ship_id);
