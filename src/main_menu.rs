@@ -12,7 +12,6 @@ use opengl_graphics::{Gl, Texture};
 #[derive(FromPrimitive, PartialEq)]
 pub enum MainMenuSelection {
     Multiplayer,
-    Tutorial,
     Exit,
 }
 
@@ -26,7 +25,6 @@ pub struct MainMenu {
     // Textures
     bg_texture: Texture,
     multiplayer_texture: Texture,
-    tutorial_texture: Texture,
     exit_texture: Texture,
 }
 
@@ -39,7 +37,6 @@ impl MainMenu {
             mouse_y: 0.0,
             bg_texture: Texture::from_path(&Path::new("content/textures/gui/main_menu.png")).unwrap(),
             multiplayer_texture: Texture::from_path(&Path::new("content/textures/gui/multiplayer.png")).unwrap(),
-            tutorial_texture: Texture::from_path(&Path::new("content/textures/gui/tutorial.png")).unwrap(),
             exit_texture: Texture::from_path(&Path::new("content/textures/gui/exit.png")).unwrap(),
         }
     }
@@ -96,9 +93,9 @@ impl MainMenu {
         use input::keyboard::Key;
         match key {
             Key::Up if self.selected > 0 => { self.selected -= 1; },
-            Key::Up if self.selected == 0 => { self.selected = 2; },
-            Key::Down if self.selected < 2 => { self.selected += 1; },
-            Key::Down if self.selected == 2 => { self.selected = 0; },
+            Key::Up if self.selected == 0 => { self.selected = 1; },
+            Key::Down if self.selected < 1 => { self.selected += 1; },
+            Key::Down if self.selected == 1 => { self.selected = 0; },
             Key::Return => { self.done = true; },
             _ => {},
         }
@@ -110,8 +107,6 @@ impl MainMenu {
                 if self.is_mouse_over_button() == 0 {
                     self.done = true;
                 } else if self.is_mouse_over_button() == 1 {
-                    self.done = true;
-                } else if self.is_mouse_over_button() == 2 {
                     self.done = true;
                 } else {}
             },
@@ -129,7 +124,6 @@ impl MainMenu {
 
     fn is_mouse_over_button(&mut self) -> u8 {
         let (m_width, m_height) = self.multiplayer_texture.get_size();
-        let (t_width, t_height) = self.tutorial_texture.get_size();
         let (e_width, e_height) = self.exit_texture.get_size();
 
         let mut selected: u8; // is the "button" selected
@@ -138,12 +132,9 @@ impl MainMenu {
         if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (m_width as f64)) && 
             self.mouse_y > 300.0 && self.mouse_y < (300.0 + (m_height as f64)) {
             selected = 0;
-        } else if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (t_width as f64)) && 
-            self.mouse_y > 400.0 && self.mouse_y < (400.0 + (t_height as f64)) {
-            selected = 1;
         } else if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (e_width as f64)) && 
-            self.mouse_y > 500.0 && self.mouse_y < (500.0 + (e_height as f64)) {
-            selected = 2;
+            self.mouse_y > 400.0 && self.mouse_y < (400.0 + (e_height as f64)) {
+            selected = 1;
         }
 
         selected
@@ -158,8 +149,7 @@ impl MainMenu {
 
         image(&self.bg_texture, context.transform, gl);
         image(&self.multiplayer_texture, context.trans(550.0, 300.0).transform, gl);
-        image(&self.tutorial_texture, context.trans(550.0, 400.0).transform, gl);
-        image(&self.exit_texture, context.trans(550.0, 500.0).transform, gl);
+        image(&self.exit_texture, context.trans(550.0, 400.0).transform, gl);
 
         if self.selected == 0 {
             let context = context.trans(550.0, 300.0);
@@ -169,12 +159,6 @@ impl MainMenu {
         }
         if self.selected == 1 {
             let context = context.trans(550.0, 400.0);
-            Image::new()
-                .set(Color([1.0, 0.0, 0.0, 1.0]))
-                .draw(&self.tutorial_texture, &context.draw_state, context.transform, gl);
-        }
-        if self.selected == 2 {
-            let context = context.trans(550.0, 500.0);
             Image::new()
                 .set(Color([1.0, 0.0, 0.0, 1.0]))
                 .draw(&self.exit_texture, &context.draw_state, context.transform, gl);

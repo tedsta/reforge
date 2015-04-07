@@ -50,7 +50,6 @@ use login_screen::LoginScreen;
 use main_menu::{MainMenu, MainMenuSelection};
 use net::{Client, OutPacket};
 use star_map_gui::StarMapGui;
-use tutorial_state::TutorialState;
 
 // Server stuff
 use net::Server;
@@ -80,7 +79,6 @@ mod sim_visuals;
 mod space_gui;
 mod sprite_sheet;
 mod star_map_gui;
-mod tutorial_state;
 mod vec;
 
 // server stuff
@@ -126,7 +124,7 @@ fn main () {
     
     let music = sdl2_mixer::Music::from_file(&Path::new("content/audio/music/space.wav")).unwrap();
     
-    music.play(-1);
+    music.play(-1).ok().expect("Failed to play background music");
     
     // Create main menu
     let mut main_menu = MainMenu::new();
@@ -182,12 +180,6 @@ fn main () {
                     
                     run_client_state_manager(&window, gl, &mut glyph_cache, &asset_store, client);
                 }
-            },
-            MainMenuSelection::Tutorial => {                
-                // Create the tutorial state
-                let mut battle = TutorialState::new();
-
-                battle.run(&window, gl, &mut glyph_cache, &asset_store);
             },
             MainMenuSelection::Exit => {
                 
