@@ -20,6 +20,12 @@ use ship::{Ship, ShipId, ShipNetworked, ShipRef};
 use sim::{SimEvents, SimEffects};
 use space_gui::SpaceGui;
 
+#[derive(PartialEq)]
+pub enum ExitMode {
+    Jump,
+    Logout,
+}
+
 pub struct ClientBattleState<'a> {
     client: &'a mut Client,
     
@@ -50,7 +56,7 @@ impl<'a> ClientBattleState<'a> {
         }
     }
     
-    pub fn run(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>, server_results_sent: bool) {
+    pub fn run(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>, server_results_sent: bool) -> ExitMode {
         use window::ShouldClose;
         use quack::Get;
     
@@ -81,7 +87,7 @@ impl<'a> ClientBattleState<'a> {
         
         // Check if player jumped
         if self.player_ship.borrow().jumping {
-            return;
+            return ExitMode::Jump;
         }
     
         loop {
@@ -89,9 +95,6 @@ impl<'a> ClientBattleState<'a> {
             // Simulate
             
             // Receive simulation results
-            //self.receive_new_ships(gui);
-            //self.receive_simulation_results();
-            
             let mut new_ships_pre = self.new_ships_pre.take().expect("New ships pre packet must exist here");
             let mut results = self.results.take().expect("Results packet must exist here");
             let mut new_ships_post = self.new_ships_post.take().expect("New ships post packet must exist here");
@@ -101,19 +104,20 @@ impl<'a> ClientBattleState<'a> {
             
             self.run_simulation_phase(window, gl, glyph_cache, asset_store, gui, sim_effects);
             
-            // Check if player jumped
-            if self.player_ship.borrow().jumping {
-                break;
-            }
-            
             // Receive ships after sim
-            //self.receive_new_ships(gui);
             self.handle_new_ships_packet(gui, &mut new_ships_post);
             
             // Check if it's time to exit
             let ShouldClose(should_close) = window.borrow().get();
             if should_close { break; }
+            
+            // Check if player jumped
+            if self.player_ship.borrow().jumping {
+                break;
+            }
         }
+        
+        ExitMode::Jump
     }
     
     fn run_simulation_phase(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {

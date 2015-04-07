@@ -7,7 +7,7 @@ use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
 use battle_state::BattleContext;
-use client_battle_state::ClientBattleState;
+use client_battle_state::{ClientBattleState, ExitMode};
 use net::Client;
 use sector_data::SectorData;
 use ship::{ShipNetworked};
@@ -41,6 +41,10 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, g
         
         let mut battle = ClientBattleState::new(&mut client, battle_context);
 
-        battle.run(window, gl, glyph_cache, asset_store, sectors.clone(), server_results_sent);
+        let exit_mode = battle.run(window, gl, glyph_cache, asset_store, sectors.clone(), server_results_sent);
+        
+        if exit_mode == ExitMode::Logout {
+            break;
+        }
     }
 }

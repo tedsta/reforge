@@ -37,7 +37,7 @@ impl SectorState {
             if let Ok(msg) = self.slot.try_receive() {
                 match msg {
                     SlotInMsg::Joined(client_id) => {
-                        println!("Client {} joined battle {}", client_id, self.slot.get_id());
+                        println!("Client {} joined station {}", client_id, self.slot.get_id());
                     },
                     SlotInMsg::ReceivedPacket(client_id, mut packet) => { self.handle_packet(client_id, &mut packet); },
                     _ => {}
