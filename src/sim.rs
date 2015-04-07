@@ -2,8 +2,6 @@ use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use module::{ModuleRef, ModuleBox};
-
 // SimVisual imports
 #[cfg(feature = "client")]
 use graphics::Context;
@@ -17,11 +15,11 @@ use ship::ShipId;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub trait SimEvent {
-    fn apply(&mut self, &mut ModuleBox);
+    fn apply(&mut self);
 }
 
 pub struct SimEvents<'a> {
-    events: Vec<Vec<(ModuleRef, Box<SimEvent+'a>)>>,
+    events: Vec<Vec<Box<SimEvent+'a>>>,
 }
 
 impl<'a> SimEvents<'a> {
@@ -37,28 +35,13 @@ impl<'a> SimEvents<'a> {
     
     pub fn apply_tick(&mut self, tick: u32) {
         let tick = tick as usize;
-        while self.events[tick].len() > 0 {
-            let (module, mut event) = self.events[tick].pop().unwrap();
-            event.apply(module.borrow_mut().deref_mut());
+        for mut event in self.events[tick].drain() {
+            event.apply();
         }
     }
     
-    pub fn create_adder<'b>(&'b mut self, module: ModuleRef) -> SimEventAdder<'a, 'b> {
-        SimEventAdder {
-            sim_events: self,
-            module: module,
-        }
-    }
-}
-
-pub struct SimEventAdder<'a: 'b, 'b> {
-    sim_events: &'b mut SimEvents<'a>,
-    module: ModuleRef,
-}
-
-impl<'a, 'b> SimEventAdder<'a, 'b> {
     pub fn add(&mut self, tick: u32, event: Box<SimEvent+'a>) {
-        self.sim_events.events[tick as usize].push((self.module.clone(), event));
+        self.events[tick as usize].push(event);
     }
 }
 

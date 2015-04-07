@@ -1,4 +1,4 @@
-use battle_state::BattleContext;
+use battle_context::BattleContext;
 use ship::{ShipId, ShipRef};
 use vec::{Vec2, Vec2f};
 

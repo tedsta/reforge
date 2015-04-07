@@ -6,8 +6,8 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
-use battle_state::BattleContext;
-use client_battle_state::{ClientBattleState, ExitMode};
+use battle_context::BattleContext;
+use sector_client::{ClientBattleState, ExitMode};
 use net::Client;
 use sector_data::SectorData;
 use ship::{ShipNetworked};

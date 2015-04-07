@@ -10,7 +10,7 @@ use sdl2_window::Sdl2Window;
 
 use ai::run_ai;
 use asset_store::AssetStore;
-use battle_state::{BattleContext, TICKS_PER_SECOND};
+use battle_context::{BattleContext, TICKS_PER_SECOND};
 use ship::{Ship, ShipRef};
 use sim::{SimEvents, SimEffects};
 use space_gui::SpaceGui;

@@ -4,7 +4,7 @@ use std::any::TypeId;
 
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
-use battle_state::BattleContext;
+use battle_context::BattleContext;
 use module::{
     DamageVisual,
     IModule,

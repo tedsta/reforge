@@ -6,10 +6,10 @@ use std::rand;
 use std::rand::Rng;
 use std::marker::Reflect;
 
-use battle_state::BattleContext;
+use battle_context::BattleContext;
 use net::{InPacket, OutPacket};
 use ship::{ShipId, ShipRef, ShipState};
-use sim::{SimEventAdder, SimEvents};
+use sim::SimEvents;
 use vec::{Vec2, Vec2f};
 
 #[cfg(feature = "client")]
@@ -45,7 +45,7 @@ pub mod module_networked;
 pub trait IModule : Send {
     fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
 
-    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEventAdder);
+    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEvents);
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
@@ -90,7 +90,7 @@ pub trait IModuleRef {
     
     fn server_preprocess(&mut self, ship_state: &mut ShipState);
 
-    fn before_simulation(&mut self, ship: &ShipRef, events: &mut SimEventAdder);
+    fn before_simulation(&mut self, ship: &ShipRef, events: &mut SimEvents);
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
     #[cfg(feature = "client")]
@@ -143,7 +143,7 @@ impl<M> IModuleRef for Module<M>
         self.module.server_preprocess(&mut self.base, ship_state);
     }
     
-    fn before_simulation(&mut self, ship: &ShipRef, events: &mut SimEventAdder) {
+    fn before_simulation(&mut self, ship: &ShipRef, events: &mut SimEvents) {
         self.module.before_simulation(&mut self.base, ship, events);
     }
     

@@ -22,13 +22,13 @@ use net::Server;
 use star_map_server::StarMapServer;
 
 mod ai;
-mod battle_state;
+mod battle_context;
 mod battle_type;
 mod login;
 mod module;
 mod net;
 mod sector_data;
-mod sector_state;
+mod sector_server;
 mod ship;
 mod sim;
 mod sim_events;

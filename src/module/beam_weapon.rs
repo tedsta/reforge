@@ -3,12 +3,12 @@ use graphics::Context;
 #[cfg(feature = "client")]
 use opengl_graphics::Gl;
 
-use battle_state::BattleContext;
+use battle_context::BattleContext;
 use module;
 use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
-use sim::SimEventAdder;
+use sim::SimEvents;
 use sim_events::DamageEvent;
 use vec::{Vec2, Vec2f};
 
@@ -37,7 +37,7 @@ impl IModule for BeamWeaponModule {
     fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
     }
     
-    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEventAdder) {
+    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEvents) {
         if base.powered {
             if let Some(ref target) = base.target {
                 let ref target_ship = target.ship;

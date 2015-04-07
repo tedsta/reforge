@@ -3,12 +3,12 @@ use graphics::Context;
 #[cfg(feature = "client")]
 use opengl_graphics::Gl;
 
-use battle_state::BattleContext;
+use battle_context::BattleContext;
 use module;
 use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
-use sim::SimEventAdder;
+use sim::SimEvents;
 use vec::{Vec2, Vec2f};
 
 #[cfg(feature = "client")]
@@ -36,7 +36,7 @@ impl IModule for EngineModule {
     fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
     }
     
-    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEventAdder) {
+    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEvents) {
     }
     
     #[cfg(feature = "client")]

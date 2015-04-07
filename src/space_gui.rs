@@ -11,7 +11,7 @@ use opengl_graphics::{Gl, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use asset_store::AssetStore;
-use battle_state::BattleContext;
+use battle_context::BattleContext;
 use gui::TextButton;
 use module;
 use module::{IModule, ModuleBox, ModuleRef};

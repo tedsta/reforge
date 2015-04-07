@@ -3,7 +3,7 @@ use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::Builder;
 use time;
 
-use battle_state::BattleContext;
+use battle_context::BattleContext;
 use login::AccountBox;
 use net::{
     OutPacket,
@@ -12,7 +12,7 @@ use net::{
     SlotInMsg,
 };
 use sector_data::{SectorData, SectorId};
-use sector_state::SectorState;
+use sector_server::SectorState;
 use vec::Vec2;
 
 pub struct Sector {
@@ -57,8 +57,8 @@ impl StarMapServer {
             .name(format!("sector_{}_thread", 0))
             .stack_size(8388608)
             .spawn(move || {
-                let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
-                sector_state.run(from_sector_sender, to_sector_receiver, ack_sender, false);
+                let mut sector_server = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
+                sector_server.run(from_sector_sender, to_sector_receiver, ack_sender, false);
             });
         
         // Sector 1
@@ -82,8 +82,8 @@ impl StarMapServer {
             .name(format!("sector_{}_thread", 1))
             .stack_size(8388608)
             .spawn(move || {
-                let mut sector_state = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
-                sector_state.run(from_sector_sender, to_sector_receiver, ack_sender, true);
+                let mut sector_server = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
+                sector_server.run(from_sector_sender, to_sector_receiver, ack_sender, true);
             });
         
         StarMapServer {

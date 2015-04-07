@@ -10,12 +10,12 @@ use graphics::Context;
 #[cfg(feature = "client")]
 use opengl_graphics::Gl;
 
-use battle_state::{BattleContext, TICKS_PER_SECOND};
+use battle_context::{BattleContext, TICKS_PER_SECOND};
 use module;
 use module::{IModule, Module, ModuleRef, ModuleBase, ModuleBox};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipRef, ShipState};
-use sim::{SimEvent, SimEventAdder};
+use sim::SimEvents;
 use sim_events::DamageEvent;
 use vec::{Vec2, Vec2f};
 
@@ -84,7 +84,7 @@ impl IModule for ProjectileWeaponModule {
         }
     }
 
-    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEventAdder) {
+    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEvents) {
         if base.powered {
             if let Some(ref target) = base.target {
                 let ref target_ship = target.ship;

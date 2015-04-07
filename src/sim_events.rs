@@ -21,7 +21,7 @@ impl DamageEvent {
 }
 
 impl SimEvent for DamageEvent {
-    fn apply(&mut self, module: &mut ModuleBox) {
+    fn apply(&mut self) {
         let mut ship = self.ship.borrow_mut();
         ship.deal_damage(self.module.borrow_mut().deref_mut(), self.damage);
     }

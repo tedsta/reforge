@@ -13,7 +13,7 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
-use battle_state::{BattleContext, ClientPacketId, ServerPacketId, TICKS_PER_SECOND};
+use battle_context::{BattleContext, ClientPacketId, ServerPacketId, TICKS_PER_SECOND};
 use net::{Client, InPacket, OutPacket};
 use sector_data::SectorData;
 use ship::{Ship, ShipId, ShipNetworked, ShipRef};

@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::cmp;
 use std::marker::Reflect;
 
-use battle_state::BattleContext;
+use battle_context::BattleContext;
 use module;
 use module::{
     IModule,
@@ -358,7 +358,7 @@ impl Ship {
     
     pub fn before_simulation(&self, events: &mut SimEvents, ship_ref: &ShipRef) {
         for module in self.modules.iter() {
-            module.borrow_mut().before_simulation(ship_ref, &mut events.create_adder(module.clone()));
+            module.borrow_mut().before_simulation(ship_ref, events);
         }
     }
     
