@@ -219,6 +219,15 @@ impl<'a> ClientBattleState<'a> {
         
         // After simulation
         self.context.after_simulation();
+        
+        // Set all the dead ships to exploding
+        for ship in &self.context.ships {
+            let mut ship = ship.borrow_mut();
+            
+            if ship.state.get_hp() == 0 {
+                ship.exploding = true;
+            }
+        }
     }
     
     fn build_plans_packet(&mut self) -> OutPacket {

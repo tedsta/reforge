@@ -204,6 +204,8 @@ pub struct Ship {
     
     // Whether or not the ship successfully jumped
     pub jumping: bool,
+    
+    pub exploding: bool,
 }
 
 impl Ship {
@@ -222,6 +224,7 @@ impl Ship {
             
             target_sector: None,
             jumping: false,
+            exploding: false,
         }
     }
     
@@ -371,8 +374,44 @@ impl Ship {
     
     #[cfg(feature = "client")]
     pub fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship_ref: &ShipRef) {
+        if self.exploding {
+            self.add_exploding_effects(asset_store, effects, ship_ref);
+        } else {
+            for module in self.modules.iter() {
+                module.borrow().add_simulation_effects(asset_store, effects, ship_ref);
+            }
+        }
+    }
+    
+    #[cfg(feature = "client")]
+    fn add_exploding_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship_ref: &ShipRef) {
+        use std::rand;
+        use std::rand::Rng;
+    
+        use sim_visuals::SpriteVisual;
+        use sprite_sheet::{SpriteSheet, SpriteAnimation};
+    
         for module in self.modules.iter() {
-            module.borrow().add_simulation_effects(asset_store, effects, ship_ref);
+            module.borrow_mut().get_base_mut().hp = 0;
+            module.borrow().add_plan_effects(asset_store, effects, ship_ref);
+        }
+        
+        // Random number generater
+        let mut rng = rand::thread_rng();
+    
+        for _ in 0..50 {
+            let x = rng.gen::<f64>() * ((self.width as f64) * 48.0);
+            let y = rng.gen::<f64>() * ((self.height as f64) * 48.0);
+            let time = rng.gen::<f64>() * 4.5;
+        
+            let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/ship_explosion1.png"));
+            sprite.centered = true;
+            sprite.add_animation(SpriteAnimation::PlayOnce(time, time+0.5, 0, 8));
+        
+            effects.add_visual(self.id, 2, box SpriteVisual {
+                position: Vec2 { x: x, y: y },
+                sprite_sheet: sprite,
+            });
         }
     }
     
@@ -620,6 +659,7 @@ impl ShipStored {
             level: self.level,
             target_sector: self.target_sector,
             jumping: false,
+            exploding: false,
         }
     }
 }
@@ -645,6 +685,7 @@ pub struct ShipNetworked {
     
     // Whether or not the ship successfully jumped
     pub jumping: bool,
+    pub exploding: bool,
 }
 
 impl ShipNetworked {
@@ -662,6 +703,7 @@ impl ShipNetworked {
             level: ship.level,
             target_sector: ship.target_sector,
             jumping: ship.jumping,
+            exploding: ship.exploding,
         }
     }
     
@@ -683,6 +725,7 @@ impl ShipNetworked {
             level: self.level,
             target_sector: self.target_sector,
             jumping: self.jumping,
+            exploding: self.exploding,
         }, module_targets)
     }
 }

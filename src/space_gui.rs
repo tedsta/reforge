@@ -659,7 +659,10 @@ struct ShipRenderArea {
 fn draw_ship(context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_effects: &mut SimEffects, ship: &Ship, time: f64) {
     ship.draw(context, gl, asset_store);
     sim_effects.update(context, gl, ship.id, time);
-    ship.draw_module_hp(context, gl);
+    
+    if !ship.exploding {
+        ship.draw_module_hp(context, gl);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

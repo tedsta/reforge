@@ -179,7 +179,10 @@ impl SectorState {
     
         ship.target_sector = packet.read().ok().expect("Failed to read player's target sector");
         let plans = packet.read().ok().expect("Failed to read player's plans");
-        ship.set_module_plans(&self.context, &plans);
+
+        if !ship.exploding {
+            ship.set_module_plans(&self.context, &plans);
+        }
     }
     
     fn simulate_next_turn(&mut self, to_map_sender: &Sender<AccountBox>) {
@@ -193,7 +196,11 @@ impl SectorState {
         // Run AI on ships with no client
         for ship in self.context.ships.iter() {
             let ship_id = ship.borrow().id;
-            let enemies = &self.context.ships.iter().filter(|s| s.borrow().id != ship_id).map(|s| s.clone()).collect();
+            let enemies = 
+                &self.context.ships.iter()
+                    .filter(|s| s.borrow().id != ship_id && !s.borrow().exploding)
+                    .map(|s| s.clone())
+                    .collect();
             
             let mut ship = ship.borrow_mut();
             if ship.client_id.is_none() {
@@ -230,7 +237,7 @@ impl SectorState {
             let ship = ship.borrow();
             
             // Replace dead ships with better ships
-            if ship.state.get_hp() == 0 {
+            if ship.exploding {
                 let mut better_ship = Ship::generate(ship.id, ship.name.clone(), ship.level + 1);
                 better_ship.client_id = ship.client_id;
                 let better_ship = Rc::new(RefCell::new(better_ship));
@@ -253,6 +260,21 @@ impl SectorState {
         for new_ship in new_ships.into_iter() {
             self.context.add_ship(new_ship);
         }
+        
+        // Handle all the ships that need to start exploding
+        //let mut exploding_ships = vec!();
+        for ship in self.context.ships.iter() {
+            let mut ship = ship.borrow_mut();
+            
+            // Replace dead ships with better ships
+            if ship.state.get_hp() == 0 {
+                ship.exploding = true;
+                //exploding_ships.push(ship.id);
+            }
+        }
+        //let mut exploding_packet = OutPacket::new();
+        //exploding_packet.write(&exploding_ships);
+        //self.slot.broadcast(exploding_packet);
         
         // Send off all the ships that jumped
         let mut jumped_ships = vec!();

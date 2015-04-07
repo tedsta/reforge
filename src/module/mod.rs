@@ -278,7 +278,7 @@ pub struct ModuleBase {
 
     // Module stats
     power: u8,     // Power consumption
-    hp: u8,        // Total current HP of module, including armor
+    pub hp: u8,    // Total current HP of module, including armor
     min_hp: u8,    // Minimum HP for the module to still operate
     max_hp: u8,    // Maximum HP of module, including armor
     
