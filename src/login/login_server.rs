@@ -26,8 +26,13 @@ pub fn run_login_server(slot: ServerSlot, star_map_slot_id: ServerSlotId, star_m
                 let LoginPacket{username: username, password: password} = packet.read().ok().expect("Failed to receive login packet");
                 
                 match account_manager.login_account(username.clone(), password.clone(), client_id) {
-                    Ok(account) => {
+                    Ok(mut account) => {
                         // Login ok
+                        
+                        // Create ship if the player doesn't have a ship
+                        let player_ship = ShipStored::from_ship(Ship::generate(client_id as ShipId, username.clone(), 5));
+                        account.ship = Some(player_ship);
+                            
                         slot.transfer_client(account.client_id.expect("This must have a client ID"), star_map_slot_id);
                         star_map_chan.send(account);
                     },
