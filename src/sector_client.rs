@@ -222,6 +222,10 @@ impl<'a> ClientBattleState<'a> {
         
         // Set all the dead ships to exploding
         for ship in &self.context.ships {
+            // Remove all locks on this exploding ship
+            let ship_id = ship.borrow().id;
+            self.context.on_ship_removed(ship_id);
+        
             let mut ship = ship.borrow_mut();
             
             if ship.state.get_hp() == 0 {
