@@ -412,6 +412,8 @@ impl Ship {
                 position: Vec2 { x: x, y: y },
                 sprite_sheet: sprite,
             });
+            
+            effects.add_sound(time, 0, asset_store.get_sound(&"effects/ship_explosion1.ogg".to_string()).clone());
         }
     }
     

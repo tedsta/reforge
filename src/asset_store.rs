@@ -37,6 +37,11 @@ impl AssetStore {
             Rc::new(RefCell::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/beam1.ogg"))
                 .ok().expect("Failed to load sound")))
         );
+        sounds.insert(
+            "effects/ship_explosion1.ogg".to_string(),
+            Rc::new(RefCell::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/ship_explosion1.ogg"))
+                .ok().expect("Failed to load sound")))
+        );
         
         sounds.get_mut("effects/laser.wav").expect("This should exist").borrow_mut().set_volume(32);
         sounds.get_mut("effects/small_explosion.wav").expect("This should exist").borrow_mut().set_volume(32);
