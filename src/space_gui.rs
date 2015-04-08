@@ -429,14 +429,16 @@ impl SpaceGui {
                     let x = x - self.render_area.x - ENEMY_OFFSET_X;
                     let y = y - self.render_area.y - ENEMY_OFFSET_Y;
                     if let Some(ref ship) = self.render_area.ship {
-                        apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
-                            selected_module.borrow_mut().get_base_mut().plan_target =
-                                Some(module::Target {
-                                    ship: ship.clone(),
-                                    data: module::TargetData::TargetModule(module.clone()),
-                                });
-                            clear_selection = true;
-                        });
+                        if !ship.borrow().jumping && !ship.borrow().exploding {
+                            apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
+                                selected_module.borrow_mut().get_base_mut().plan_target =
+                                    Some(module::Target {
+                                        ship: ship.clone(),
+                                        data: module::TargetData::TargetModule(module.clone()),
+                                    });
+                                clear_selection = true;
+                            });
+                        }
                     }
                 },
                 module::TargetMode::OwnModule => {
@@ -458,17 +460,19 @@ impl SpaceGui {
                     
                     if x >= 0.0 && y >= 0.0 {
                         if let Some(ref ship) = self.render_area.ship {
-                            if let Some(beam_start) = self.beam_targeting_state {
-                                let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
-                                selected_module.borrow_mut().get_base_mut().plan_target =
-                                    Some(module::Target {
-                                        ship: ship.clone(),
-                                        data: module::TargetData::Beam(beam_start, beam_end),
-                                    });
-                                clear_selection = true;
-                                self.beam_targeting_state = None;
-                            } else {
-                                self.beam_targeting_state = Some(Vec2 { x: x, y: y });
+                            if !ship.borrow().jumping && !ship.borrow().exploding {
+                                if let Some(beam_start) = self.beam_targeting_state {
+                                    let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
+                                    selected_module.borrow_mut().get_base_mut().plan_target =
+                                        Some(module::Target {
+                                            ship: ship.clone(),
+                                            data: module::TargetData::Beam(beam_start, beam_end),
+                                        });
+                                    clear_selection = true;
+                                    self.beam_targeting_state = None;
+                                } else {
+                                    self.beam_targeting_state = Some(Vec2 { x: x, y: y });
+                                }
                             }
                         }
                     }
