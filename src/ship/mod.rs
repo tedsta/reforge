@@ -392,7 +392,7 @@ impl Ship {
         use sprite_sheet::{SpriteSheet, SpriteAnimation};
     
         for module in self.modules.iter() {
-            module.borrow_mut().get_base_mut().hp = 0;
+            module.borrow_mut().get_base_mut().stats.hp = 0;
             module.borrow().add_plan_effects(asset_store, effects, ship_ref);
         }
         

@@ -268,6 +268,13 @@ pub struct ModulePlans {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#[derive(Copy, Clone, RustcEncodable, RustcDecodable)]
+pub struct ModuleStats {
+    pub hp: u8,
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #[derive(Clone)]
 pub struct ModuleBase {
     // Module position/size stuff
@@ -276,9 +283,9 @@ pub struct ModuleBase {
     pub width: u8,
     pub height: u8,
 
-    // Module stats
+    pub stats: ModuleStats,
+    
     power: u8,     // Power consumption
-    pub hp: u8,    // Total current HP of module, including armor
     min_hp: u8,    // Minimum HP for the module to still operate
     max_hp: u8,    // Maximum HP of module, including armor
     
@@ -302,8 +309,9 @@ impl ModuleBase {
             width: width,
             height: height,
             
+            stats: ModuleStats { hp: hp },
+            
             power: power,
-            hp: hp,
             min_hp: min_hp,
             max_hp: hp,
             
@@ -324,7 +332,7 @@ impl ModuleBase {
     }
     
     pub fn get_hp(&self) -> u8 {
-        self.hp
+        self.stats.hp
     }
     
     pub fn get_min_hp(&self) -> u8 {
@@ -336,31 +344,31 @@ impl ModuleBase {
     }
     
     pub fn can_activate(&self) -> bool {
-        self.power > 0 && !self.powered && self.hp >= self.min_hp
+        self.power > 0 && !self.powered && self.stats.hp >= self.min_hp
     }
     
     pub fn can_plan_activate(&self) -> bool {
-        self.power > 0 && !self.plan_powered && self.hp >= self.min_hp
+        self.power > 0 && !self.plan_powered && self.stats.hp >= self.min_hp
     }
     
     pub fn is_active(&self) -> bool {
-        self.hp >= self.min_hp && (self.powered || self.power == 0)
+        self.stats.hp >= self.min_hp && (self.powered || self.power == 0)
     }
     
     // Returns the amount of damage dealt
     pub fn deal_damage(&mut self, damage: u8) -> u8 {
         let dealt_damage =
-            if self.hp >= damage {
-                self.hp -= damage;
+            if self.stats.hp >= damage {
+                self.stats.hp -= damage;
                 damage
             } else {
-                let dealt_damage = self.hp;
-                self.hp = 0;
+                let dealt_damage = self.stats.hp;
+                self.stats.hp = 0;
                 dealt_damage
             };
         
         // Create damage visual at random location
-        if self.hp < self.min_hp {
+        if self.stats.hp < self.min_hp {
             // Random number generater
             let mut rng = rand::thread_rng();
             
@@ -466,9 +474,9 @@ pub struct ModuleBaseStored {
     pub width: u8,
     pub height: u8,
 
-    // Module stats
+    stats: ModuleStats,
+    
     power: u8,     // Power consumption
-    hp: u8,        // Total current HP of module, including armor
     min_hp: u8,    // Minimum HP for the module to still operate
     max_hp: u8,    // Maximum HP of module, including armor
     
@@ -485,8 +493,9 @@ impl ModuleBaseStored {
             width: module_base.width,
             height: module_base.height,
             
+            stats: module_base.stats,
+            
             power: module_base.power,
-            hp: module_base.hp,
             min_hp: module_base.min_hp,
             max_hp: module_base.max_hp,
             
@@ -503,8 +512,9 @@ impl ModuleBaseStored {
             width: self.width,
             height: self.height,
             
+            stats: self.stats,
+            
             power: self.power,
-            hp: self.hp,
             min_hp: self.min_hp,
             max_hp: self.max_hp,
             
