@@ -69,11 +69,11 @@ impl IModule for EngineModule {
     fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
     }
     
-    fn on_activated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
+    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
         ship_state.thrust += 1;
     }
     
-    fn on_deactivated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
+    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
         ship_state.thrust -= 1;
     }
     

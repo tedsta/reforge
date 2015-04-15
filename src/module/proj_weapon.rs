@@ -255,12 +255,6 @@ impl IModule for ProjectileWeaponModule {
         }
     }
     
-    fn on_activated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
-    }
-    
-    fn on_deactivated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
-    }
-    
     fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
         Some(module::TargetMode::TargetModule)
     }

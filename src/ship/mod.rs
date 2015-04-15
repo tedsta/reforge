@@ -14,6 +14,7 @@ use module::{
     ModuleBase,
     ModuleBox,
     ModuleRef,
+    ModuleStats,
     ModuleStoredBox,
     ModuleNetworkedBox,
     NetworkTarget,
@@ -40,16 +41,18 @@ use space_gui::ModuleIcons;
 mod ship_gen;
 
 // Holds everything about the ship's damage, capabilities, etc.
-#[derive(Clone, Copy, RustcEncodable, RustcDecodable)]
+#[derive(Clone, RustcEncodable, RustcDecodable)]
 pub struct ShipState {
     pub hp: u8,
     total_module_hp: u8, // Sum of HP of all modules, used to recalculate HP when damaged
-    pub power: u8,
+    pub power_use: u8,
+    pub plan_power_use: u8, // Keeps track of power for planning
     pub max_power: u8,
-    pub plan_power: u8, // Keeps track of power for planning
     pub thrust: u8,
     pub shields: u8,
     pub max_shields: u8,
+    
+    pub module_stats: Vec<ModuleStats>,
 }
 
 impl ShipState {
@@ -57,17 +60,35 @@ impl ShipState {
         ShipState {
             hp: 0,
             total_module_hp: 0,
-            power: 0,
+            power_use: 0,
+            plan_power_use: 0,
             max_power: 0,
-            plan_power: 0,
             thrust: 0,
             shields: 0,
             max_shields: 0,
+            
+            module_stats: vec!(),
+        }
+    }
+    
+    pub fn available_power(&self) -> u8 {
+        if self.max_power > self.power_use {
+            self.max_power - self.power_use
+        } else {
+            0
+        }
+    }
+    
+    pub fn available_plan_power(&self) -> u8 {
+        if self.max_power > self.plan_power_use {
+            self.max_power - self.plan_power_use
+        } else {
+            0
         }
     }
     
     pub fn can_activate_module(&self, module: &ModuleBase) -> bool {
-        if module.can_activate() && self.power >= module.get_power() {
+        if module.can_activate() && self.available_power() >= module.get_power() {
             true
         } else {
             false
@@ -75,20 +96,20 @@ impl ShipState {
     }
     
     pub fn can_plan_activate_module(&self, module: &ModuleBase) -> bool {
-        if module.can_plan_activate() && self.plan_power >= module.get_power() {
+        if module.can_plan_activate() && self.available_plan_power() >= module.get_power() {
             true
         } else {
             false
         }
     }
     
-    pub fn activate_module(&mut self, module: &mut ModuleBase) {
-        self.plan_power -= module.get_power();
+    pub fn plan_activate_module(&mut self, module: &mut ModuleBase) {
+        self.plan_power_use += module.get_power();
         module.plan_powered = true;
     }
     
-    pub fn deactivate_module(&mut self, module: &mut ModuleBase) {
-        self.plan_power += module.get_power();
+    pub fn plan_deactivate_module(&mut self, module: &mut ModuleBase) {
+        self.plan_power_use -= module.get_power();
         module.plan_powered = false;
     }
     
@@ -100,71 +121,32 @@ impl ShipState {
         // Can't deal more damage than there is HP
         let damage = cmp::min(self.hp, damage);
         
-        // Get if module was active before damage
-        let was_active = module.get_base().is_active();
-        
         if self.shields > 0 {
             self.shields -= cmp::min(self.shields, damage);
         } else {
             // Get the amount of damage dealt to the module
-            let damage = module.get_base_mut().deal_damage(damage);
+            let damage =
+                self.module_stats
+                    .get_mut(module.get_base().index as usize)
+                    .expect("Failed to deal damage to non-existant module")
+                    .deal_damage(damage);
             
             // Adjust the ship's HP state
             self.hp -= damage;
-            
-            // If the module was active and can no longer be active, deactivate
-            if !module.get_base().is_active() {
-                if was_active {
-                    // Module just got deactivated
-                    self.return_power(module.get_base().get_power());
-                    module.get_base_mut().plan_powered = false;
-                    module.get_base_mut().powered = false;
-                    module.on_deactivated(self, modules);
-                } else if module.get_base_mut().plan_powered && !module.get_base_mut().can_activate() {
-                    self.deactivate_module(module.get_base_mut());
-                }
-            }
         }
     }
     
     pub fn add_power(&mut self, power: u8) {
-        self.power += power;
         self.max_power += power;
-        self.plan_power += power;
+    }
+    
+    pub fn remove_power(&mut self, power: u8, modules: &Vec<ModuleRef>) {        
+        self.max_power -= power;
     }
     
     pub fn return_power(&mut self, power: u8) {
-        self.power += power;
-        self.plan_power += power;
-    }
-    
-    pub fn remove_power(&mut self, power: u8, modules: &Vec<ModuleRef>) {
-        for module in modules.iter() {
-            if power <= self.power && power <= self.plan_power {
-                break;
-            } else {
-                // Attempt to borrow the module
-                match module.try_borrow_mut() {
-                    Some(mut module) => {
-                        if module.get_base().get_power() > 0 {
-                            if power > self.power && module.get_base().powered {
-                                self.return_power(module.get_base().get_power());
-                                module.get_base_mut().plan_powered = false;
-                                module.get_base_mut().powered = false;
-                                module.on_deactivated(self, modules);
-                            } else if power > self.plan_power && !module.get_base().powered && module.get_base().plan_powered {
-                                self.deactivate_module(module.get_base_mut());
-                            }
-                        }
-                    },
-                    None => {},
-                }
-            }
-        }
-        
-        self.power -= power;
-        self.max_power -= power;
-        self.plan_power -= power;
+        self.power_use -= power;
+        self.plan_power_use -= power;
     }
     
     pub fn add_shields(&mut self, shields: u8) {
@@ -260,6 +242,7 @@ impl Ship {
         // Add to state hp
         self.state.total_module_hp += module.get_base().get_hp();
         self.state.hp = self.state.total_module_hp/2;
+        self.state.module_stats.push(module.get_base().stats);
         
         // Modify the ship's dimensions
         self.width = cmp::max(self.width, module.get_base().x + module.get_base().width);
@@ -423,6 +406,64 @@ impl Ship {
         }
     }
     
+    pub fn apply_module_stats(&mut self) {
+        let module_stats: Vec<ModuleStats> = self.state.module_stats.iter().cloned().collect();
+        for (module, stats) in self.modules.iter().zip(module_stats.iter()) {
+            let mut module = module.borrow_mut();
+            
+            // Get if module was active before applying the stats
+            let was_active = module.get_base().is_active();
+            
+            if module.get_base().stats.hp != stats.hp {
+                module.get_base_mut().stats.hp = stats.hp;
+            }
+            
+            // Activate or deactivate module if the active state changed
+            if was_active && !module.get_base().is_active() {
+                // Module just got deactivated
+                self.state.power_use -= module.get_base().get_power();
+                module.get_base_mut().powered = false;
+                module.on_deactivated(&mut self.state, &self.modules);
+            }
+        }
+    }
+    
+    pub fn deactivate_unpowerable_modules(&mut self) {
+        // Plan power
+        for module in &self.modules {
+            if self.state.plan_power_use <= self.state.max_power {
+                break;
+            } else {
+                // Attempt to borrow the module
+                if let Some(mut module) = module.try_borrow_mut() {
+                    if module.get_base().get_power() > 0 {
+                        if !module.get_base().powered && module.get_base().plan_powered {
+                            self.state.plan_deactivate_module(module.get_base_mut());
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Power
+        for module in &self.modules {
+            if self.state.power_use <= self.state.max_power {
+                break;
+            } else {
+                // Attempt to borrow the module
+                if let Some(mut module) = module.try_borrow_mut() {
+                    if module.get_base().get_power() > 0 {
+                        if module.get_base().powered {
+                            self.state.power_use -= module.get_base().get_power();
+                            module.get_base_mut().powered = false;
+                            module.on_deactivated(&mut self.state, &self.modules);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     pub fn on_ship_removed(&self, ship_id: ShipId) {
         for module in self.modules.iter() {
             module.borrow_mut().get_base_mut().on_ship_removed(ship_id);
@@ -436,11 +477,11 @@ impl Ship {
             if module.get_base().plan_powered != module.get_base().powered {
                 if module.get_base().plan_powered && self.state.can_activate_module(module.get_base()) {
                     module.get_base_mut().powered = true;
-                    self.state.power -= module.get_base().get_power();
+                    self.state.power_use += module.get_base().get_power();
                     module.on_activated(&mut self.state, &self.modules);
                 } else if module.get_base().powered {
                     module.get_base_mut().powered = false;
-                    self.state.power += module.get_base().get_power();
+                    self.state.power_use -= module.get_base().get_power();
                     module.on_deactivated(&mut self.state, &self.modules);
                 }
                 
@@ -469,13 +510,13 @@ impl Ship {
     }
     
     pub fn write_results(&self, packet: &mut OutPacket) {
-        packet.write(&self.state.power);
+        packet.write(&self.state.power_use);
         
         // Jumping stuff
         packet.write(&self.jumping);
         
         // Modoule results
-        for module in self.modules.iter() {
+        for module in &self.modules {
             let module = module.borrow();
         
             // TODO: fix this ugliness when inheritance is a thing in Rust
@@ -488,19 +529,19 @@ impl Ship {
     }
     
     pub fn read_results(&mut self, context: &BattleContext, packet: &mut InPacket) {
-        self.state.power = packet.read().ok().expect("Failed to read ShipState power");
+        self.state.power_use = packet.read().ok().expect("Failed to read ShipState::power_use");
         self.jumping = packet.read().ok().expect("Failed to read Ship::jumping");
-        for module in self.modules.iter() {
+        for module in &self.modules {
             let mut module = module.borrow_mut();
             
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Read the base results
-            let was_powered = module.get_base_mut().powered;
+            let was_powered = module.get_base().powered;
             module.get_base_mut().powered = packet.read().ok().expect("Failed to read ModuleBase powered");
             
-            if !was_powered && module.get_base_mut().powered {
+            if !was_powered && module.get_base().powered {
                 module.on_activated(&mut self.state, &self.modules);
-            } else if was_powered && !module.get_base_mut().powered {
+            } else if was_powered && !module.get_base().powered {
                 module.on_deactivated(&mut self.state, &self.modules);
             }
             
@@ -698,7 +739,7 @@ impl ShipNetworked {
             id: ship.id,
             name: ship.name.clone(),
             client_id: ship.client_id,
-            state: ship.state,
+            state: ship.state.clone(),
             modules: ship.modules.iter().map(|m| m.borrow().to_module_networked()).collect(),
             width: ship.width,
             height: ship.height,

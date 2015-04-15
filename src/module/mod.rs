@@ -57,8 +57,8 @@ pub trait IModule : Send {
     fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {}
     fn read_results(&mut self, base: &mut ModuleBase, packet: &mut InPacket) {}
     
-    fn on_activated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>);
-    fn on_deactivated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>);
+    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {}
+    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {}
     
     ////////////////////
     // GUI stuff
@@ -172,11 +172,11 @@ impl<M> IModuleRef for Module<M>
     }
     
     fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
-        self.module.on_activated(&mut self.base, ship_state, modules);
+        self.module.on_activated(ship_state, modules);
     }
     
     fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
-        self.module.on_deactivated(&mut self.base, ship_state, modules);
+        self.module.on_deactivated(ship_state, modules);
     }
     
     fn get_target_mode(&self) -> Option<TargetMode> {
@@ -273,6 +273,20 @@ pub struct ModuleStats {
     pub hp: u8,
 }
 
+impl ModuleStats {
+    // Returns the amount of damage dealt
+    pub fn deal_damage(&mut self, damage: u8) -> u8 {
+        if self.hp >= damage {
+            self.hp -= damage;
+            damage
+        } else {
+            let dealt_damage = self.hp;
+            self.hp = 0;
+            dealt_damage
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Clone)]
@@ -357,15 +371,7 @@ impl ModuleBase {
     
     // Returns the amount of damage dealt
     pub fn deal_damage(&mut self, damage: u8) -> u8 {
-        let dealt_damage =
-            if self.stats.hp >= damage {
-                self.stats.hp -= damage;
-                damage
-            } else {
-                let dealt_damage = self.stats.hp;
-                self.stats.hp = 0;
-                dealt_damage
-            };
+        let dealt_damage = self.stats.deal_damage(damage);
         
         // Create damage visual at random location
         if self.stats.hp < self.min_hp {

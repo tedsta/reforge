@@ -28,7 +28,7 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
             }
         }
         if let Some(module) = module_to_activate {
-            ship.state.activate_module(module.borrow_mut().get_base_mut());
+            ship.state.plan_activate_module(module.borrow_mut().get_base_mut());
         }
         // Engine
         let mut module_to_activate = None;
@@ -43,7 +43,7 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
             }
         }
         if let Some(module) = module_to_activate {
-            ship.state.activate_module(module.borrow_mut().get_base_mut());
+            ship.state.plan_activate_module(module.borrow_mut().get_base_mut());
         }
         // Shield
         let mut module_to_activate = None;
@@ -58,7 +58,7 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
             }
         }
         if let Some(module) = module_to_activate {
-            ship.state.activate_module(module.borrow_mut().get_base_mut());
+            ship.state.plan_activate_module(module.borrow_mut().get_base_mut());
         }
     }
     

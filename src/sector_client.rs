@@ -230,6 +230,12 @@ impl<'a> ClientBattleState<'a> {
         // After simulation
         self.context.after_simulation();
         
+        // Apply module stats
+        self.context.apply_module_stats();
+        
+        // Deactivate modules that can no longer be powered
+        self.context.deactivate_unpowerable_modules();
+        
         // Set all the dead ships to exploding
         for ship in &self.context.ships {
             let mut ship = ship.borrow_mut();

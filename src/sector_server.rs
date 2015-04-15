@@ -299,7 +299,7 @@ impl SectorState {
             
             // The plan power needs to be correct when going to the new sector, and any plans the
             // player made during the last simulation phase are cancelled, so this is safe to do.
-            ship.state.plan_power = ship.state.power;
+            ship.state.plan_power_use = ship.state.power_use;
 
             if let Some(client_id) = ship.client_id {
                 // Send the last tick
@@ -335,6 +335,12 @@ impl SectorState {
         
         // Post simulation
         self.context.after_simulation();
+        
+        // Apply module stats
+        self.context.apply_module_stats();
+        
+        // Deactivate modules that can no longer be powered
+        self.context.deactivate_unpowerable_modules();
     }
     
     fn simulate(&mut self, sim_events: &mut SimEvents) {

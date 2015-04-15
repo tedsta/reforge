@@ -7,7 +7,7 @@ use battle_context::BattleContext;
 use module;
 use module::{IModule, Module, ModuleBase, ModuleRef};
 use net::{InPacket, OutPacket};
-use ship::{ShipRef, ShipState};
+use ship::{Ship, ShipRef, ShipState};
 use sim::SimEvents;
 use vec::{Vec2, Vec2f};
 
@@ -66,11 +66,11 @@ impl IModule for ShieldModule {
         }
     }
     
-    fn on_activated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
+    fn on_activated(&mut self, ship_state: &mut ShipState, _: &Vec<ModuleRef>) {
         ship_state.add_shields(2);
     }
     
-    fn on_deactivated(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
+    fn on_deactivated(&mut self, ship_state: &mut ShipState, _: &Vec<ModuleRef>) {
         ship_state.remove_shields(2);
     }
     

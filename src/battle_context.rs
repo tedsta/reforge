@@ -169,6 +169,18 @@ impl BattleContext {
         }
     }
     
+    pub fn apply_module_stats(&self) {
+        for ship in self.ships.iter() {
+            ship.borrow_mut().apply_module_stats();
+        }
+    }
+    
+    pub fn deactivate_unpowerable_modules(&self) {
+        for ship in self.ships.iter() {
+            ship.borrow_mut().deactivate_unpowerable_modules();
+        }
+    }
+    
     pub fn write_results(&self, packet: &mut OutPacket) {
         packet.write(&(self.ships.len() as u32));
         for ship in self.ships.iter() {

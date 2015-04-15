@@ -414,7 +414,7 @@ impl SpaceGui {
                         self.selection = Some((module.clone(), target_mode));
                     }
                 } else if ship_state.can_plan_activate_module(module_borrowed.get_base()) {
-                    ship_state.activate_module(module_borrowed.get_base_mut());
+                    ship_state.plan_activate_module(module_borrowed.get_base_mut());
                 }
             });
         }
@@ -520,7 +520,7 @@ impl SpaceGui {
             apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_state, module, module_borrowed| {
                 let module_power = module_borrowed.get_base().get_power();
                 if module_borrowed.get_base().plan_powered {
-                    ship_state.deactivate_module(module_borrowed.get_base_mut());
+                    ship_state.plan_deactivate_module(module_borrowed.get_base_mut());
                 }
                 module_was_deactivated = true;
             });
@@ -611,7 +611,7 @@ impl TargetIcon {
         //let max_hp = ship.state.max_hp as f64;
         let shields = ship.state.shields as f64;
         let max_shields = ship.state.max_shields as f64;
-        let power = ship.state.power as f64;
+        let power = ship.state.available_power() as f64;
         let max_power = ship.state.max_power as f64;
         
         // HP
@@ -701,21 +701,21 @@ fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stat
             let used_power_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
             let new_power_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
             
-            for i in 0..cmp::min(ship.state.plan_power, ship.state.power) {
+            for i in 0..cmp::min(ship.state.available_plan_power(), ship.state.available_power()) {
                 power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
             }
         
-            if ship.state.plan_power < ship.state.power {
-                for i in ship.state.plan_power..ship.state.power {
+            if ship.state.available_plan_power() < ship.state.available_power() {
+                for i in ship.state.available_plan_power()..ship.state.available_power() {
                     used_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
                 }
-            } else if ship.state.plan_power > ship.state.power {
-                for i in ship.state.power..ship.state.plan_power {
+            } else if ship.state.available_plan_power() > ship.state.available_power() {
+                for i in ship.state.available_power()..ship.state.available_plan_power() {
                     new_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
                 }
             }
         } else {
-            for i in 0..ship.state.power {
+            for i in 0..ship.state.available_power() {
                 power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
             }
         }
