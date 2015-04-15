@@ -57,8 +57,8 @@ pub trait IModule : Send {
     fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {}
     fn read_results(&mut self, base: &mut ModuleBase, packet: &mut InPacket) {}
     
-    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {}
-    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {}
+    fn on_activated(&mut self, ship_state: &mut ShipState) {}
+    fn on_deactivated(&mut self, ship_state: &mut ShipState) {}
     
     ////////////////////
     // GUI stuff
@@ -100,8 +100,8 @@ pub trait IModuleRef {
     fn write_results(&self, packet: &mut OutPacket);
     fn read_results(&mut self, packet: &mut InPacket);
     
-    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>);
-    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>);
+    fn on_activated(&mut self, ship_state: &mut ShipState);
+    fn on_deactivated(&mut self, ship_state: &mut ShipState);
     
     ////////////////////
     // GUI stuff
@@ -171,12 +171,12 @@ impl<M> IModuleRef for Module<M>
         self.module.read_results(&mut self.base, packet);
     }
     
-    fn on_activated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
-        self.module.on_activated(ship_state, modules);
+    fn on_activated(&mut self, ship_state: &mut ShipState) {
+        self.module.on_activated(ship_state);
     }
     
-    fn on_deactivated(&mut self, ship_state: &mut ShipState, modules: &Vec<ModuleRef>) {
-        self.module.on_deactivated(ship_state, modules);
+    fn on_deactivated(&mut self, ship_state: &mut ShipState) {
+        self.module.on_deactivated(ship_state);
     }
     
     fn get_target_mode(&self) -> Option<TargetMode> {

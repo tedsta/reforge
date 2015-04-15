@@ -117,7 +117,7 @@ impl ShipState {
         self.shields = 0;
     }
     
-    pub fn deal_damage(&mut self, modules: &Vec<ModuleRef>, module: &mut ModuleBox, damage: u8) {
+    pub fn deal_damage(&mut self, module: &mut ModuleBox, damage: u8) {
         // Can't deal more damage than there is HP
         let damage = cmp::min(self.hp, damage);
         
@@ -140,7 +140,7 @@ impl ShipState {
         self.max_power += power;
     }
     
-    pub fn remove_power(&mut self, power: u8, modules: &Vec<ModuleRef>) {        
+    pub fn remove_power(&mut self, power: u8) {        
         self.max_power -= power;
     }
     
@@ -253,7 +253,7 @@ impl Ship {
         
         // Activate module if can
         if module.get_base().is_active() {
-            module.on_activated(&mut self.state, &self.modules);
+            module.on_activated(&mut self.state);
         }
         
         // Add the module
@@ -330,10 +330,6 @@ impl Ship {
                 }
             }
         }
-    }
-    
-    pub fn deal_damage(&mut self, module: &mut ModuleBox, damage: u8) {
-        self.state.deal_damage(&self.modules, module, damage);
     }
     
     pub fn server_preprocess(&mut self) {
@@ -423,7 +419,7 @@ impl Ship {
                 // Module just got deactivated
                 self.state.power_use -= module.get_base().get_power();
                 module.get_base_mut().powered = false;
-                module.on_deactivated(&mut self.state, &self.modules);
+                module.on_deactivated(&mut self.state);
             }
         }
     }
@@ -456,7 +452,7 @@ impl Ship {
                         if module.get_base().powered {
                             self.state.power_use -= module.get_base().get_power();
                             module.get_base_mut().powered = false;
-                            module.on_deactivated(&mut self.state, &self.modules);
+                            module.on_deactivated(&mut self.state);
                         }
                     }
                 }
@@ -478,11 +474,11 @@ impl Ship {
                 if module.get_base().plan_powered && self.state.can_activate_module(module.get_base()) {
                     module.get_base_mut().powered = true;
                     self.state.power_use += module.get_base().get_power();
-                    module.on_activated(&mut self.state, &self.modules);
+                    module.on_activated(&mut self.state);
                 } else if module.get_base().powered {
                     module.get_base_mut().powered = false;
                     self.state.power_use -= module.get_base().get_power();
-                    module.on_deactivated(&mut self.state, &self.modules);
+                    module.on_deactivated(&mut self.state);
                 }
                 
                 module.get_base_mut().plan_powered = module.get_base().powered;
@@ -540,9 +536,9 @@ impl Ship {
             module.get_base_mut().powered = packet.read().ok().expect("Failed to read ModuleBase powered");
             
             if !was_powered && module.get_base().powered {
-                module.on_activated(&mut self.state, &self.modules);
+                module.on_activated(&mut self.state);
             } else if was_powered && !module.get_base().powered {
-                module.on_deactivated(&mut self.state, &self.modules);
+                module.on_deactivated(&mut self.state);
             }
             
             let target: Option<module::NetworkTarget> = packet.read().ok().expect("Failed to read ModuleBase target_data");
@@ -584,7 +580,7 @@ impl Ship {
         use quack::Set;
         use graphics::*;
     
-        for module in self.modules.iter() {
+        for (module, stats) in self.modules.iter().zip(self.state.module_stats.iter()) {
             let module = module.borrow();
             let module = module.get_base();
             
@@ -596,18 +592,18 @@ impl Ship {
             let armor_dmg_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
         
             for i in 0..module.get_min_hp() {
-                if i < module.get_hp() {
+                if i < stats.hp {
                     hp_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context.draw_state, context.transform, gl);
                 } else {
                     hp_dmg_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context.draw_state, context.transform, gl);
                 }
             }
             
-            for i in module.get_min_hp()..module.get_hp() {
+            for i in module.get_min_hp()..stats.hp {
                 armor_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context.draw_state, context.transform, gl);
             }
             
-            for i in cmp::max(module.get_min_hp(), module.get_hp())..module.get_max_hp() {
+            for i in cmp::max(module.get_min_hp(), stats.hp)..module.get_max_hp() {
                 armor_dmg_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context.draw_state, context.transform, gl);
             }
         }
