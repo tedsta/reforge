@@ -104,7 +104,11 @@ impl IModule for ProjectileWeaponModule {
                         if projectile.hit {
                             projectile.hit_pos = target_module.borrow().get_base().get_render_center();
                         
-                            events.add(projectile.hit_tick, box DamageEvent::new(target_ship.clone(), target_module.clone(), 1));
+                            events.add(
+                                projectile.hit_tick,
+                                target_ship.borrow().id,
+                                box DamageEvent::new(target_module.clone(), 1),
+                            );
                         } else {
                             projectile.hit_pos = Vec2{x: 200.0, y: 300.0};
                         }

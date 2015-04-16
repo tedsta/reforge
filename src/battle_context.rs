@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use module::{ModulePlans, NetworkTarget};
 use net::{ClientId, InPacket, OutPacket};
-use ship::{ShipId, ShipNetworked, ShipRef};
+use ship::{ShipId, ShipIndex, ShipNetworked, ShipRef};
 use sim::SimEvents;
 
 #[cfg(feature = "client")]
@@ -61,6 +61,9 @@ impl BattleContext {
     
     pub fn add_ship(&mut self, ship: ShipRef) {
         let index = self.ships.len();
+        
+        ship.borrow_mut().index = ShipIndex(index as u32);
+        
         self.ships.push(ship.clone());
         self.ships_ship_id.insert(ship.borrow().id, index);
         let client_id = ship.borrow().client_id;

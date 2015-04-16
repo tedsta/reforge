@@ -168,10 +168,20 @@ pub type ShipRef = Rc<RefCell<Ship>>;
 // Type for the ID of a ship
 pub type ShipId = u64;
 
+#[derive(Copy, Clone, PartialEq, RustcEncodable, RustcDecodable)]
+pub struct ShipIndex(pub u32);
+
+impl ShipIndex {
+    pub fn to_usize(self) -> usize {
+        self.0 as usize
+    }
+}
+
 pub struct Ship {
     pub id: ShipId,
     pub name: String,
     pub client_id: Option<ClientId>,
+    pub index: ShipIndex, // Index for ship in ship vector in BattleContext
     pub state: ShipState,
     pub modules: Vec<ModuleRef>,
     
@@ -196,6 +206,7 @@ impl Ship {
             id: id,
             name: name,
             client_id: None,
+            index: ShipIndex(0),
             state: ShipState::new(),
             modules: vec!(),
             
@@ -691,6 +702,7 @@ impl ShipStored {
             id: self.id,
             name: self.name,
             client_id: client_id,
+            index: ShipIndex(0),
             state: self.state,
             modules: self.modules.into_iter().map(|m| Rc::new(RefCell::new(m.to_module()))).collect(),
             width: self.width,
@@ -710,6 +722,7 @@ pub struct ShipNetworked {
     pub id: ShipId,
     pub name: String,
     pub client_id: Option<ClientId>,
+    pub index: ShipIndex,
     pub state: ShipState,
     pub modules: Vec<ModuleNetworkedBox>,
     
@@ -735,6 +748,7 @@ impl ShipNetworked {
             id: ship.id,
             name: ship.name.clone(),
             client_id: ship.client_id,
+            index: ship.index,
             state: ship.state.clone(),
             modules: ship.modules.iter().map(|m| m.borrow().to_module_networked()).collect(),
             width: ship.width,
@@ -757,6 +771,7 @@ impl ShipNetworked {
             id: self.id,
             name: self.name,
             client_id: self.client_id,
+            index: self.index,
             state: self.state,
             modules: modules,
             width: self.width,

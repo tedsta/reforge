@@ -47,7 +47,11 @@ impl IModule for BeamWeaponModule {
                         if let Some(hit_dist) = hit {
                             let hit_tick = 20 + (((3.0 - 1.0)*hit_dist*20.0) as u32);
                         
-                            events.add(hit_tick, box DamageEvent::new(target_ship.clone(), module.clone(), 1));
+                            events.add(
+                                hit_tick,
+                                target_ship.borrow().id,
+                                box DamageEvent::new(module.clone(), 1),
+                            );
                         }
                     });
                 }

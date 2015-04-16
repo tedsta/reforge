@@ -206,7 +206,7 @@ impl<'a> ClientBattleState<'a> {
             // Simulate any new ticks
             if next_tick < 100 {
                 for t in next_tick .. cmp::min(next_tick+tick-next_tick+1, 100) {
-                    sim_events.apply_tick(t);
+                    sim_events.apply_tick(&self.context, t);
                 }
                 next_tick = tick+1;
             }
@@ -224,7 +224,7 @@ impl<'a> ClientBattleState<'a> {
         
         // Simulate any remaining ticks
         for t in next_tick .. 100 {
-            sim_events.apply_tick(t);
+            sim_events.apply_tick(&self.context, t);
         }
         
         // After simulation

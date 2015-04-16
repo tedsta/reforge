@@ -2,6 +2,9 @@ use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::cell::RefCell;
 
+use battle_context::BattleContext;
+use ship::{ShipId, ShipIndex, ShipState};
+
 // SimVisual imports
 #[cfg(feature = "client")]
 use graphics::Context;
@@ -9,17 +12,15 @@ use graphics::Context;
 use opengl_graphics::Gl;
 #[cfg(feature = "client")]
 use sdl2_mixer;
-#[cfg(feature = "client")]
-use ship::ShipId;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub trait SimEvent {
-    fn apply(&mut self);
+    fn apply(&mut self, ship_state: &mut ShipState);
 }
 
 pub struct SimEvents<'a> {
-    events: Vec<Vec<Box<SimEvent+'a>>>,
+    events: Vec<Vec<(ShipId, Box<SimEvent+'a>)>>, // events[tick][event]
 }
 
 impl<'a> SimEvents<'a> {
@@ -33,21 +34,20 @@ impl<'a> SimEvents<'a> {
         }
     }
     
-    pub fn apply_tick(&mut self, tick: u32) {
+    pub fn apply_tick(&mut self, context: &BattleContext, tick: u32) {
         let tick = tick as usize;
-        for mut event in self.events[tick].drain() {
-            event.apply();
+        for (ship_id, mut event) in self.events[tick].drain() {
+            let ship = context.get_ship(ship_id);
+            event.apply(&mut ship.borrow_mut().state);
         }
     }
     
-    pub fn add(&mut self, tick: u32, event: Box<SimEvent+'a>) {
-        self.events[tick as usize].push(event);
+    pub fn add(&mut self, tick: u32, ship_id: ShipId, event: Box<SimEvent+'a>) {
+        self.events[tick as usize].push((ship_id, event));
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// TODO: Replace the SimVisual struct impl trait model with unboxed closures once they are stable
 
 #[cfg(feature = "client")]
 static NUM_LAYERS: u8 = 4;
