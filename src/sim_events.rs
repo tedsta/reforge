@@ -1,18 +1,18 @@
 use std::ops::DerefMut;
 
-use module::{ModuleBox, ModuleRef};
+use module::{ModuleBox, ModuleIndex, ModuleRef};
 use ship::{ShipRef, ShipState};
 use sim::SimEvent;
 
 pub struct DamageEvent {
-    module: ModuleRef,
+    module_index: ModuleIndex,
     damage: u8,
 }
 
 impl DamageEvent {
-    pub fn new(module: ModuleRef, damage: u8) -> DamageEvent {
+    pub fn new(module_index: ModuleIndex, damage: u8) -> DamageEvent {
         DamageEvent {
-            module: module,
+            module_index: module_index,
             damage: damage,
         }
     }
@@ -20,6 +20,6 @@ impl DamageEvent {
 
 impl SimEvent for DamageEvent {
     fn apply(&mut self, ship_state: &mut ShipState) {
-        ship_state.deal_damage(self.module.borrow_mut().deref_mut(), self.damage);
+        ship_state.deal_damage(self.module_index, self.damage);
     }
 }

@@ -181,7 +181,7 @@ impl SectorState {
         let plans = packet.read().ok().expect("Failed to read player's plans");
 
         if !ship.exploding {
-            ship.set_module_plans(&self.context, &plans);
+            ship.set_module_plans(&plans);
         }
     }
     

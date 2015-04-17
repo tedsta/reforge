@@ -13,11 +13,13 @@ use module::{
     Module,
     ModuleBase,
     ModuleBox,
+    ModuleIndex,
     ModuleRef,
     ModuleStats,
     ModuleStoredBox,
     ModuleNetworkedBox,
-    NetworkTarget,
+    Target,
+    TargetManifest,
 };
 use net::{ClientId, InPacket, OutPacket};
 use sector_data::SectorId;
@@ -117,7 +119,7 @@ impl ShipState {
         self.shields = 0;
     }
     
-    pub fn deal_damage(&mut self, module: &mut ModuleBox, damage: u8) {
+    pub fn deal_damage(&mut self, module_index: ModuleIndex, damage: u8) {
         // Can't deal more damage than there is HP
         let damage = cmp::min(self.hp, damage);
         
@@ -127,7 +129,7 @@ impl ShipState {
             // Get the amount of damage dealt to the module
             let damage =
                 self.module_stats
-                    .get_mut(module.get_base().index as usize)
+                    .get_mut(module_index.to_usize())
                     .expect("Failed to deal damage to non-existant module")
                     .deal_damage(damage);
             
@@ -260,7 +262,7 @@ impl Ship {
         self.height = cmp::max(self.height, module.get_base().y + module.get_base().height);
         
         // Setup module's index
-        module.get_base_mut().index = self.modules.len() as u32;
+        module.get_base_mut().index = ModuleIndex(self.modules.len() as u32);
         
         // Activate module if can
         if module.get_base().is_active() {
@@ -343,15 +345,17 @@ impl Ship {
         }
     }
     
-    pub fn server_preprocess(&mut self) {
+    pub fn server_preprocess(&mut self, context: &BattleContext) {
         for module in self.modules.iter() {
-            module.borrow_mut().server_preprocess(&mut self.state);
+            let target = module.borrow().get_base().target.as_ref().map(|t| TargetManifest::from_target(context, t));
+            module.borrow_mut().server_preprocess(&mut self.state, target);
         }
     }
     
-    pub fn before_simulation(&self, events: &mut SimEvents, ship_ref: &ShipRef) {
+    pub fn before_simulation(&self, context: &BattleContext, events: &mut SimEvents) {
         for module in self.modules.iter() {
-            module.borrow_mut().before_simulation(ship_ref, events);
+            let target = module.borrow().get_base().target.as_ref().map(|t| TargetManifest::from_target(context, t));
+            module.borrow_mut().before_simulation(events, target);
         }
     }
     
@@ -363,12 +367,13 @@ impl Ship {
     }
     
     #[cfg(feature = "client")]
-    pub fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship_ref: &ShipRef) {
+    pub fn add_simulation_effects(&self, context: &BattleContext, asset_store: &AssetStore, effects: &mut SimEffects, ship_ref: &ShipRef) {
         if self.exploding {
             self.add_exploding_effects(asset_store, effects, ship_ref);
         } else {
             for module in self.modules.iter() {
-                module.borrow().add_simulation_effects(asset_store, effects, ship_ref);
+                let target = module.borrow().get_base().target.as_ref().map(|t| TargetManifest::from_target(context, t));
+                module.borrow().add_simulation_effects(asset_store, effects, ship_ref, target);
             }
         }
     }
@@ -503,16 +508,16 @@ impl Ship {
         self.modules.iter().map(|m| m.borrow().get_base().get_plans()).collect()
     }
     
-    pub fn set_module_plans(&self, context: &BattleContext, plans: &Vec<module::ModulePlans>) {
+    pub fn set_module_plans(&self, plans: &Vec<module::ModulePlans>) {
         for (module, plans) in self.modules.iter().zip(plans.iter()) {
-            module.borrow_mut().get_base_mut().set_plans(context, plans);
+            module.borrow_mut().get_base_mut().set_plans(plans);
         }
     }
     
-    pub fn set_targets(&self, context: &BattleContext, targets: &Vec<(Option<NetworkTarget>, Option<NetworkTarget>)>) {
+    pub fn set_targets(&self, targets: &Vec<(Option<Target>, Option<Target>)>) {
         for (module, targets) in self.modules.iter().zip(targets.iter()) {
             let &(ref target, ref plan_target) = targets;
-            module.borrow_mut().get_base_mut().set_targets(context, target, plan_target);
+            module.borrow_mut().get_base_mut().set_targets(target, plan_target);
         }
     }
     
@@ -529,7 +534,7 @@ impl Ship {
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Write the base results
             packet.write(&module.get_base().powered);
-            packet.write(&module.get_base().target.as_ref().map(|t| module::NetworkTarget::from_target(t)));
+            packet.write(&module.get_base().target);
         
             module.write_results(packet);
         }
@@ -552,8 +557,7 @@ impl Ship {
                 module.on_deactivated(&mut self.state);
             }
             
-            let target: Option<module::NetworkTarget> = packet.read().ok().expect("Failed to read ModuleBase target_data");
-            module.get_base_mut().target = target.map(|t| t.to_target(context));
+            module.get_base_mut().target = packet.read().ok().expect("Failed to read ModuleBase target");
         
             module.read_results(packet);
         }
@@ -760,8 +764,8 @@ impl ShipNetworked {
         }
     }
     
-    pub fn to_ship(self) -> (Ship, Vec<(Option<NetworkTarget>, Option<NetworkTarget>)>) {
-        let modules: Vec<(ModuleBox, Option<NetworkTarget>, Option<NetworkTarget>)> =
+    pub fn to_ship(self) -> (Ship, Vec<(Option<Target>, Option<Target>)>) {
+        let modules: Vec<(ModuleBox, Option<Target>, Option<Target>)> =
             self.modules.into_iter().map(|m| m.to_module()).collect();
         
         let module_targets = modules.iter().map(|&(_, t, pt)| (t, pt)).collect();

@@ -12,7 +12,7 @@ use opengl_graphics::Gl;
 
 use battle_context::{BattleContext, TICKS_PER_SECOND};
 use module;
-use module::{IModule, Module, ModuleRef, ModuleBase, ModuleBox};
+use module::{IModule, Module, ModuleRef, ModuleBase, ModuleBox, TargetManifest, TargetManifestData};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipRef, ShipState};
 use sim::SimEvents;
@@ -61,35 +61,31 @@ impl ProjectileWeaponModule {
 }
 
 impl IModule for ProjectileWeaponModule {
-    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {    
+    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, target: Option<TargetManifest>) {    
         if base.powered {
-            if let Some(ref target) = base.target {
+            if let Some(ref target) = target {
                 let ref target_ship = target.ship;
-            
-                if let module::TargetData::TargetModule(ref target_module) = target.data {
-                    // Random number generater
-                    let mut rng = rand::thread_rng();
-                    
-                    let target_ship = target_ship.borrow();
-                    
-                    for projectile in self.projectiles.iter_mut() {
-                        if rng.gen::<f64>() > (0.15 * (cmp::min(target_ship.state.thrust, 5) as f64)) {
-                            projectile.hit = true;
-                        } else {
-                            projectile.hit = false;
-                        }
+                
+                // Random number generater
+                let mut rng = rand::thread_rng();
+                
+                let target_ship = target_ship.borrow();
+                
+                for projectile in self.projectiles.iter_mut() {
+                    if rng.gen::<f64>() > (0.15 * (cmp::min(target_ship.state.thrust, 5) as f64)) {
+                        projectile.hit = true;
+                    } else {
+                        projectile.hit = false;
                     }
                 }
             }
         }
     }
 
-    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEvents) {
+    fn before_simulation(&mut self, base: &mut ModuleBase, events: &mut SimEvents, target: Option<TargetManifest>) {
         if base.powered {
-            if let Some(ref target) = base.target {
-                let ref target_ship = target.ship;
-            
-                if let module::TargetData::TargetModule(ref target_module) = target.data {
+            if let Some(ref target) = target {
+                if let module::TargetManifestData::TargetModule(ref target_module) = target.data {
                     for (i, projectile) in self.projectiles.iter_mut().enumerate() {                                            
                         let start = (i*10) as u32;
                         
@@ -106,8 +102,8 @@ impl IModule for ProjectileWeaponModule {
                         
                             events.add(
                                 projectile.hit_tick,
-                                target_ship.borrow().id,
-                                box DamageEvent::new(target_module.clone(), 1),
+                                target.ship.borrow().id,
+                                box DamageEvent::new(target_module.borrow().get_base().index, 1),
                             );
                         } else {
                             projectile.hit_pos = Vec2{x: 200.0, y: 300.0};
@@ -135,16 +131,16 @@ impl IModule for ProjectileWeaponModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
+    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef, target: Option<TargetManifest>) {
         let ship_id = ship.borrow().id;
     
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/weapon_sprite.png"));
         
         if base.powered {
-            if let Some(ref target) = base.target {
+            if let Some(ref target) = target {
                 let target_ship_id = target.ship.borrow().id;
             
-                if let module::TargetData::TargetModule(ref target_module) = target.data {                
+                if let module::TargetManifestData::TargetModule(ref target_module) = target.data {                
                     let mut last_weapon_anim_end = 0.0;
                 
                     for projectile in self.projectiles.iter() {

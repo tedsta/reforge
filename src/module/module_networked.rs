@@ -11,8 +11,9 @@ use module::{
     Module,
     ModuleBase,
     ModuleBox,
+    ModuleIndex,
     ModuleStats,
-    NetworkTarget,
+    Target,
     
     EngineModule,
     ProjectileWeaponModule,
@@ -39,13 +40,13 @@ pub struct ModuleBaseNetworked {
     pub powered: bool,      // If the module consumes power, whether or not it's currently powered (useless otherwise)
     pub plan_powered: bool, // Plan to power
     
-    pub target: Option<NetworkTarget>,
-    pub plan_target: Option<NetworkTarget>,
+    pub target: Option<Target>,
+    pub plan_target: Option<Target>,
     
     // Module damage visuals
     damage_visuals: Vec<DamageVisual>,
     
-    pub index: u32, // Array index in ship. Used for referencing modules across network.
+    pub index: ModuleIndex, // Array index in ship. Used for referencing modules across network.
 }
 
 impl ModuleBaseNetworked {
@@ -65,8 +66,8 @@ impl ModuleBaseNetworked {
             powered: module_base.powered,
             plan_powered: module_base.plan_powered,
             
-            target: module_base.target.as_ref().map(|t| NetworkTarget::from_target(t)),
-            plan_target: module_base.plan_target.as_ref().map(|t| NetworkTarget::from_target(t)),
+            target: module_base.target,
+            plan_target: module_base.plan_target,
             
             damage_visuals: module_base.damage_visuals.clone(),
             
@@ -74,7 +75,7 @@ impl ModuleBaseNetworked {
         }
     }
     
-    pub fn to_module_base(&self) -> (ModuleBase, Option<NetworkTarget>, Option<NetworkTarget>) {
+    pub fn to_module_base(&self) -> (ModuleBase, Option<Target>, Option<Target>) {
         (ModuleBase {
             x: self.x,
             y: self.y,
@@ -114,7 +115,7 @@ pub trait IModuleNetworked : Send {
     fn get_base(&self) -> &ModuleBaseNetworked;
     fn get_module(&self) -> &IModule;
 
-    fn to_module(&self) -> (ModuleBox, Option<NetworkTarget>, Option<NetworkTarget>);
+    fn to_module(&self) -> (ModuleBox, Option<Target>, Option<Target>);
 }
 
 impl ModuleNetworkedBox {
@@ -140,7 +141,7 @@ impl<M> IModuleNetworked for ModuleNetworked<M>
         &self.module
     }
     
-    fn to_module(&self) -> (ModuleBox, Option<NetworkTarget>, Option<NetworkTarget>) {
+    fn to_module(&self) -> (ModuleBox, Option<Target>, Option<Target>) {
         let (base, target, plan_target) = self.base.to_module_base();
     
         (ModuleBox::new(Module{base: base, module: self.module.clone()}), target, plan_target)

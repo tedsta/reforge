@@ -5,7 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_context::BattleContext;
 use module;
-use module::{IModule, Module, ModuleBase, ModuleRef};
+use module::{IModule, Module, ModuleBase, ModuleRef, TargetManifest};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEvents;
@@ -32,13 +32,7 @@ impl EngineModule {
     }
 }
 
-impl IModule for EngineModule {
-    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
-    }
-    
-    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEvents) {
-    }
-    
+impl IModule for EngineModule {    
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
         let mut engine_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/engine1.png"));
@@ -62,7 +56,7 @@ impl IModule for EngineModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
+    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef, target: Option<TargetManifest>) {
         self.add_plan_effects(base, asset_store, effects, ship);
     }
     

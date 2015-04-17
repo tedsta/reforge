@@ -321,7 +321,7 @@ impl SpaceGui {
                         let x = self.mouse_x - self.render_area.x - ENEMY_OFFSET_X;
                         let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
 
-                        apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |ship_state, _, module_borrowed| {
+                        apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, _, _, module_borrowed| {
                             let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
                             let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
                             let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
@@ -344,7 +344,7 @@ impl SpaceGui {
             let x = self.mouse_x - SHIP_OFFSET_X;
             let y = self.mouse_y - SHIP_OFFSET_Y;
 
-            apply_to_module_if_point_inside(client_ship, x, y, |ship_state, _, module_borrowed| {
+            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, _, module_borrowed| {
                 let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
                 let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
                 let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
@@ -407,7 +407,7 @@ impl SpaceGui {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
-            apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_state, module, module_borrowed| {
+            apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |_, ship_state, module, module_borrowed| {
                 if module_borrowed.get_base().plan_powered {
                     if let Some(target_mode) = module_borrowed.get_target_mode() {
                         // Select this module and begin targeting
@@ -430,11 +430,11 @@ impl SpaceGui {
                     let y = y - self.render_area.y - ENEMY_OFFSET_Y;
                     if let Some(ref ship) = self.render_area.ship {
                         if !ship.borrow().jumping && !ship.borrow().exploding {
-                            apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
+                            apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |ship_id, _, _, module| {
                                 selected_module.borrow_mut().get_base_mut().plan_target =
                                     Some(module::Target {
-                                        ship: ship.clone(),
-                                        data: module::TargetData::TargetModule(module.clone()),
+                                        ship: ship_id,
+                                        data: module::TargetData::TargetModule(module.get_base().index),
                                     });
                                 clear_selection = true;
                             });
@@ -444,11 +444,11 @@ impl SpaceGui {
                 module::TargetMode::OwnModule => {
                     let x = x - SHIP_OFFSET_X;
                     let y = y - SHIP_OFFSET_Y;
-                    apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |_, module, _| {
+                    apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_id, _, _, module| {
                         selected_module.borrow_mut().get_base_mut().plan_target =
                             Some(module::Target {
-                                ship: client_ship.clone(),
-                                data: module::TargetData::OwnModule(module.clone()),
+                                ship: ship_id,
+                                data: module::TargetData::OwnModule(module.get_base().index),
                             });
                         clear_selection = true;
                     });
@@ -465,7 +465,7 @@ impl SpaceGui {
                                     let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
                                     selected_module.borrow_mut().get_base_mut().plan_target =
                                         Some(module::Target {
-                                            ship: ship.clone(),
+                                            ship: ship.borrow().id,
                                             data: module::TargetData::Beam(beam_start, beam_end),
                                         });
                                     clear_selection = true;
@@ -517,7 +517,7 @@ impl SpaceGui {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
-            apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_state, module, module_borrowed| {
+            apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_id, ship_state, module, module_borrowed| {
                 let module_power = module_borrowed.get_base().get_power();
                 if module_borrowed.get_base().plan_powered {
                     ship_state.plan_deactivate_module(module_borrowed.get_base_mut());
@@ -557,7 +557,7 @@ impl SpaceGui {
 /// Returns whether or not the function was applied.
 pub fn apply_to_module_if_point_inside<F>(ship: &mut Ship, x: f64, y: f64, mut f: F)
     where
-        F: FnMut(&mut ShipState, &ModuleRef, &mut ModuleBox)
+        F: FnMut(ShipId, &mut ShipState, &ModuleRef, &mut ModuleBox)
 {
     for module in ship.modules.iter() {
         let mut module_borrowed = module.borrow_mut();
@@ -567,7 +567,7 @@ pub fn apply_to_module_if_point_inside<F>(ship: &mut Ship, x: f64, y: f64, mut f
         let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
         let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
         if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-            f(&mut ship.state, module, module_borrowed.deref_mut());
+            f(ship.id, &mut ship.state, module, module_borrowed.deref_mut());
         }
     }
 }

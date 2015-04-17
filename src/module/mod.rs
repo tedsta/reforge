@@ -25,7 +25,7 @@ pub use self::solar::SolarModule;
 pub use self::command::CommandModule;
 pub use self::beam_weapon::BeamWeaponModule;
 
-pub use self::target::{NetworkTarget, NetworkTargetData, Target, TargetMode, TargetData};
+pub use self::target::{Target, TargetMode, TargetData, TargetManifest, TargetManifestData};
 pub use self::damage_visual::{DamageVisual, DamageVisualKind};
 pub use self::module_networked::{IModuleNetworked, ModuleBaseNetworked, ModuleNetworked, ModuleNetworkedBox};
 
@@ -43,14 +43,14 @@ pub mod module_networked;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub trait IModule : Send {
-    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
+    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, target: Option<TargetManifest>) {}
 
-    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEvents);
+    fn before_simulation(&mut self, base: &mut ModuleBase, events: &mut SimEvents, target: Option<TargetManifest>) {}
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
+    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef, target: Option<TargetManifest>);
     
     fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
     
@@ -88,13 +88,13 @@ pub trait IModuleRef {
     //////////////////////////////////////////////////////
     // IModule stuff
     
-    fn server_preprocess(&mut self, ship_state: &mut ShipState);
+    fn server_preprocess(&mut self, ship_state: &mut ShipState, target: Option<TargetManifest>);
 
-    fn before_simulation(&mut self, ship: &ShipRef, events: &mut SimEvents);
+    fn before_simulation(&mut self, events: &mut SimEvents, target: Option<TargetManifest>);
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
+    fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef, target: Option<TargetManifest>);
     fn after_simulation(&mut self, ship_state: &mut ShipState);
     
     fn write_results(&self, packet: &mut OutPacket);
@@ -139,12 +139,12 @@ impl<M> IModuleRef for Module<M>
     //////////////////////////////////////////////////////
     // IModule stuff
     
-    fn server_preprocess(&mut self, ship_state: &mut ShipState) {
-        self.module.server_preprocess(&mut self.base, ship_state);
+    fn server_preprocess(&mut self, ship_state: &mut ShipState, target: Option<TargetManifest>) {
+        self.module.server_preprocess(&mut self.base, ship_state, target);
     }
     
-    fn before_simulation(&mut self, ship: &ShipRef, events: &mut SimEvents) {
-        self.module.before_simulation(&mut self.base, ship, events);
+    fn before_simulation(&mut self, events: &mut SimEvents, target: Option<TargetManifest>) {
+        self.module.before_simulation(&mut self.base, events, target);
     }
     
     #[cfg(feature = "client")]
@@ -154,8 +154,8 @@ impl<M> IModuleRef for Module<M>
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
-        self.module.add_simulation_effects(&self.base, asset_store, effects, ship);
+    fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef, target: Option<TargetManifest>) {
+        self.module.add_simulation_effects(&self.base, asset_store, effects, ship, target);
         self.base.add_damage_effects(asset_store, effects, ship.borrow().id);
     }
     
@@ -263,7 +263,7 @@ impl DerefMut for ModuleBox {
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct ModulePlans {
     pub plan_powered: bool,
-    pub plan_target: Option<NetworkTarget>,
+    pub plan_target: Option<Target>,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -284,6 +284,17 @@ impl ModuleStats {
             self.hp = 0;
             dealt_damage
         }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#[derive(Copy, Clone, PartialEq, RustcEncodable, RustcDecodable)]
+pub struct ModuleIndex(pub u32);
+
+impl ModuleIndex {
+    pub fn to_usize(self) -> usize {
+        self.0 as usize
     }
 }
 
@@ -312,7 +323,7 @@ pub struct ModuleBase {
     // Module damage visuals
     damage_visuals: Vec<DamageVisual>,
     
-    pub index: u32, // Array index in ship. Used for referencing modules across network.
+    pub index: ModuleIndex, // Array index in ship. Used for referencing modules.
 }
 
 impl ModuleBase {
@@ -337,7 +348,7 @@ impl ModuleBase {
             
             damage_visuals: vec!(),
             
-            index: -1,
+            index: ModuleIndex(-1),
         }
     }
     
@@ -414,18 +425,18 @@ impl ModuleBase {
     pub fn get_plans(&self) -> ModulePlans {
         ModulePlans {
             plan_powered: self.plan_powered,
-            plan_target: self.plan_target.as_ref().map(|t| NetworkTarget::from_target(t)),
+            plan_target: self.plan_target,
         }
     }
     
-    pub fn set_plans(&mut self, context: &BattleContext, plans: &ModulePlans) {
+    pub fn set_plans(&mut self, plans: &ModulePlans) {
         self.plan_powered = plans.plan_powered;
-        self.plan_target = plans.plan_target.as_ref().map(|t| t.to_target(context));
+        self.plan_target = plans.plan_target;
     }
     
-    pub fn set_targets(&mut self, context: &BattleContext, target: &Option<NetworkTarget>, plan_target: &Option<NetworkTarget>) {
-        self.target = target.as_ref().map(|t| t.to_target(context));
-        self.plan_target = plan_target.as_ref().map(|t| t.to_target(context));
+    pub fn set_targets(&mut self, target: &Option<Target>, plan_target: &Option<Target>) {
+        self.target = *target;
+        self.plan_target = *plan_target;
     }
     
     pub fn on_ship_removed(&mut self, ship_id: ShipId) {
@@ -436,7 +447,7 @@ impl ModuleBase {
         let mut remove = false;
     
         if let Some(ref target) = self.plan_target {
-            if target.ship.borrow().id == ship_id {
+            if target.ship == ship_id {
                 remove = true;
             }
         }
@@ -448,7 +459,7 @@ impl ModuleBase {
         remove = false;
         
         if let Some(ref target) = self.target {
-            if target.ship.borrow().id == ship_id {
+            if target.ship == ship_id {
                 remove = true;
             }
         }
@@ -488,7 +499,7 @@ pub struct ModuleBaseStored {
     
     pub powered: bool,      // If the module consumes power, whether or not it's currently powered (useless otherwise)
     
-    pub index: u32, // Array index in ship. Used for referencing modules across network.
+    pub index: ModuleIndex, // Array index in ship. Used for referencing modules across network.
 }
 
 impl ModuleBaseStored {

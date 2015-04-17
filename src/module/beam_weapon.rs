@@ -5,7 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_context::BattleContext;
 use module;
-use module::{IModule, Module, ModuleBase, ModuleRef};
+use module::{IModule, Module, ModuleBase, ModuleRef, TargetManifest, TargetManifestData};
 use net::{InPacket, OutPacket};
 use ship::{ShipRef, ShipState};
 use sim::SimEvents;
@@ -34,23 +34,21 @@ impl BeamWeaponModule {
 }
 
 impl IModule for BeamWeaponModule {
-    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
+    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, target: Option<TargetManifest>) {
     }
     
-    fn before_simulation(&mut self, base: &mut ModuleBase, ship: &ShipRef, events: &mut SimEvents) {
+    fn before_simulation(&mut self, base: &mut ModuleBase, events: &mut SimEvents, target: Option<TargetManifest>) {
         if base.powered {
-            if let Some(ref target) = base.target {
-                let ref target_ship = target.ship;
-            
-                if let module::TargetData::Beam(beam_start, beam_end) = target.data {
-                    target_ship.borrow().beam_hits(beam_start, beam_end, |module, _, _, hit| {
+            if let Some(ref target) = target {
+                if let module::TargetManifestData::Beam(beam_start, beam_end) = target.data {
+                    target.ship.borrow().beam_hits(beam_start, beam_end, |module, _, _, hit| {
                         if let Some(hit_dist) = hit {
                             let hit_tick = 20 + (((3.0 - 1.0)*hit_dist*20.0) as u32);
                         
                             events.add(
                                 hit_tick,
-                                target_ship.borrow().id,
-                                box DamageEvent::new(module.clone(), 1),
+                                target.ship.borrow().id,
+                                box DamageEvent::new(module.borrow().get_base().index, 1),
                             );
                         }
                     });
@@ -76,16 +74,16 @@ impl IModule for BeamWeaponModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
+    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef, target: Option<TargetManifest>) {
         self.add_plan_effects(base, asset_store, effects, ship);
         
         let ship_id = ship.borrow().id;
         
         if base.powered {
-            if let Some(ref target) = base.target {
+            if let Some(ref target) = target {
                 let target_ship_id = target.ship.borrow().id;
             
-                if let module::TargetData::Beam(beam_start, beam_end) = target.data {
+                if let module::TargetManifestData::Beam(beam_start, beam_end) = target.data {
                     let start_time = 1.0;
                     let end_time = 3.0;
                     

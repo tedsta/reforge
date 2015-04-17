@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use module::{ModulePlans, NetworkTarget};
+use module::{ModulePlans, Target};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipIndex, ShipNetworked, ShipRef};
 use sim::SimEvents;
@@ -84,13 +84,13 @@ impl BattleContext {
         
         self.add_ship(ship.clone());
         
-        ship.borrow_mut().set_targets(self, &targets);
+        ship.borrow_mut().set_targets(&targets);
         
         ship
     }
     
     pub fn add_networked_ships(&mut self, ships: Vec<ShipNetworked>) {
-        let ships: Vec<(ShipRef, Vec<(Option<NetworkTarget>, Option<NetworkTarget>)>)> =
+        let ships: Vec<(ShipRef, Vec<(Option<Target>, Option<Target>)>)> =
             ships.into_iter().map(
                 |s| {
                     let (ship, targets) = s.to_ship();
@@ -103,7 +103,7 @@ impl BattleContext {
             ).collect();
         
         for (ship, targets) in ships {
-            ship.borrow_mut().set_targets(self, &targets);
+            ship.borrow_mut().set_targets(&targets);
         }
     }
     
@@ -130,13 +130,13 @@ impl BattleContext {
 
     pub fn server_preprocess(&mut self) {
         for ship in self.ships.iter() {
-            ship.borrow_mut().server_preprocess();
+            ship.borrow_mut().server_preprocess(self);
         }
     }
     
     pub fn before_simulation(&mut self, events: &mut SimEvents) {
         for ship in self.ships.iter() {
-            ship.borrow().before_simulation(events, ship);
+            ship.borrow().before_simulation(self, events);
         }
     }
     
@@ -150,7 +150,7 @@ impl BattleContext {
     #[cfg(feature = "client")]
     pub fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
         for ship in self.ships.iter() {
-            ship.borrow().add_simulation_effects(asset_store, effects, ship);
+            ship.borrow().add_simulation_effects(self, asset_store, effects, ship);
         }
     }
     
