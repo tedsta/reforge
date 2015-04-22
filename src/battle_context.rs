@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use module::{ModulePlans, Target};
+use module::{ModuleBase, Target};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{ShipId, ShipIndex, ShipNetworked, ShipRef};
 use sim::SimEvents;
@@ -20,6 +20,7 @@ pub struct BattleContext {
     pub ships_client_id: HashMap<ClientId, usize>,
 
     pub ships: Vec<ShipRef>,
+    //pub modules: Vec<ModuleRef>,
 }
 
 impl BattleContext {

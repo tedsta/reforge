@@ -22,8 +22,8 @@ use module::{
     TargetManifest,
 };
 use net::{ClientId, InPacket, OutPacket};
-use sector_data::SectorId;
 use self::ship_gen::generate_ship;
+use sector_data::SectorId;
 use sim::SimEvents;
 use vec::{Vec2, Vec2f};
 
@@ -39,8 +39,10 @@ use asset_store::AssetStore;
 #[cfg(feature = "client")]
 use space_gui::ModuleIcons;
 
-// Use the ship_gen module privately here
+pub use self::plans::ShipPlans;
+
 mod ship_gen;
+mod plans;
 
 // Holds everything about the ship's damage, capabilities, etc.
 #[derive(Clone, RustcEncodable, RustcDecodable)]
@@ -346,14 +348,14 @@ impl Ship {
     }
     
     pub fn server_preprocess(&mut self, context: &BattleContext) {
-        for module in self.modules.iter() {
+        for module in &self.modules {
             let target = module.borrow().get_base().target.as_ref().map(|t| TargetManifest::from_target(context, t));
             module.borrow_mut().server_preprocess(&mut self.state, target);
         }
     }
     
     pub fn before_simulation(&self, context: &BattleContext, events: &mut SimEvents) {
-        for module in self.modules.iter() {
+        for module in &self.modules {
             let target = module.borrow().get_base().target.as_ref().map(|t| TargetManifest::from_target(context, t));
             module.borrow_mut().before_simulation(events, target);
         }
@@ -361,7 +363,7 @@ impl Ship {
     
     #[cfg(feature = "client")]
     pub fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship_ref: &ShipRef) {
-        for module in self.modules.iter() {
+        for module in &self.modules {
             module.borrow().add_plan_effects(asset_store, effects, ship_ref);
         }
     }
@@ -371,7 +373,7 @@ impl Ship {
         if self.exploding {
             self.add_exploding_effects(asset_store, effects, ship_ref);
         } else {
-            for module in self.modules.iter() {
+            for module in &self.modules {
                 let target = module.borrow().get_base().target.as_ref().map(|t| TargetManifest::from_target(context, t));
                 module.borrow().add_simulation_effects(asset_store, effects, ship_ref, target);
             }
@@ -386,7 +388,7 @@ impl Ship {
         use sim_visuals::SpriteVisual;
         use sprite_sheet::{SpriteSheet, SpriteAnimation};
     
-        for module in self.modules.iter() {
+        for module in &self.modules {
             module.borrow_mut().get_base_mut().stats.hp = 0;
             module.borrow().add_plan_effects(asset_store, effects, ship_ref);
         }
@@ -413,7 +415,7 @@ impl Ship {
     }
     
     pub fn after_simulation(&mut self) {
-        for module in self.modules.iter() {
+        for module in &self.modules {
             module.borrow_mut().after_simulation(&mut self.state);
         }
     }
@@ -477,13 +479,13 @@ impl Ship {
     }
     
     pub fn on_ship_removed(&self, ship_id: ShipId) {
-        for module in self.modules.iter() {
+        for module in &self.modules {
             module.borrow_mut().get_base_mut().on_ship_removed(ship_id);
         }
     }
     
     pub fn apply_module_plans(&mut self) {
-        for module in self.modules.iter() {
+        for module in &self.modules {
             let mut module = module.borrow_mut();
             
             if module.get_base().plan_powered != module.get_base().powered {
@@ -570,7 +572,7 @@ impl Ship {
         
         let opacity = (self.state.shields as f32)/8.0;
     
-        for module in self.modules.iter() {
+        for module in &self.modules {
             let module = module.borrow();
             let module = module.get_base();
             
@@ -628,7 +630,7 @@ impl Ship {
     pub fn draw_module_powered_icons(&self, context: &Context, gl: &mut Gl, module_icons: &ModuleIcons) {
         use graphics::*;
     
-        for module in self.modules.iter() {
+        for module in &self.modules {
             let module = module.borrow();
             let module = module.get_base();
             

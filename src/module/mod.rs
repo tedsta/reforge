@@ -314,7 +314,7 @@ pub struct ModuleBase {
     min_hp: u8,    // Minimum HP for the module to still operate
     max_hp: u8,    // Maximum HP of module, including armor
     
-    pub powered: bool,      // If the module consumes power, whether or not it's currently powered (useless otherwise)
+    pub powered: bool,      // If the module consumes power, whether or not it's currently powered
     pub plan_powered: bool, // Plan to power
     
     pub target: Option<Target>,

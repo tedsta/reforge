@@ -181,7 +181,18 @@ impl SpaceGui {
         }
     }
     
-    pub fn draw_simulating(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_effects: &mut SimEffects, client_ship: &mut Ship, time: f64, dt: f64) {
+    pub fn draw_simulating(
+        &mut self,
+        context: &Context,
+        gl: &mut Gl,
+        glyph_cache: &mut GlyphCache,
+        asset_store: &AssetStore,
+        sim_effects: &mut SimEffects,
+        client_ship: &mut Ship,
+        time: f64,
+        dt: f64
+    )
+    {
         use graphics::*;
         
         // Clear the screen
@@ -215,7 +226,18 @@ impl SpaceGui {
         }
     }
     
-    fn draw_screen(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sim_effects: &mut SimEffects, client_ship: &mut Ship, time: f64, dt: f64) {
+    fn draw_screen(
+        &mut self,
+        context: &Context,
+        gl: &mut Gl,
+        glyph_cache: &mut GlyphCache,
+        asset_store: &AssetStore,
+        sim_effects: &mut SimEffects,
+        client_ship: &mut Ship,
+        time: f64,
+        dt: f64,
+    )
+    {
         use graphics::*;
         
         // Draw the space background
@@ -403,6 +425,7 @@ impl SpaceGui {
     }
     
     fn on_mouse_left_pressed(&mut self, x: f64, y: f64, client_ship: &ShipRef) {
+        // Handle module plan powering and selection
         if self.selection.is_none() {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
@@ -410,7 +433,7 @@ impl SpaceGui {
             apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |_, ship_state, module, module_borrowed| {
                 if module_borrowed.get_base().plan_powered {
                     if let Some(target_mode) = module_borrowed.get_target_mode() {
-                        // Select this module and begin targeting
+                        // Select this module to begin targeting
                         self.selection = Some((module.clone(), target_mode));
                     }
                 } else if ship_state.can_plan_activate_module(module_borrowed.get_base()) {
@@ -428,6 +451,7 @@ impl SpaceGui {
                 module::TargetMode::TargetModule => {
                     let x = x - self.render_area.x - ENEMY_OFFSET_X;
                     let y = y - self.render_area.y - ENEMY_OFFSET_Y;
+                    
                     if let Some(ref ship) = self.render_area.ship {
                         if !ship.borrow().jumping && !ship.borrow().exploding {
                             apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |ship_id, _, _, module| {
@@ -444,6 +468,7 @@ impl SpaceGui {
                 module::TargetMode::OwnModule => {
                     let x = x - SHIP_OFFSET_X;
                     let y = y - SHIP_OFFSET_Y;
+                    
                     apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_id, _, _, module| {
                         selected_module.borrow_mut().get_base_mut().plan_target =
                             Some(module::Target {
@@ -517,8 +542,7 @@ impl SpaceGui {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
-            apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_id, ship_state, module, module_borrowed| {
-                let module_power = module_borrowed.get_base().get_power();
+            apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |_, ship_state, _, module_borrowed| {
                 if module_borrowed.get_base().plan_powered {
                     ship_state.plan_deactivate_module(module_borrowed.get_base_mut());
                 }
