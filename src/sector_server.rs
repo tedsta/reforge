@@ -10,7 +10,7 @@ use battle_context::{BattleContext, ClientPacketId, ServerPacketId};
 use login::AccountBox;
 use module::Module;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
-use ship::{Ship, ShipId, ShipRef, ShipStored, ShipNetworked, as_networked_ships};
+use ship::{Ship, ShipId, ShipRef, ShipStored};
 use sim::SimEvents;
 
 pub struct SectorState {
@@ -130,9 +130,9 @@ impl SectorState {
                 
                 // Send initial join packet
                 let mut packet = OutPacket::new();
-                packet.write(&ShipNetworked::from_ship(&ship));
-                packet.write(&self.simulated_turn); // Whether or not to start at simulation instead of planning phase
-                packet.write(&as_networked_ships(&self.context.ships)).unwrap();
+                packet.write(&ship).unwrap();
+                packet.write(&self.simulated_turn).unwrap(); // Whether or not to start at simulation instead of planning phase
+                packet.write(&self.context.ships).unwrap();
                 self.slot.send(client_id, packet);
                 
                 // Add the player's ship
@@ -368,7 +368,7 @@ impl SectorState {
         }
     
         let mut ships_packet = OutPacket::new();
-        ships_packet.write(&as_networked_ships(&self.ships_to_add));
+        ships_packet.write(&self.ships_to_add);
         ships_packet.write(&self.ships_to_remove);
         self.slot.broadcast(ships_packet);
         

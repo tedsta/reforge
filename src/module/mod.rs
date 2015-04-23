@@ -6,6 +6,8 @@ use std::rand;
 use std::rand::Rng;
 use std::marker::Reflect;
 
+use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
+
 use battle_context::BattleContext;
 use net::{InPacket, OutPacket};
 use ship::{ShipId, ShipRef, ShipState};
@@ -27,7 +29,6 @@ pub use self::beam_weapon::BeamWeaponModule;
 
 pub use self::target::{Target, TargetMode, TargetData, TargetManifest, TargetManifestData};
 pub use self::damage_visual::{DamageVisual, DamageVisualKind};
-pub use self::module_networked::{IModuleNetworked, ModuleBaseNetworked, ModuleNetworked, ModuleNetworkedBox};
 
 pub mod engine;
 pub mod proj_weapon;
@@ -38,7 +39,6 @@ pub mod beam_weapon;
 
 pub mod target;
 pub mod damage_visual;
-pub mod module_networked;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -81,9 +81,9 @@ pub trait IModuleRef {
 
     fn get_base(&self) -> &ModuleBase;
     fn get_base_mut(&mut self) -> &mut ModuleBase;
+    fn get_module(&self) -> &IModule;
     
     fn to_module_stored(&self) -> ModuleStoredBox;
-    fn to_module_networked(&self) -> ModuleNetworkedBox;
     
     //////////////////////////////////////////////////////
     // IModule stuff
@@ -124,16 +124,14 @@ impl<M> IModuleRef for Module<M>
         &mut self.base
     }
     
+    fn get_module(&self) -> &IModule {
+        &self.module
+    }
+    
     fn to_module_stored(&self) -> ModuleStoredBox {
         let base = ModuleBaseStored::from_module_base(&self.base);
     
         ModuleStoredBox::new(ModuleStored{base: base, module: self.module.clone()})
-    }
-    
-    fn to_module_networked(&self) -> ModuleNetworkedBox {
-        let base = ModuleBaseNetworked::from_module_base(&self.base);
-    
-        ModuleNetworkedBox::new(ModuleNetworked{base: base, module: self.module.clone()})
     }
     
     //////////////////////////////////////////////////////
@@ -259,6 +257,106 @@ impl DerefMut for ModuleBox {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+// Serialization
+
+#[derive(RustcEncodable, RustcDecodable)]
+enum ModuleClass {
+    ProjectileWeapon,
+    Shield,
+    Engine,
+    Solar,
+    Command,
+    BeamWeapon,
+}
+
+impl Decodable for ModuleBox {
+    fn decode<D: Decoder>(d: &mut D) -> Result<ModuleBox, D::Error> {
+        use self::ModuleClass::*;
+        
+        let module_class: ModuleClass = try!(Decodable::decode(d));
+        let base: ModuleBase = try!(Decodable::decode(d));
+        
+        match module_class {
+            ProjectileWeapon => Ok(ModuleBox::new(Module {
+                base: base,
+                module: try!(<ProjectileWeaponModule as Decodable>::decode(d)),
+            })),
+            Shield => Ok(ModuleBox::new(Module {
+                base: base,
+                module: try!(<ShieldModule as Decodable>::decode(d)),
+            })),
+            Engine => Ok(ModuleBox::new(Module {
+                base: base,
+                module: try!(<EngineModule as Decodable>::decode(d)),
+            })),
+            Solar => Ok(ModuleBox::new(Module {
+                base: base,
+                module: try!(<SolarModule as Decodable>::decode(d)),
+            })),
+            Command => Ok(ModuleBox::new(Module {
+                base: base,
+                module: try!(<CommandModule as Decodable>::decode(d)),
+            })),
+            BeamWeapon => Ok(ModuleBox::new(Module {
+                base: base,
+                module: try!(<BeamWeaponModule as Decodable>::decode(d)),
+            })),
+        }
+    }
+}
+
+impl Encodable for ModuleBox {
+    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+        use std::mem;
+        use std::raw;
+        
+        use self::ModuleClass::*;
+        
+        let type_id = self.get_type_id();
+        
+        let module_class =
+            if type_id == TypeId::of::<ProjectileWeaponModule>() { ProjectileWeapon }
+            else if type_id == TypeId::of::<ShieldModule>() { Shield }
+            else if type_id == TypeId::of::<EngineModule>() { Engine }
+            else if type_id == TypeId::of::<SolarModule>() { Solar }
+            else if type_id == TypeId::of::<CommandModule>() { Command }
+            else if type_id == TypeId::of::<BeamWeaponModule>() { BeamWeapon }
+            else { unreachable!() };
+    
+        try!(module_class.encode(s));
+        try!(self.get_base().encode(s));
+        
+        match module_class {
+            ProjectileWeapon => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.get_module());
+                try!(<ProjectileWeaponModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            Shield => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.get_module());
+                try!(<ShieldModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            Engine => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.get_module());
+                try!(<EngineModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            Solar => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.get_module());
+                try!(<SolarModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            Command => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.get_module());
+                try!(<CommandModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            BeamWeapon => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.get_module());
+                try!(<BeamWeaponModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+        }
+        Ok(())
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct ModulePlans {
@@ -300,7 +398,7 @@ impl ModuleIndex {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Clone)]
+#[derive(Clone, RustcEncodable, RustcDecodable)]
 pub struct ModuleBase {
     // Module position/size stuff
     pub x: u8,

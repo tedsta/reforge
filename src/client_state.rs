@@ -10,7 +10,7 @@ use battle_context::BattleContext;
 use sector_client::{ClientBattleState, ExitMode};
 use net::Client;
 use sector_data::SectorData;
-use ship::{ShipNetworked};
+use ship::{ShipRef};
 
 pub enum ClientState {
     JoinSector,
@@ -25,9 +25,9 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, g
     loop {
         // Receive the ships from the server
         let mut packet = client.receive();
-        let my_ship: ShipNetworked = packet.read().ok().expect("Failed to read my Ship");
+        let my_ship: ShipRef = packet.read().ok().expect("Failed to read my Ship");
         let server_results_sent = packet.read().ok().expect("Failed to read server_results_sent from server");
-        let ships: Vec<ShipNetworked> = match packet.read() {
+        let ships: Vec<ShipRef> = match packet.read() {
             Ok(ships) => ships,
             Err(e) => panic!("Unable to receive ships froms server: {}", e),
         };
@@ -36,8 +36,8 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, g
         let mut battle_context = BattleContext::new(vec!());
         
         // Add the ships
-        battle_context.add_networked_ships(ships);
-        battle_context.add_networked_ship(my_ship);
+        battle_context.add_ships(ships);
+        battle_context.add_ship(my_ship);
         
         let mut battle = ClientBattleState::new(&mut client, battle_context);
 

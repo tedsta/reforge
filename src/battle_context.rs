@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use module::{ModuleBase, Target};
 use net::{ClientId, InPacket, OutPacket};
-use ship::{ShipId, ShipIndex, ShipNetworked, ShipRef};
+use ship::{ShipId, ShipIndex, ShipRef};
 use sim::SimEvents;
 
 #[cfg(feature = "client")]
@@ -21,6 +21,8 @@ pub struct BattleContext {
 
     pub ships: Vec<ShipRef>,
     //pub modules: Vec<ModuleRef>,
+    
+    free_ship_indices: Vec<usize>,
 }
 
 impl BattleContext {
@@ -43,6 +45,7 @@ impl BattleContext {
             ships_ship_id: ships_ship_id,
             ships_client_id: ships_client_id,
             ships: ships,
+            free_ship_indices: vec!(),
         }
     }
     
@@ -76,35 +79,6 @@ impl BattleContext {
     pub fn add_ships(&mut self, ships: Vec<ShipRef>) {
         for ship in ships {
             self.add_ship(ship);
-        }
-    }
-    
-    pub fn add_networked_ship(&mut self, ship: ShipNetworked) -> ShipRef {
-        let (ship, targets) = ship.to_ship();
-        let ship = Rc::new(RefCell::new(ship));
-        
-        self.add_ship(ship.clone());
-        
-        ship.borrow_mut().set_targets(&targets);
-        
-        ship
-    }
-    
-    pub fn add_networked_ships(&mut self, ships: Vec<ShipNetworked>) {
-        let ships: Vec<(ShipRef, Vec<(Option<Target>, Option<Target>)>)> =
-            ships.into_iter().map(
-                |s| {
-                    let (ship, targets) = s.to_ship();
-                    let ship = Rc::new(RefCell::new(ship));
-                    
-                    self.add_ship(ship.clone());
-                    
-                    (ship, targets)
-                }
-            ).collect();
-        
-        for (ship, targets) in ships {
-            ship.borrow_mut().set_targets(&targets);
         }
     }
     

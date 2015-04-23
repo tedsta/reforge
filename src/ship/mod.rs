@@ -9,7 +9,6 @@ use module::{
     IModule,
     IModuleRef,
     IModuleStored,
-    IModuleNetworked,
     Module,
     ModuleBase,
     ModuleBox,
@@ -17,7 +16,6 @@ use module::{
     ModuleRef,
     ModuleStats,
     ModuleStoredBox,
-    ModuleNetworkedBox,
     Target,
     TargetManifest,
 };
@@ -181,6 +179,7 @@ impl ShipIndex {
     }
 }
 
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct Ship {
     pub id: ShipId,
     pub name: String,
@@ -719,79 +718,4 @@ impl ShipStored {
             exploding: false,
         }
     }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#[derive(RustcEncodable, RustcDecodable)]
-pub struct ShipNetworked {
-    pub id: ShipId,
-    pub name: String,
-    pub client_id: Option<ClientId>,
-    pub index: ShipIndex,
-    pub state: ShipState,
-    pub modules: Vec<ModuleNetworkedBox>,
-    
-    // Ship dimensions in module blocks
-    width: u8,
-    height: u8,
-    
-    pub level: u8, // TODO: This is very temporary only for IC US semifinals
-    
-    // Ship's sector jumping plans
-    pub target_sector: Option<SectorId>,
-    
-    // Whether or not the ship successfully jumped
-    pub jumping: bool,
-    pub exploding: bool,
-}
-
-impl ShipNetworked {
-    pub fn from_ship(ship: &Ship) -> ShipNetworked {
-        use std::rc::try_unwrap;
-    
-        ShipNetworked {
-            id: ship.id,
-            name: ship.name.clone(),
-            client_id: ship.client_id,
-            index: ship.index,
-            state: ship.state.clone(),
-            modules: ship.modules.iter().map(|m| m.borrow().to_module_networked()).collect(),
-            width: ship.width,
-            height: ship.height,
-            level: ship.level,
-            target_sector: ship.target_sector,
-            jumping: ship.jumping,
-            exploding: ship.exploding,
-        }
-    }
-    
-    pub fn to_ship(self) -> (Ship, Vec<(Option<Target>, Option<Target>)>) {
-        let modules: Vec<(ModuleBox, Option<Target>, Option<Target>)> =
-            self.modules.into_iter().map(|m| m.to_module()).collect();
-        
-        let module_targets = modules.iter().map(|&(_, t, pt)| (t, pt)).collect();
-        let modules = modules.into_iter().map(|(m, _, _)| Rc::new(RefCell::new(m))).collect();
-    
-        (Ship {
-            id: self.id,
-            name: self.name,
-            client_id: self.client_id,
-            index: self.index,
-            state: self.state,
-            modules: modules,
-            width: self.width,
-            height: self.height,
-            level: self.level,
-            target_sector: self.target_sector,
-            jumping: self.jumping,
-            exploding: self.exploding,
-        }, module_targets)
-    }
-}
-
-pub fn as_networked_ships(ships: &Vec<ShipRef>) -> Vec<ShipNetworked> {
-    use std::ops::Deref;
-
-    ships.iter().map(|s| ShipNetworked::from_ship(s.borrow().deref())).collect()
 }

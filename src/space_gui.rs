@@ -17,7 +17,7 @@ use module;
 use module::{IModule, ModuleBox, ModuleRef};
 use net::ClientId;
 use sector_data::SectorData;
-use ship::{Ship, ShipId, ShipRef, ShipState};
+use ship::{Ship, ShipId, ShipPlans, ShipRef, ShipState};
 use sim::SimEffects;
 use star_map_gui::{StarMapAction, StarMapGui};
 use vec::{Vec2, Vec2f};
@@ -40,6 +40,9 @@ pub struct StatsLabels {
 }
 
 pub struct SpaceGui {
+    // Plans for player's ship
+    plans: ShipPlans,
+
     // The target ships' render areas
     render_area: ShipRenderArea,
     
@@ -97,6 +100,7 @@ impl SpaceGui {
         let target_icons = context.ships.iter().filter(|ship| ship.borrow().id != my_ship_id).take(5).map(|ship| TargetIcon { ship: ship.clone() }).collect();
     
         SpaceGui {
+            plans: ShipPlans::new(),
             render_area: render_area,
             selection: None,
             beam_targeting_state: None,
