@@ -27,16 +27,15 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, g
         let mut packet = client.receive();
         let my_ship: ShipRef = packet.read().ok().expect("Failed to read my Ship");
         let server_results_sent = packet.read().ok().expect("Failed to read server_results_sent from server");
-        let ships: Vec<ShipRef> = match packet.read() {
+        let ships: Vec<Option<ShipRef>> = match packet.read() {
             Ok(ships) => ships,
             Err(e) => panic!("Unable to receive ships froms server: {}", e),
         };
         
         // Create the battle state
-        let mut battle_context = BattleContext::new(vec!());
+        let mut battle_context = BattleContext::new(ships);
         
-        // Add the ships
-        battle_context.add_ships(ships);
+        // Add the player's ship
         battle_context.add_ship(my_ship);
         
         let mut battle = ClientBattleState::new(&mut client, battle_context);

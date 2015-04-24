@@ -122,7 +122,7 @@ impl<'a> ClientBattleState<'a> {
     
     fn run_simulation_phase(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
         // Unlock any exploding or jumping ships
-        for ship in &self.context.ships {
+        for ship in self.context.ships_iter() {
             let ship_id = ship.borrow().id;
             
             if ship.borrow().jumping || ship.borrow().exploding {
@@ -237,7 +237,7 @@ impl<'a> ClientBattleState<'a> {
         self.context.deactivate_unpowerable_modules();
         
         // Set all the dead ships to exploding
-        for ship in &self.context.ships {
+        for ship in self.context.ships_iter() {
             let mut ship = ship.borrow_mut();
             
             if ship.state.get_hp() == 0 {

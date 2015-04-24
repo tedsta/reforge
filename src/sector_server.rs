@@ -124,6 +124,7 @@ impl SectorState {
                 // Get the ship out of storage
                 let ship_stored = account.ship.take().expect("This account must have a ship");
                 let ship = ship_stored.to_ship(Some(client_id));
+                let ship = Rc::new(RefCell::new(ship));
                 
                 // Add the player's account
                 self.accounts.insert(client_id, account);
@@ -136,7 +137,6 @@ impl SectorState {
                 self.slot.send(client_id, packet);
                 
                 // Add the player's ship
-                let ship = Rc::new(RefCell::new(ship));
                 self.context.add_ship(ship.clone());
                 self.ships_to_add.push(ship);
                 
@@ -194,10 +194,10 @@ impl SectorState {
         self.send_new_ships();
     
         // Run AI on ships with no client
-        for ship in self.context.ships.iter() {
+        for ship in self.context.ships_iter() {
             let ship_id = ship.borrow().id;
             let enemies = 
-                &self.context.ships.iter()
+                &self.context.ships_iter()
                     .filter(|s| s.borrow().id != ship_id && !s.borrow().exploding)
                     .map(|s| s.clone())
                     .collect();
@@ -210,7 +210,7 @@ impl SectorState {
         }
         
         // Let the ships that want to jump jump, if they can
-        for ship in self.context.ships.iter() {
+        for ship in self.context.ships_iter() {
             let mut ship = ship.borrow_mut();
             if ship.target_sector.is_some() {
                 ship.jumping = true;
@@ -233,7 +233,7 @@ impl SectorState {
         // Finish the results packet with ships to add and remove
         let mut new_ships = vec!();
         let mut dead_ships = vec!();
-        for ship in self.context.ships.iter() {
+        for ship in self.context.ships_iter() {
             let ship = ship.borrow();
             
             // Replace dead ships with better ships
@@ -263,7 +263,7 @@ impl SectorState {
         
         // Handle all the ships that need to start exploding
         //let mut exploding_ships = vec!();
-        for ship in self.context.ships.iter() {
+        for ship in self.context.ships_iter() {
             let mut ship = ship.borrow_mut();
             
             // Replace dead ships with better ships
@@ -278,7 +278,7 @@ impl SectorState {
         
         // Send off all the ships that jumped
         let mut jumped_ships = vec!();
-        for ship in self.context.ships.iter() {
+        for ship in self.context.ships_iter() {
             if let Some(sector_id) = ship.borrow().target_sector {
                 jumped_ships.push(ship.clone());
                 self.ships_to_remove.push(ship.borrow().id);

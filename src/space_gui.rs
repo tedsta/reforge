@@ -86,7 +86,7 @@ impl SpaceGui {
         //let texture = target.get_texture().expect("Failed to get render texture's texture");
         let x = 1280.0 - 5.0 - 560.0;
         let y = 128.0;
-        let ship = context.ships.iter().filter(|ship| ship.borrow().id != my_ship_id).next().map(|ship| ship.clone());
+        let ship = context.ships_iter().filter(|ship| ship.borrow().id != my_ship_id).next().map(|ship| ship.clone());
         let render_area = ShipRenderArea {
             ship: ship,
             x: x,
@@ -97,7 +97,7 @@ impl SpaceGui {
             //texture: texture,
         };
 
-        let target_icons = context.ships.iter().filter(|ship| ship.borrow().id != my_ship_id).take(5).map(|ship| TargetIcon { ship: ship.clone() }).collect();
+        let target_icons = context.ships_iter().filter(|ship| ship.borrow().id != my_ship_id).take(5).map(|ship| TargetIcon { ship: ship.clone() }).collect();
     
         SpaceGui {
             plans: ShipPlans::new(),
