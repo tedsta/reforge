@@ -177,6 +177,19 @@ impl ShipIndex {
     pub fn to_usize(self) -> usize {
         self.0 as usize
     }
+    
+    pub fn get<'a>(&self, bc: &'a BattleContext) -> &'a ShipRef {
+        bc.ships[self.0 as usize]
+            .as_ref()
+            .expect("Tried to access ship at empty index.")
+    }
+    
+    pub fn get_mut<'a>(&self, bc: &'a mut BattleContext) -> &'a mut ShipRef {
+        bc.ships.get_mut(self.0 as usize)
+            .expect("Tried to mutably access ship at invalid index.")
+            .as_mut()
+            .expect("Tried to mutably access ship at empty index.")
+    }
 }
 
 #[derive(RustcEncodable, RustcDecodable)]
