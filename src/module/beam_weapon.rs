@@ -47,7 +47,7 @@ impl IModule for BeamWeaponModule {
                         
                             events.add(
                                 hit_tick,
-                                target.ship.borrow().id,
+                                target.ship.borrow().index,
                                 box DamageEvent::new(module.borrow().get_base().index, 1),
                             );
                         }

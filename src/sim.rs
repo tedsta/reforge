@@ -20,7 +20,7 @@ pub trait SimEvent {
 }
 
 pub struct SimEvents<'a> {
-    events: Vec<Vec<(ShipId, Box<SimEvent+'a>)>>, // events[tick][event]
+    events: Vec<Vec<(ShipIndex, Box<SimEvent+'a>)>>, // events[tick][event]
 }
 
 impl<'a> SimEvents<'a> {
@@ -34,16 +34,15 @@ impl<'a> SimEvents<'a> {
         }
     }
     
-    pub fn apply_tick(&mut self, context: &BattleContext, tick: u32) {
+    pub fn apply_tick(&mut self, bc: &BattleContext, tick: u32) {
         let tick = tick as usize;
-        for (ship_id, mut event) in self.events[tick].drain() {
-            let ship = context.get_ship(ship_id);
-            event.apply(&mut ship.borrow_mut().state);
+        for (ship, mut event) in self.events[tick].drain() {
+            event.apply(&mut ship.get(bc).borrow_mut().state);
         }
     }
     
-    pub fn add(&mut self, tick: u32, ship_id: ShipId, event: Box<SimEvent+'a>) {
-        self.events[tick as usize].push((ship_id, event));
+    pub fn add(&mut self, tick: u32, ship: ShipIndex, event: Box<SimEvent+'a>) {
+        self.events[tick as usize].push((ship, event));
     }
 }
 

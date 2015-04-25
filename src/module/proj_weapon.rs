@@ -102,7 +102,7 @@ impl IModule for ProjectileWeaponModule {
                         
                             events.add(
                                 projectile.hit_tick,
-                                target.ship.borrow().id,
+                                target.ship.borrow().index,
                                 box DamageEvent::new(target_module.borrow().get_base().index, 1),
                             );
                         } else {
