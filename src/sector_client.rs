@@ -212,7 +212,7 @@ impl<'a> ClientBattleState<'a> {
             }
         
             // Forward events to GUI
-            gui.event(&self.bc, &e, self.player_ship.get(&self.bc));
+            gui.event(&self.bc, &e, self.player_ship.get(&self.bc).borrow_mut().deref_mut());
             
             // Render GUI
             e.render(|args: &RenderArgs| {

@@ -139,10 +139,10 @@ impl SpaceGui {
         }
     }
     
-    pub fn event<E: GenericEvent>(&mut self, bc: &BattleContext, e: &E, client_ship: &ShipRef) {
+    pub fn event<E: GenericEvent>(&mut self, bc: &BattleContext, e: &E, client_ship: &mut Ship) {
         use event::*;
         
-        if client_ship.borrow().state.get_hp() == 0 {
+        if client_ship.state.get_hp() == 0 {
             return;
         }
     
@@ -160,7 +160,7 @@ impl SpaceGui {
             if let Some(star_map_result) = self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]) {
                 match star_map_result {
                     StarMapAction::Jump(sector) => {
-                        client_ship.borrow_mut().target_sector = Some(sector);
+                        client_ship.target_sector = Some(sector);
                         self.show_star_map = false;
                     },
                     StarMapAction::Close => {
@@ -258,7 +258,7 @@ impl SpaceGui {
         // Draw player ship
         draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, asset_store, sim_effects, client_ship, time);
         client_ship.draw_module_powered_icons(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, &self.module_icons);
-        draw_stats(context, gl, glyph_cache, &self.stats_labels, client_ship.deref(), true);
+        draw_stats(context, gl, glyph_cache, &self.stats_labels, client_ship, true);
     
         let mut enemy_alive = false;
         if let Some(ship) = self.render_area.ship {
@@ -435,13 +435,13 @@ impl SpaceGui {
     fn on_key_pressed(&mut self, key: keyboard::Key) {
     }
     
-    fn on_mouse_left_pressed(&mut self, bc: &BattleContext, x: f64, y: f64, client_ship: &ShipRef) {
+    fn on_mouse_left_pressed(&mut self, bc: &BattleContext, x: f64, y: f64, client_ship: &mut Ship) {
         // Handle module plan powering and selection
         if self.selection.is_none() {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
-            apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |_, ship_state, module, module_borrowed| {
+            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module, module_borrowed| {
                 if module_borrowed.get_base().plan_powered {
                     if let Some(target_mode) = module_borrowed.get_target_mode() {
                         // Select this module to begin targeting
@@ -480,7 +480,7 @@ impl SpaceGui {
                     let x = x - SHIP_OFFSET_X;
                     let y = y - SHIP_OFFSET_Y;
                     
-                    apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_index, _, _, module| {
+                    apply_to_module_if_point_inside(client_ship, x, y, |ship_index, _, _, module| {
                         selected_module.borrow_mut().get_base_mut().plan_target =
                             Some(module::Target {
                                 ship: ship_index,
@@ -546,14 +546,14 @@ impl SpaceGui {
         }
     }
     
-    fn on_mouse_right_pressed(&mut self, bc: &BattleContext, x: f64, y: f64, client_ship: &ShipRef) {
+    fn on_mouse_right_pressed(&mut self, bc: &BattleContext, x: f64, y: f64, client_ship: &mut Ship) {
         let mut module_was_deactivated = false;
     
         if self.selection.is_none() {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
-            apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |_, ship_state, _, module_borrowed| {
+            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, _, module_borrowed| {
                 if module_borrowed.get_base().plan_powered {
                     ship_state.plan_deactivate_module(module_borrowed.get_base_mut());
                 }
