@@ -10,7 +10,7 @@ use battle_context::{BattleContext, ClientPacketId, ServerPacketId};
 use login::AccountBox;
 use module::Module;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
-use ship::{Ship, ShipId, ShipRef, ShipStored};
+use ship::{Ship, ShipId, ShipIndex, ShipRef, ShipStored};
 use sim::SimEvents;
 
 pub struct SectorState {
@@ -34,7 +34,7 @@ pub struct SectorState {
     ships_to_add: Vec<ShipRef>,
     
     // Ships to remove after simulation
-    ships_to_remove: Vec<ShipId>,
+    ships_to_remove: Vec<ShipIndex>,
     
     turn_number: u32,
     
@@ -243,10 +243,10 @@ impl SectorState {
                 let better_ship = Rc::new(RefCell::new(better_ship));
                 
                 self.ships_to_add.push(better_ship.clone());
-                self.ships_to_remove.push(ship.id);
+                self.ships_to_remove.push(ship.index);
                 
                 // Remove the old ship
-                dead_ships.push(ship.id);
+                dead_ships.push(ship.index);
                 
                 // Add the better ship
                 new_ships.push(better_ship);
@@ -281,7 +281,7 @@ impl SectorState {
         for ship in self.context.ships_iter() {
             if let Some(sector_id) = ship.borrow().target_sector {
                 jumped_ships.push(ship.clone());
-                self.ships_to_remove.push(ship.borrow().id);
+                self.ships_to_remove.push(ship.borrow().index);
             }
         }
         
@@ -291,8 +291,8 @@ impl SectorState {
         for jumped_ship in jumped_ships.into_iter() {
             use std::rc::try_unwrap;
             
-            let id = jumped_ship.borrow().id;
-            self.context.remove_ship(id);
+            let index = jumped_ship.borrow().index;
+            self.context.remove_ship(index);
             
             let ship_ref_cell = try_unwrap(jumped_ship).ok().expect("Failed to unwrap jumping ship");
             let mut ship = ship_ref_cell.into_inner();

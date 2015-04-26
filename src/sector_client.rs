@@ -16,7 +16,7 @@ use asset_store::AssetStore;
 use battle_context::{BattleContext, ClientPacketId, ServerPacketId, TICKS_PER_SECOND};
 use net::{Client, InPacket, OutPacket};
 use sector_data::SectorData;
-use ship::{Ship, ShipId, ShipRef};
+use ship::{Ship, ShipId, ShipIndex, ShipRef};
 use sim::{SimEvents, SimEffects};
 use space_gui::SpaceGui;
 
@@ -123,11 +123,11 @@ impl<'a> ClientBattleState<'a> {
     fn run_simulation_phase(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
         // Unlock any exploding or jumping ships
         for ship in self.context.ships_iter() {
-            let ship_id = ship.borrow().id;
+            let ship_index = ship.borrow().index;
             
             if ship.borrow().jumping || ship.borrow().exploding {
                 // Remove all locks
-                self.context.on_ship_removed(ship_id);
+                self.context.on_ship_removed(ship_index);
             }
         }
         
@@ -212,12 +212,12 @@ impl<'a> ClientBattleState<'a> {
             }
         
             // Forward events to GUI
-            gui.event(&e, &self.player_ship);
+            gui.event(&self.context, &e, &self.player_ship);
             
             // Render GUI
             e.render(|args: &RenderArgs| {
                 gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-                    gui.draw_simulating(&c, gl, glyph_cache, asset_store, &mut sim_effects, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
+                    gui.draw_simulating(&self.context, &c, gl, glyph_cache, asset_store, &mut sim_effects, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
                 });
             });
         }
@@ -291,7 +291,7 @@ impl<'a> ClientBattleState<'a> {
     
     fn handle_new_ships_packet(&mut self, gui: &mut SpaceGui, packet: &mut InPacket) {
         let ships_to_add: Vec<ShipRef> = packet.read().ok().expect("Failed to read ships to add from packet");
-        let ships_to_remove: Vec<ShipId> = packet.read().ok().expect("Failed to read ships to remove from packet");
+        let ships_to_remove: Vec<ShipIndex> = packet.read().ok().expect("Failed to read ships to remove from packet");
         
         for ship in ships_to_remove.into_iter() {
             println!("Removing ship {:?}", ship);

@@ -73,7 +73,7 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
                 
                     module_borrowed.get_base_mut().plan_target =
                         Some(module::Target {
-                            ship: target_ship.borrow().id,
+                            ship: target_ship.borrow().index,
                             data: module::TargetData::TargetModule(target_module.borrow().get_base().index),
                         });
                 }

@@ -170,7 +170,7 @@ pub type ShipRef = Rc<RefCell<Ship>>;
 // Type for the ID of a ship
 pub type ShipId = u64;
 
-#[derive(Copy, Clone, PartialEq, RustcEncodable, RustcDecodable)]
+#[derive(Copy, Clone, Debug, PartialEq, RustcEncodable, RustcDecodable)]
 pub struct ShipIndex(pub u32);
 
 impl ShipIndex {
@@ -490,9 +490,9 @@ impl Ship {
         }
     }
     
-    pub fn on_ship_removed(&self, ship_id: ShipId) {
+    pub fn on_ship_removed(&self, ship_index: ShipIndex) {
         for module in &self.modules {
-            module.borrow_mut().get_base_mut().on_ship_removed(ship_id);
+            module.borrow_mut().get_base_mut().on_ship_removed(ship_index);
         }
     }
     

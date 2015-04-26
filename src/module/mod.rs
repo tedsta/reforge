@@ -10,7 +10,7 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
 use battle_context::BattleContext;
 use net::{InPacket, OutPacket};
-use ship::{ShipId, ShipRef, ShipState};
+use ship::{ShipId, ShipIndex, ShipRef, ShipState};
 use sim::SimEvents;
 use vec::{Vec2, Vec2f};
 
@@ -537,7 +537,7 @@ impl ModuleBase {
         self.plan_target = *plan_target;
     }
     
-    pub fn on_ship_removed(&mut self, ship_id: ShipId) {
+    pub fn on_ship_removed(&mut self, ship: ShipIndex) {
         use self::TargetData::*;
     
         // TODO make this prettier
@@ -545,7 +545,7 @@ impl ModuleBase {
         let mut remove = false;
     
         if let Some(ref target) = self.plan_target {
-            if target.ship == ship_id {
+            if target.ship == ship {
                 remove = true;
             }
         }
@@ -557,7 +557,7 @@ impl ModuleBase {
         remove = false;
         
         if let Some(ref target) = self.target {
-            if target.ship == ship_id {
+            if target.ship == ship {
                 remove = true;
             }
         }

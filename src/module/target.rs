@@ -1,5 +1,5 @@
 use battle_context::BattleContext;
-use ship::{ShipRef, ShipId};
+use ship::{ShipRef, ShipIndex};
 use vec::{Vec2, Vec2f};
 
 use super::{ModuleRef, ModuleIndex};
@@ -15,7 +15,7 @@ pub enum TargetMode {
 
 #[derive(Clone, Copy, RustcEncodable, RustcDecodable)]
 pub struct Target {
-    pub ship: ShipId,
+    pub ship: ShipIndex,
     pub data: TargetData,
 }
 
@@ -37,8 +37,8 @@ pub struct TargetManifest {
 }
 
 impl TargetManifest {
-    pub fn from_target(context: &BattleContext, target: &Target) -> TargetManifest {
-        let ship = context.get_ship(target.ship).clone();
+    pub fn from_target(bc: &BattleContext, target: &Target) -> TargetManifest {
+        let ship = target.ship.get(bc).clone();
         let data = TargetManifestData::from_target_data(&ship, &target.data);
         
         TargetManifest {

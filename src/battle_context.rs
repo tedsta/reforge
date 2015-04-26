@@ -103,19 +103,14 @@ impl BattleContext {
         }
     }
     
-    pub fn remove_ship(&mut self, ship_id: ShipId) {
-        self.on_ship_removed(ship_id);
-    
-        for maybe_ship in &mut self.ships {
-            let id = maybe_ship.as_ref().map(|s| s.borrow().id);
-            
-            if let Some(id) = id {
-                if id == ship_id {
-                    *maybe_ship = None;
-                    break;
-                }
-            }
+    pub fn remove_ship(&mut self, ship_index: ShipIndex) {
+        self.on_ship_removed(ship_index);
+        
+        if self.ships[ship_index.to_usize()].is_none() {
+            panic!("Tried to remove non-existant ship");
         }
+    
+        self.ships[ship_index.to_usize()] = None;
     }
 
     pub fn server_preprocess(&mut self) {
@@ -150,9 +145,9 @@ impl BattleContext {
         }
     }
     
-    pub fn on_ship_removed(&self, ship_id: ShipId) {
+    pub fn on_ship_removed(&self, ship_index: ShipIndex) {
         for ship in self.ships_iter() {
-            ship.borrow_mut().on_ship_removed(ship_id);
+            ship.borrow_mut().on_ship_removed(ship_index);
         }
     }
     

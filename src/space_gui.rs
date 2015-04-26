@@ -17,7 +17,7 @@ use module;
 use module::{IModule, ModuleBox, ModuleRef};
 use net::ClientId;
 use sector_data::SectorData;
-use ship::{Ship, ShipId, ShipPlans, ShipRef, ShipState};
+use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipRef, ShipState};
 use sim::SimEffects;
 use star_map_gui::{StarMapAction, StarMapGui};
 use vec::{Vec2, Vec2f};
@@ -86,7 +86,7 @@ impl SpaceGui {
         //let texture = target.get_texture().expect("Failed to get render texture's texture");
         let x = 1280.0 - 5.0 - 560.0;
         let y = 128.0;
-        let ship = context.ships_iter().filter(|ship| ship.borrow().id != my_ship_id).next().map(|ship| ship.clone());
+        let ship = context.ships_iter().filter(|ship| ship.borrow().id != my_ship_id).next().map(|ship| ship.borrow().index);
         let render_area = ShipRenderArea {
             ship: ship,
             x: x,
@@ -97,7 +97,7 @@ impl SpaceGui {
             //texture: texture,
         };
 
-        let target_icons = context.ships_iter().filter(|ship| ship.borrow().id != my_ship_id).take(5).map(|ship| TargetIcon { ship: ship.clone() }).collect();
+        let target_icons = context.ships_iter().filter(|ship| ship.borrow().id != my_ship_id).take(5).map(|ship| TargetIcon { ship: ship.borrow().index }).collect();
     
         SpaceGui {
             plans: ShipPlans::new(),
@@ -134,7 +134,7 @@ impl SpaceGui {
         }
     }
     
-    pub fn event<E: GenericEvent>(&mut self, e: &E, client_ship: &ShipRef) {
+    pub fn event<E: GenericEvent>(&mut self, bc: &BattleContext, e: &E, client_ship: &ShipRef) {
         use event::*;
         
         if client_ship.borrow().state.get_hp() == 0 {
@@ -170,8 +170,8 @@ impl SpaceGui {
                     Button::Mouse(button) => {
                         let (mouse_x, mouse_y) = (self.mouse_x, self.mouse_y);
                         match button {
-                            mouse::MouseButton::Left => self.on_mouse_left_pressed(mouse_x, mouse_y, client_ship),
-                            mouse::MouseButton::Right => self.on_mouse_right_pressed(mouse_x, mouse_y, client_ship),
+                            mouse::MouseButton::Left => self.on_mouse_left_pressed(bc, mouse_x, mouse_y, client_ship),
+                            mouse::MouseButton::Right => self.on_mouse_right_pressed(bc, mouse_x, mouse_y, client_ship),
                             _ => {},
                         }
                     },
@@ -187,6 +187,7 @@ impl SpaceGui {
     
     pub fn draw_simulating(
         &mut self,
+        bc: &BattleContext,
         context: &Context,
         gl: &mut Gl,
         glyph_cache: &mut GlyphCache,
@@ -202,7 +203,7 @@ impl SpaceGui {
         // Clear the screen
         clear([0.0; 4], gl);
         
-        self.draw_screen(context, gl, glyph_cache, asset_store, sim_effects, client_ship, time, dt);
+        self.draw_screen(bc, context, gl, glyph_cache, asset_store, sim_effects, client_ship, time, dt);
         
         // Draw plan timer bar
         let plan_timer =
@@ -232,6 +233,7 @@ impl SpaceGui {
     
     fn draw_screen(
         &mut self,
+        bc: &BattleContext,
         context: &Context,
         gl: &mut Gl,
         glyph_cache: &mut GlyphCache,
@@ -254,7 +256,7 @@ impl SpaceGui {
         draw_stats(context, gl, glyph_cache, &self.stats_labels, client_ship.deref(), true);
     
         let mut enemy_alive = false;
-        if let Some(ref ship) = self.render_area.ship {
+        if let Some(ship) = self.render_area.ship {
             // TODO clear render texture
             
             Rectangle::new([1.0, 0.7, 0.2, 0.5])
@@ -267,13 +269,13 @@ impl SpaceGui {
             {
                 let context = context.trans(self.render_area.x, self.render_area.y);
                 
-                draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, asset_store, sim_effects, ship.borrow().deref(), time);
-                draw_stats(&context.trans(0.0, 400.0), gl, glyph_cache, &self.stats_labels, ship.borrow().deref(), false);
+                draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, asset_store, sim_effects, ship.get(bc).borrow().deref(), time);
+                draw_stats(&context.trans(0.0, 400.0), gl, glyph_cache, &self.stats_labels, ship.get(bc).borrow().deref(), false);
             }
             
             // TODO draw render texture
         
-            if ship.borrow().state.get_hp() > 0 {
+            if ship.get(bc).borrow().state.get_hp() > 0 {
                 enemy_alive = true;
             }
         }
@@ -314,8 +316,8 @@ impl SpaceGui {
                         let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
                         
                         // Draw targeting circles
-                        if let Some(ref ship) = self.render_area.ship {
-                            ship.borrow().beam_hits(beam_start, beam_end, |_, circle_pos, radius, hit| {
+                        if let Some(ship) = self.render_area.ship {
+                            ship.get(bc).borrow().beam_hits(beam_start, beam_end, |_, circle_pos, radius, hit| {
                                 let circle =
                                     if let Some(hit_dist) = hit {
                                         Ellipse::new([1.0, 0.0, 0.0, 0.5])
@@ -342,12 +344,12 @@ impl SpaceGui {
                     }
                 },
                 &module::TargetMode::TargetModule => {
-                    if let Some(ref ship) = self.render_area.ship {
+                    if let Some(ship) = self.render_area.ship {
                         // Highlight target modules the user mouses-over red
                         let x = self.mouse_x - self.render_area.x - ENEMY_OFFSET_X;
                         let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
 
-                        apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |_, _, _, module_borrowed| {
+                        apply_to_module_if_point_inside(ship.get(bc).borrow_mut().deref_mut(), x, y, |_, _, _, module_borrowed| {
                             let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
                             let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
                             let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
@@ -406,10 +408,10 @@ impl SpaceGui {
             
             let ref context = context.trans(icon_x, icon_y);
             
-            icon.draw(context, gl, glyph_cache, asset_store);
+            icon.draw(bc, context, gl, glyph_cache, asset_store);
             
             match self.render_area.ship {
-                Some(ref ship) if ship.borrow().id == icon.ship.borrow().id => {
+                Some(ship) if ship == icon.ship => {
                     Rectangle::new([1.0, 0.0, 0.0, 0.5])
                         .draw([0.0, 0.0, 96.0, 96.0], &context.draw_state, context.transform, gl);
                 },
@@ -428,7 +430,7 @@ impl SpaceGui {
     fn on_key_pressed(&mut self, key: keyboard::Key) {
     }
     
-    fn on_mouse_left_pressed(&mut self, x: f64, y: f64, client_ship: &ShipRef) {
+    fn on_mouse_left_pressed(&mut self, bc: &BattleContext, x: f64, y: f64, client_ship: &ShipRef) {
         // Handle module plan powering and selection
         if self.selection.is_none() {
             let x = x - SHIP_OFFSET_X;
@@ -456,12 +458,12 @@ impl SpaceGui {
                     let x = x - self.render_area.x - ENEMY_OFFSET_X;
                     let y = y - self.render_area.y - ENEMY_OFFSET_Y;
                     
-                    if let Some(ref ship) = self.render_area.ship {
-                        if !ship.borrow().jumping && !ship.borrow().exploding {
-                            apply_to_module_if_point_inside(ship.borrow_mut().deref_mut(), x, y, |ship_id, _, _, module| {
+                    if let Some(ship) = self.render_area.ship {
+                        if !ship.get(bc).borrow().jumping && !ship.get(bc).borrow().exploding {
+                            apply_to_module_if_point_inside(ship.get(bc).borrow_mut().deref_mut(), x, y, |ship_index, _, _, module| {
                                 selected_module.borrow_mut().get_base_mut().plan_target =
                                     Some(module::Target {
-                                        ship: ship_id,
+                                        ship: ship_index,
                                         data: module::TargetData::TargetModule(module.get_base().index),
                                     });
                                 clear_selection = true;
@@ -473,10 +475,10 @@ impl SpaceGui {
                     let x = x - SHIP_OFFSET_X;
                     let y = y - SHIP_OFFSET_Y;
                     
-                    apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_id, _, _, module| {
+                    apply_to_module_if_point_inside(client_ship.borrow_mut().deref_mut(), x, y, |ship_index, _, _, module| {
                         selected_module.borrow_mut().get_base_mut().plan_target =
                             Some(module::Target {
-                                ship: ship_id,
+                                ship: ship_index,
                                 data: module::TargetData::OwnModule(module.get_base().index),
                             });
                         clear_selection = true;
@@ -488,13 +490,13 @@ impl SpaceGui {
                     let beam_length = (beam_length as f64) * 48.0;
                     
                     if x >= 0.0 && y >= 0.0 {
-                        if let Some(ref ship) = self.render_area.ship {
-                            if !ship.borrow().jumping && !ship.borrow().exploding {
+                        if let Some(ship) = self.render_area.ship {
+                            if !ship.get(bc).borrow().jumping && !ship.get(bc).borrow().exploding {
                                 if let Some(beam_start) = self.beam_targeting_state {
                                     let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
                                     selected_module.borrow_mut().get_base_mut().plan_target =
                                         Some(module::Target {
-                                            ship: ship.borrow().id,
+                                            ship: ship.get(bc).borrow().index,
                                             data: module::TargetData::Beam(beam_start, beam_end),
                                         });
                                     clear_selection = true;
@@ -524,22 +526,22 @@ impl SpaceGui {
             if x >= icon_x && x <= icon_x+icon_w && y >= icon_y && y <= icon_y+icon_h {
                 let mut should_change = false;
 
-                if let Some(ref ship) = self.render_area.ship { // switching to a new ship
-                    if ship.borrow().id != icon.ship.borrow().id {
+                if let Some(ship) = self.render_area.ship { // switching to a new ship
+                    if ship.get(bc).borrow().index != icon.ship {
                         should_change = true;
                     } else {
                         // do nothing
                     }
                 } 
                 if should_change {
-                    self.render_area.ship = Some(icon.ship.clone());
+                    self.render_area.ship = Some(icon.ship);
                     break;
                 }
             }
         }
     }
     
-    fn on_mouse_right_pressed(&mut self, x: f64, y: f64, client_ship: &ShipRef) {
+    fn on_mouse_right_pressed(&mut self, bc: &BattleContext, x: f64, y: f64, client_ship: &ShipRef) {
         let mut module_was_deactivated = false;
     
         if self.selection.is_none() {
@@ -562,20 +564,20 @@ impl SpaceGui {
     
     pub fn try_lock(&mut self, ship: &ShipRef) {
         if self.render_area.ship.is_none() {
-            self.render_area.ship = Some(ship.clone());
+            self.render_area.ship = Some(ship.borrow().index);
         }
         
         if self.target_icons.len() < 5 {
-            self.target_icons.push(TargetIcon { ship: ship.clone() });
+            self.target_icons.push(TargetIcon { ship: ship.borrow().index });
         }
     }
     
-    pub fn remove_lock(&mut self, ship_id: ShipId) {
-        if self.render_area.ship.is_some() && self.render_area.ship.as_ref().unwrap().borrow().id == ship_id {
+    pub fn remove_lock(&mut self, ship: ShipIndex) {
+        if self.render_area.ship.is_some() && self.render_area.ship.unwrap() == ship {
             self.render_area.ship = None;
         }
         
-        self.target_icons.retain(|i| i.ship.borrow().id != ship_id);
+        self.target_icons.retain(|i| i.ship != ship);
     }
 }
 
@@ -585,7 +587,7 @@ impl SpaceGui {
 /// Returns whether or not the function was applied.
 pub fn apply_to_module_if_point_inside<F>(ship: &mut Ship, x: f64, y: f64, mut f: F)
     where
-        F: FnMut(ShipId, &mut ShipState, &ModuleRef, &mut ModuleBox)
+        F: FnMut(ShipIndex, &mut ShipState, &ModuleRef, &mut ModuleBox)
 {
     for module in ship.modules.iter() {
         let mut module_borrowed = module.borrow_mut();
@@ -595,7 +597,7 @@ pub fn apply_to_module_if_point_inside<F>(ship: &mut Ship, x: f64, y: f64, mut f
         let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
         let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
         if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-            f(ship.id, &mut ship.state, module, module_borrowed.deref_mut());
+            f(ship.index, &mut ship.state, module, module_borrowed.deref_mut());
         }
     }
 }
@@ -610,15 +612,15 @@ fn calculate_beam_end(beam_start: Vec2f, mouse_pos: Vec2f, beam_length: f64) -> 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct TargetIcon {
-    ship: ShipRef,
+    ship: ShipIndex,
 }
 
 impl TargetIcon {
-    fn draw(&self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore) {
+    fn draw(&self, bc: &BattleContext, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore) {
         use graphics::*;
         use graphics::text::Text;
     
-        let ship = self.ship.borrow();
+        let ship = self.ship.get(bc).borrow();
         
         let icon =
             match ship.get_height() {
@@ -677,7 +679,7 @@ impl TargetIcon {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct ShipRenderArea {
-    ship: Option<ShipRef>,
+    ship: Option<ShipIndex>,
     x: f64,
     y: f64,
     width: f64,
