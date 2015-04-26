@@ -567,13 +567,13 @@ impl SpaceGui {
         }
     }
     
-    pub fn try_lock(&mut self, ship: &ShipRef) {
+    pub fn try_lock(&mut self, ship: ShipIndex) {
         if self.render_area.ship.is_none() {
-            self.render_area.ship = Some(ship.borrow().index);
+            self.render_area.ship = Some(ship);
         }
         
         if self.target_icons.len() < 5 {
-            self.target_icons.push(TargetIcon { ship: ship.borrow().index });
+            self.target_icons.push(TargetIcon { ship: ship });
         }
     }
     

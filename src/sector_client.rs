@@ -316,7 +316,7 @@ impl<'a> ClientBattleState<'a> {
             } else {
                 println!("Trying to lock");
                 self.bc.add_ship(ship.clone());
-                gui.try_lock(&ship);
+                gui.try_lock(ship.borrow().index);
             }
         }
     }
