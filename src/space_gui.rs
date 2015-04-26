@@ -17,7 +17,7 @@ use module;
 use module::{IModule, ModuleBox, ModuleRef};
 use net::ClientId;
 use sector_data::SectorData;
-use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipRef, ShipState};
+use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipState};
 use sim::SimEffects;
 use star_map_gui::{StarMapAction, StarMapGui};
 use vec::{Vec2, Vec2f};

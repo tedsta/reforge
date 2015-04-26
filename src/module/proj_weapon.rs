@@ -14,7 +14,7 @@ use battle_context::{BattleContext, TICKS_PER_SECOND};
 use module;
 use module::{IModule, Module, ModuleRef, ModuleBase, ModuleBox, TargetManifest, TargetManifestData};
 use net::{ClientId, InPacket, OutPacket};
-use ship::{Ship, ShipId, ShipRef, ShipState};
+use ship::{Ship, ShipId, ShipState};
 use sim::SimEvents;
 use sim_events::DamageEvent;
 use vec::{Vec2, Vec2f};

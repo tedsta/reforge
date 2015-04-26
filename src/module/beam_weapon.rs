@@ -7,7 +7,7 @@ use battle_context::BattleContext;
 use module;
 use module::{IModule, Module, ModuleBase, ModuleRef, TargetManifest, TargetManifestData};
 use net::{InPacket, OutPacket};
-use ship::{Ship, ShipRef, ShipState};
+use ship::{Ship, ShipState};
 use sim::SimEvents;
 use sim_events::DamageEvent;
 use vec::{Vec2, Vec2f};

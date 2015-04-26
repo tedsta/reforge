@@ -1,7 +1,7 @@
 use std::ops::DerefMut;
 
 use module::{ModuleBox, ModuleIndex, ModuleRef};
-use ship::{ShipRef, ShipState};
+use ship::ShipState;
 use sim::SimEvent;
 
 pub struct DamageEvent {

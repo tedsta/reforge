@@ -10,7 +10,7 @@ use battle_context::BattleContext;
 use sector_client::{ClientBattleState, ExitMode};
 use net::Client;
 use sector_data::SectorData;
-use ship::{ShipRef};
+use ship::ShipRef;
 
 pub enum ClientState {
     JoinSector,

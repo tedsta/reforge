@@ -10,7 +10,7 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
 use battle_context::BattleContext;
 use net::{InPacket, OutPacket};
-use ship::{Ship, ShipId, ShipIndex, ShipRef, ShipState};
+use ship::{Ship, ShipId, ShipIndex, ShipState};
 use sim::SimEvents;
 use vec::{Vec2, Vec2f};
 
