@@ -30,10 +30,10 @@ pub struct ClientBattleState<'a> {
     client: &'a mut Client,
     
     // Context holding all the things involved in this battle
-    context: BattleContext,
+    bc: BattleContext,
     
     // The player's ship
-    player_ship: ShipRef,
+    player_ship: ShipIndex,
     
     new_ships_pre: Option<InPacket>,
     results: Option<InPacket>,
@@ -43,11 +43,11 @@ pub struct ClientBattleState<'a> {
 }
 
 impl<'a> ClientBattleState<'a> {
-    pub fn new(client: &'a mut Client, context: BattleContext) -> ClientBattleState<'a> {
-        let player_ship = context.get_ship_by_client_id(client.get_id()).clone();
+    pub fn new(client: &'a mut Client, bc: BattleContext) -> ClientBattleState<'a> {
+        let player_ship = bc.get_ship_by_client_id(client.get_id()).borrow().index;
         ClientBattleState {
             client: client,
-            context: context,
+            bc: bc,
             player_ship: player_ship,
             new_ships_pre: None,
             results: None,
@@ -60,7 +60,7 @@ impl<'a> ClientBattleState<'a> {
         use window::ShouldClose;
         use quack::Get;
     
-        let ref mut gui = SpaceGui::new(asset_store, &self.context, sectors, self.player_ship.borrow().index);
+        let ref mut gui = SpaceGui::new(asset_store, &self.bc, sectors, self.player_ship);
     
         let ref mut sim_effects = SimEffects::new();
         
@@ -86,7 +86,7 @@ impl<'a> ClientBattleState<'a> {
         self.handle_new_ships_packet(gui, &mut new_ships_post);
         
         // Check if player jumped
-        if self.player_ship.borrow().jumping {
+        if self.player_ship.get(&self.bc).borrow().jumping {
             return ExitMode::Jump;
         }
     
@@ -104,17 +104,17 @@ impl<'a> ClientBattleState<'a> {
             
             self.run_simulation_phase(window, gl, glyph_cache, asset_store, gui, sim_effects);
             
+            // Check if player jumped
+            if self.player_ship.get(&self.bc).borrow().jumping {
+                break;
+            }
+            
             // Receive ships after sim
             self.handle_new_ships_packet(gui, &mut new_ships_post);
             
             // Check if it's time to exit
             let ShouldClose(should_close) = window.borrow().get();
             if should_close { break; }
-            
-            // Check if player jumped
-            if self.player_ship.borrow().jumping {
-                break;
-            }
         }
         
         ExitMode::Jump
@@ -122,12 +122,12 @@ impl<'a> ClientBattleState<'a> {
     
     fn run_simulation_phase(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
         // Unlock any exploding or jumping ships
-        for ship in self.context.ships_iter() {
+        for ship in self.bc.ships_iter() {
             let ship_index = ship.borrow().index;
             
             if ship.borrow().jumping || ship.borrow().exploding {
                 // Remove all locks
-                self.context.on_ship_removed(ship_index);
+                self.bc.on_ship_removed(ship_index);
             }
         }
         
@@ -135,8 +135,8 @@ impl<'a> ClientBattleState<'a> {
             
         // Before simulation
         sim_effects.reset();
-        self.context.before_simulation(&mut sim_events);
-        self.context.add_simulation_effects(asset_store, &mut sim_effects);
+        self.bc.before_simulation(&mut sim_events);
+        self.bc.add_simulation_effects(asset_store, &mut sim_effects);
         
         // Simulation
         let start_time = time::now().to_timespec();
@@ -157,7 +157,7 @@ impl<'a> ClientBattleState<'a> {
             let elapsed_time = current_time - start_time;
             let elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000.0;
             
-            if !self.last_tick && !self.player_ship.borrow().exploding && !plans_sent && elapsed_seconds >= 2.5 {
+            if !self.last_tick && !self.player_ship.get(&self.bc).borrow().exploding && !plans_sent && elapsed_seconds >= 2.5 {
                 // Send plans
                 let packet = self.build_plans_packet();
                 self.client.send(&packet);
@@ -166,7 +166,7 @@ impl<'a> ClientBattleState<'a> {
             }
             
             if !self.last_tick {
-                if plans_sent || self.player_ship.borrow().exploding {
+                if plans_sent || self.player_ship.get(&self.bc).borrow().exploding {
                     if !new_ships_pre_received {
                         if let Ok(packet) = self.client.try_receive() {
                             self.new_ships_pre = Some(packet);
@@ -206,38 +206,38 @@ impl<'a> ClientBattleState<'a> {
             // Simulate any new ticks
             if next_tick < 100 {
                 for t in next_tick .. cmp::min(next_tick+tick-next_tick+1, 100) {
-                    sim_events.apply_tick(&self.context, t);
+                    sim_events.apply_tick(&self.bc, t);
                 }
                 next_tick = tick+1;
             }
         
             // Forward events to GUI
-            gui.event(&self.context, &e, &self.player_ship);
+            gui.event(&self.bc, &e, self.player_ship.get(&self.bc));
             
             // Render GUI
             e.render(|args: &RenderArgs| {
                 gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
-                    gui.draw_simulating(&self.context, &c, gl, glyph_cache, asset_store, &mut sim_effects, self.player_ship.borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
+                    gui.draw_simulating(&self.bc, &c, gl, glyph_cache, asset_store, &mut sim_effects, self.player_ship.get(&self.bc).borrow_mut().deref_mut(), elapsed_seconds, (1.0/60.0) + args.ext_dt);
                 });
             });
         }
         
         // Simulate any remaining ticks
         for t in next_tick .. 100 {
-            sim_events.apply_tick(&self.context, t);
+            sim_events.apply_tick(&self.bc, t);
         }
         
         // After simulation
-        self.context.after_simulation();
+        self.bc.after_simulation();
         
         // Apply module stats
-        self.context.apply_module_stats();
+        self.bc.apply_module_stats();
         
         // Deactivate modules that can no longer be powered
-        self.context.deactivate_unpowerable_modules();
+        self.bc.deactivate_unpowerable_modules();
         
         // Set all the dead ships to exploding
-        for ship in self.context.ships_iter() {
+        for ship in self.bc.ships_iter() {
             let mut ship = ship.borrow_mut();
             
             if ship.state.get_hp() == 0 {
@@ -253,8 +253,8 @@ impl<'a> ClientBattleState<'a> {
             Err(_) => panic!("Failed to write plan packet ID"),
         }
 
-        packet.write(&self.player_ship.borrow().target_sector).ok().expect("Failed to write player's target sector");
-        packet.write(&self.player_ship.borrow().get_module_plans()).ok().expect("Failed to write player's plans");
+        packet.write(&self.player_ship.get(&self.bc).borrow().target_sector).ok().expect("Failed to write player's target sector");
+        packet.write(&self.player_ship.get(&self.bc).borrow().get_module_plans()).ok().expect("Failed to write player's plans");
 
         packet
     }
@@ -272,7 +272,7 @@ impl<'a> ClientBattleState<'a> {
         };
         
         // Results packet has both plans and results
-        self.context.read_results(packet);
+        self.bc.read_results(packet);
     }
     
     fn try_receive_new_ships(&mut self, gui: &mut SpaceGui) -> io::Result<()> {
@@ -293,28 +293,29 @@ impl<'a> ClientBattleState<'a> {
         let ships_to_add: Vec<ShipRef> = packet.read().ok().expect("Failed to read ships to add from packet");
         let ships_to_remove: Vec<ShipIndex> = packet.read().ok().expect("Failed to read ships to remove from packet");
         
+        let player_ship_id = self.player_ship.get(&self.bc).borrow().id;
+        let player_hp = self.player_ship.get(&self.bc).borrow().state.get_hp();
+        
         for ship in ships_to_remove.into_iter() {
             println!("Removing ship {:?}", ship);
         
             gui.remove_lock(ship);
         
-            self.context.remove_ship(ship);
+            self.bc.remove_ship(ship);
         }
     
         for ship in ships_to_add.into_iter() {
             println!("Got a new ship {:?}", ship.borrow().id);
             let ship_id = ship.borrow().id;
-            let player_ship_id = self.player_ship.borrow().id;
             if ship_id == player_ship_id {
-                let hp = self.player_ship.borrow().state.get_hp();
-                if hp == 0 {
+                if player_hp == 0 {
                     println!("Replacing player's ship");
-                    self.player_ship = ship.clone();
-                    self.context.add_ship(ship);
+                    self.player_ship = ship.borrow().index;
+                    self.bc.add_ship(ship);
                 }
             } else {
                 println!("Trying to lock");
-                self.context.add_ship(ship.clone());
+                self.bc.add_ship(ship.clone());
                 gui.try_lock(&ship);
             }
         }
