@@ -10,7 +10,7 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
 use battle_context::BattleContext;
 use net::{InPacket, OutPacket};
-use ship::{ShipId, ShipIndex, ShipRef, ShipState};
+use ship::{Ship, ShipId, ShipIndex, ShipRef, ShipState};
 use sim::SimEvents;
 use vec::{Vec2, Vec2f};
 
@@ -48,9 +48,9 @@ pub trait IModule : Send {
     fn before_simulation(&mut self, base: &mut ModuleBase, events: &mut SimEvents, target: Option<TargetManifest>) {}
     
     #[cfg(feature = "client")]
-    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
+    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship);
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef, target: Option<TargetManifest>);
+    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>);
     
     fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
     
@@ -92,9 +92,9 @@ pub trait IModuleRef {
 
     fn before_simulation(&mut self, events: &mut SimEvents, target: Option<TargetManifest>);
     #[cfg(feature = "client")]
-    fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef);
+    fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship);
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef, target: Option<TargetManifest>);
+    fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>);
     fn after_simulation(&mut self, ship_state: &mut ShipState);
     
     fn write_results(&self, packet: &mut OutPacket);
@@ -146,15 +146,15 @@ impl<M> IModuleRef for Module<M>
     }
     
     #[cfg(feature = "client")]
-    fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
+    fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
         self.module.add_plan_effects(&self.base, asset_store, effects, ship);
-        self.base.add_damage_effects(asset_store, effects, ship.borrow().id);
+        self.base.add_damage_effects(asset_store, effects, ship.id);
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef, target: Option<TargetManifest>) {
+    fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
         self.module.add_simulation_effects(&self.base, asset_store, effects, ship, target);
-        self.base.add_damage_effects(asset_store, effects, ship.borrow().id);
+        self.base.add_damage_effects(asset_store, effects, ship.id);
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {

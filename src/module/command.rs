@@ -7,7 +7,7 @@ use battle_context::BattleContext;
 use module;
 use module::{IModule, Module, ModuleBase, ModuleRef, TargetManifest};
 use net::{InPacket, OutPacket};
-use ship::{ShipRef, ShipState};
+use ship::{Ship, ShipRef, ShipState};
 use sim::SimEvents;
 use vec::{Vec2, Vec2f};
 
@@ -34,7 +34,7 @@ impl CommandModule {
 
 impl IModule for CommandModule {
     #[cfg(feature = "client")]
-    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
+    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
         let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/big_command_sprite.png"));
 
         if base.is_active() {
@@ -43,14 +43,14 @@ impl IModule for CommandModule {
             command_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
     
-        effects.add_visual(ship.borrow().id, 0, box SpriteVisual {
+        effects.add_visual(ship.id, 0, box SpriteVisual {
             position: base.get_render_position().clone(),
             sprite_sheet: command_sprite,
         });
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef, target: Option<TargetManifest>) {
+    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
         self.add_plan_effects(base, asset_store, effects, ship);
     }
     

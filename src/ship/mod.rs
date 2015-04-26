@@ -374,26 +374,26 @@ impl Ship {
     }
     
     #[cfg(feature = "client")]
-    pub fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship_ref: &ShipRef) {
+    pub fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
         for module in &self.modules {
-            module.borrow().add_plan_effects(asset_store, effects, ship_ref);
+            module.borrow().add_plan_effects(asset_store, effects, self);
         }
     }
     
     #[cfg(feature = "client")]
-    pub fn add_simulation_effects(&self, context: &BattleContext, asset_store: &AssetStore, effects: &mut SimEffects, ship_ref: &ShipRef) {
+    pub fn add_simulation_effects(&self, context: &BattleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
         if self.exploding {
-            self.add_exploding_effects(asset_store, effects, ship_ref);
+            self.add_exploding_effects(asset_store, effects);
         } else {
             for module in &self.modules {
                 let target = module.borrow().get_base().target.as_ref().map(|t| TargetManifest::from_target(context, t));
-                module.borrow().add_simulation_effects(asset_store, effects, ship_ref, target);
+                module.borrow().add_simulation_effects(asset_store, effects, self, target);
             }
         }
     }
     
     #[cfg(feature = "client")]
-    fn add_exploding_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects, ship_ref: &ShipRef) {
+    fn add_exploding_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
         use std::rand;
         use std::rand::Rng;
     
@@ -402,7 +402,7 @@ impl Ship {
     
         for module in &self.modules {
             module.borrow_mut().get_base_mut().stats.hp = 0;
-            module.borrow().add_plan_effects(asset_store, effects, ship_ref);
+            module.borrow().add_plan_effects(asset_store, effects, self);
         }
         
         // Random number generater

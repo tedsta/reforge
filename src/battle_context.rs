@@ -128,14 +128,14 @@ impl BattleContext {
     #[cfg(feature = "client")]
     pub fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
         for ship in self.ships_iter() {
-            ship.borrow().add_plan_effects(asset_store, effects, ship);
+            ship.borrow().add_plan_effects(asset_store, effects);
         }
     }
     
     #[cfg(feature = "client")]
     pub fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
         for ship in self.ships_iter() {
-            ship.borrow().add_simulation_effects(self, asset_store, effects, ship);
+            ship.borrow().add_simulation_effects(self, asset_store, effects);
         }
     }
     

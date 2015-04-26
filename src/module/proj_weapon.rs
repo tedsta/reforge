@@ -14,7 +14,7 @@ use battle_context::{BattleContext, TICKS_PER_SECOND};
 use module;
 use module::{IModule, Module, ModuleRef, ModuleBase, ModuleBox, TargetManifest, TargetManifestData};
 use net::{ClientId, InPacket, OutPacket};
-use ship::{ShipId, ShipRef, ShipState};
+use ship::{Ship, ShipId, ShipRef, ShipState};
 use sim::SimEvents;
 use sim_events::DamageEvent;
 use vec::{Vec2, Vec2f};
@@ -115,7 +115,7 @@ impl IModule for ProjectileWeaponModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
+    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/weapon_sprite.png"));
         
         if base.is_active() {
@@ -124,15 +124,15 @@ impl IModule for ProjectileWeaponModule {
             weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
     
-        effects.add_visual(ship.borrow().id, 0, box SpriteVisual {
+        effects.add_visual(ship.id, 0, box SpriteVisual {
             position: base.get_render_position().clone(),
             sprite_sheet: weapon_sprite,
         });
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef, target: Option<TargetManifest>) {
-        let ship_id = ship.borrow().id;
+    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
+        let ship_id = ship.id;
     
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/weapon_sprite.png"));
         

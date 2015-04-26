@@ -7,7 +7,7 @@ use battle_context::BattleContext;
 use module;
 use module::{IModule, Module, ModuleBase, ModuleRef, TargetManifest};
 use net::{InPacket, OutPacket};
-use ship::{ShipRef, ShipState};
+use ship::{Ship, ShipRef, ShipState};
 use sim::SimEvents;
 use vec::{Vec2, Vec2f};
 
@@ -34,11 +34,11 @@ impl EngineModule {
 
 impl IModule for EngineModule {    
     #[cfg(feature = "client")]
-    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef) {
+    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
         let mut engine_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/engine1.png"));
         engine_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
     
-        effects.add_visual(ship.borrow().id, 0, box SpriteVisual {
+        effects.add_visual(ship.id, 0, box SpriteVisual {
             position: base.get_render_position().clone(),
             sprite_sheet: engine_sprite,
         });
@@ -48,7 +48,7 @@ impl IModule for EngineModule {
             let mut prop_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/propulsion_sprite.png"));
             prop_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.05));
         
-            effects.add_visual(ship.borrow().id, 0, box SpriteVisual {
+            effects.add_visual(ship.id, 0, box SpriteVisual {
                 position: base.get_render_position().clone() + Vec2{x: -48.0, y: 2.0},
                 sprite_sheet: prop_sprite,
             });
@@ -56,7 +56,7 @@ impl IModule for EngineModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &ShipRef, target: Option<TargetManifest>) {
+    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
         self.add_plan_effects(base, asset_store, effects, ship);
     }
     
