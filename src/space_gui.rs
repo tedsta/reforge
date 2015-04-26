@@ -80,13 +80,13 @@ pub struct SpaceGui {
 }
 
 impl SpaceGui {
-    pub fn new(asset_store: &AssetStore, context: &BattleContext, sectors: Vec<SectorData>, my_ship_id: ShipId) -> SpaceGui {
+    pub fn new(asset_store: &AssetStore, context: &BattleContext, sectors: Vec<SectorData>, my_ship: ShipIndex) -> SpaceGui {
         // Set up the render area
         //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
         //let texture = target.get_texture().expect("Failed to get render texture's texture");
         let x = 1280.0 - 5.0 - 560.0;
         let y = 128.0;
-        let ship = context.ships_iter().filter(|ship| ship.borrow().id != my_ship_id).next().map(|ship| ship.borrow().index);
+        let ship = context.ships_iter().filter(|ship| ship.borrow().index != my_ship).next().map(|ship| ship.borrow().index);
         let render_area = ShipRenderArea {
             ship: ship,
             x: x,
@@ -97,7 +97,12 @@ impl SpaceGui {
             //texture: texture,
         };
 
-        let target_icons = context.ships_iter().filter(|ship| ship.borrow().id != my_ship_id).take(5).map(|ship| TargetIcon { ship: ship.borrow().index }).collect();
+        let target_icons =
+            context.ships_iter()
+            .filter(|ship| ship.borrow().index != my_ship)
+            .take(5)
+            .map(|ship| TargetIcon { ship: ship.borrow().index })
+            .collect();
     
         SpaceGui {
             plans: ShipPlans::new(),
