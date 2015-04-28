@@ -414,6 +414,14 @@ impl ModuleIndex {
     pub fn to_usize(self) -> usize {
         self.0 as usize
     }
+    
+    pub fn get<'a>(&self, ship: &'a Ship) -> &'a ModuleRef {
+        &ship.modules[self.0 as usize]
+    }
+    
+    pub fn get_mut<'a>(&self, ship: &'a mut Ship) -> &'a mut ModuleRef {
+        &mut ship.modules[self.0 as usize]
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

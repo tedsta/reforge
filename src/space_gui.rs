@@ -14,7 +14,7 @@ use asset_store::AssetStore;
 use battle_context::BattleContext;
 use gui::TextButton;
 use module;
-use module::{IModule, ModuleBox, ModuleRef};
+use module::{IModule, ModuleBox, ModuleIndex, ModuleRef};
 use net::ClientId;
 use sector_data::SectorData;
 use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipState};
@@ -47,7 +47,7 @@ pub struct SpaceGui {
     render_area: ShipRenderArea,
     
     // Selected module
-    selection: Option<(ModuleRef, module::TargetMode)>,
+    selection: Option<(ModuleIndex, module::TargetMode)>,
     
     // Current state of targeting
     beam_targeting_state: Option<Vec2f>,
@@ -286,16 +286,16 @@ impl SpaceGui {
         }
         
         if let Some(ref selection) = self.selection {
-            let &(ref selected_module, ref target_mode) = selection;
+            let &(selected_module, ref target_mode) = selection;
+            
+            let selected_module = selected_module.get(client_ship).borrow();
             
             // Highlight selected module
             let x = self.mouse_x - SHIP_OFFSET_X;
             let y = self.mouse_y - SHIP_OFFSET_Y;
-            
-            let module_borrowed = selected_module.borrow();
 
-            let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
-            let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
+            let Vec2{x: module_x, y: module_y} = selected_module.get_base().get_render_position();
+            let Vec2{x: module_w, y: module_h} = selected_module.get_base().get_render_size();
             let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
         
             {
@@ -354,9 +354,9 @@ impl SpaceGui {
                         let x = self.mouse_x - self.render_area.x - ENEMY_OFFSET_X;
                         let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
 
-                        apply_to_module_if_point_inside(ship.get(bc), x, y, |_, _, _, module_borrowed| {
-                            let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
-                            let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
+                        apply_to_module_if_point_inside(ship.get(bc), x, y, |_, _, _, module| {
+                            let Vec2{x: module_x, y: module_y} = module.get_base().get_render_position();
+                            let Vec2{x: module_w, y: module_h} = module.get_base().get_render_size();
                             let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
                             
                             let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
@@ -377,20 +377,20 @@ impl SpaceGui {
             let x = self.mouse_x - SHIP_OFFSET_X;
             let y = self.mouse_y - SHIP_OFFSET_Y;
 
-            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, _, module_borrowed| {
-                let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
-                let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
+            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, _, module| {
+                let Vec2{x: module_x, y: module_y} = module.get_base().get_render_position();
+                let Vec2{x: module_w, y: module_h} = module.get_base().get_render_size();
                 let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
             
                 let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
-                if self.plans.module_plans(module_borrowed.get_base().index).plan_powered {
+                if self.plans.module_plans(module.get_base().index).plan_powered {
                     Rectangle::new([0.0, 0.0, 1.0, 0.5])
                         .draw(
                             [module_x, module_y, module_w, module_h],
                             &context.draw_state, context.transform,
                             gl
                         );
-                } else if self.plans.can_plan_activate_module(ship_state, module_borrowed.get_base()) {
+                } else if self.plans.can_plan_activate_module(ship_state, module.get_base()) {
                     Rectangle::new([1.0, 1.0, 0.0, 0.5])
                         .draw(
                             [module_x, module_y, module_w, module_h],
@@ -441,14 +441,14 @@ impl SpaceGui {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
-            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module, module_borrowed| {
-                if self.plans.module_plans(module_borrowed.get_base().index).plan_powered {
-                    if let Some(target_mode) = module_borrowed.get_target_mode() {
+            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, _, module| {
+                if self.plans.module_plans(module.get_base().index).plan_powered {
+                    if let Some(target_mode) = module.get_target_mode() {
                         // Select this module to begin targeting
-                        self.selection = Some((module.clone(), target_mode));
+                        self.selection = Some((module.get_base().index, target_mode));
                     }
-                } else if self.plans.can_plan_activate_module(ship_state, module_borrowed.get_base()) {
-                    self.plans.plan_activate_module(module_borrowed.get_base_mut());
+                } else if self.plans.can_plan_activate_module(ship_state, module.get_base()) {
+                    self.plans.plan_activate_module(module.get_base());
                 }
             });
         }
@@ -456,7 +456,7 @@ impl SpaceGui {
         let mut clear_selection = false;
         
         if let Some(ref selection) = self.selection {
-            let &(ref selected_module, ref target_mode) = selection;
+            let &(selected_module, ref target_mode) = selection;
 
             match *target_mode {
                 module::TargetMode::TargetModule => {
@@ -468,7 +468,7 @@ impl SpaceGui {
                             let ref mut plans = self.plans;
                             
                             apply_to_module_if_point_inside(ship.get(bc), x, y, |ship_index, _, _, module| {
-                                plans.module_plans(selected_module.borrow().get_base().index).plan_target =
+                                plans.module_plans(selected_module).plan_target =
                                     Some(module::Target {
                                         ship: ship_index,
                                         data: module::TargetData::TargetModule(module.get_base().index),
@@ -485,7 +485,7 @@ impl SpaceGui {
                     let ref mut plans = self.plans;
                     
                     apply_to_module_if_point_inside(client_ship, x, y, |ship_index, _, _, module| {
-                        plans.module_plans(selected_module.borrow().get_base().index).plan_target =
+                        plans.module_plans(selected_module).plan_target =
                             Some(module::Target {
                                 ship: ship_index,
                                 data: module::TargetData::OwnModule(module.get_base().index),
@@ -503,7 +503,7 @@ impl SpaceGui {
                             if !ship.get(bc).jumping && !ship.get(bc).exploding {
                                 if let Some(beam_start) = self.beam_targeting_state {
                                     let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
-                                    self.plans.module_plans(selected_module.borrow().get_base().index).plan_target =
+                                    self.plans.module_plans(selected_module).plan_target =
                                         Some(module::Target {
                                             ship: ship,
                                             data: module::TargetData::Beam(beam_start, beam_end),
