@@ -175,9 +175,6 @@ pub struct Ship {
     
     pub level: u8, // TODO: This is very temporary only for IC US semifinals
     
-    // Ship's sector jumping plans
-    pub target_sector: Option<SectorId>,
-    
     // Whether or not the ship successfully jumped
     pub jumping: bool,
     
@@ -198,8 +195,7 @@ impl Ship {
             height: 0,
             
             level: level,
-            
-            target_sector: None,
+
             jumping: false,
             exploding: false,
         }
@@ -450,15 +446,13 @@ impl Ship {
     pub fn create_plans(&self) -> ShipPlans {
         ShipPlans {
             logout: false,
-            target_sector: self.target_sector,
+            target_sector: None,
             module_plans: self.modules.iter().map(|m| m.borrow().get_base().create_plans()).collect(),
             plan_power_use: self.state.power_use,
         }
     }
     
     pub fn apply_plans(&mut self, plans: &ShipPlans) {
-        self.target_sector = plans.target_sector;
-        
         for (module, module_plans) in self.modules.iter().zip(plans.module_plans.iter()) {
             let mut module = module.borrow_mut();
             
@@ -477,23 +471,6 @@ impl Ship {
             
             // Apply target plans
             module.get_base_mut().target = module_plans.plan_target;
-        }
-    }
-    
-    pub fn get_module_plans(&self) -> Vec<module::ModulePlans> {
-        self.modules.iter().map(|m| m.borrow().get_base().get_plans()).collect()
-    }
-    
-    pub fn set_module_plans(&self, plans: &Vec<module::ModulePlans>) {
-        for (module, plans) in self.modules.iter().zip(plans.iter()) {
-            module.borrow_mut().get_base_mut().set_plans(plans);
-        }
-    }
-    
-    pub fn set_targets(&self, targets: &Vec<(Option<Target>, Option<Target>)>) {
-        for (module, targets) in self.modules.iter().zip(targets.iter()) {
-            let &(ref target, ref plan_target) = targets;
-            module.borrow_mut().get_base_mut().set_targets(target, plan_target);
         }
     }
     
@@ -640,9 +617,6 @@ pub struct ShipStored {
     height: u8,
     
     pub level: u8, // TODO: This is very temporary only for IC US semifinals
-    
-    // Ship's sector jumping plans
-    pub target_sector: Option<SectorId>,
 }
 
 impl ShipStored {
@@ -657,8 +631,6 @@ impl ShipStored {
             height: 0,
             
             level: level,
-            
-            target_sector: None,
         }
     }
     
@@ -673,7 +645,6 @@ impl ShipStored {
             width: ship.width,
             height: ship.height,
             level: ship.level,
-            target_sector: ship.target_sector,
         }
     }
     
@@ -688,7 +659,6 @@ impl ShipStored {
             width: self.width,
             height: self.height,
             level: self.level,
-            target_sector: self.target_sector,
             jumping: false,
             exploding: false,
         }

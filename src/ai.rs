@@ -20,7 +20,7 @@ pub fn run_ai(ship: &Ship, plans: &mut ShipPlans, enemy_ships: &Vec<&Ship>) {
         for module in ship.modules.iter() {
             let module_borrowed = module.borrow();
             if module_borrowed.get_type_id() == TypeId::of::<ProjectileWeaponModule>() {
-                if !module_borrowed.get_base().plan_powered && plans.can_plan_activate_module(&ship.state, module_borrowed.get_base()) {
+                if !plans.module_plans(module_borrowed.get_base().index).plan_powered && plans.can_plan_activate_module(&ship.state, module_borrowed.get_base()) {
                     module_to_activate = Some(module.clone());
                     activating_stuff = true;
                     break;
@@ -35,7 +35,7 @@ pub fn run_ai(ship: &Ship, plans: &mut ShipPlans, enemy_ships: &Vec<&Ship>) {
         for module in ship.modules.iter() {
             let module_borrowed = module.borrow();
             if module_borrowed.get_type_id() == TypeId::of::<EngineModule>() {
-                if !module_borrowed.get_base().plan_powered && plans.can_plan_activate_module(&ship.state, module_borrowed.get_base()) {
+                if !plans.module_plans(module_borrowed.get_base().index).plan_powered && plans.can_plan_activate_module(&ship.state, module_borrowed.get_base()) {
                     module_to_activate = Some(module.clone());
                     activating_stuff = true;
                     break;
@@ -50,7 +50,7 @@ pub fn run_ai(ship: &Ship, plans: &mut ShipPlans, enemy_ships: &Vec<&Ship>) {
         for module in ship.modules.iter() {
             let module_borrowed = module.borrow();
             if module_borrowed.get_type_id() == TypeId::of::<ShieldModule>() {
-                if !module_borrowed.get_base().plan_powered && plans.can_plan_activate_module(&ship.state, module_borrowed.get_base()) {
+                if !plans.module_plans(module_borrowed.get_base().index).plan_powered && plans.can_plan_activate_module(&ship.state, module_borrowed.get_base()) {
                     module_to_activate = Some(module.clone());
                     activating_stuff = true;
                     break;

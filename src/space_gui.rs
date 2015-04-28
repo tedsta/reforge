@@ -383,7 +383,7 @@ impl SpaceGui {
                 let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
             
                 let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
-                if module_borrowed.get_base().plan_powered {
+                if self.plans.module_plans(module_borrowed.get_base().index).plan_powered {
                     Rectangle::new([0.0, 0.0, 1.0, 0.5])
                         .draw(
                             [module_x, module_y, module_w, module_h],

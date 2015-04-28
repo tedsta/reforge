@@ -12,6 +12,7 @@ use module::Module;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
 use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipStored};
 use sim::SimEvents;
+use star_map_server::ExitAction;
 
 pub struct SectorState {
     slot: ServerSlot,
@@ -64,7 +65,13 @@ impl SectorState {
         }
     }
     
-    pub fn run(&mut self, to_map_sender: Sender<AccountBox>, from_map_receiver: Receiver<AccountBox>, ack: Sender<()>, create_ai: bool) {
+    pub fn run(
+        &mut self,
+        to_map_sender: Sender<(AccountBox, ExitAction)>,
+        from_map_receiver: Receiver<AccountBox>,
+        ack: Sender<()>,
+        create_ai: bool
+    ) {
         if create_ai {
             // TODO: come up with better way to generate AI ship IDs
             let ai_ship = Ship::generate((100000000) as ShipId, "n00bslayer808".to_string(), 2);
@@ -188,7 +195,7 @@ impl SectorState {
         }
     }
     
-    fn simulate_next_turn(&mut self, to_map_sender: &Sender<AccountBox>) {
+    fn simulate_next_turn(&mut self, to_map_sender: &Sender<(AccountBox, ExitAction)>) {
         if self.debug {
             println!("Simulating next turn");
         }
@@ -213,14 +220,18 @@ impl SectorState {
         }
         
         // Apply all the plans
+        let mut jumped_ships = vec!();
         for (ship, plans) in self.ship_plans.drain() {
-            ship.get_mut(&mut self.context).apply_plans(&plans);
-        }
+            let ship = ship.get_mut(&mut self.context);
         
-        // Let the ships that want to jump jump, if they can
-        for ship in self.context.ships_iter_mut() {
-            if ship.target_sector.is_some() {
+            ship.apply_plans(&plans);
+            
+            // Handle jumping ships
+            if let Some(target_sector) = plans.target_sector {
                 ship.jumping = true;
+                
+                jumped_ships.push((ship.index, target_sector));
+                self.ships_to_remove.push(ship.index);
             }
         }
     
@@ -261,32 +272,18 @@ impl SectorState {
             self.ships_to_add.push(ship_index);
         }
         
-        // Handle all the ships that need to start exploding
-        //let mut exploding_ships = vec!();
-        for ship in self.context.ships_iter_mut() {            
-            // Replace dead ships with better ships
+        // Make dead ships start exploding
+        for ship in self.context.ships_iter_mut() {
             if ship.state.get_hp() == 0 {
                 ship.exploding = true;
-                //exploding_ships.push(ship.id);
-            }
-        }
-        //let mut exploding_packet = OutPacket::new();
-        //exploding_packet.write(&exploding_ships);
-        //self.slot.broadcast(exploding_packet);
-        
-        // Send off all the ships that jumped
-        let mut jumped_ships = vec!();
-        for ship in self.context.ships_iter() {
-            if let Some(sector_id) = ship.target_sector {
-                jumped_ships.push(ship.index);
-                self.ships_to_remove.push(ship.index);
             }
         }
         
         // Send new ships
         self.send_new_ships();
         
-        for jumped_ship in jumped_ships.into_iter() {
+        // Send off all of the jumping ships
+        for (jumped_ship, target_sector) in jumped_ships.into_iter() {
             use std::rc::try_unwrap;
             
             let ship = self.context.remove_ship(jumped_ship);
@@ -294,7 +291,7 @@ impl SectorState {
             if let Some(client_id) = ship.client_id {
                 // Send the last tick
                 self.send_last_tick(client_id);
-            
+                
                 let ship_stored = ShipStored::from_ship(ship);
                 
                 let mut account = self.accounts.remove(&client_id).expect("Client's account must exist here.");
@@ -302,7 +299,7 @@ impl SectorState {
                 
                 self.slot.transfer_client(client_id, self.star_map_slot_id);
                 
-                to_map_sender.send(account);
+                to_map_sender.send((account, ExitAction::Jump(target_sector)));
             }
         }
         

@@ -15,10 +15,16 @@ use sector_data::{SectorData, SectorId};
 use sector_server::SectorState;
 use vec::Vec2;
 
+// Reason a ship is leaving a sector
+pub enum ExitAction {
+    Jump(SectorId),
+    Logout,
+}
+
 pub struct Sector {
     pub slot_id: ServerSlotId,
     pub to_sector: Sender<AccountBox>,
-    pub from_sector: Receiver<AccountBox>,
+    pub from_sector: Receiver<(AccountBox, ExitAction)>,
     pub ack: Receiver<()>,
     pub data: SectorData,
 }
@@ -27,7 +33,7 @@ pub struct StarMapServer {
     slot: ServerSlot,
     sectors: HashMap<SectorId, Sector>,
     
-    jumping_accounts: VecDeque<(AccountBox, time::Timespec)>,
+    jumping_accounts: VecDeque<(AccountBox, SectorId, time::Timespec)>,
 }
 
 impl StarMapServer {
@@ -124,23 +130,22 @@ impl StarMapServer {
             
             // Send any jumping ships to their new sector
             for sector in self.sectors.values() {
-                if let Ok(account) = sector.from_sector.try_recv() {
-                    self.jumping_accounts.push_back((account, time::now().to_timespec() + time::Duration::milliseconds(6000)));
+                if let Ok((account, exit_action)) = sector.from_sector.try_recv() {
+                    match exit_action {
+                        ExitAction::Jump(sector) => {
+                            self.jumping_accounts.push_back((account, sector, time::now().to_timespec() + time::Duration::milliseconds(6000)));
+                        },
+                        _ => { },
+                    }
                 }
             }
             
-            while let Some((mut account, jump_time)) = self.jumping_accounts.pop_front() {
+            while let Some((mut account, target_sector, jump_time)) = self.jumping_accounts.pop_front() {
                 if (time::now().to_timespec() - jump_time).num_milliseconds() < 0 {
-                    self.jumping_accounts.push_front((account, jump_time));
+                    self.jumping_accounts.push_front((account, target_sector, jump_time));
                     break;
                 } else {
                     let client_id = account.client_id.expect("This needs to have a client ID");
-                        
-                    let target_sector =
-                        {
-                            let ship = account.ship.as_mut().expect("Ship must exist");
-                            ship.target_sector.take().expect("There must be a target sector")
-                        };
                     
                     let ref sector = self.sectors[&target_sector];
                     

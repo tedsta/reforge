@@ -432,11 +432,9 @@ pub struct ModuleBase {
     min_hp: u8,    // Minimum HP for the module to still operate
     max_hp: u8,    // Maximum HP of module, including armor
     
-    pub powered: bool,      // If the module consumes power, whether or not it's currently powered
-    pub plan_powered: bool, // Plan to power
+    pub powered: bool, // If the module consumes power, whether or not it's currently powered
     
     pub target: Option<Target>,
-    pub plan_target: Option<Target>,
     
     // Module damage visuals
     damage_visuals: Vec<DamageVisual>,
@@ -459,10 +457,8 @@ impl ModuleBase {
             max_hp: hp,
             
             powered: false,
-            plan_powered: false,
             
             target: None,
-            plan_target: None,
             
             damage_visuals: vec!(),
             
@@ -537,23 +533,6 @@ impl ModuleBase {
             plan_powered: self.powered,
             plan_target: self.target,
         }
-    }
-    
-    pub fn get_plans(&self) -> ModulePlans {
-        ModulePlans {
-            plan_powered: self.plan_powered,
-            plan_target: self.plan_target,
-        }
-    }
-    
-    pub fn set_plans(&mut self, plans: &ModulePlans) {
-        self.plan_powered = plans.plan_powered;
-        self.plan_target = plans.plan_target;
-    }
-    
-    pub fn set_targets(&mut self, target: &Option<Target>, plan_target: &Option<Target>) {
-        self.target = *target;
-        self.plan_target = *plan_target;
     }
     
     pub fn on_ship_removed(&mut self, ship: ShipIndex) {
@@ -641,10 +620,8 @@ impl ModuleBaseStored {
             max_hp: self.max_hp,
             
             powered: self.powered,
-            plan_powered: self.powered,
             
             target: None,
-            plan_target: None,
             
             damage_visuals: vec!(),
             

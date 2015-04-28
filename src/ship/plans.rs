@@ -52,7 +52,7 @@ impl ShipPlans {
                 // Attempt to borrow the module
                 if let Some(mut module) = module.try_borrow_mut() {
                     if module.get_base().get_power() > 0 {
-                        if !module.get_base().powered && module.get_base().plan_powered {
+                        if !module.get_base().powered && self.module_plans[module.get_base().index.to_usize()].plan_powered {
                             self.plan_deactivate_module(module.get_base_mut());
                         }
                     }
