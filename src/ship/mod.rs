@@ -601,10 +601,10 @@ impl Ship {
     }
     
     #[cfg(feature = "client")]
-    pub fn draw_module_powered_icons(&self, context: &Context, gl: &mut Gl, module_icons: &ModuleIcons) {
+    pub fn draw_module_powered_icons(&self, context: &Context, gl: &mut Gl, module_icons: &ModuleIcons, plans: &ShipPlans) {
         use graphics::*;
     
-        for module in &self.modules {
+        for (module, plans) in self.modules.iter().zip(plans.module_plans.iter()) {
             let module = module.borrow();
             let module = module.get_base();
             
@@ -612,11 +612,11 @@ impl Ship {
             if module.get_power() == 0 { continue; }
             
             // Skip modules that aren't changing powered states
-            if module.plan_powered == module.powered { continue; }
+            if plans.plan_powered == module.powered { continue; }
             
             let context = context.trans((module.x as f64) * 48.0, (module.y as f64) * 48.0).trans((module.width as f64)*48.0 - 20.0, 2.0);
             
-            if module.plan_powered {
+            if plans.plan_powered {
                 // Module is powering up, draw on icon
                 image(&module_icons.power_on_texture, context.transform, gl);
             } else {

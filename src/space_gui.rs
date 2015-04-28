@@ -257,7 +257,7 @@ impl SpaceGui {
         
         // Draw player ship
         draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, asset_store, sim_effects, client_ship, time);
-        client_ship.draw_module_powered_icons(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, &self.module_icons);
+        client_ship.draw_module_powered_icons(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, &self.module_icons, &self.plans);
         draw_stats(context, gl, glyph_cache, &self.stats_labels, &self.plans, client_ship, true);
     
         let mut enemy_alive = false;
