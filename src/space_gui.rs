@@ -14,7 +14,7 @@ use asset_store::AssetStore;
 use battle_context::BattleContext;
 use gui::TextButton;
 use module;
-use module::{IModule, ModuleBox, ModuleIndex, ModuleRef};
+use module::{IModule, ModuleBox, ModuleIndex};
 use net::ClientId;
 use sector_data::SectorData;
 use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipState};
@@ -354,7 +354,7 @@ impl SpaceGui {
                         let x = self.mouse_x - self.render_area.x - ENEMY_OFFSET_X;
                         let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
 
-                        apply_to_module_if_point_inside(ship.get(bc), x, y, |_, _, _, module| {
+                        apply_to_module_if_point_inside(ship.get(bc), x, y, |_, _, module| {
                             let Vec2{x: module_x, y: module_y} = module.get_base().get_render_position();
                             let Vec2{x: module_w, y: module_h} = module.get_base().get_render_size();
                             let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
@@ -377,7 +377,7 @@ impl SpaceGui {
             let x = self.mouse_x - SHIP_OFFSET_X;
             let y = self.mouse_y - SHIP_OFFSET_Y;
 
-            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, _, module| {
+            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
                 let Vec2{x: module_x, y: module_y} = module.get_base().get_render_position();
                 let Vec2{x: module_w, y: module_h} = module.get_base().get_render_size();
                 let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
@@ -441,7 +441,7 @@ impl SpaceGui {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
-            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, _, module| {
+            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
                 if self.plans.module_plans(module.get_base().index).plan_powered {
                     if let Some(target_mode) = module.get_target_mode() {
                         // Select this module to begin targeting
@@ -467,7 +467,7 @@ impl SpaceGui {
                         if !ship.get(bc).jumping && !ship.get(bc).exploding {
                             let ref mut plans = self.plans;
                             
-                            apply_to_module_if_point_inside(ship.get(bc), x, y, |ship_index, _, _, module| {
+                            apply_to_module_if_point_inside(ship.get(bc), x, y, |ship_index, _, module| {
                                 plans.module_plans(selected_module).plan_target =
                                     Some(module::Target {
                                         ship: ship_index,
@@ -484,7 +484,7 @@ impl SpaceGui {
                     
                     let ref mut plans = self.plans;
                     
-                    apply_to_module_if_point_inside(client_ship, x, y, |ship_index, _, _, module| {
+                    apply_to_module_if_point_inside(client_ship, x, y, |ship_index, _, module| {
                         plans.module_plans(selected_module).plan_target =
                             Some(module::Target {
                                 ship: ship_index,
@@ -557,9 +557,9 @@ impl SpaceGui {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
-            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, _, module_borrowed| {
-                if self.plans.module_plans(module_borrowed.get_base().index).plan_powered {
-                    self.plans.plan_deactivate_module(module_borrowed.get_base());
+            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
+                if self.plans.module_plans(module.get_base().index).plan_powered {
+                    self.plans.plan_deactivate_module(module.get_base());
                 }
                 module_was_deactivated = true;
             });
@@ -596,17 +596,17 @@ impl SpaceGui {
 /// Returns whether or not the function was applied.
 pub fn apply_to_module_if_point_inside<F>(ship: &Ship, x: f64, y: f64, mut f: F)
     where
-        F: FnMut(ShipIndex, &ShipState, &ModuleRef, &mut ModuleBox)
+        F: FnMut(ShipIndex, &ShipState, &ModuleBox)
 {
     for module in ship.modules.iter() {
-        let mut module_borrowed = module.borrow_mut();
+        let mut module = module.borrow();
     
         // Get module position and size on screen
-        let Vec2{x: module_x, y: module_y} = module_borrowed.get_base().get_render_position();
-        let Vec2{x: module_w, y: module_h} = module_borrowed.get_base().get_render_size();
+        let Vec2{x: module_x, y: module_y} = module.get_base().get_render_position();
+        let Vec2{x: module_w, y: module_h} = module.get_base().get_render_size();
         let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
         if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-            f(ship.index, &ship.state, module, module_borrowed.deref_mut());
+            f(ship.index, &ship.state, module.deref());
         }
     }
 }

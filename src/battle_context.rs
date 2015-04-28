@@ -22,7 +22,6 @@ pub struct BattleContext {
     pub ships_client_id: HashMap<ClientId, usize>,
 
     pub ships: Vec<Option<Ship>>,
-    //pub modules: Vec<ModuleRef>,
     
     free_ship_indices: Vec<usize>,
 }
