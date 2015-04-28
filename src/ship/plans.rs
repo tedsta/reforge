@@ -1,6 +1,6 @@
 use module::{ModuleBase, ModuleIndex, ModulePlans};
 use sector_data::SectorId;
-use ship::{Ship, ShipState};
+use ship::{Ship, ShipIndex, ShipState};
 
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct ShipPlans {
@@ -58,6 +58,12 @@ impl ShipPlans {
                     }
                 }
             }
+        }
+    }
+    
+    pub fn on_ship_removed(&mut self, ship_index: ShipIndex) {
+        for plans in &mut self.module_plans {
+            plans.on_ship_removed(ship_index);
         }
     }
 }

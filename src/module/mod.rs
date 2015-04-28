@@ -364,6 +364,26 @@ pub struct ModulePlans {
     pub plan_target: Option<Target>,
 }
 
+impl ModulePlans {
+    pub fn on_ship_removed(&mut self, ship: ShipIndex) {
+        use self::TargetData::*;
+    
+        // TODO make this prettier
+        
+        let mut remove = false;
+    
+        if let Some(ref target) = self.plan_target {
+            if target.ship == ship {
+                remove = true;
+            }
+        }
+        
+        if remove {
+            self.plan_target = None;
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Copy, Clone, RustcEncodable, RustcDecodable)]
@@ -542,18 +562,6 @@ impl ModuleBase {
         // TODO make this prettier
         
         let mut remove = false;
-    
-        if let Some(ref target) = self.plan_target {
-            if target.ship == ship {
-                remove = true;
-            }
-        }
-        
-        if remove {
-            self.plan_target = None;
-        }
-        
-        remove = false;
         
         if let Some(ref target) = self.target {
             if target.ship == ship {

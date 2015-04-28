@@ -128,6 +128,7 @@ impl<'a> ClientBattleState<'a> {
             if ship.jumping || ship.exploding {
                 // Remove all locks
                 self.bc.on_ship_removed(ship_index);
+                gui.plans.on_ship_removed(ship_index);
             }
         }
         
@@ -299,6 +300,7 @@ impl<'a> ClientBattleState<'a> {
             gui.remove_lock(ship);
         
             self.bc.remove_ship(ship);
+            gui.plans.on_ship_removed(ship);
         }
     
         for ship in ships_to_add.into_iter() {
