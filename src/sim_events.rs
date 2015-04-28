@@ -1,6 +1,6 @@
 use std::ops::DerefMut;
 
-use module::{ModuleBox, ModuleIndex, ModuleRef};
+use module::{ModuleBox, ModuleIndex};
 use ship::ShipState;
 use sim::SimEvent;
 

@@ -5,7 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_context::BattleContext;
 use module;
-use module::{IModule, Module, ModuleBase, ModuleRef, TargetManifest, TargetManifestData};
+use module::{IModule, Module, ModuleBase, TargetManifest, TargetManifestData};
 use net::{InPacket, OutPacket};
 use ship::{Ship, ShipState};
 use sim::SimEvents;

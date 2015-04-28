@@ -12,7 +12,7 @@ use opengl_graphics::Gl;
 
 use battle_context::{BattleContext, TICKS_PER_SECOND};
 use module;
-use module::{IModule, Module, ModuleRef, ModuleBase, ModuleBox, TargetManifest, TargetManifestData};
+use module::{IModule, Module, ModuleBase, ModuleBox, TargetManifest, TargetManifestData};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{Ship, ShipId, ShipState};
 use sim::SimEvents;
