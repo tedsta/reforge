@@ -210,16 +210,16 @@ impl SectorState {
             }
         }
         
+        // Apply all the plans
+        for (ship, plans) in self.ship_plans.drain() {
+            ship.get_mut(&mut self.context).apply_plans(&plans);
+        }
+        
         // Let the ships that want to jump jump, if they can
         for ship in self.context.ships_iter_mut() {
             if ship.target_sector.is_some() {
                 ship.jumping = true;
             }
-        }
-        
-        // Apply all the plans
-        for (ship, plans) in self.ship_plans.drain() {
-            ship.get_mut(&mut self.context).apply_plans(&plans);
         }
     
         // Do server-side precalculations

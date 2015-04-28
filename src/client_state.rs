@@ -42,6 +42,8 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, g
 
         let exit_mode = battle.run(window, gl, glyph_cache, asset_store, sectors.clone(), server_results_sent);
         
+        println!("I (client) left a sector");
+        
         if exit_mode == ExitMode::Logout {
             break;
         }
