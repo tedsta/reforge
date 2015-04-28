@@ -34,20 +34,17 @@ impl BeamWeaponModule {
 }
 
 impl IModule for BeamWeaponModule {
-    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, target: Option<TargetManifest>) {
-    }
-    
     fn before_simulation(&mut self, base: &mut ModuleBase, events: &mut SimEvents, target: Option<TargetManifest>) {
         if base.powered {
             if let Some(ref target) = target {
                 if let module::TargetManifestData::Beam(beam_start, beam_end) = target.data {
-                    target.ship.borrow().beam_hits(beam_start, beam_end, |module, _, _, hit| {
+                    target.ship.beam_hits(beam_start, beam_end, |module, _, _, hit| {
                         if let Some(hit_dist) = hit {
                             let hit_tick = 20 + (((3.0 - 1.0)*hit_dist*20.0) as u32);
                         
                             events.add(
                                 hit_tick,
-                                target.ship.borrow().index,
+                                target.ship.index,
                                 box DamageEvent::new(module.borrow().get_base().index, 1),
                             );
                         }
@@ -81,7 +78,7 @@ impl IModule for BeamWeaponModule {
         
         if base.powered {
             if let Some(ref target) = target {
-                let target_ship_id = target.ship.borrow().id;
+                let target_ship_id = target.ship.id;
             
                 if let module::TargetManifestData::Beam(beam_start, beam_end) = target.data {
                     let start_time = 1.0;
@@ -115,9 +112,6 @@ impl IModule for BeamWeaponModule {
                 }
             }
         }
-    }
-    
-    fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
     }
     
     fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {

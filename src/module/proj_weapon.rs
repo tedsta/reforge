@@ -61,18 +61,14 @@ impl ProjectileWeaponModule {
 }
 
 impl IModule for ProjectileWeaponModule {
-    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, target: Option<TargetManifest>) {    
+    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &ShipState, target: Option<TargetManifest>) {    
         if base.powered {
-            if let Some(ref target) = target {
-                let ref target_ship = target.ship;
-                
+            if let Some(ref target) = target {                
                 // Random number generater
                 let mut rng = rand::thread_rng();
                 
-                let target_ship = target_ship.borrow();
-                
                 for projectile in self.projectiles.iter_mut() {
-                    if rng.gen::<f64>() > (0.15 * (cmp::min(target_ship.state.thrust, 5) as f64)) {
+                    if rng.gen::<f64>() > (0.15 * (cmp::min(target.ship.state.thrust, 5) as f64)) {
                         projectile.hit = true;
                     } else {
                         projectile.hit = false;
@@ -102,7 +98,7 @@ impl IModule for ProjectileWeaponModule {
                         
                             events.add(
                                 projectile.hit_tick,
-                                target.ship.borrow().index,
+                                target.ship.index,
                                 box DamageEvent::new(target_module.borrow().get_base().index, 1),
                             );
                         } else {
@@ -138,7 +134,7 @@ impl IModule for ProjectileWeaponModule {
         
         if base.powered {
             if let Some(ref target) = target {
-                let target_ship_id = target.ship.borrow().id;
+                let target_ship_id = target.ship.id;
             
                 if let module::TargetManifestData::TargetModule(ref target_module) = target.data {                
                     let mut last_weapon_anim_end = 0.0;

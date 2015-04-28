@@ -10,7 +10,7 @@ use battle_context::{BattleContext, ClientPacketId, ServerPacketId};
 use login::AccountBox;
 use module::Module;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
-use ship::{Ship, ShipId, ShipIndex, ShipRef, ShipStored};
+use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipStored};
 use sim::SimEvents;
 
 pub struct SectorState {
@@ -27,11 +27,14 @@ pub struct SectorState {
     clients_waiting: HashSet<ClientId>,
     clients_active: HashSet<ClientId>,
     
+    // Client plans list
+    ship_plans: Vec<(ShipIndex, ShipPlans)>,
+    
     // All the clients' accounts
     accounts: HashMap<ClientId, AccountBox>,
     
     // Ships to add after simulation
-    ships_to_add: Vec<ShipRef>,
+    ships_to_add: Vec<ShipIndex>,
     
     // Ships to remove after simulation
     ships_to_remove: Vec<ShipIndex>,
@@ -52,6 +55,7 @@ impl SectorState {
             received_plans: HashSet::new(),
             clients_waiting: HashSet::new(),
             clients_active: HashSet::new(),
+            ship_plans: vec!(),
             accounts: HashMap::new(),
             ships_to_add: vec!(),
             ships_to_remove: vec!(),
@@ -64,16 +68,16 @@ impl SectorState {
         if create_ai {
             // TODO: come up with better way to generate AI ship IDs
             let ai_ship = Ship::generate((100000000) as ShipId, "n00bslayer808".to_string(), 2);
-            self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+            self.context.add_ship(ai_ship);
             
             let ai_ship = Ship::generate((100000001) as ShipId, "thing1".to_string(), 2);
-            self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+            self.context.add_ship(ai_ship);
             
             let ai_ship = Ship::generate((100000002) as ShipId, "thing2".to_string(), 2);
-            self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+            self.context.add_ship(ai_ship);
             
             let ai_ship = Ship::generate((100000003) as ShipId, "daisy_girl".to_string(), 2);
-            self.context.add_ship(Rc::new(RefCell::new(ai_ship)));
+            self.context.add_ship(ai_ship);
         }
     
         loop {
@@ -124,7 +128,6 @@ impl SectorState {
                 // Get the ship out of storage
                 let ship_stored = account.ship.take().expect("This account must have a ship");
                 let ship = ship_stored.to_ship(Some(client_id));
-                let ship = Rc::new(RefCell::new(ship));
                 
                 // Add the player's account
                 self.accounts.insert(client_id, account);
@@ -137,8 +140,8 @@ impl SectorState {
                 self.slot.send(client_id, packet);
                 
                 // Add the player's ship
-                self.context.add_ship(ship.clone());
-                self.ships_to_add.push(ship);
+                let ship_index = self.context.add_ship(ship);
+                self.ships_to_add.push(ship_index);
                 
                 ack.send(());
             }
@@ -175,13 +178,13 @@ impl SectorState {
     }
     
     fn handle_plans_packet(&mut self, client_id: ClientId, packet: &mut InPacket) {
-        let mut ship = self.context.get_ship_by_client_id(client_id).borrow_mut();
-    
-        ship.target_sector = packet.read().ok().expect("Failed to read player's target sector");
-        let plans = packet.read().ok().expect("Failed to read player's plans");
+        let ship = self.context.get_ship_by_client_id(client_id);
 
+        let plans = packet.read().ok().expect("Failed to receive client's plans");
+        
         if !ship.exploding {
-            ship.set_module_plans(&plans);
+            // Don't save these plans if the ship is exploding
+            self.ship_plans.push((ship.index, plans));
         }
     }
     
@@ -195,30 +198,29 @@ impl SectorState {
     
         // Run AI on ships with no client
         for ship in self.context.ships_iter() {
-            let ship_id = ship.borrow().id;
+            let ship_id = ship.id;
             let enemies = 
                 &self.context.ships_iter()
-                    .filter(|s| s.borrow().id != ship_id && !s.borrow().exploding)
-                    .map(|s| s.clone())
+                    .filter(|s| s.id != ship_id && !s.exploding)
                     .collect();
             
-            let mut ship = ship.borrow_mut();
             if ship.client_id.is_none() {
                 // Run AI
-                run_ai(ship.deref_mut(), enemies);
+                run_ai(ship, enemies);
             }
         }
         
         // Let the ships that want to jump jump, if they can
-        for ship in self.context.ships_iter() {
-            let mut ship = ship.borrow_mut();
+        for ship in self.context.ships_iter_mut() {
             if ship.target_sector.is_some() {
                 ship.jumping = true;
             }
         }
         
         // Apply all the plans
-        self.context.apply_module_plans();
+        for (ship, plans) in self.ship_plans.drain() {
+            ship.get_mut(&mut self.context).apply_plans(&plans);
+        }
     
         // Do server-side precalculations
         self.context.server_preprocess();
@@ -234,16 +236,10 @@ impl SectorState {
         let mut new_ships = vec!();
         let mut dead_ships = vec!();
         for ship in self.context.ships_iter() {
-            let ship = ship.borrow();
-            
             // Replace dead ships with better ships
             if ship.exploding {
                 let mut better_ship = Ship::generate(ship.id, ship.name.clone(), ship.level + 1);
                 better_ship.client_id = ship.client_id;
-                let better_ship = Rc::new(RefCell::new(better_ship));
-                
-                self.ships_to_add.push(better_ship.clone());
-                self.ships_to_remove.push(ship.index);
                 
                 // Remove the old ship
                 dead_ships.push(ship.index);
@@ -255,17 +251,17 @@ impl SectorState {
         
         for dead_ship in dead_ships.into_iter() {
             self.context.remove_ship(dead_ship);
+            self.ships_to_remove.push(dead_ship);
         }
         
         for new_ship in new_ships.into_iter() {
-            self.context.add_ship(new_ship);
+            let ship_index = self.context.add_ship(new_ship);
+            self.ships_to_add.push(ship_index);
         }
         
         // Handle all the ships that need to start exploding
         //let mut exploding_ships = vec!();
-        for ship in self.context.ships_iter() {
-            let mut ship = ship.borrow_mut();
-            
+        for ship in self.context.ships_iter_mut() {            
             // Replace dead ships with better ships
             if ship.state.get_hp() == 0 {
                 ship.exploding = true;
@@ -279,9 +275,9 @@ impl SectorState {
         // Send off all the ships that jumped
         let mut jumped_ships = vec!();
         for ship in self.context.ships_iter() {
-            if let Some(sector_id) = ship.borrow().target_sector {
-                jumped_ships.push(ship.clone());
-                self.ships_to_remove.push(ship.borrow().index);
+            if let Some(sector_id) = ship.target_sector {
+                jumped_ships.push(ship.index);
+                self.ships_to_remove.push(ship.index);
             }
         }
         
@@ -291,15 +287,7 @@ impl SectorState {
         for jumped_ship in jumped_ships.into_iter() {
             use std::rc::try_unwrap;
             
-            let index = jumped_ship.borrow().index;
-            self.context.remove_ship(index);
-            
-            let ship_ref_cell = try_unwrap(jumped_ship).ok().expect("Failed to unwrap jumping ship");
-            let mut ship = ship_ref_cell.into_inner();
-            
-            // The plan power needs to be correct when going to the new sector, and any plans the
-            // player made during the last simulation phase are cancelled, so this is safe to do.
-            ship.state.plan_power_use = ship.state.power_use;
+            let ship = self.context.remove_ship(jumped_ship);
 
             if let Some(client_id) = ship.client_id {
                 // Send the last tick
@@ -345,7 +333,7 @@ impl SectorState {
     
     fn simulate(&mut self, sim_events: &mut SimEvents) {
         for tick in 0..100 {
-            sim_events.apply_tick(&self.context, tick);
+            sim_events.apply_tick(&mut self.context, tick);
         }
     }
     
@@ -368,7 +356,12 @@ impl SectorState {
         }
     
         let mut ships_packet = OutPacket::new();
-        ships_packet.write(&self.ships_to_add);
+        
+        {
+            let ships_to_add: Vec<&Ship> = self.ships_to_add.iter().map(|s| s.get(&self.context)).collect();
+            ships_packet.write(&ships_to_add);
+        }
+        
         ships_packet.write(&self.ships_to_remove);
         self.slot.broadcast(ships_packet);
         

@@ -1,5 +1,5 @@
 use battle_context::BattleContext;
-use ship::{ShipRef, ShipIndex};
+use ship::{Ship, ShipIndex};
 use vec::{Vec2, Vec2f};
 
 use super::{ModuleRef, ModuleIndex};
@@ -31,15 +31,15 @@ pub enum TargetData {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Manifestation of a target
-pub struct TargetManifest {
-    pub ship: ShipRef,
+pub struct TargetManifest<'a> {
+    pub ship: &'a Ship,
     pub data: TargetManifestData,
 }
 
-impl TargetManifest {
-    pub fn from_target(bc: &BattleContext, target: &Target) -> TargetManifest {
-        let ship = target.ship.get(bc).clone();
-        let data = TargetManifestData::from_target_data(&ship, &target.data);
+impl<'a> TargetManifest<'a> {
+    pub fn from_target(bc: &'a BattleContext, target: &Target) -> TargetManifest<'a> {
+        let ship = target.ship.get(bc);
+        let data = TargetManifestData::from_target_data(ship, &target.data);
         
         TargetManifest {
             ship: ship,
@@ -57,17 +57,17 @@ pub enum TargetManifestData {
 }
 
 impl TargetManifestData {
-    fn from_target_data(ship: &ShipRef, target_data: &TargetData) -> TargetManifestData {
+    fn from_target_data(ship: &Ship, target_data: &TargetData) -> TargetManifestData {
         match target_data {
             &TargetData::TargetShip => TargetManifestData::TargetShip,
             &TargetData::TargetModule(module_index) => {
-                TargetManifestData::TargetModule(ship.borrow().modules[module_index.to_usize()].clone())
+                TargetManifestData::TargetModule(ship.modules[module_index.to_usize()].clone())
             },
             &TargetData::OwnModule(module_index) => {
-                TargetManifestData::TargetModule(ship.borrow().modules[module_index.to_usize()].clone())
+                TargetManifestData::TargetModule(ship.modules[module_index.to_usize()].clone())
             },
             &TargetData::AnyModule(module_index) => {
-                TargetManifestData::TargetModule(ship.borrow().modules[module_index.to_usize()].clone())
+                TargetManifestData::TargetModule(ship.modules[module_index.to_usize()].clone())
             },
             &TargetData::Beam(start, end) => TargetManifestData::Beam(start, end),
         }

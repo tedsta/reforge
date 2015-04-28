@@ -6,7 +6,7 @@ use std::slice;
 
 use module::{ModuleBase, Target};
 use net::{ClientId, InPacket, OutPacket};
-use ship::{ShipId, ShipIndex, ShipRef};
+use ship::{Ship, ShipId, ShipIndex};
 use sim::SimEvents;
 
 #[cfg(feature = "client")]
@@ -21,19 +21,19 @@ pub struct BattleContext {
     pub ships_ship_id: HashMap<ShipId, usize>,
     pub ships_client_id: HashMap<ClientId, usize>,
 
-    pub ships: Vec<Option<ShipRef>>,
+    pub ships: Vec<Option<Ship>>,
     //pub modules: Vec<ModuleRef>,
     
     free_ship_indices: Vec<usize>,
 }
 
 impl BattleContext {
-    pub fn new(ships: Vec<Option<ShipRef>>) -> BattleContext {
+    pub fn new(ships: Vec<Option<Ship>>) -> BattleContext {
         // Build (ShipId -> ship index) map
         let mut ships_ship_id = HashMap::new();
         for (i, ship) in ships.iter().enumerate() {
             if let &Some(ref ship) = ship {
-                ships_ship_id.insert(ship.borrow().id, i);
+                ships_ship_id.insert(ship.id, i);
             }
         }
         
@@ -41,7 +41,7 @@ impl BattleContext {
         let mut ships_client_id = HashMap::new();
         for (i, ship) in ships.iter().enumerate() {
             if let &Some(ref ship) = ship {
-                if let Some(client_id) = ship.borrow().client_id {
+                if let Some(client_id) = ship.client_id {
                     ships_client_id.insert(client_id, i);
                 }
             }
@@ -55,17 +55,27 @@ impl BattleContext {
         }
     }
     
-    fn ships_filter_map<'a>(x: &'a Option<ShipRef>) -> Option<&'a ShipRef> {
+    fn ships_filter_map<'a>(x: &'a Option<Ship>) -> Option<&'a Ship> {
         x.as_ref()
     }
     
+    fn ships_filter_map_mut<'a>(x: &'a mut Option<Ship>) -> Option<&'a mut Ship> {
+        x.as_mut()
+    }
+    
     pub fn ships_iter<'a>(&'a self)
-        -> iter::FilterMap<slice::Iter<'a, Option<ShipRef>>, fn(&'a Option<ShipRef>) -> Option<&'a ShipRef>>
+        -> iter::FilterMap<slice::Iter<'a, Option<Ship>>, fn(&'a Option<Ship>) -> Option<&'a Ship>>
     {
         self.ships.iter().filter_map(BattleContext::ships_filter_map)
     }
     
-    pub fn get_ship<'a>(&'a self, ship_id: ShipId) -> &'a ShipRef {
+    pub fn ships_iter_mut<'a>(&'a mut self)
+        -> iter::FilterMap<slice::IterMut<'a, Option<Ship>>, fn(&'a mut Option<Ship>) -> Option<&'a mut Ship>>
+    {
+        self.ships.iter_mut().filter_map(BattleContext::ships_filter_map_mut)
+    }
+    
+    pub fn get_ship<'a>(&'a self, ship_id: ShipId) -> &'a Ship {
         match self.ships_ship_id.get(&ship_id) {
             Some(index) => {
                 self.ships[*index].as_ref().expect("BattleContext::ships_ship_id points to invalid ship index")
@@ -74,7 +84,7 @@ impl BattleContext {
         }
     }
     
-    pub fn get_ship_by_client_id<'a>(&'a self, client_id: ClientId) -> &'a ShipRef {
+    pub fn get_ship_by_client_id<'a>(&'a self, client_id: ClientId) -> &'a Ship {
         match self.ships_client_id.get(&client_id) {
             Some(index) => {
                 self.ships[*index].as_ref().expect("BattleContext::ships_client_id points to invalid ship index")
@@ -83,107 +93,99 @@ impl BattleContext {
         }
     }
     
-    pub fn add_ship(&mut self, ship: ShipRef) {
+    pub fn add_ship(&mut self, mut ship: Ship) -> ShipIndex {
         let index = self.ships.len();
-        let client_id = ship.borrow().client_id;
+        let ship_id = ship.id;
+        let client_id = ship.client_id;
         
-        ship.borrow_mut().index = ShipIndex(index as u32);
+        ship.index = ShipIndex(index as u32);
         
-        self.ships.push(Some(ship.clone()));
-        self.ships_ship_id.insert(ship.borrow().id, index);
+        self.ships.push(Some(ship));
+        self.ships_ship_id.insert(ship_id, index);
         
         if let Some(client_id) = client_id {
             self.ships_client_id.insert(client_id, index);
         }
+        
+        ShipIndex(index as u32)
     }
     
-    pub fn add_ships(&mut self, ships: Vec<ShipRef>) {
+    pub fn add_ships(&mut self, ships: Vec<Ship>) {
         for ship in ships {
             self.add_ship(ship);
         }
     }
     
-    pub fn remove_ship(&mut self, ship_index: ShipIndex) {
+    pub fn remove_ship(&mut self, ship_index: ShipIndex) -> Ship {
         self.on_ship_removed(ship_index);
-        
-        if self.ships[ship_index.to_usize()].is_none() {
-            panic!("Tried to remove non-existant ship");
-        }
     
-        self.ships[ship_index.to_usize()] = None;
+        self.ships[ship_index.to_usize()].take().expect("Tried to remove non-existant ship")
     }
 
-    pub fn server_preprocess(&mut self) {
+    pub fn server_preprocess(&self) {
         for ship in self.ships_iter() {
-            ship.borrow_mut().server_preprocess(self);
+            ship.server_preprocess(self);
         }
     }
     
-    pub fn before_simulation(&mut self, events: &mut SimEvents) {
+    pub fn before_simulation(&self, events: &mut SimEvents) {
         for ship in self.ships_iter() {
-            ship.borrow().before_simulation(self, events);
+            ship.before_simulation(self, events);
         }
     }
     
     #[cfg(feature = "client")]
     pub fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
         for ship in self.ships_iter() {
-            ship.borrow().add_plan_effects(asset_store, effects);
+            ship.add_plan_effects(asset_store, effects);
         }
     }
     
     #[cfg(feature = "client")]
     pub fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
         for ship in self.ships_iter() {
-            ship.borrow().add_simulation_effects(self, asset_store, effects);
+            ship.add_simulation_effects(self, asset_store, effects);
         }
     }
     
-    pub fn after_simulation(&self) {
-        for ship in self.ships_iter() {
-            ship.borrow_mut().after_simulation();
+    pub fn after_simulation(&mut self) {
+        for ship in self.ships_iter_mut() {
+            ship.after_simulation();
         }
     }
     
     pub fn on_ship_removed(&self, ship_index: ShipIndex) {
         for ship in self.ships_iter() {
-            ship.borrow_mut().on_ship_removed(ship_index);
+            ship.on_ship_removed(ship_index);
         }
     }
     
-    pub fn apply_module_plans(&self) {
-        for ship in self.ships_iter() {
-            ship.borrow_mut().apply_module_plans();
+    pub fn apply_module_stats(&mut self) {
+        for ship in self.ships_iter_mut() {
+            ship.apply_module_stats();
         }
     }
     
-    pub fn apply_module_stats(&self) {
-        for ship in self.ships_iter() {
-            ship.borrow_mut().apply_module_stats();
-        }
-    }
-    
-    pub fn deactivate_unpowerable_modules(&self) {
-        for ship in self.ships_iter() {
-            ship.borrow_mut().deactivate_unpowerable_modules();
+    pub fn deactivate_unpowerable_modules(&mut self) {
+        for ship in self.ships_iter_mut() {
+            ship.deactivate_unpowerable_modules();
         }
     }
     
     pub fn write_results(&self, packet: &mut OutPacket) {
         packet.write(&(self.ships_iter().count() as u32));
         for ship in self.ships_iter() {
-            packet.write(&ship.borrow().id);
-            ship.borrow().write_results(packet);
+            packet.write(&ship.index);
+            ship.write_results(packet);
         }
     }
     
-    pub fn read_results(&self, packet: &mut InPacket) {
+    pub fn read_results(&mut self, packet: &mut InPacket) {
         let num_ships: u32 = packet.read().unwrap();
         for _ in 0 .. num_ships {
-            let ship_id = packet.read().unwrap();
-            let ship = self.get_ship(ship_id);
+            let ship: ShipIndex = packet.read().unwrap();
             
-            ship.borrow_mut().read_results(self, packet);
+            ship.get_mut(self).read_results(packet);
         }
     }
 }

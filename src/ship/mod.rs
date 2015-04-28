@@ -81,42 +81,12 @@ impl ShipState {
         }
     }
     
-    pub fn available_plan_power(&self) -> u8 {
-        if self.max_power > self.plan_power_use {
-            self.max_power - self.plan_power_use
-        } else {
-            0
-        }
-    }
-    
     pub fn can_activate_module(&self, module: &ModuleBase) -> bool {
         if module.can_activate() && self.available_power() >= module.get_power() {
             true
         } else {
             false
         }
-    }
-    
-    pub fn can_plan_activate_module(&self, module: &ModuleBase) -> bool {
-        if module.can_plan_activate() && self.available_plan_power() >= module.get_power() {
-            true
-        } else {
-            false
-        }
-    }
-    
-    pub fn plan_activate_module(&mut self, module: &mut ModuleBase) {
-        self.plan_power_use += module.get_power();
-        module.plan_powered = true;
-    }
-    
-    pub fn plan_deactivate_module(&mut self, module: &mut ModuleBase) {
-        self.plan_power_use -= module.get_power();
-        module.plan_powered = false;
-    }
-    
-    fn pre_before_simulation(&mut self) {
-        self.shields = 0;
     }
     
     pub fn deal_damage(&mut self, module_index: ModuleIndex, damage: u8) {
@@ -165,8 +135,6 @@ impl ShipState {
     }
 }
 
-pub type ShipRef = Rc<RefCell<Ship>>;
-
 // Type for the ID of a ship
 pub type ShipId = u64;
 
@@ -178,13 +146,13 @@ impl ShipIndex {
         self.0 as usize
     }
     
-    pub fn get<'a>(&self, bc: &'a BattleContext) -> &'a ShipRef {
+    pub fn get<'a>(&self, bc: &'a BattleContext) -> &'a Ship {
         bc.ships[self.0 as usize]
             .as_ref()
             .expect("Tried to access ship at empty index.")
     }
     
-    pub fn get_mut<'a>(&self, bc: &'a mut BattleContext) -> &'a mut ShipRef {
+    pub fn get_mut<'a>(&self, bc: &'a mut BattleContext) -> &'a mut Ship {
         bc.ships.get_mut(self.0 as usize)
             .expect("Tried to mutably access ship at invalid index.")
             .as_mut()
@@ -359,10 +327,10 @@ impl Ship {
         }
     }
     
-    pub fn server_preprocess(&mut self, context: &BattleContext) {
+    pub fn server_preprocess(&self, context: &BattleContext) {
         for module in &self.modules {
             let target = module.borrow().get_base().target.as_ref().map(|t| TargetManifest::from_target(context, t));
-            module.borrow_mut().server_preprocess(&mut self.state, target);
+            module.borrow_mut().server_preprocess(&self.state, target);
         }
     }
     
@@ -455,23 +423,6 @@ impl Ship {
     }
     
     pub fn deactivate_unpowerable_modules(&mut self) {
-        // Plan power
-        for module in &self.modules {
-            if self.state.plan_power_use <= self.state.max_power {
-                break;
-            } else {
-                // Attempt to borrow the module
-                if let Some(mut module) = module.try_borrow_mut() {
-                    if module.get_base().get_power() > 0 {
-                        if !module.get_base().powered && module.get_base().plan_powered {
-                            self.state.plan_deactivate_module(module.get_base_mut());
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Power
         for module in &self.modules {
             if self.state.power_use <= self.state.max_power {
                 break;
@@ -496,12 +447,24 @@ impl Ship {
         }
     }
     
-    pub fn apply_module_plans(&mut self) {
-        for module in &self.modules {
+    pub fn create_plans(&self) -> ShipPlans {
+        ShipPlans {
+            logout: false,
+            target_sector: self.target_sector,
+            module_plans: self.modules.iter().map(|m| m.borrow().get_base().create_plans()).collect(),
+            plan_power_use: self.state.power_use,
+        }
+    }
+    
+    pub fn apply_plans(&mut self, plans: &ShipPlans) {
+        self.target_sector = plans.target_sector;
+        
+        for (module, module_plans) in self.modules.iter().zip(plans.module_plans.iter()) {
             let mut module = module.borrow_mut();
             
-            if module.get_base().plan_powered != module.get_base().powered {
-                if module.get_base().plan_powered && self.state.can_activate_module(module.get_base()) {
+            // Apply powered plans
+            if module_plans.plan_powered != module.get_base().powered {
+                if module_plans.plan_powered && self.state.can_activate_module(module.get_base()) {
                     module.get_base_mut().powered = true;
                     self.state.power_use += module.get_base().get_power();
                     module.on_activated(&mut self.state);
@@ -510,11 +473,10 @@ impl Ship {
                     self.state.power_use -= module.get_base().get_power();
                     module.on_deactivated(&mut self.state);
                 }
-                
-                module.get_base_mut().plan_powered = module.get_base().powered;
             }
             
-            module.get_base_mut().apply_target_plans();
+            // Apply target plans
+            module.get_base_mut().target = module_plans.plan_target;
         }
     }
     
@@ -554,7 +516,7 @@ impl Ship {
         }
     }
     
-    pub fn read_results(&mut self, context: &BattleContext, packet: &mut InPacket) {
+    pub fn read_results(&mut self, packet: &mut InPacket) {
         self.state.power_use = packet.read().ok().expect("Failed to read ShipState::power_use");
         self.jumping = packet.read().ok().expect("Failed to read Ship::jumping");
         for module in &self.modules {

@@ -3,13 +3,13 @@ use std::rand::Rng;
 use std::rand;
 use std::any::TypeId;
 
-use ship::{Ship, ShipRef};
+use ship::{Ship};
 use module;
 use module::{IModule, EngineModule, ProjectileWeaponModule, ShieldModule};
 
-pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
+pub fn run_ai(ship: &Ship, enemy_ships: &Vec<&Ship>) {
     // Random number generater
-    let mut rng = rand::thread_rng();
+    /*let mut rng = rand::thread_rng();
 
     // Activate stuff, notice order of priority
     let mut activating_stuff = true;
@@ -69,15 +69,15 @@ pub fn run_ai(ship: &mut Ship, enemy_ships: &Vec<ShipRef>) {
             if module_borrowed.get_type_id() == TypeId::of::<ProjectileWeaponModule>() {
                 if module_borrowed.get_base().is_active() {
                     let target_ship = &enemy_ships[rng.gen::<usize>() % enemy_ships.len()];
-                    let target_module = &target_ship.borrow().modules[rng.gen::<usize>() % target_ship.borrow().modules.len()];
+                    let target_module = &target_ship.modules[rng.gen::<usize>() % target_ship.modules.len()];
                 
                     module_borrowed.get_base_mut().plan_target =
                         Some(module::Target {
-                            ship: target_ship.borrow().index,
+                            ship: target_ship.index,
                             data: module::TargetData::TargetModule(target_module.borrow().get_base().index),
                         });
                 }
             }
         }
-    }
+    }*/
 }

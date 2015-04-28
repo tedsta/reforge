@@ -34,10 +34,10 @@ impl<'a> SimEvents<'a> {
         }
     }
     
-    pub fn apply_tick(&mut self, bc: &BattleContext, tick: u32) {
+    pub fn apply_tick(&mut self, bc: &mut BattleContext, tick: u32) {
         let tick = tick as usize;
         for (ship, mut event) in self.events[tick].drain() {
-            event.apply(&mut ship.get(bc).borrow_mut().state);
+            event.apply(&mut ship.get_mut(bc).state);
         }
     }
     

@@ -43,7 +43,7 @@ pub mod damage_visual;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub trait IModule : Send {
-    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState, target: Option<TargetManifest>) {}
+    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &ShipState, target: Option<TargetManifest>) {}
 
     fn before_simulation(&mut self, base: &mut ModuleBase, events: &mut SimEvents, target: Option<TargetManifest>) {}
     
@@ -52,7 +52,7 @@ pub trait IModule : Send {
     #[cfg(feature = "client")]
     fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>);
     
-    fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState);
+    fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {}
     
     fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {}
     fn read_results(&mut self, base: &mut ModuleBase, packet: &mut InPacket) {}
@@ -88,7 +88,7 @@ pub trait IModuleRef {
     //////////////////////////////////////////////////////
     // IModule stuff
     
-    fn server_preprocess(&mut self, ship_state: &mut ShipState, target: Option<TargetManifest>);
+    fn server_preprocess(&mut self, ship_state: &ShipState, target: Option<TargetManifest>);
 
     fn before_simulation(&mut self, events: &mut SimEvents, target: Option<TargetManifest>);
     #[cfg(feature = "client")]
@@ -137,7 +137,7 @@ impl<M> IModuleRef for Module<M>
     //////////////////////////////////////////////////////
     // IModule stuff
     
-    fn server_preprocess(&mut self, ship_state: &mut ShipState, target: Option<TargetManifest>) {
+    fn server_preprocess(&mut self, ship_state: &ShipState, target: Option<TargetManifest>) {
         self.module.server_preprocess(&mut self.base, ship_state, target);
     }
     
@@ -467,11 +467,7 @@ impl ModuleBase {
     }
     
     pub fn can_activate(&self) -> bool {
-        self.power > 0 && !self.powered && self.stats.hp >= self.min_hp
-    }
-    
-    pub fn can_plan_activate(&self) -> bool {
-        self.power > 0 && !self.plan_powered && self.stats.hp >= self.min_hp
+        self.power > 0 && self.stats.hp >= self.min_hp
     }
     
     pub fn is_active(&self) -> bool {
@@ -516,8 +512,11 @@ impl ModuleBase {
         }
     }
     
-    pub fn apply_target_plans(&mut self) {
-        self.target.clone_from(&self.plan_target);
+    pub fn create_plans(&self) -> ModulePlans {
+        ModulePlans {
+            plan_powered: self.powered,
+            plan_target: self.target,
+        }
     }
     
     pub fn get_plans(&self) -> ModulePlans {
