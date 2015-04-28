@@ -3,13 +3,13 @@ use std::rand::Rng;
 use std::rand;
 use std::any::TypeId;
 
-use ship::{Ship};
+use ship::{Ship, ShipPlans};
 use module;
 use module::{IModule, EngineModule, ProjectileWeaponModule, ShieldModule};
 
-pub fn run_ai(ship: &Ship, enemy_ships: &Vec<&Ship>) {
+pub fn run_ai(ship: &Ship, plans: &mut ShipPlans, enemy_ships: &Vec<&Ship>) {
     // Random number generater
-    /*let mut rng = rand::thread_rng();
+    let mut rng = rand::thread_rng();
 
     // Activate stuff, notice order of priority
     let mut activating_stuff = true;
@@ -20,7 +20,7 @@ pub fn run_ai(ship: &Ship, enemy_ships: &Vec<&Ship>) {
         for module in ship.modules.iter() {
             let module_borrowed = module.borrow();
             if module_borrowed.get_type_id() == TypeId::of::<ProjectileWeaponModule>() {
-                if !module_borrowed.get_base().plan_powered && ship.state.can_plan_activate_module(module_borrowed.get_base()) {
+                if !module_borrowed.get_base().plan_powered && plans.can_plan_activate_module(&ship.state, module_borrowed.get_base()) {
                     module_to_activate = Some(module.clone());
                     activating_stuff = true;
                     break;
@@ -28,14 +28,14 @@ pub fn run_ai(ship: &Ship, enemy_ships: &Vec<&Ship>) {
             }
         }
         if let Some(module) = module_to_activate {
-            ship.state.plan_activate_module(module.borrow_mut().get_base_mut());
+            plans.plan_activate_module(module.borrow().get_base());
         }
         // Engine
         let mut module_to_activate = None;
         for module in ship.modules.iter() {
             let module_borrowed = module.borrow();
             if module_borrowed.get_type_id() == TypeId::of::<EngineModule>() {
-                if !module_borrowed.get_base().plan_powered && ship.state.can_plan_activate_module(module_borrowed.get_base()) {
+                if !module_borrowed.get_base().plan_powered && plans.can_plan_activate_module(&ship.state, module_borrowed.get_base()) {
                     module_to_activate = Some(module.clone());
                     activating_stuff = true;
                     break;
@@ -43,14 +43,14 @@ pub fn run_ai(ship: &Ship, enemy_ships: &Vec<&Ship>) {
             }
         }
         if let Some(module) = module_to_activate {
-            ship.state.plan_activate_module(module.borrow_mut().get_base_mut());
+            plans.plan_activate_module(module.borrow().get_base());
         }
         // Shield
         let mut module_to_activate = None;
         for module in ship.modules.iter() {
             let module_borrowed = module.borrow();
             if module_borrowed.get_type_id() == TypeId::of::<ShieldModule>() {
-                if !module_borrowed.get_base().plan_powered && ship.state.can_plan_activate_module(module_borrowed.get_base()) {
+                if !module_borrowed.get_base().plan_powered && plans.can_plan_activate_module(&ship.state, module_borrowed.get_base()) {
                     module_to_activate = Some(module.clone());
                     activating_stuff = true;
                     break;
@@ -58,7 +58,7 @@ pub fn run_ai(ship: &Ship, enemy_ships: &Vec<&Ship>) {
             }
         }
         if let Some(module) = module_to_activate {
-            ship.state.plan_activate_module(module.borrow_mut().get_base_mut());
+            plans.plan_activate_module(module.borrow().get_base());
         }
     }
     
@@ -71,7 +71,7 @@ pub fn run_ai(ship: &Ship, enemy_ships: &Vec<&Ship>) {
                     let target_ship = &enemy_ships[rng.gen::<usize>() % enemy_ships.len()];
                     let target_module = &target_ship.modules[rng.gen::<usize>() % target_ship.modules.len()];
                 
-                    module_borrowed.get_base_mut().plan_target =
+                    plans.module_plans(module_borrowed.get_base().index).plan_target =
                         Some(module::Target {
                             ship: target_ship.index,
                             data: module::TargetData::TargetModule(target_module.borrow().get_base().index),
@@ -79,5 +79,5 @@ pub fn run_ai(ship: &Ship, enemy_ships: &Vec<&Ship>) {
                 }
             }
         }
-    }*/
+    }
 }

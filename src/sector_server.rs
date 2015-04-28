@@ -206,7 +206,9 @@ impl SectorState {
             
             if ship.client_id.is_none() {
                 // Run AI
-                run_ai(ship, enemies);
+                let mut plans = ship.create_plans();
+                run_ai(ship, &mut plans, enemies);
+                self.ship_plans.push((ship.index, plans));
             }
         }
         
