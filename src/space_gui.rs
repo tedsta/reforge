@@ -592,6 +592,20 @@ impl SpaceGui {
         
         self.target_icons.retain(|i| i.ship != ship);
     }
+    
+    pub fn on_ship_removed(&mut self, client_ship: ShipIndex, removed: ShipIndex) {
+        if client_ship == removed && self.selection.is_some() {
+            self.selection = None;
+        }
+        
+        self.remove_lock(removed);
+        
+        self.plans.on_ship_removed(removed);
+    }
+    
+    pub fn set_client_ship(&mut self, client_ship: &Ship) {
+        self.plans = client_ship.create_plans();
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

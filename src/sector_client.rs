@@ -296,11 +296,9 @@ impl<'a> ClientBattleState<'a> {
         
         for ship in ships_to_remove.into_iter() {
             println!("Removing ship {:?}", ship);
-        
-            gui.remove_lock(ship);
-        
+            
+            gui.on_ship_removed(self.player_ship, ship);
             self.bc.remove_ship(ship);
-            gui.plans.on_ship_removed(ship);
         }
     
         for ship in ships_to_add.into_iter() {
@@ -310,6 +308,7 @@ impl<'a> ClientBattleState<'a> {
                 if player_hp == 0 {
                     println!("Replacing player's ship");
                     self.player_ship = ship.index;
+                    gui.set_client_ship(&ship);
                     self.bc.add_ship(ship);
                 }
             } else {
