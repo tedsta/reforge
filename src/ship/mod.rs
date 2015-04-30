@@ -7,15 +7,10 @@ use battle_context::BattleContext;
 use module;
 use module::{
     IModule,
-    IModuleRef,
-    IModuleStored,
     Module,
-    ModuleBase,
-    ModuleBox,
     ModuleIndex,
-    ModuleRef,
     ModuleStats,
-    ModuleStoredBox,
+    ModuleStored,
     Target,
     TargetManifest,
 };
@@ -81,7 +76,7 @@ impl ShipState {
         }
     }
     
-    pub fn can_activate_module(&self, module: &ModuleBase) -> bool {
+    pub fn can_activate_module(&self, module: &Module) -> bool {
         if module.can_activate() && self.available_power() >= module.get_power() {
             true
         } else {
@@ -167,7 +162,7 @@ pub struct Ship {
     pub client_id: Option<ClientId>,
     pub index: ShipIndex, // Index for ship in ship vector in BattleContext
     pub state: ShipState,
-    pub modules: Vec<ModuleRef>,
+    pub modules: Vec<Module>,
     
     // Ship dimensions in module blocks
     width: u8,
@@ -214,11 +209,9 @@ impl Ship {
     }
     
     pub fn is_space_free(&self, x: u8, y: u8, width: u8, height: u8) -> bool {
-        for module in self.modules.iter() {
-            let module = (*module).borrow();
-            let base = module.get_base();
-            
-            if base.x + base.width > x && base.x < x + width && base.y + base.height > y && base.y < y + height {
+        for module in &self.modules {
+
+            if module.x + module.width > x && module.x < x + width && module.y + module.height > y && module.y < y + height {
                 return false;
             }
         }
@@ -227,28 +220,26 @@ impl Ship {
     }
     
     // Returns true if adding the module was successful, false if it failed.
-    pub fn add_module<M>(&mut self, mut module: Module<M>) -> bool
-        where M: IModule + Reflect + Clone + 'static
-    {
+    pub fn add_module(&mut self, mut module: Module) -> bool {
         // Add to state hp
-        self.state.total_module_hp += module.get_base().get_hp();
+        self.state.total_module_hp += module.get_hp();
         self.state.hp = self.state.total_module_hp/2;
-        self.state.module_stats.push(module.get_base().stats);
+        self.state.module_stats.push(module.stats);
         
         // Modify the ship's dimensions
-        self.width = cmp::max(self.width, module.get_base().x + module.get_base().width);
-        self.height = cmp::max(self.height, module.get_base().y + module.get_base().height);
+        self.width = cmp::max(self.width, module.x + module.width);
+        self.height = cmp::max(self.height, module.y + module.height);
         
         // Setup module's index
-        module.get_base_mut().index = ModuleIndex(self.modules.len() as u32);
+        module.index = ModuleIndex(self.modules.len() as u32);
         
         // Activate module if can
-        if module.get_base().is_active() {
-            module.on_activated(&mut self.state);
+        if module.is_active() {
+            module.inner.borrow_mut().on_activated(&mut self.state);
         }
         
         // Add the module
-        self.modules.push(Rc::new(RefCell::new(ModuleBox::new(module))));
+        self.modules.push(module);
         true
     }
     
@@ -256,7 +247,7 @@ impl Ship {
     /// beam will hit each module
     pub fn beam_hits<F>(&self, start: Vec2f, end: Vec2f, mut to_apply: F)
         where
-            F: FnMut(&ModuleRef, Vec2f, f64, Option<f64>)
+            F: FnMut(&Module, Vec2f, f64, Option<f64>)
     {
         use std::num::Float;
         use std::ops::Deref;
@@ -265,10 +256,9 @@ impl Ship {
         // http://stackoverflow.com/a/1084899/4006804
     
         for module in &self.modules {
-            let module_borrowed = module.borrow();
-            let module_size = module_borrowed.get_base().get_render_size();
+            let module_size = module.get_render_size();
             
-            let circle_pos = module_borrowed.get_base().get_render_center();
+            let circle_pos = module.get_render_center();
             let circle_radius = module_size.x.min(module_size.y) / 2.5;
             
             // The beam's direction vector
@@ -325,22 +315,22 @@ impl Ship {
     
     pub fn server_preprocess(&self, context: &BattleContext) {
         for module in &self.modules {
-            let target = module.borrow().get_base().target.as_ref().map(|t| TargetManifest::from_target(context, t));
-            module.borrow_mut().server_preprocess(&self.state, target);
+            let target = module.target.as_ref().map(|t| TargetManifest::from_target(context, t));
+            module.inner.borrow_mut().server_preprocess(module, &self.state, target);
         }
     }
     
     pub fn before_simulation(&self, context: &BattleContext, events: &mut SimEvents) {
         for module in &self.modules {
-            let target = module.borrow().get_base().target.as_ref().map(|t| TargetManifest::from_target(context, t));
-            module.borrow_mut().before_simulation(events, target);
+            let target = module.target.as_ref().map(|t| TargetManifest::from_target(context, t));
+            module.inner.borrow_mut().before_simulation(module, events, target);
         }
     }
     
     #[cfg(feature = "client")]
     pub fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
         for module in &self.modules {
-            module.borrow().add_plan_effects(asset_store, effects, self);
+            module.inner.borrow().add_plan_effects(module, asset_store, effects, self);
         }
     }
     
@@ -350,8 +340,8 @@ impl Ship {
             self.add_exploding_effects(asset_store, effects);
         } else {
             for module in &self.modules {
-                let target = module.borrow().get_base().target.as_ref().map(|t| TargetManifest::from_target(context, t));
-                module.borrow().add_simulation_effects(asset_store, effects, self, target);
+                let target = module.target.as_ref().map(|t| TargetManifest::from_target(context, t));
+                module.inner.borrow().add_simulation_effects(module, asset_store, effects, self, target);
             }
         }
     }
@@ -365,8 +355,7 @@ impl Ship {
         use sprite_sheet::{SpriteSheet, SpriteAnimation};
     
         for module in &self.modules {
-            module.borrow_mut().get_base_mut().stats.hp = 0;
-            module.borrow().add_plan_effects(asset_store, effects, self);
+            module.inner.borrow().add_plan_effects(module, asset_store, effects, self);
         }
         
         // Random number generater
@@ -392,54 +381,51 @@ impl Ship {
     
     pub fn after_simulation(&mut self) {
         for module in &self.modules {
-            module.borrow_mut().after_simulation(&mut self.state);
+            if module.powered {
+                module.inner.borrow_mut().after_simulation(&mut self.state);
+            }
         }
     }
     
     pub fn apply_module_stats(&mut self) {
         let module_stats: Vec<ModuleStats> = self.state.module_stats.iter().cloned().collect();
-        for (module, stats) in self.modules.iter().zip(module_stats.iter()) {
-            let mut module = module.borrow_mut();
-            
+        for (module, stats) in self.modules.iter_mut().zip(module_stats.iter()) {
             // Get if module was active before applying the stats
-            let was_active = module.get_base().is_active();
+            let was_active = module.is_active();
             
-            if module.get_base().stats.hp != stats.hp {
-                module.get_base_mut().stats.hp = stats.hp;
+            if module.stats.hp != stats.hp {
+                module.stats.hp = stats.hp;
             }
             
             // Activate or deactivate module if the active state changed
-            if was_active && !module.get_base().is_active() {
+            if was_active && !module.is_active() {
                 // Module just got deactivated
-                self.state.power_use -= module.get_base().get_power();
-                module.get_base_mut().powered = false;
-                module.on_deactivated(&mut self.state);
+                self.state.power_use -= module.get_power();
+                module.powered = false;
+                module.inner.borrow_mut().on_deactivated(&mut self.state);
             }
         }
     }
     
     pub fn deactivate_unpowerable_modules(&mut self) {
-        for module in &self.modules {
+        for module in &mut self.modules {
             if self.state.power_use <= self.state.max_power {
                 break;
             } else {
-                // Attempt to borrow the module
-                if let Some(mut module) = module.try_borrow_mut() {
-                    if module.get_base().get_power() > 0 {
-                        if module.get_base().powered {
-                            self.state.power_use -= module.get_base().get_power();
-                            module.get_base_mut().powered = false;
-                            module.on_deactivated(&mut self.state);
-                        }
+                if module.get_power() > 0 {
+                    if module.powered {
+                        self.state.power_use -= module.get_power();
+                        module.powered = false;
+                        module.inner.borrow_mut().on_deactivated(&mut self.state);
                     }
                 }
             }
         }
     }
     
-    pub fn on_ship_removed(&self, ship_index: ShipIndex) {
-        for module in &self.modules {
-            module.borrow_mut().get_base_mut().on_ship_removed(ship_index);
+    pub fn on_ship_removed(&mut self, ship_index: ShipIndex) {
+        for module in &mut self.modules {
+            module.on_ship_removed(ship_index);
         }
     }
     
@@ -447,30 +433,28 @@ impl Ship {
         ShipPlans {
             logout: false,
             target_sector: None,
-            module_plans: self.modules.iter().map(|m| m.borrow().get_base().create_plans()).collect(),
+            module_plans: self.modules.iter().map(|m| m.create_plans()).collect(),
             plan_power_use: self.state.power_use,
         }
     }
     
     pub fn apply_plans(&mut self, plans: &ShipPlans) {
-        for (module, module_plans) in self.modules.iter().zip(plans.module_plans.iter()) {
-            let mut module = module.borrow_mut();
-            
+        for (module, module_plans) in self.modules.iter_mut().zip(plans.module_plans.iter()) {
             // Apply powered plans
-            if module_plans.plan_powered != module.get_base().powered {
-                if module_plans.plan_powered && self.state.can_activate_module(module.get_base()) {
-                    module.get_base_mut().powered = true;
-                    self.state.power_use += module.get_base().get_power();
-                    module.on_activated(&mut self.state);
-                } else if module.get_base().powered {
-                    module.get_base_mut().powered = false;
-                    self.state.power_use -= module.get_base().get_power();
-                    module.on_deactivated(&mut self.state);
+            if module_plans.plan_powered != module.powered {
+                if module_plans.plan_powered && self.state.can_activate_module(module) {
+                    module.powered = true;
+                    self.state.power_use += module.get_power();
+                    module.inner.borrow_mut().on_activated(&mut self.state);
+                } else if module.powered {
+                    module.powered = false;
+                    self.state.power_use -= module.get_power();
+                    module.inner.borrow_mut().on_deactivated(&mut self.state);
                 }
             }
             
             // Apply target plans
-            module.get_base_mut().target = module_plans.plan_target;
+            module.target = module_plans.plan_target;
         }
     }
     
@@ -482,37 +466,33 @@ impl Ship {
         
         // Modoule results
         for module in &self.modules {
-            let module = module.borrow();
-        
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Write the base results
-            packet.write(&module.get_base().powered);
-            packet.write(&module.get_base().target);
+            packet.write(&module.powered);
+            packet.write(&module.target);
         
-            module.write_results(packet);
+            module.inner.borrow().write_results(packet);
         }
     }
     
     pub fn read_results(&mut self, packet: &mut InPacket) {
         self.state.power_use = packet.read().ok().expect("Failed to read ShipState::power_use");
         self.jumping = packet.read().ok().expect("Failed to read Ship::jumping");
-        for module in &self.modules {
-            let mut module = module.borrow_mut();
-            
+        for module in &mut self.modules {
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Read the base results
-            let was_powered = module.get_base().powered;
-            module.get_base_mut().powered = packet.read().ok().expect("Failed to read ModuleBase powered");
+            let was_powered = module.powered;
+            module.powered = packet.read().ok().expect("Failed to read Module powered");
             
-            if !was_powered && module.get_base().powered {
-                module.on_activated(&mut self.state);
-            } else if was_powered && !module.get_base().powered {
-                module.on_deactivated(&mut self.state);
+            if !was_powered && module.powered {
+                module.inner.borrow_mut().on_activated(&mut self.state);
+            } else if was_powered && !module.powered {
+                module.inner.borrow_mut().on_deactivated(&mut self.state);
             }
             
-            module.get_base_mut().target = packet.read().ok().expect("Failed to read ModuleBase target");
+            module.target = packet.read().ok().expect("Failed to read Module target");
         
-            module.read_results(packet);
+            module.inner.borrow_mut().read_results(packet);
         }
     }
     
@@ -524,9 +504,6 @@ impl Ship {
         let opacity = (self.state.shields as f32)/8.0;
     
         for module in &self.modules {
-            let module = module.borrow();
-            let module = module.get_base();
-            
             let shield_texture = asset_store.get_texture_str("effects/1_module_shield.png");
             let (shield_size_x, shield_size_y) = shield_texture.get_size();
             let (shield_size_x, shield_size_y) = (shield_size_x as f64, shield_size_y as f64);
@@ -549,9 +526,6 @@ impl Ship {
         use graphics::*;
     
         for (module, stats) in self.modules.iter().zip(self.state.module_stats.iter()) {
-            let module = module.borrow();
-            let module = module.get_base();
-            
             let context = context.trans((module.x as f64) * 48.0, (module.y as f64) * 48.0);
             
             let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
@@ -582,9 +556,6 @@ impl Ship {
         use graphics::*;
     
         for (module, plans) in self.modules.iter().zip(plans.module_plans.iter()) {
-            let module = module.borrow();
-            let module = module.get_base();
-            
             // Skip modules that aren't powerable
             if module.get_power() == 0 { continue; }
             
@@ -610,7 +581,7 @@ pub struct ShipStored {
     pub id: ShipId,
     pub name: String,
     pub state: ShipState,
-    pub modules: Vec<ModuleStoredBox>,
+    pub modules: Vec<ModuleStored>,
     
     // Ship dimensions in module blocks
     width: u8,
@@ -641,7 +612,7 @@ impl ShipStored {
             id: ship.id,
             name: ship.name,
             state: ship.state,
-            modules: ship.modules.into_iter().map(|m| try_unwrap(m).ok().expect("Failed to unwrap Module").into_inner().to_module_stored()).collect(),
+            modules: ship.modules.into_iter().map(|m| ModuleStored::from_module(m)).collect(),
             width: ship.width,
             height: ship.height,
             level: ship.level,
@@ -655,7 +626,7 @@ impl ShipStored {
             client_id: client_id,
             index: ShipIndex(0),
             state: self.state,
-            modules: self.modules.into_iter().map(|m| Rc::new(RefCell::new(m.to_module()))).collect(),
+            modules: self.modules.into_iter().map(|m| m.to_module()).collect(),
             width: self.width,
             height: self.height,
             level: self.level,

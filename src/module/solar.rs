@@ -5,7 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_context::BattleContext;
 use module;
-use module::{IModule, Module, ModuleBase, ModuleRef, TargetManifest};
+use module::{IModule, Module, ModuleClass, TargetManifest};
 use net::{InPacket, OutPacket};
 use ship::{Ship, ShipState};
 use sim::SimEvents;
@@ -24,17 +24,16 @@ use asset_store::AssetStore;
 pub struct SolarModule;
 
 impl SolarModule {
-    pub fn new() -> Module<SolarModule> {
-        Module {
-            base: ModuleBase::new(1, 1, 0, 2, 3),
-            module: SolarModule,
-        }
+    pub fn new() -> Module {
+        Module::new(1, 1, 0, 2, 3, SolarModule)
     }
 }
 
-impl IModule for SolarModule {    
+impl IModule for SolarModule {
+    fn get_class(&self) -> ModuleClass { ModuleClass::Solar }
+
     #[cfg(feature = "client")]
-    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
+    fn add_plan_effects(&self, base: &Module, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
         let mut solar_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/solar_panel_sprite.png"));
         
         if base.is_active() {
@@ -50,11 +49,11 @@ impl IModule for SolarModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
+    fn add_simulation_effects(&self, base: &Module, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
         self.add_plan_effects(base, asset_store, effects, ship);
     }
     
-    fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
+    fn after_simulation(&mut self, ship_state: &mut ShipState) {
     }
     
     fn on_activated(&mut self, ship_state: &mut ShipState) {
@@ -63,9 +62,5 @@ impl IModule for SolarModule {
     
     fn on_deactivated(&mut self, ship_state: &mut ShipState) {
         ship_state.remove_power(5);
-    }
-    
-    fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
-        None
     }
 }

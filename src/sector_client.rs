@@ -122,14 +122,14 @@ impl<'a> ClientBattleState<'a> {
     
     fn run_simulation_phase(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
         // Unlock any exploding or jumping ships
-        for ship in self.bc.ships_iter() {
-            let ship_index = ship.index;
-            
-            if ship.jumping || ship.exploding {
-                // Remove all locks
-                self.bc.on_ship_removed(ship_index);
-                gui.plans.on_ship_removed(ship_index);
-            }
+        let ships_to_unlock: Vec<ShipIndex> =
+            self.bc.ships_iter()
+                .filter_map(|s| if s.jumping || s.exploding { Some(s.index) } else { None })
+                .collect();
+        
+        for ship_index in ships_to_unlock {
+            self.bc.on_ship_removed(ship_index);
+            gui.plans.on_ship_removed(ship_index);
         }
         
         let mut sim_events = SimEvents::new();

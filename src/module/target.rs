@@ -2,7 +2,7 @@ use battle_context::BattleContext;
 use ship::{Ship, ShipIndex};
 use vec::{Vec2, Vec2f};
 
-use super::{ModuleRef, ModuleIndex};
+use super::{Module, ModuleIndex};
 
 #[derive(Clone, PartialEq, RustcEncodable, RustcDecodable)]
 pub enum TargetMode {
@@ -33,7 +33,7 @@ pub enum TargetData {
 // Manifestation of a target
 pub struct TargetManifest<'a> {
     pub ship: &'a Ship,
-    pub data: TargetManifestData,
+    pub data: TargetManifestData<'a>,
 }
 
 impl<'a> TargetManifest<'a> {
@@ -48,26 +48,26 @@ impl<'a> TargetManifest<'a> {
     }
 }
 
-pub enum TargetManifestData {
+pub enum TargetManifestData<'a> {
     TargetShip,
-    TargetModule(ModuleRef),
-    OwnModule(ModuleRef),
-    AnyModule(ModuleRef),
+    TargetModule(&'a Module),
+    OwnModule(&'a Module),
+    AnyModule(&'a Module),
     Beam(Vec2f, Vec2f),
 }
 
-impl TargetManifestData {
-    fn from_target_data(ship: &Ship, target_data: &TargetData) -> TargetManifestData {
+impl<'a> TargetManifestData<'a> {
+    fn from_target_data(ship: &'a Ship, target_data: &TargetData) -> TargetManifestData<'a> {
         match target_data {
             &TargetData::TargetShip => TargetManifestData::TargetShip,
-            &TargetData::TargetModule(module_index) => {
-                TargetManifestData::TargetModule(ship.modules[module_index.to_usize()].clone())
+            &TargetData::TargetModule(module) => {
+                TargetManifestData::TargetModule(module.get(ship))
             },
-            &TargetData::OwnModule(module_index) => {
-                TargetManifestData::TargetModule(ship.modules[module_index.to_usize()].clone())
+            &TargetData::OwnModule(module) => {
+                TargetManifestData::TargetModule(module.get(ship))
             },
-            &TargetData::AnyModule(module_index) => {
-                TargetManifestData::TargetModule(ship.modules[module_index.to_usize()].clone())
+            &TargetData::AnyModule(module) => {
+                TargetManifestData::TargetModule(module.get(ship))
             },
             &TargetData::Beam(start, end) => TargetManifestData::Beam(start, end),
         }

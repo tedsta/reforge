@@ -3,7 +3,7 @@ use std::rand::Rng;
 use std::rand;
 
 use ship::{Ship, ShipId};
-use module::{IModuleRef, EngineModule, ProjectileWeaponModule, ShieldModule, SolarModule, CommandModule, BeamWeaponModule};
+use module::{EngineModule, ProjectileWeaponModule, ShieldModule, SolarModule, CommandModule, BeamWeaponModule};
 
 pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     if level == 0 {
@@ -29,24 +29,24 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     // Add top half engines
     for i in 0 .. num_engines/2 + num_engines%2 {
         let mut engine = EngineModule::new();
-        engine.get_base_mut().x = 0;
-        engine.get_base_mut().y = i;
+        engine.x = 0;
+        engine.y = i;
         ship.add_module(engine);
     }
     
     // Add bottom half engines
     for i in 0 .. num_engines/2 {
         let mut engine = EngineModule::new();
-        engine.get_base_mut().x = 0;
-        engine.get_base_mut().y = height - 1 - i;
+        engine.x = 0;
+        engine.y = height - 1 - i;
         ship.add_module(engine);
     }
     
     // Fill in any remaining space between engines with power modules
     for i in 0 .. height - num_engines {
         let mut solar = SolarModule::new();
-        solar.get_base_mut().x = 1;
-        solar.get_base_mut().y = num_engines/2 + num_engines%2 + i;
+        solar.x = 1;
+        solar.y = num_engines/2 + num_engines%2 + i;
         ship.add_module(solar);
         num_power -= 1;
     }
@@ -73,23 +73,23 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
         // Power module
         if choice == 0 {
             let mut solar = SolarModule::new();
-            solar.get_base_mut().x = x;
-            solar.get_base_mut().y = y;
+            solar.x = x;
+            solar.y = y;
             ship.add_module(solar);
         } else if choice == 1 {
             let mut shield = ShieldModule::new();
-            shield.get_base_mut().x = x;
-            shield.get_base_mut().y = y;
+            shield.x = x;
+            shield.y = y;
             ship.add_module(shield);
         } else if choice == 2 {
             let mut weapon = ProjectileWeaponModule::new();
-            weapon.get_base_mut().x = x;
-            weapon.get_base_mut().y = y;
+            weapon.x = x;
+            weapon.y = y;
             ship.add_module(weapon);
         } else if choice == 3 {
             let mut beam = BeamWeaponModule::new();
-            beam.get_base_mut().x = x;
-            beam.get_base_mut().y = y;
+            beam.x = x;
+            beam.y = y;
             ship.add_module(beam);
         }
         
@@ -114,8 +114,8 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     
     // Finally, add the command module
     let mut command = CommandModule::new();
-    command.get_base_mut().x = command_x;
-    command.get_base_mut().y = command_y;
+    command.x = command_x;
+    command.y = command_y;
     ship.add_module(command);
     
     ship

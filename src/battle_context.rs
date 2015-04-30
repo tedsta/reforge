@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use std::iter;
 use std::slice;
 
-use module::{ModuleBase, Target};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{Ship, ShipId, ShipIndex};
 use sim::SimEvents;
@@ -153,8 +152,8 @@ impl BattleContext {
         }
     }
     
-    pub fn on_ship_removed(&self, ship_index: ShipIndex) {
-        for ship in self.ships_iter() {
+    pub fn on_ship_removed(&mut self, ship_index: ShipIndex) {
+        for ship in self.ships_iter_mut() {
             ship.on_ship_removed(ship_index);
         }
     }

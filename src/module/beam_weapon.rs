@@ -5,7 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_context::BattleContext;
 use module;
-use module::{IModule, Module, ModuleBase, TargetManifest, TargetManifestData};
+use module::{IModule, Module, ModuleClass, TargetManifest, TargetManifestData};
 use net::{InPacket, OutPacket};
 use ship::{Ship, ShipState};
 use sim::SimEvents;
@@ -25,16 +25,15 @@ use asset_store::AssetStore;
 pub struct BeamWeaponModule;
 
 impl BeamWeaponModule {
-    pub fn new() -> Module<BeamWeaponModule> {
-        Module {
-            base: ModuleBase::new(1, 1, 3, 2, 3),
-            module: BeamWeaponModule,
-        }
+    pub fn new() -> Module {
+        Module::new(1, 1, 3, 2, 3, BeamWeaponModule)
     }
 }
 
 impl IModule for BeamWeaponModule {
-    fn before_simulation(&mut self, base: &mut ModuleBase, events: &mut SimEvents, target: Option<TargetManifest>) {
+    fn get_class(&self) -> ModuleClass { ModuleClass::BeamWeapon }
+
+    fn before_simulation(&mut self, base: &Module, events: &mut SimEvents, target: Option<TargetManifest>) {
         if base.powered {
             if let Some(ref target) = target {
                 if let module::TargetManifestData::Beam(beam_start, beam_end) = target.data {
@@ -45,7 +44,7 @@ impl IModule for BeamWeaponModule {
                             events.add(
                                 hit_tick,
                                 target.ship.index,
-                                box DamageEvent::new(module.borrow().get_base().index, 1),
+                                box DamageEvent::new(module.index, 1),
                             );
                         }
                     });
@@ -55,7 +54,7 @@ impl IModule for BeamWeaponModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
+    fn add_plan_effects(&self, base: &Module, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
         let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/small_beam_sprite.png"));
 
         if base.is_active() {
@@ -71,7 +70,7 @@ impl IModule for BeamWeaponModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
+    fn add_simulation_effects(&self, base: &Module, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
         self.add_plan_effects(base, asset_store, effects, ship);
         
         let ship_id = ship.id;
@@ -114,7 +113,7 @@ impl IModule for BeamWeaponModule {
         }
     }
     
-    fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
+    fn get_target_mode(&self) -> Option<module::TargetMode> {
         Some(module::TargetMode::Beam(3))
     }
 }

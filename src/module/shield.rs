@@ -5,7 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_context::BattleContext;
 use module;
-use module::{IModule, Module, ModuleBase, ModuleRef, TargetManifest};
+use module::{IModule, Module, ModuleClass, TargetManifest};
 use net::{InPacket, OutPacket};
 use ship::{Ship, ShipState};
 use sim::SimEvents;
@@ -24,17 +24,16 @@ use asset_store::AssetStore;
 pub struct ShieldModule;
 
 impl ShieldModule {
-    pub fn new() -> Module<ShieldModule>{
-        Module {
-            base: ModuleBase::new(1, 1, 2, 2, 3),
-            module: ShieldModule,
-        }
+    pub fn new() -> Module {
+        Module::new(1, 1, 2, 2, 3, ShieldModule)
     }
 }
 
-impl IModule for ShieldModule {    
+impl IModule for ShieldModule {
+    fn get_class(&self) -> ModuleClass { ModuleClass::Shield }
+
     #[cfg(feature = "client")]
-    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
+    fn add_plan_effects(&self, base: &Module, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
         let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/shield_sprite.png"));
         
         if base.is_active() {
@@ -50,12 +49,12 @@ impl IModule for ShieldModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
+    fn add_simulation_effects(&self, base: &Module, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
         self.add_plan_effects(base, asset_store, effects, ship);
     }
     
-    fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
-        if base.powered && ship_state.shields < ship_state.max_shields {
+    fn after_simulation(&mut self, ship_state: &mut ShipState) {
+        if ship_state.shields < ship_state.max_shields {
             ship_state.shields += 1; // charge shield
         }
     }
@@ -66,9 +65,5 @@ impl IModule for ShieldModule {
     
     fn on_deactivated(&mut self, ship_state: &mut ShipState) {
         ship_state.remove_shields(2);
-    }
-    
-    fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
-        None
     }
 }

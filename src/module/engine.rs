@@ -5,7 +5,7 @@ use opengl_graphics::Gl;
 
 use battle_context::BattleContext;
 use module;
-use module::{IModule, Module, ModuleBase, ModuleRef, TargetManifest};
+use module::{IModule, Module, ModuleClass, TargetManifest};
 use net::{InPacket, OutPacket};
 use ship::{Ship, ShipState};
 use sim::SimEvents;
@@ -24,17 +24,16 @@ use asset_store::AssetStore;
 pub struct EngineModule;
 
 impl EngineModule {
-    pub fn new() -> Module<EngineModule> {
-        Module {
-            base: ModuleBase::new(2, 1, 2, 2, 3),
-            module: EngineModule,
-        }
+    pub fn new() -> Module {
+        Module::new(2, 1, 2, 2, 3, EngineModule)
     }
 }
 
-impl IModule for EngineModule {    
+impl IModule for EngineModule {
+    fn get_class(&self) -> ModuleClass { ModuleClass::Engine }
+    
     #[cfg(feature = "client")]
-    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
+    fn add_plan_effects(&self, base: &Module, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
         let mut engine_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/engine1.png"));
         engine_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
     
@@ -56,11 +55,8 @@ impl IModule for EngineModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
+    fn add_simulation_effects(&self, base: &Module, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
         self.add_plan_effects(base, asset_store, effects, ship);
-    }
-    
-    fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
     }
     
     fn on_activated(&mut self, ship_state: &mut ShipState) {
@@ -69,9 +65,5 @@ impl IModule for EngineModule {
     
     fn on_deactivated(&mut self, ship_state: &mut ShipState) {
         ship_state.thrust -= 1;
-    }
-    
-    fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
-        None
     }
 }

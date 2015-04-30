@@ -14,7 +14,7 @@ use asset_store::AssetStore;
 use battle_context::BattleContext;
 use gui::TextButton;
 use module;
-use module::{IModule, ModuleBox, ModuleIndex};
+use module::{IModule, Module, ModuleIndex};
 use net::ClientId;
 use sector_data::SectorData;
 use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipState};
@@ -288,14 +288,14 @@ impl SpaceGui {
         if let Some(ref selection) = self.selection {
             let &(selected_module, ref target_mode) = selection;
             
-            let selected_module = selected_module.get(client_ship).borrow();
+            let selected_module = selected_module.get(client_ship);
             
             // Highlight selected module
             let x = self.mouse_x - SHIP_OFFSET_X;
             let y = self.mouse_y - SHIP_OFFSET_Y;
 
-            let Vec2{x: module_x, y: module_y} = selected_module.get_base().get_render_position();
-            let Vec2{x: module_w, y: module_h} = selected_module.get_base().get_render_size();
+            let Vec2{x: module_x, y: module_y} = selected_module.get_render_position();
+            let Vec2{x: module_w, y: module_h} = selected_module.get_render_size();
             let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
         
             {
@@ -355,9 +355,11 @@ impl SpaceGui {
                         let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
 
                         apply_to_module_if_point_inside(ship.get(bc), x, y, |_, _, module| {
-                            let Vec2{x: module_x, y: module_y} = module.get_base().get_render_position();
-                            let Vec2{x: module_w, y: module_h} = module.get_base().get_render_size();
-                            let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
+                            let Vec2{x: module_x, y: module_y} = module.get_render_position();
+                            let Vec2{x: module_w, y: module_h} = module.get_render_size();
+                            
+                            let (module_x, module_y, module_w, module_h) =
+                                (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
                             
                             let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
 
@@ -378,19 +380,19 @@ impl SpaceGui {
             let y = self.mouse_y - SHIP_OFFSET_Y;
 
             apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
-                let Vec2{x: module_x, y: module_y} = module.get_base().get_render_position();
-                let Vec2{x: module_w, y: module_h} = module.get_base().get_render_size();
+                let Vec2{x: module_x, y: module_y} = module.get_render_position();
+                let Vec2{x: module_w, y: module_h} = module.get_render_size();
                 let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
             
                 let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
-                if self.plans.module_plans(module.get_base().index).plan_powered {
+                if self.plans.module_plans(module.index).plan_powered {
                     Rectangle::new([0.0, 0.0, 1.0, 0.5])
                         .draw(
                             [module_x, module_y, module_w, module_h],
                             &context.draw_state, context.transform,
                             gl
                         );
-                } else if self.plans.can_plan_activate_module(ship_state, module.get_base()) {
+                } else if self.plans.can_plan_activate_module(ship_state, module) {
                     Rectangle::new([1.0, 1.0, 0.0, 0.5])
                         .draw(
                             [module_x, module_y, module_w, module_h],
@@ -442,13 +444,13 @@ impl SpaceGui {
             let y = y - SHIP_OFFSET_Y;
             
             apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
-                if self.plans.module_plans(module.get_base().index).plan_powered {
+                if self.plans.module_plans(module.index).plan_powered {
                     if let Some(target_mode) = module.get_target_mode() {
                         // Select this module to begin targeting
-                        self.selection = Some((module.get_base().index, target_mode));
+                        self.selection = Some((module.index, target_mode));
                     }
-                } else if self.plans.can_plan_activate_module(ship_state, module.get_base()) {
-                    self.plans.plan_activate_module(module.get_base());
+                } else if self.plans.can_plan_activate_module(ship_state, module) {
+                    self.plans.plan_activate_module(module);
                 }
             });
         }
@@ -456,10 +458,12 @@ impl SpaceGui {
         let mut clear_selection = false;
         
         if let Some(ref selection) = self.selection {
+            use module::{TargetData, TargetMode};
+        
             let &(selected_module, ref target_mode) = selection;
 
             match *target_mode {
-                module::TargetMode::TargetModule => {
+                TargetMode::TargetModule => {
                     let x = x - self.render_area.x - ENEMY_OFFSET_X;
                     let y = y - self.render_area.y - ENEMY_OFFSET_Y;
                     
@@ -471,14 +475,14 @@ impl SpaceGui {
                                 plans.module_plans(selected_module).plan_target =
                                     Some(module::Target {
                                         ship: ship_index,
-                                        data: module::TargetData::TargetModule(module.get_base().index),
+                                        data: TargetData::TargetModule(module.index),
                                     });
                                 clear_selection = true;
                             });
                         }
                     }
                 },
-                module::TargetMode::OwnModule => {
+                TargetMode::OwnModule => {
                     let x = x - SHIP_OFFSET_X;
                     let y = y - SHIP_OFFSET_Y;
                     
@@ -488,12 +492,12 @@ impl SpaceGui {
                         plans.module_plans(selected_module).plan_target =
                             Some(module::Target {
                                 ship: ship_index,
-                                data: module::TargetData::OwnModule(module.get_base().index),
+                                data: TargetData::OwnModule(module.index),
                             });
                         clear_selection = true;
                     });
                 },
-                module::TargetMode::Beam(beam_length) => {
+                TargetMode::Beam(beam_length) => {
                     let x = x - self.render_area.x - ENEMY_OFFSET_X;
                     let y = y - self.render_area.y - ENEMY_OFFSET_Y;
                     let beam_length = (beam_length as f64) * 48.0;
@@ -506,7 +510,7 @@ impl SpaceGui {
                                     self.plans.module_plans(selected_module).plan_target =
                                         Some(module::Target {
                                             ship: ship,
-                                            data: module::TargetData::Beam(beam_start, beam_end),
+                                            data: TargetData::Beam(beam_start, beam_end),
                                         });
                                     clear_selection = true;
                                     self.beam_targeting_state = None;
@@ -558,8 +562,8 @@ impl SpaceGui {
             let y = y - SHIP_OFFSET_Y;
             
             apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
-                if self.plans.module_plans(module.get_base().index).plan_powered {
-                    self.plans.plan_deactivate_module(module.get_base());
+                if self.plans.module_plans(module.index).plan_powered {
+                    self.plans.plan_deactivate_module(module);
                 }
                 module_was_deactivated = true;
             });
@@ -596,17 +600,15 @@ impl SpaceGui {
 /// Returns whether or not the function was applied.
 pub fn apply_to_module_if_point_inside<F>(ship: &Ship, x: f64, y: f64, mut f: F)
     where
-        F: FnMut(ShipIndex, &ShipState, &ModuleBox)
+        F: FnMut(ShipIndex, &ShipState, &Module)
 {
     for module in ship.modules.iter() {
-        let mut module = module.borrow();
-    
         // Get module position and size on screen
-        let Vec2{x: module_x, y: module_y} = module.get_base().get_render_position();
-        let Vec2{x: module_w, y: module_h} = module.get_base().get_render_size();
+        let Vec2{x: module_x, y: module_y} = module.get_render_position();
+        let Vec2{x: module_w, y: module_h} = module.get_render_size();
         let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
         if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-            f(ship.index, &ship.state, module.deref());
+            f(ship.index, &ship.state, module);
         }
     }
 }

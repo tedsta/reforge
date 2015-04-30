@@ -12,7 +12,7 @@ use opengl_graphics::Gl;
 
 use battle_context::{BattleContext, TICKS_PER_SECOND};
 use module;
-use module::{IModule, Module, ModuleBase, ModuleBox, TargetManifest, TargetManifestData};
+use module::{IModule, Module, ModuleClass, TargetManifest, TargetManifestData};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{Ship, ShipId, ShipState};
 use sim::SimEvents;
@@ -36,7 +36,7 @@ pub struct ProjectileWeaponModule {
 }
 
 impl ProjectileWeaponModule {
-    pub fn new() -> Module<ProjectileWeaponModule> {
+    pub fn new() -> Module {
         let projectile = Projectile {
             damage: 1,
             hit: false,
@@ -51,17 +51,18 @@ impl ProjectileWeaponModule {
             hit_pos: Vec2{x: 0f64, y: 0f64},
         };
     
-        Module {
-            base: ModuleBase::new(1, 1, 2, 2, 3),
-            module: ProjectileWeaponModule {
+        Module::new(1, 1, 2, 2, 3,
+            ProjectileWeaponModule {
                 projectiles: repeat(projectile).take(3).collect(),
-            },
-        }
+            }
+        )
     }
 }
 
 impl IModule for ProjectileWeaponModule {
-    fn server_preprocess(&mut self, base: &mut ModuleBase, ship_state: &ShipState, target: Option<TargetManifest>) {    
+    fn get_class(&self) -> ModuleClass { ModuleClass::ProjectileWeapon }
+
+    fn server_preprocess(&mut self, base: &Module, ship_state: &ShipState, target: Option<TargetManifest>) {    
         if base.powered {
             if let Some(ref target) = target {                
                 // Random number generater
@@ -78,7 +79,7 @@ impl IModule for ProjectileWeaponModule {
         }
     }
 
-    fn before_simulation(&mut self, base: &mut ModuleBase, events: &mut SimEvents, target: Option<TargetManifest>) {
+    fn before_simulation(&mut self, base: &Module, events: &mut SimEvents, target: Option<TargetManifest>) {
         if base.powered {
             if let Some(ref target) = target {
                 if let module::TargetManifestData::TargetModule(ref target_module) = target.data {
@@ -94,12 +95,12 @@ impl IModule for ProjectileWeaponModule {
                         projectile.from_offscreen_pos = Vec2{x: 1500.0, y: 0.0};
                         
                         if projectile.hit {
-                            projectile.hit_pos = target_module.borrow().get_base().get_render_center();
+                            projectile.hit_pos = target_module.get_render_center();
                         
                             events.add(
                                 projectile.hit_tick,
                                 target.ship.index,
-                                box DamageEvent::new(target_module.borrow().get_base().index, 1),
+                                box DamageEvent::new(target_module.index, 1),
                             );
                         } else {
                             projectile.hit_pos = Vec2{x: 200.0, y: 300.0};
@@ -111,7 +112,7 @@ impl IModule for ProjectileWeaponModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_plan_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
+    fn add_plan_effects(&self, base: &Module, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship) {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/weapon_sprite.png"));
         
         if base.is_active() {
@@ -127,7 +128,7 @@ impl IModule for ProjectileWeaponModule {
     }
     
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &ModuleBase, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
+    fn add_simulation_effects(&self, base: &Module, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>) {
         let ship_id = ship.id;
     
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/weapon_sprite.png"));
@@ -236,22 +237,22 @@ impl IModule for ProjectileWeaponModule {
         });
     }
     
-    fn after_simulation(&mut self, base: &mut ModuleBase, ship_state: &mut ShipState) {
+    fn after_simulation(&mut self, ship_state: &mut ShipState) {
     }
     
-    fn write_results(&self, base: &ModuleBase, packet: &mut OutPacket) {
+    fn write_results(&self, packet: &mut OutPacket) {
         for projectile in self.projectiles.iter() {
             packet.write(&projectile.hit).unwrap();
         }
     }
     
-    fn read_results(&mut self, base: &mut ModuleBase, packet: &mut InPacket) {
+    fn read_results(&mut self, packet: &mut InPacket) {
         for projectile in self.projectiles.iter_mut() {
             projectile.hit = packet.read().unwrap();
         }
     }
     
-    fn get_target_mode(&self, base: &ModuleBase) -> Option<module::TargetMode> {
+    fn get_target_mode(&self) -> Option<module::TargetMode> {
         Some(module::TargetMode::TargetModule)
     }
 }
