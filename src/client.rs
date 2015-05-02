@@ -55,9 +55,6 @@ use star_map_gui::StarMapGui;
 use net::Server;
 use star_map_server::StarMapServer;
 
-#[macro_use]
-mod util;
-
 mod ai;
 mod asset_store;
 mod battle_context;
