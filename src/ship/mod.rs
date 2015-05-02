@@ -577,6 +577,7 @@ impl Ship {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct ShipStored {
     pub id: ShipId,
     pub name: String,

@@ -60,6 +60,7 @@ mod asset_store;
 mod battle_context;
 mod battle_type;
 mod sector_client;
+mod client_action;
 mod client_state;
 mod gui;
 mod login;
@@ -80,6 +81,7 @@ mod vec;
 
 // server stuff
 mod star_map_server;
+mod station_server;
 
 #[cfg(feature = "client")]
 fn main () {

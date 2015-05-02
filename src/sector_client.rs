@@ -20,12 +20,6 @@ use ship::{Ship, ShipId, ShipIndex};
 use sim::{SimEvents, SimEffects};
 use space_gui::SpaceGui;
 
-#[derive(PartialEq)]
-pub enum ExitMode {
-    Jump,
-    Logout,
-}
-
 pub struct ClientBattleState<'a> {
     client: &'a mut Client,
     
@@ -56,7 +50,7 @@ impl<'a> ClientBattleState<'a> {
         }
     }
     
-    pub fn run(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>, server_results_sent: bool) -> ExitMode {
+    pub fn run(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>, server_results_sent: bool) {
         use window::ShouldClose;
         use quack::Get;
     
@@ -85,9 +79,9 @@ impl<'a> ClientBattleState<'a> {
         
         self.handle_new_ships_packet(gui, &mut new_ships_post);
         
-        // Check if player jumped
+        // Handle possible player jump
         if self.player_ship.get(&self.bc).jumping {
-            return ExitMode::Jump;
+            return;
         }
     
         loop {
@@ -104,9 +98,9 @@ impl<'a> ClientBattleState<'a> {
             
             self.run_simulation_phase(window, gl, glyph_cache, asset_store, gui, sim_effects);
             
-            // Check if player jumped
+            // Handle possible player jump
             if self.player_ship.get(&self.bc).jumping {
-                break;
+                return;
             }
             
             // Receive ships after sim
@@ -116,8 +110,6 @@ impl<'a> ClientBattleState<'a> {
             let ShouldClose(should_close) = window.borrow().get();
             if should_close { break; }
         }
-        
-        ExitMode::Jump
     }
     
     fn run_simulation_phase(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {

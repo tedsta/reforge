@@ -12,7 +12,7 @@ use module::Module;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
 use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipStored};
 use sim::SimEvents;
-use star_map_server::ExitAction;
+use star_map_server::StarMapAction;
 
 pub struct SectorState {
     slot: ServerSlot,
@@ -67,7 +67,7 @@ impl SectorState {
     
     pub fn run(
         &mut self,
-        to_map_sender: Sender<(AccountBox, ExitAction)>,
+        to_map_sender: Sender<(AccountBox, StarMapAction)>,
         from_map_receiver: Receiver<AccountBox>,
         ack: Sender<()>,
         create_ai: bool
@@ -195,7 +195,7 @@ impl SectorState {
         }
     }
     
-    fn simulate_next_turn(&mut self, to_map_sender: &Sender<(AccountBox, ExitAction)>) {
+    fn simulate_next_turn(&mut self, to_map_sender: &Sender<(AccountBox, StarMapAction)>) {
         if self.debug {
             println!("Simulating next turn");
         }
@@ -299,7 +299,7 @@ impl SectorState {
                 
                 self.slot.transfer_client(client_id, self.star_map_slot_id);
                 
-                to_map_sender.send((account, ExitAction::Jump(target_sector)));
+                to_map_sender.send((account, StarMapAction::Jump(target_sector)));
             }
         }
         

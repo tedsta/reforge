@@ -24,6 +24,7 @@ use star_map_server::StarMapServer;
 mod ai;
 mod battle_context;
 mod battle_type;
+mod client_action;
 mod login;
 mod module;
 mod net;
@@ -32,6 +33,7 @@ mod sector_server;
 mod ship;
 mod sim;
 mod sim_events;
+mod station_server;
 mod vec;
 
 mod star_map_server;

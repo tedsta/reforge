@@ -307,6 +307,7 @@ impl Module {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#[derive(RustcEncodable, RustcDecodable)]
 pub struct ModuleStored {
     // Module position/size stuff
     pub x: u8,
