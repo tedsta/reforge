@@ -13,7 +13,7 @@ use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
 use ship::{Ship, ShipId, ShipRef, ShipStored};
 use sim::SimEvents;
 
-pub struct SectorState {
+pub struct StationServer {
     slot: ServerSlot,
     star_map_slot_id: ServerSlotId,
     
@@ -21,9 +21,9 @@ pub struct SectorState {
     accounts: HashMap<ClientId, AccountBox>,
 }
 
-impl SectorState {
-    pub fn new(slot: ServerSlot, star_map_slot_id: ServerSlotId) -> SectorState {
-        SectorState {
+impl StationServer {
+    pub fn new(slot: ServerSlot, star_map_slot_id: ServerSlotId) -> StationServer {
+        StationServer {
             slot: slot,
             star_map_slot_id: star_map_slot_id,
             accounts: HashMap::new(),
