@@ -1,11 +1,5 @@
-use std::cell::RefCell;
-use std::cmp;
-use std::io;
-use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
-use std::thread;
-use std::time::Duration;
-use time;
+use std::cell::RefCell;
 
 use event::Events;
 use opengl_graphics::Gl;
@@ -13,11 +7,9 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
-use battle_context::{BattleContext, ClientPacketId, ServerPacketId, TICKS_PER_SECOND};
-use net::{Client, InPacket, OutPacket};
+use net::{Client, OutPacket};
 use sector_data::SectorData;
 use ship::ShipStored;
-use sim::{SimEvents, SimEffects};
 use station_gui::StationGui;
 
 pub struct StationClient<'a> {
@@ -50,7 +42,7 @@ impl<'a> StationClient<'a> {
                 let e: event::Event<input::Input> = e;
             
                 // Forward events to GUI
-                gui.event(&e, &self.player_ship);
+                let gui_action = gui.event(&e, &self.player_ship);
                 
                 // Render GUI
                 e.render(|args: &RenderArgs| {
@@ -65,6 +57,15 @@ impl<'a> StationClient<'a> {
                         );
                     });
                 });
+                
+                // Handle GUI action
+                if let Some(gui_action) = gui_action {
+                    let mut packet = OutPacket::new();
+                    packet.write(&gui_action);
+                    self.client.send(&packet);
+                    
+                    return;
+                }
             }
         }
     }

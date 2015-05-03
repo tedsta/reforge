@@ -77,6 +77,7 @@ mod sim_visuals;
 mod space_gui;
 mod sprite_sheet;
 mod star_map_gui;
+mod station_action;
 mod station_client;
 mod station_gui;
 mod vec;

@@ -11,6 +11,7 @@ use net::ClientId;
 use sector_data::SectorData;
 use ship::ShipStored;
 use star_map_gui::{StarMapAction, StarMapGui};
+use station_action::StationAction;
 
 pub struct StationGui {
     mouse_x: f64,
@@ -39,7 +40,7 @@ impl StationGui {
         }
     }
     
-    pub fn event<E: GenericEvent>(&mut self, e: &E, client_ship: &Option<ShipStored>) {
+    pub fn event<E: GenericEvent>(&mut self, e: &E, client_ship: &Option<ShipStored>) -> Option<StationAction> {
         use event::*;
         
         e.mouse_cursor(|x, y| {
@@ -53,11 +54,11 @@ impl StationGui {
         }
         
         if self.show_star_map {
-            if let Some(star_map_result) = self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]) {
-                match star_map_result {
+            if let Some(star_map_action) = self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]) {
+                match star_map_action {
                     StarMapAction::Jump(sector) => {
-                        //self.plans.target_sector = Some(sector);
                         self.show_star_map = false;
+                        return Some(StationAction::Jump(sector));
                     },
                     StarMapAction::Close => {
                         self.show_star_map = false;
@@ -84,6 +85,8 @@ impl StationGui {
         if self.logout_button.get_clicked() {
             // TODO: Logout
         }
+        
+        None
     }
     
     pub fn draw(

@@ -1,12 +1,10 @@
 use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
 use std::sync::mpsc::{Sender, Receiver};
 
 use login::AccountBox;
-use module::Module;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
-use ship::{ShipId, ShipStored};
 use star_map_server::StarMapAction;
+use station_action::StationAction;
 
 pub struct StationServer {
     slot: ServerSlot,
@@ -39,7 +37,9 @@ impl StationServer {
                     SlotInMsg::Joined(client_id) => {
                         println!("Client {} joined station {}", client_id, self.slot.get_id());
                     },
-                    SlotInMsg::ReceivedPacket(client_id, mut packet) => { self.handle_packet(client_id, &mut packet); },
+                    SlotInMsg::ReceivedPacket(client_id, mut packet) => {
+                        self.handle_packet(client_id, &mut packet, &to_map_sender);
+                    },
                     _ => {}
                 }
             }
@@ -62,6 +62,17 @@ impl StationServer {
         }
     }
     
-    fn handle_packet(&mut self, client_id: ClientId, packet: &mut InPacket) {
+    fn handle_packet(&mut self, client_id: ClientId, packet: &mut InPacket, to_map_sender: &Sender<(AccountBox, StarMapAction)>) {
+        let action: StationAction = packet.read().ok().expect("Failed to read StationAction packet");
+
+        match action {
+            StationAction::Jump(sector) => {
+                let mut account = self.accounts.remove(&client_id).expect("Client's account must exist here.");
+                
+                self.slot.transfer_client(client_id, self.star_map_slot_id);
+                
+                to_map_sender.send((account, StarMapAction::Jump(sector)));
+            },
+        }
     }
 }
