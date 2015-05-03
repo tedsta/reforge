@@ -9,6 +9,7 @@ use asset_store::AssetStore;
 use battle_context::BattleContext;
 use client_action::ClientAction;
 use sector_client::ClientBattleState;
+use station_client::StationClient;
 use net::Client;
 use sector_data::SectorData;
 use ship::{Ship, ShipStored};
@@ -31,7 +32,7 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, g
                 let my_ship: Ship = packet.read().ok().expect("Failed to read my Ship");
                 let server_results_sent = packet.read().ok().expect("Failed to read server_results_sent from server");
                 let ships: Vec<Option<Ship>> = packet.read().ok().expect("Unable to receive ships froms server");
-                
+
                 // Create the battle state
                 let mut battle_context = BattleContext::new(ships);
                 
@@ -48,7 +49,10 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, g
                 // Receive the station join packet
                 let mut packet = client.receive();
                 let my_ship: Option<ShipStored> = packet.read().ok().expect("Failed to read my Ship");
-            
+                
+                let mut station_client = StationClient::new(&mut client, my_ship);
+                
+                station_client.run(window, gl, glyph_cache, asset_store, sectors.clone());
             },
             Logout => {
                 break;
