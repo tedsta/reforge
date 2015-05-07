@@ -10,6 +10,7 @@ use module::{IModule, Module, ModuleIndex};
 use net::ClientId;
 use sector_data::SectorData;
 use ship::ShipStored;
+use sim::SimEffects;
 use star_map_gui::{StarMapAction, StarMapGui};
 use station_action::StationAction;
 
@@ -95,7 +96,9 @@ impl StationGui {
         gl: &mut Gl,
         glyph_cache: &mut GlyphCache,
         asset_store: &AssetStore,
+        sim_effects: &mut SimEffects,
         client_ship: &Option<ShipStored>,
+        time: f64,
         dt: f64,
     )
     {
@@ -103,6 +106,12 @@ impl StationGui {
         
         // Clear the screen
         clear([0.0; 4], gl);
+        
+        // Draw player's ship
+        if let &Some(ref client_ship) = client_ship {
+            let ref context = context.trans(300.0, 300.0);
+            sim_effects.update(context, gl, client_ship.id, time);
+        }
         
         self.star_map_button.draw(context, gl, glyph_cache);
         self.logout_button.draw(context, gl, glyph_cache);

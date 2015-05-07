@@ -10,10 +10,14 @@ use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 
 use battle_context::BattleContext;
 use net::{InPacket, OutPacket};
-use ship::{Ship, ShipId, ShipIndex, ShipState};
+use ship::{Ship, ShipId, ShipIndex, ShipState, ShipStored};
 use sim::SimEvents;
 use vec::{Vec2, Vec2f};
 
+#[cfg(feature = "client")]
+use graphics::Context;
+#[cfg(feature = "client")]
+use opengl_graphics::Gl;
 #[cfg(feature = "client")]
 use sim::SimEffects;
 #[cfg(feature = "client")]
@@ -42,17 +46,48 @@ pub mod damage_visual;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+pub struct ModuleContext<'a> {
+    pub x: u8,
+    pub y: u8,
+    pub width: u8,
+    pub height: u8,
+
+    pub index: ModuleIndex,
+    pub is_active: bool,
+    pub target: Option<TargetManifest<'a>>,
+    
+    pub ship_id: ShipId,
+    pub ship_state: &'a ShipState,
+}
+
+impl<'a> ModuleContext<'a> {
+    pub fn get_render_position(&self) -> Vec2f {
+        Vec2{x: (self.x as f64) * 48.0, y: (self.y as f64) * 48.0}
+    }
+    
+    pub fn get_render_size(&self) -> Vec2f {
+        Vec2{x: (self.width as f64) * 48.0, y: (self.height as f64) * 48.0}
+    }
+    
+    pub fn get_render_center(&self) -> Vec2f {
+        self.get_render_position() + (self.get_render_size()/2.0)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 pub trait IModule : Send {
     fn get_class(&self) -> ModuleClass;
+    fn get_target_mode(&self) -> Option<TargetMode> { None }
 
-    fn server_preprocess(&mut self, base: &Module, ship_state: &ShipState, target: Option<TargetManifest>) {}
+    fn server_preprocess(&mut self, context: &ModuleContext) {}
 
-    fn before_simulation(&mut self, base: &Module, events: &mut SimEvents, target: Option<TargetManifest>) {}
+    fn before_simulation(&mut self, context: &ModuleContext, events: &mut SimEvents) {}
     
     #[cfg(feature = "client")]
-    fn add_plan_effects(&self, base: &Module, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship);
+    fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects);
     #[cfg(feature = "client")]
-    fn add_simulation_effects(&self, base: &Module, asset_store: &AssetStore, effects: &mut SimEffects, ship: &Ship, target: Option<TargetManifest>);
+    fn add_simulation_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects);
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {}
     
@@ -61,11 +96,6 @@ pub trait IModule : Send {
     
     fn on_activated(&mut self, ship_state: &mut ShipState) {}
     fn on_deactivated(&mut self, ship_state: &mut ShipState) {}
-    
-    ////////////////////
-    // GUI stuff
-    
-    fn get_target_mode(&self) -> Option<TargetMode> { None }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -260,10 +290,12 @@ impl Module {
             let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/fire_sprite.png"));
             sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.05));
         
-            effects.add_visual(ship_id, 1, box SpriteVisual {
-                position: self.get_render_position().clone() + Vec2 { x: 10.0, y: 0.0 },
-                sprite_sheet: sprite,
-            });
+            effects.add_visual(ship_id, 1,
+                SpriteVisual::new(
+                    self.get_render_position() + Vec2 { x: 10.0, y: 0.0 },
+                    sprite,
+                ),
+            );
         }
     }
     
@@ -271,6 +303,22 @@ impl Module {
         ModulePlans {
             plan_powered: self.powered,
             plan_target: self.target,
+        }
+    }
+    
+    pub fn create_module_context<'a>(&self, bc: &'a BattleContext, ship: &'a Ship) -> ModuleContext<'a> {
+        ModuleContext {
+            x: self.x,
+            y: self.y,
+            width: self.width,
+            height: self.height,
+            
+            index: self.index,
+            is_active: self.is_active(),
+            target: self.target.as_ref().map(|t| TargetManifest::from_target(bc, t)),
+            
+            ship_id: ship.id,
+            ship_state: &ship.state,
         }
     }
     
@@ -374,28 +422,32 @@ impl ModuleStored {
             inner: self.inner,
         }
     }
+    
+    pub fn is_active(&self) -> bool {
+        self.stats.hp >= self.min_hp && (self.powered || self.power == 0)
+    }
+    
+    pub fn create_module_context<'a>(&self, ship: &'a ShipStored) -> ModuleContext<'a> {
+        ModuleContext {
+            x: self.x,
+            y: self.y,
+            width: self.width,
+            height: self.height,
+            
+            index: self.index,
+            is_active: self.is_active(),
+            target: None,
+            
+            ship_id: ship.id,
+            ship_state: &ship.state,
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Serialization
 
 pub type ModuleInnerBox = Box<IModule+'static>;
-
-/*impl Deref for ModuleInnerBox {
-    type Target = IModule+'static;
-
-    fn deref<'a>(&'a self) -> &'a (IModule+'static) {
-        let &ModuleInnerBox(ref module_box) = self;
-        module_box.deref()
-    }
-}
-
-impl DerefMut for ModuleInnerBox {
-    fn deref_mut<'a>(&'a mut self) -> &'a mut (IModule+'static) {
-        let &mut ModuleInnerBox(ref mut module_box) = self;
-        module_box.deref_mut()
-    }
-}*/
 
 #[derive(Copy, Clone, PartialEq, RustcEncodable, RustcDecodable)]
 pub enum ModuleClass {

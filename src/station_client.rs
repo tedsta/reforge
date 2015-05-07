@@ -10,6 +10,7 @@ use asset_store::AssetStore;
 use net::{Client, OutPacket};
 use sector_data::SectorData;
 use ship::ShipStored;
+use sim::SimEffects;
 use station_gui::StationGui;
 
 pub struct StationClient<'a> {
@@ -32,7 +33,13 @@ impl<'a> StationClient<'a> {
         use quack::Get;
     
         let ref mut gui = StationGui::new(sectors);
+        let ref mut sim_effects = SimEffects::new();
+        
+        if let Some(ref ship) = self.player_ship {
+            ship.add_simulation_effects(asset_store, sim_effects);
+        }
     
+        let mut time: f64 = 0.0;
         loop {
             for e in Events::new(window.clone()) {
                 use event;
@@ -47,12 +54,24 @@ impl<'a> StationClient<'a> {
                 // Render GUI
                 e.render(|args: &RenderArgs| {
                     gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+                        time += (1.0/60.0) + args.ext_dt;
+                        if time > 5.0 {
+                            time -= 5.0;
+                            
+                            if let Some(ref ship) = self.player_ship {
+                                sim_effects.reset();
+                                ship.add_simulation_effects(asset_store, sim_effects);
+                            }
+                        }
+                    
                         gui.draw(
                             &c,
                             gl,
                             glyph_cache,
                             asset_store,
+                            sim_effects,
                             &self.player_ship,
+                            time,
                             (1.0/60.0) + args.ext_dt,
                         );
                     });

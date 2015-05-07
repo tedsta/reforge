@@ -313,41 +313,46 @@ impl Ship {
         }
     }
     
-    pub fn server_preprocess(&self, context: &BattleContext) {
+    pub fn server_preprocess(&self, bc: &BattleContext) {
         for module in &self.modules {
-            let target = module.target.as_ref().map(|t| TargetManifest::from_target(context, t));
-            module.inner.borrow_mut().server_preprocess(module, &self.state, target);
+            if module.is_active() {
+                let ref module_context = module.create_module_context(bc, self);
+                module.inner.borrow_mut().server_preprocess(module_context);
+            }
         }
     }
     
-    pub fn before_simulation(&self, context: &BattleContext, events: &mut SimEvents) {
+    pub fn before_simulation(&self, bc: &BattleContext, events: &mut SimEvents) {
         for module in &self.modules {
-            let target = module.target.as_ref().map(|t| TargetManifest::from_target(context, t));
-            module.inner.borrow_mut().before_simulation(module, events, target);
-        }
-    }
-    
-    #[cfg(feature = "client")]
-    pub fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
-        for module in &self.modules {
-            module.inner.borrow().add_plan_effects(module, asset_store, effects, self);
-        }
-    }
-    
-    #[cfg(feature = "client")]
-    pub fn add_simulation_effects(&self, context: &BattleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        if self.exploding {
-            self.add_exploding_effects(asset_store, effects);
-        } else {
-            for module in &self.modules {
-                let target = module.target.as_ref().map(|t| TargetManifest::from_target(context, t));
-                module.inner.borrow().add_simulation_effects(module, asset_store, effects, self, target);
+            if module.is_active() {
+                let ref module_context = module.create_module_context(bc, self);
+                module.inner.borrow_mut().before_simulation(module_context, events);
             }
         }
     }
     
     #[cfg(feature = "client")]
-    fn add_exploding_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
+    pub fn add_plan_effects(&self, bc: &BattleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
+        for module in &self.modules {
+            let ref module_context = module.create_module_context(bc, self);
+            module.inner.borrow().add_plan_effects(module_context, asset_store, effects);
+        }
+    }
+    
+    #[cfg(feature = "client")]
+    pub fn add_simulation_effects(&self, bc: &BattleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
+        if self.exploding {
+            self.add_exploding_effects(bc, asset_store, effects);
+        } else {
+            for module in &self.modules {
+                let ref module_context = module.create_module_context(bc, self);
+                module.inner.borrow().add_simulation_effects(module_context, asset_store, effects);
+            }
+        }
+    }
+    
+    #[cfg(feature = "client")]
+    fn add_exploding_effects(&self, bc: &BattleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
         use std::rand;
         use std::rand::Rng;
     
@@ -355,7 +360,8 @@ impl Ship {
         use sprite_sheet::{SpriteSheet, SpriteAnimation};
     
         for module in &self.modules {
-            module.inner.borrow().add_plan_effects(module, asset_store, effects, self);
+            let ref module_context = module.create_module_context(bc, self);
+            module.inner.borrow().add_plan_effects(module_context, asset_store, effects);
         }
         
         // Random number generater
@@ -370,10 +376,7 @@ impl Ship {
             sprite.centered = true;
             sprite.add_animation(SpriteAnimation::PlayOnce(time, time+0.5, 0, 8));
         
-            effects.add_visual(self.id, 2, box SpriteVisual {
-                position: Vec2 { x: x, y: y },
-                sprite_sheet: sprite,
-            });
+            effects.add_visual(self.id, 2, SpriteVisual::new(Vec2 { x: x, y: y }, sprite));
             
             effects.add_sound(time, 0, asset_store.get_sound(&"effects/ship_explosion1.ogg".to_string()).clone());
         }
@@ -381,7 +384,7 @@ impl Ship {
     
     pub fn after_simulation(&mut self) {
         for module in &self.modules {
-            if module.powered {
+            if module.is_active() {
                 module.inner.borrow_mut().after_simulation(&mut self.state);
             }
         }
@@ -633,6 +636,14 @@ impl ShipStored {
             level: self.level,
             jumping: false,
             exploding: false,
+        }
+    }
+    
+    #[cfg(feature = "client")]
+    pub fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
+        for module in &self.modules {
+            let ref module_context = module.create_module_context(self);
+            module.inner.borrow().add_simulation_effects(module_context, asset_store, effects);
         }
     }
 }

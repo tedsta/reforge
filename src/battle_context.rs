@@ -16,6 +16,10 @@ use asset_store::AssetStore;
 // Time value of 1 tick in seconds
 pub static TICKS_PER_SECOND: u32 = 20;
 
+pub fn tick_to_time(tick: u32) -> f64 {
+    tick as f64 / TICKS_PER_SECOND as f64
+}
+
 pub struct BattleContext {
     pub ships_ship_id: HashMap<ShipId, usize>,
     pub ships_client_id: HashMap<ClientId, usize>,
@@ -135,7 +139,7 @@ impl BattleContext {
     #[cfg(feature = "client")]
     pub fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
         for ship in self.ships_iter() {
-            ship.add_plan_effects(asset_store, effects);
+            ship.add_plan_effects(self, asset_store, effects);
         }
     }
     

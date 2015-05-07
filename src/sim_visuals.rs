@@ -124,6 +124,15 @@ pub struct SpriteVisual {
     pub sprite_sheet: SpriteSheet,
 }
 
+impl SpriteVisual {
+    pub fn new(position: Vec2f, sprite_sheet: SpriteSheet) -> SpriteVisual {
+        SpriteVisual {
+            position: position,
+            sprite_sheet: sprite_sheet,
+        }
+    }
+}
+
 impl SimVisual for SpriteVisual {
     fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
         self.sprite_sheet.draw(context, gl, self.position.x, self.position.y, 0.0, time);

@@ -78,11 +78,11 @@ impl<'a> SimEffects<'a> {
         }
     }
     
-    pub fn add_visual(&mut self, ship: ShipId, layer: u8, visual: Box<SimVisual+'a>) {
+    pub fn add_visual<V: SimVisual+'a>(&mut self, ship: ShipId, layer: u8, visual: V) {
         if layer >= NUM_LAYERS {
             panic!("Tried to add visual to layer {} when only {} layers exist", layer, NUM_LAYERS);
         }
-        self.effects[layer as usize].push((ship, visual));
+        self.effects[layer as usize].push((ship, Box::new(visual)));
     }
     
     pub fn add_sound(&mut self, time: f64, loops: isize, sound: Rc<RefCell<sdl2_mixer::Chunk>>) {
