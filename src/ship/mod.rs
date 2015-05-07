@@ -245,15 +245,12 @@ impl Ship {
     
     /// Returns a list of modules hit by the specified beam slong with the normalized time that the
     /// beam will hit each module
-    pub fn beam_hits<F>(&self, start: Vec2f, end: Vec2f, mut to_apply: F)
+    pub fn beam_hits<F>(&self, beam: Option<(Vec2f, Vec2f)>, mut to_apply: F)
         where
             F: FnMut(&Module, Vec2f, f64, Option<f64>)
     {
         use std::num::Float;
         use std::ops::Deref;
-        
-        // We are using the algorithm described here:
-        // http://stackoverflow.com/a/1084899/4006804
     
         for module in &self.modules {
             let module_size = module.get_render_size();
@@ -261,52 +258,62 @@ impl Ship {
             let circle_pos = module.get_render_center();
             let circle_radius = module_size.x.min(module_size.y) / 2.5;
             
-            // The beam's direction vector
-            let d = end - start;
-            
-            // The vector from the circle center to the beam start
-            let f = start - circle_pos;
-            
-            // Some variables for the algorithm. These correspond to variables in the quadratic
-            // formula.
-            let a = d.dot(d);
-            let b = 2.0 * f.dot(d);
-            let c = f.dot(f) - circle_radius*circle_radius;
-            
-            let discriminant = b*b - 4.0*a*c;
-            
-            if discriminant < 0.0 {
-                // No intersection
-                to_apply(module, circle_pos, circle_radius, None);
-            } else {
-                // Ray didn't totally miss sphere, so there is a solution to the equation.
+            match beam {
+                Some((start, end)) => {
+                    // We are using the algorithm described here:
+                    // http://stackoverflow.com/a/1084899/4006804
+                
+                    // The beam's direction vector
+                    let d = end - start;
+                    
+                    // The vector from the circle center to the beam start
+                    let f = start - circle_pos;
+                    
+                    // Some variables for the algorithm. These correspond to variables in the quadratic
+                    // formula.
+                    let a = d.dot(d);
+                    let b = 2.0 * f.dot(d);
+                    let c = f.dot(f) - circle_radius*circle_radius;
+                    
+                    let discriminant = b*b - 4.0*a*c;
+                    
+                    if discriminant < 0.0 {
+                        // No intersection
+                        to_apply(module, circle_pos, circle_radius, None);
+                    } else {
+                        // Ray didn't totally miss sphere, so there is a solution to the equation.
 
-                let discriminant = discriminant.sqrt();
+                        let discriminant = discriminant.sqrt();
 
-                // Either solution may be on or off the ray so need to test both t1 is always the
-                // smaller value, because BOTH discriminant and a are nonnegative.
-                let t1 = (-b - discriminant)/(2.0*a);
-                let t2 = (-b + discriminant)/(2.0*a);
+                        // Either solution may be on or off the ray so need to test both t1 is always the
+                        // smaller value, because BOTH discriminant and a are nonnegative.
+                        let t1 = (-b - discriminant)/(2.0*a);
+                        let t2 = (-b + discriminant)/(2.0*a);
 
-                // 3x HIT cases:
-                //          -o->             --|-->  |            |  --|->
-                // Impale(t1 hit,t2 hit), Poke(t1 hit,t2>1), ExitWound(t1<0, t2 hit), 
+                        // 3x HIT cases:
+                        //          -o->             --|-->  |            |  --|->
+                        // Impale(t1 hit,t2 hit), Poke(t1 hit,t2>1), ExitWound(t1<0, t2 hit), 
 
-                // 3x MISS cases:
-                //       ->  o                     o ->              | -> |
-                // FallShort (t1>1,t2>1), Past (t1<0,t2<0), CompletelyInside(t1<0, t2>1)
+                        // 3x MISS cases:
+                        //       ->  o                     o ->              | -> |
+                        // FallShort (t1>1,t2>1), Past (t1<0,t2<0), CompletelyInside(t1<0, t2>1)
 
-                if t1 >= 0.0 && t1 <= 1.0 {
-                    // Impale, poke
-                    to_apply(module, circle_pos, circle_radius, Some(t1));
-                } else if t2 >= 0.0 && t2 <= 1.0 {
-                    // Exit wound
-                    to_apply(module, circle_pos, circle_radius, Some(t2));
-                } else if t1 < 0.0 && t2 > 1.0 {
-                    // Completely inside
-                    to_apply(module, circle_pos, circle_radius, Some(0.0));
-                } else {
-                    // No hit
+                        if t1 >= 0.0 && t1 <= 1.0 {
+                            // Impale, poke
+                            to_apply(module, circle_pos, circle_radius, Some(t1));
+                        } else if t2 >= 0.0 && t2 <= 1.0 {
+                            // Exit wound
+                            to_apply(module, circle_pos, circle_radius, Some(t2));
+                        } else if t1 < 0.0 && t2 > 1.0 {
+                            // Completely inside
+                            to_apply(module, circle_pos, circle_radius, Some(0.0));
+                        } else {
+                            // No hit
+                            to_apply(module, circle_pos, circle_radius, None);
+                        }
+                    }
+                },
+                None => {
                     to_apply(module, circle_pos, circle_radius, None);
                 }
             }

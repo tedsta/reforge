@@ -40,7 +40,7 @@ impl IModule for BeamWeaponModule {
     fn before_simulation(&mut self, context: &ModuleContext, events: &mut SimEvents) {
         if let Some(ref target) = context.target {
             if let module::TargetManifestData::Beam(beam_start, beam_end) = target.data {
-                target.ship.beam_hits(beam_start, beam_end, |module, _, _, hit| {
+                target.ship.beam_hits(Some((beam_start, beam_end)), |module, _, _, hit| {
                     if let Some(hit_dist) = hit {
                         let hit_tick = 20 + (((3.0 - 1.0)*hit_dist*20.0) as u32);
                     

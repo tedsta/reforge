@@ -311,41 +311,45 @@ impl SpaceGui {
             // Draw beam targeting visual
             match target_mode {
                 &module::TargetMode::Beam(beam_length) => {
-                    if let Some(beam_start) = self.beam_targeting_state {
-                        let x = self.mouse_x - self.render_area.x - ENEMY_OFFSET_X;
-                        let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
-                        let beam_length = (beam_length as f64) * 48.0;
-                        
-                        let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
-                        
-                        let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
+                    let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
+                    
+                    if let Some(ship) = self.render_area.ship {
+                        let beam = self.beam_targeting_state.map(|beam_start| {
+                                let x = self.mouse_x - self.render_area.x - ENEMY_OFFSET_X;
+                                let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
+                                let beam_length = (beam_length as f64) * 48.0;
+                                
+                                let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
+                                
+                                (beam_start, beam_end)
+                            });
                         
                         // Draw targeting circles
-                        if let Some(ship) = self.render_area.ship {
-                            ship.get(bc).beam_hits(beam_start, beam_end, |_, circle_pos, radius, hit| {
-                                let circle =
-                                    if let Some(hit_dist) = hit {
-                                        Ellipse::new([1.0, 0.0, 0.0, 0.5])
-                                    } else {
-                                        Ellipse::new([0.0, 0.0, 1.0, 0.5])
-                                    };
-                                
-                                let size = radius * 2.0;
-                                
-                                circle.draw(
-                                    [circle_pos.x - radius, circle_pos.y - radius, size, size],
-                                    &context.draw_state, context.transform,
-                                    gl
-                                );
-                            });
-                        }
-                        
-                        Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
-                            .draw(
-                                [beam_start.x, beam_start.y, beam_end.x, beam_end.y],
+                        ship.get(bc).beam_hits(beam, |_, circle_pos, radius, hit| {
+                            let circle =
+                                if let Some(hit_dist) = hit {
+                                    Ellipse::new([1.0, 0.0, 0.0, 0.5])
+                                } else {
+                                    Ellipse::new([0.0, 0.0, 1.0, 0.5])
+                                };
+                            
+                            let size = radius * 2.0;
+                            
+                            circle.draw(
+                                [circle_pos.x - radius, circle_pos.y - radius, size, size],
                                 &context.draw_state, context.transform,
                                 gl
                             );
+                        });
+                        
+                        if let Some((beam_start, beam_end)) = beam {
+                            Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
+                                .draw(
+                                    [beam_start.x, beam_start.y, beam_end.x, beam_end.y],
+                                    &context.draw_state, context.transform,
+                                    gl
+                                );
+                        }
                     }
                 },
                 &module::TargetMode::TargetModule => {
