@@ -48,7 +48,7 @@ impl StarMapServer {
     
         let mut sectors = HashMap::new();
         
-        // Sector 0
+        // Station
         let (to_sector_sender, to_sector_receiver) = channel();
         let (from_sector_sender, from_sector_receiver) = channel();
         let (ack_sender, ack_receiver) = channel();
@@ -61,16 +61,16 @@ impl StarMapServer {
             ack: ack_receiver,
             data: SectorData {
                 id: sector_id,
-                kind: SectorKind::Sector,
-                map_position: Vec2 { x: 50.0, y: 50.0 },
+                kind: SectorKind::Station,
+                map_position: Vec2 { x: 100.0, y: 75.0 },
             },
         });
         
         Builder::new()
-            .name(format!("sector_{}_thread", 0))
+            .name(format!("station_{}_thread", 0))
             .spawn(move || {
-                let mut sector_server = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
-                sector_server.run(from_sector_sender, to_sector_receiver, ack_sender, false);
+                let mut sector_server = StationServer::new(sector_slot, slot_id, model_store.clone());
+                sector_server.run(from_sector_sender, to_sector_receiver, ack_sender);
             });
         
         // Sector 1
@@ -87,7 +87,7 @@ impl StarMapServer {
             data: SectorData {
                 id: sector_id,
                 kind: SectorKind::Sector,
-                map_position: Vec2 { x: 100.0, y: 100.0 },
+                map_position: Vec2 { x: 50.0, y: 50.0 },
             },
         });
         
@@ -95,10 +95,10 @@ impl StarMapServer {
             .name(format!("sector_{}_thread", 1))
             .spawn(move || {
                 let mut sector_server = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
-                sector_server.run(from_sector_sender, to_sector_receiver, ack_sender, true);
+                sector_server.run(from_sector_sender, to_sector_receiver, ack_sender, false);
             });
         
-        // Station
+        // Sector 2
         let (to_sector_sender, to_sector_receiver) = channel();
         let (from_sector_sender, from_sector_receiver) = channel();
         let (ack_sender, ack_receiver) = channel();
@@ -111,16 +111,16 @@ impl StarMapServer {
             ack: ack_receiver,
             data: SectorData {
                 id: sector_id,
-                kind: SectorKind::Station,
-                map_position: Vec2 { x: 100.0, y: 75.0 },
+                kind: SectorKind::Sector,
+                map_position: Vec2 { x: 100.0, y: 100.0 },
             },
         });
         
         Builder::new()
             .name(format!("sector_{}_thread", 2))
             .spawn(move || {
-                let mut sector_server = StationServer::new(sector_slot, slot_id, model_store.clone());
-                sector_server.run(from_sector_sender, to_sector_receiver, ack_sender);
+                let mut sector_server = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
+                sector_server.run(from_sector_sender, to_sector_receiver, ack_sender, true);
             });
         
         ////////////////////////////////////////////////////////////////////////////////////////////

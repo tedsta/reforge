@@ -6,7 +6,7 @@ use super::{
 
 pub struct Model {
     pub name: String,
-    factory: Box<Fn() -> Module + Sync + Send>,
+    pub factory: Box<Fn() -> Module + Sync + Send>,
 }
 
 pub struct ModelStore {
@@ -26,5 +26,13 @@ impl ModelStore {
         ModelStore {
             models: models,
         }
+    }
+}
+
+pub struct ModelIndex(u16);
+
+impl ModelIndex {
+    pub fn get<'a>(self, model_store: &'a ModelStore) -> &'a Model {
+        &model_store.models[self.0 as usize]
     }
 }

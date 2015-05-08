@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::string::String;
 
+use module::ModelIndex;
 use net::ClientId;
 use ship::ShipStored;
 use sector_data::SectorId;
@@ -20,6 +21,8 @@ pub struct Account {
     pub ship: Option<ShipStored>,
     pub client_id: Option<ClientId>,
     pub sector: SectorId,
+    
+    pub module_inventory: Vec<(ModelIndex, u16)>,
 }
 
 pub struct AccountManager {
@@ -41,6 +44,7 @@ impl AccountManager {
             ship: None,
             client_id: None,
             sector: SectorId(0),
+            module_inventory: vec!(),
         })));
     }
     
