@@ -48,6 +48,7 @@ use client_state::run_client_state_manager;
 use login::LoginPacket;
 use login_screen::LoginScreen;
 use main_menu::{MainMenu, MainMenuSelection};
+use module::ModelStore;
 use net::{Client, OutPacket};
 use star_map_gui::StarMapGui;
 
@@ -121,7 +122,10 @@ fn main () {
     let mut glyph_cache = GlyphCache::new(&Path::new("content/fonts/8bit.ttf")).unwrap();
     
     // Create the asset store
-    let asset_store = AssetStore::new();
+    let ref asset_store = AssetStore::new();
+    
+    // Create the module model store
+    let ref model_store = ModelStore::new();
 
     // Wrap window in RefCell
     let window = Rc::new(RefCell::new(window));
@@ -182,12 +186,10 @@ fn main () {
                     packet.write(&LoginPacket{username: username, password: password});
                     client.send(&packet);
                     
-                    run_client_state_manager(&window, gl, &mut glyph_cache, &asset_store, client);
+                    run_client_state_manager(&window, gl, &mut glyph_cache, asset_store, model_store, client);
                 }
             },
-            MainMenuSelection::Exit => {
-                
-            },
+            MainMenuSelection::Exit => { },
         }
     });
     

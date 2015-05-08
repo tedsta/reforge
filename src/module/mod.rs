@@ -33,6 +33,7 @@ pub use self::beam_weapon::BeamWeaponModule;
 
 pub use self::target::{Target, TargetMode, TargetData, TargetManifest, TargetManifestData};
 pub use self::damage_visual::{DamageVisual, DamageVisualKind};
+pub use self::model::{Model, ModelStore};
 
 pub mod engine;
 pub mod proj_weapon;
@@ -43,6 +44,7 @@ pub mod beam_weapon;
 
 pub mod target;
 pub mod damage_visual;
+pub mod model;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

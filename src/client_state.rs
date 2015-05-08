@@ -8,13 +8,19 @@ use sdl2_window::Sdl2Window;
 use asset_store::AssetStore;
 use battle_context::BattleContext;
 use client_action::ClientAction;
+use module::ModelStore;
 use sector_client::ClientBattleState;
 use station_client::StationClient;
 use net::Client;
 use sector_data::SectorData;
 use ship::{Ship, ShipStored};
 
-pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, mut client: Client) {
+pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>,
+                                gl: &mut Gl,
+                                glyph_cache: &mut GlyphCache,
+                                asset_store: &AssetStore,
+                                model_store: &ModelStore,
+                                mut client: Client) {
     use client_action::ClientAction::*;
 
     // Receive the star map
@@ -52,7 +58,7 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, g
                 
                 let mut station_client = StationClient::new(&mut client, my_ship);
                 
-                station_client.run(window, gl, glyph_cache, asset_store, sectors.clone());
+                station_client.run(window, gl, glyph_cache, asset_store, model_store, sectors.clone());
             },
             Logout => {
                 break;

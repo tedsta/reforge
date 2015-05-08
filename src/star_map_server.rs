@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::sync::Arc;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::thread::Builder;
 use time;
@@ -6,6 +7,7 @@ use time;
 use battle_context::BattleContext;
 use client_action::ClientAction;
 use login::AccountBox;
+use module::ModelStore;
 use net::{
     OutPacket,
     ServerSlot,
@@ -40,6 +42,8 @@ pub struct StarMapServer {
 
 impl StarMapServer {
     pub fn new(slot: ServerSlot) -> StarMapServer {
+        let model_store = Arc::new(ModelStore::new());
+    
         let slot_id = slot.get_id();
     
         let mut sectors = HashMap::new();
@@ -115,7 +119,7 @@ impl StarMapServer {
         Builder::new()
             .name(format!("sector_{}_thread", 2))
             .spawn(move || {
-                let mut sector_server = StationServer::new(sector_slot, slot_id);
+                let mut sector_server = StationServer::new(sector_slot, slot_id, model_store.clone());
                 sector_server.run(from_sector_sender, to_sector_receiver, ack_sender);
             });
         

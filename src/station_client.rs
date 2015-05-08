@@ -7,6 +7,7 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
+use module::ModelStore;
 use net::{Client, OutPacket};
 use sector_data::SectorData;
 use ship::ShipStored;
@@ -28,7 +29,13 @@ impl<'a> StationClient<'a> {
         }
     }
     
-    pub fn run(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>) {
+    pub fn run(&mut self,
+               window: &Rc<RefCell<Sdl2Window>>,
+               gl: &mut Gl,
+               glyph_cache: &mut GlyphCache,
+               asset_store: &AssetStore,
+               model_store: &ModelStore,
+               sectors: Vec<SectorData>) {
         use window::ShouldClose;
         use quack::Get;
     

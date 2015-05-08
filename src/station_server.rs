@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver};
 
 use login::AccountBox;
+use module::ModelStore;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
 use star_map_server::StarMapAction;
 use station_action::StationAction;
@@ -9,16 +11,20 @@ use station_action::StationAction;
 pub struct StationServer {
     slot: ServerSlot,
     star_map_slot_id: ServerSlotId,
+    model_store: Arc<ModelStore>,
 
     // All the clients' accounts
     accounts: HashMap<ClientId, AccountBox>,
 }
 
 impl StationServer {
-    pub fn new(slot: ServerSlot, star_map_slot_id: ServerSlotId) -> StationServer {
+    pub fn new(slot: ServerSlot,
+               star_map_slot_id: ServerSlotId,
+               model_store: Arc<ModelStore>) -> StationServer {
         StationServer {
             slot: slot,
             star_map_slot_id: star_map_slot_id,
+            model_store: model_store,
             accounts: HashMap::new(),
         }
     }
