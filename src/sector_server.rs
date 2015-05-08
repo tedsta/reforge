@@ -12,7 +12,7 @@ use module::Module;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
 use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipStored};
 use sim::SimEvents;
-use star_map_server::StarMapAction;
+use star_map::StarMapAction;
 
 pub struct SectorState {
     slot: ServerSlot,

@@ -10,7 +10,7 @@ use battle_context::BattleContext;
 use client_action::ClientAction;
 use module::ModelStore;
 use sector_client::ClientBattleState;
-use station_client::StationClient;
+use star_map::station::StationClient;
 use net::Client;
 use sector_data::SectorData;
 use ship::{Ship, ShipStored};

@@ -11,8 +11,8 @@ use net::ClientId;
 use sector_data::SectorData;
 use ship::ShipStored;
 use sim::SimEffects;
-use star_map_gui::{StarMapAction, StarMapGui};
-use station_action::StationAction;
+use star_map::{StarMapGuiAction, StarMapGui};
+use star_map::station::StationAction;
 
 pub struct StationGui {
     mouse_x: f64,
@@ -57,11 +57,11 @@ impl StationGui {
         if self.show_star_map {
             if let Some(star_map_action) = self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]) {
                 match star_map_action {
-                    StarMapAction::Jump(sector) => {
+                    StarMapGuiAction::Jump(sector) => {
                         self.show_star_map = false;
                         return Some(StationAction::Jump(sector));
                     },
-                    StarMapAction::Close => {
+                    StarMapGuiAction::Close => {
                         self.show_star_map = false;
                     },
                 }

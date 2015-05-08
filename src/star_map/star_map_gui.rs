@@ -11,7 +11,7 @@ use gui::TextButton;
 use sector_data::{SectorData, SectorId};
 use vec::Vec2;
 
-pub enum StarMapAction {
+pub enum StarMapGuiAction {
     Jump(SectorId),
     Close,
 }
@@ -19,7 +19,7 @@ pub enum StarMapAction {
 pub struct StarMapGui {
     sectors: Vec<SectorData>,
 
-    action: Option<StarMapAction>,
+    action: Option<StarMapGuiAction>,
     
     selected_sector: Option<SectorId>,
     
@@ -42,7 +42,7 @@ impl StarMapGui {
         }
     }
 
-    pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) -> Option<StarMapAction> {
+    pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) -> Option<StarMapGuiAction> {
         use event::*;
         
         e.press(|button| {
@@ -63,12 +63,12 @@ impl StarMapGui {
         self.close_button.event(e, mouse_pos);
         
         if self.close_button.get_clicked() {
-            self.action = Some(StarMapAction::Close);
+            self.action = Some(StarMapGuiAction::Close);
         }
         
         if self.jump_button.get_clicked() {
             if let Some(selected_sector) = self.selected_sector {
-                self.action = Some(StarMapAction::Jump(selected_sector));
+                self.action = Some(StarMapGuiAction::Jump(selected_sector));
             }
         }
         

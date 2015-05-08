@@ -16,7 +16,7 @@ use net::{
 };
 use sector_data::{SectorData, SectorId, SectorKind};
 use sector_server::SectorState;
-use station_server::StationServer;
+use super::station::StationServer;
 use vec::Vec2;
 
 // Reason a ship is leaving a sector

@@ -12,7 +12,7 @@ use net::{Client, OutPacket};
 use sector_data::SectorData;
 use ship::ShipStored;
 use sim::SimEffects;
-use station_gui::StationGui;
+use star_map::station::StationGui;
 
 pub struct StationClient<'a> {
     client: &'a mut Client,

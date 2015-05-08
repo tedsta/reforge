@@ -19,7 +19,7 @@ use net::ClientId;
 use sector_data::SectorData;
 use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipState};
 use sim::SimEffects;
-use star_map_gui::{StarMapAction, StarMapGui};
+use star_map::{StarMapGui, StarMapGuiAction};
 use vec::{Vec2, Vec2f};
 
 static SHIP_OFFSET_X: f64 = 80.0;
@@ -159,11 +159,11 @@ impl SpaceGui {
         if self.show_star_map {
             if let Some(star_map_result) = self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]) {
                 match star_map_result {
-                    StarMapAction::Jump(sector) => {
+                    StarMapGuiAction::Jump(sector) => {
                         self.plans.target_sector = Some(sector);
                         self.show_star_map = false;
                     },
-                    StarMapAction::Close => {
+                    StarMapGuiAction::Close => {
                         self.show_star_map = false;
                     },
                 }

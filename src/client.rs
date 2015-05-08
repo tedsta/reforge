@@ -50,11 +50,10 @@ use login_screen::LoginScreen;
 use main_menu::{MainMenu, MainMenuSelection};
 use module::ModelStore;
 use net::{Client, OutPacket};
-use star_map_gui::StarMapGui;
+use star_map::StarMapServer;
 
 // Server stuff
 use net::Server;
-use star_map_server::StarMapServer;
 
 mod ai;
 mod asset_store;
@@ -79,15 +78,8 @@ mod sim_visuals;
 mod space_gui;
 //mod sprite_mgr;
 mod sprite_sheet;
-mod star_map_gui;
-mod station_action;
-mod station_client;
-mod station_gui;
+mod star_map;
 mod vec;
-
-// server stuff
-mod star_map_server;
-mod station_server;
 
 #[cfg(feature = "client")]
 fn main () {
