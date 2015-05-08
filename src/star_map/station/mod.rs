@@ -1,3 +1,5 @@
+#[cfg(feature = "client")]
+pub use self::ship_edit_gui::ShipEditGui;
 pub use self::station_action::StationAction;
 #[cfg(feature = "client")]
 pub use self::station_client::StationClient;
@@ -5,6 +7,8 @@ pub use self::station_client::StationClient;
 pub use self::station_gui::StationGui;
 pub use self::station_server::StationServer;
 
+#[cfg(feature = "client")]
+pub mod ship_edit_gui;
 pub mod station_action;
 #[cfg(feature = "client")]
 pub mod station_client;

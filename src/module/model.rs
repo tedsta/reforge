@@ -29,6 +29,7 @@ impl ModelStore {
     }
 }
 
+#[derive(Copy, Clone, RustcEncodable, RustcDecodable)]
 pub struct ModelIndex(u16);
 
 impl ModelIndex {

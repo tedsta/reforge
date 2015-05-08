@@ -12,11 +12,16 @@ use sector_data::SectorData;
 use ship::ShipStored;
 use sim::SimEffects;
 use star_map::{StarMapGuiAction, StarMapGui};
-use star_map::station::StationAction;
+
+use super::StationAction;
+use super::ShipEditGui;
 
 pub struct StationGui {
     mouse_x: f64,
     mouse_y: f64,
+    
+    // Ship editor stuff
+    ship_edit_gui: ShipEditGui,
     
     // Star map stuff
     star_map_button: TextButton,
@@ -32,6 +37,8 @@ impl StationGui {
         StationGui {
             mouse_x: 0.0,
             mouse_y: 0.0,
+            
+            ship_edit_gui: ShipEditGui::new(),
             
             star_map_button: TextButton::new("star map".to_string(), 20, [550.0, 50.0], [120.0, 40.0]),
             star_map_gui: StarMapGui::new(sectors),
@@ -66,21 +73,25 @@ impl StationGui {
                     },
                 }
             }
-        } else {
-            e.press(|button| {
-                match button {
-                    Button::Keyboard(key) => self.on_key_pressed(key), 
-                    Button::Mouse(button) => {
-                        let (mouse_x, mouse_y) = (self.mouse_x, self.mouse_y);
-                        match button {
-                            mouse::MouseButton::Left => self.on_mouse_left_pressed(mouse_x, mouse_y, client_ship),
-                            mouse::MouseButton::Right => self.on_mouse_right_pressed(mouse_x, mouse_y, client_ship),
-                            _ => {},
-                        }
-                    },
-                }
-            });
+            
+            return None;
         }
+        
+        self.ship_edit_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]);
+        
+        e.press(|button| {
+            match button {
+                Button::Keyboard(key) => self.on_key_pressed(key), 
+                Button::Mouse(button) => {
+                    let (mouse_x, mouse_y) = (self.mouse_x, self.mouse_y);
+                    match button {
+                        mouse::MouseButton::Left => self.on_mouse_left_pressed(mouse_x, mouse_y, client_ship),
+                        mouse::MouseButton::Right => self.on_mouse_right_pressed(mouse_x, mouse_y, client_ship),
+                        _ => {},
+                    }
+                },
+            }
+        });
         
         self.logout_button.event(e, [self.mouse_x, self.mouse_y]);
         if self.logout_button.get_clicked() {
@@ -112,6 +123,8 @@ impl StationGui {
             let ref context = context.trans(300.0, 300.0);
             sim_effects.update(context, gl, client_ship.id, time);
         }
+        
+        self.ship_edit_gui.draw(&context.trans(875.0, 200.0), gl, glyph_cache);
         
         self.star_map_button.draw(context, gl, glyph_cache);
         self.logout_button.draw(context, gl, glyph_cache);

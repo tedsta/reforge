@@ -1,10 +1,7 @@
-use std::cell::RefCell;
-
-use sdl2_window::Sdl2Window;
-use event::{Events, GenericEvent};
-use graphics::{Context};
-use input::{keyboard, mouse, Button};
-use opengl_graphics::{Gl, Texture};
+use event::GenericEvent;
+use graphics::Context;
+use input::{mouse, Button};
+use opengl_graphics::Gl;
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use gui::TextButton;
