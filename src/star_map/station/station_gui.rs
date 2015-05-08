@@ -6,7 +6,7 @@ use opengl_graphics::glyph_cache::GlyphCache;
 
 use asset_store::AssetStore;
 use gui::TextButton;
-use module::{IModule, Module, ModuleIndex};
+use module::{IModule, ModelStore, Module, ModuleIndex};
 use net::ClientId;
 use sector_data::SectorData;
 use ship::ShipStored;
@@ -14,14 +14,14 @@ use sim::SimEffects;
 use star_map::{StarMapGuiAction, StarMapGui};
 
 use super::StationAction;
-use super::ShipEditGui;
+use super::ship_edit_gui::{ModuleInventory, ShipEditGui};
 
-pub struct StationGui {
+pub struct StationGui<'a> {
     mouse_x: f64,
     mouse_y: f64,
     
     // Ship editor stuff
-    ship_edit_gui: ShipEditGui,
+    ship_edit_gui: ShipEditGui<'a>,
     
     // Star map stuff
     star_map_button: TextButton,
@@ -32,13 +32,15 @@ pub struct StationGui {
     logout_button: TextButton,
 }
 
-impl StationGui {
-    pub fn new(sectors: Vec<SectorData>) -> StationGui {    
+impl<'a> StationGui<'a> {
+    pub fn new(model_store: &'a ModelStore,
+               sectors: Vec<SectorData>,
+               module_inventory: ModuleInventory) -> StationGui<'a> {
         StationGui {
             mouse_x: 0.0,
             mouse_y: 0.0,
             
-            ship_edit_gui: ShipEditGui::new(),
+            ship_edit_gui: ShipEditGui::new(model_store, module_inventory),
             
             star_map_button: TextButton::new("star map".to_string(), 20, [550.0, 50.0], [120.0, 40.0]),
             star_map_gui: StarMapGui::new(sectors),

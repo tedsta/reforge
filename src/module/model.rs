@@ -1,7 +1,7 @@
 use super::{
     Module,
     
-    ProjectileWeaponModule,
+    EngineModule,
 };
 
 pub struct Model {
@@ -18,8 +18,8 @@ impl ModelStore {
         let models =
             vec![
                 Model {
-                    name: "Blaster Mk1".to_string(),
-                    factory: Box::new(move || ProjectileWeaponModule::new()),
+                    name: "Engine Mk1".to_string(),
+                    factory: Box::new(move || EngineModule::new()),
                 },
             ];
     
@@ -29,8 +29,8 @@ impl ModelStore {
     }
 }
 
-#[derive(Copy, Clone, RustcEncodable, RustcDecodable)]
-pub struct ModelIndex(u16);
+#[derive(Copy, Clone, PartialEq, Eq, Hash, RustcEncodable, RustcDecodable)]
+pub struct ModelIndex(pub u16);
 
 impl ModelIndex {
     pub fn get<'a>(self, model_store: &'a ModelStore) -> &'a Model {

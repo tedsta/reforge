@@ -7,7 +7,7 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
-use module::ModelStore;
+use module::{ModelIndex, ModelStore};
 use net::{Client, OutPacket};
 use sector_data::SectorData;
 use ship::ShipStored;
@@ -38,8 +38,13 @@ impl<'a> StationClient<'a> {
                sectors: Vec<SectorData>) {
         use window::ShouldClose;
         use quack::Get;
+        
+        let module_inventory =
+            vec![
+                ("engine".to_string(), vec![(ModelIndex(0), 100)]),
+            ];
     
-        let ref mut gui = StationGui::new(sectors);
+        let ref mut gui = StationGui::new(model_store, sectors, module_inventory);
         let ref mut sim_effects = SimEffects::new();
         
         if let Some(ref ship) = self.player_ship {

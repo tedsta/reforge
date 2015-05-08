@@ -22,7 +22,7 @@ pub struct Account {
     pub client_id: Option<ClientId>,
     pub sector: SectorId,
     
-    pub module_inventory: Vec<(ModelIndex, u16)>,
+    pub module_inventory: HashMap<ModelIndex, u16>,
 }
 
 pub struct AccountManager {
@@ -44,7 +44,7 @@ impl AccountManager {
             ship: None,
             client_id: None,
             sector: SectorId(0),
-            module_inventory: vec!(),
+            module_inventory: HashMap::new(),
         })));
     }
     
