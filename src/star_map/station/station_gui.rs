@@ -12,13 +12,13 @@ use sector_data::SectorData;
 use ship::ShipStored;
 use sim::SimEffects;
 use star_map::{StarMapGuiAction, StarMapGui};
+use vec::{Vec2, Vec2f};
 
 use super::StationAction;
 use super::ship_edit_gui::{ModuleInventory, ShipEditGui};
 
 pub struct StationGui<'a> {
-    mouse_x: f64,
-    mouse_y: f64,
+    mouse_pos: Vec2f,
     
     // Ship editor stuff
     ship_edit_gui: ShipEditGui<'a>,
@@ -37,8 +37,7 @@ impl<'a> StationGui<'a> {
                sectors: Vec<SectorData>,
                module_inventory: ModuleInventory) -> StationGui<'a> {
         StationGui {
-            mouse_x: 0.0,
-            mouse_y: 0.0,
+            mouse_pos: Vec2 { x: 0.0, y: 0.0 },
             
             ship_edit_gui: ShipEditGui::new(model_store, module_inventory),
             
@@ -54,17 +53,17 @@ impl<'a> StationGui<'a> {
         use event::*;
         
         e.mouse_cursor(|x, y| {
-            self.mouse_x = x;
-            self.mouse_y = y;
+            self.mouse_pos.x = x;
+            self.mouse_pos.y = y;
         });
         
-        self.star_map_button.event(e, [self.mouse_x, self.mouse_y]);
+        self.star_map_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.star_map_button.get_clicked() {
             self.show_star_map = true;
         }
         
         if self.show_star_map {
-            if let Some(star_map_action) = self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]) {
+            if let Some(star_map_action) = self.star_map_gui.event(e, [self.mouse_pos.x - 200.0, self.mouse_pos.y - 200.0]) {
                 match star_map_action {
                     StarMapGuiAction::Jump(sector) => {
                         self.show_star_map = false;
@@ -79,23 +78,22 @@ impl<'a> StationGui<'a> {
             return None;
         }
         
-        self.ship_edit_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]);
+        self.ship_edit_gui.event(e, self.mouse_pos - Vec2::new(875.0, 200.0), client_ship.as_ref().unwrap());
         
         e.press(|button| {
             match button {
                 Button::Keyboard(key) => self.on_key_pressed(key), 
                 Button::Mouse(button) => {
-                    let (mouse_x, mouse_y) = (self.mouse_x, self.mouse_y);
                     match button {
-                        mouse::MouseButton::Left => self.on_mouse_left_pressed(mouse_x, mouse_y, client_ship),
-                        mouse::MouseButton::Right => self.on_mouse_right_pressed(mouse_x, mouse_y, client_ship),
+                        mouse::MouseButton::Left => self.on_mouse_left_pressed(client_ship),
+                        mouse::MouseButton::Right => self.on_mouse_right_pressed(client_ship),
                         _ => {},
                     }
                 },
             }
         });
         
-        self.logout_button.event(e, [self.mouse_x, self.mouse_y]);
+        self.logout_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.logout_button.get_clicked() {
             // TODO: Logout
         }
@@ -126,7 +124,11 @@ impl<'a> StationGui<'a> {
             sim_effects.update(context, gl, client_ship.id, time);
         }
         
-        self.ship_edit_gui.draw(&context.trans(875.0, 200.0), gl, glyph_cache);
+        self.ship_edit_gui.draw(&context.trans(875.0, 200.0),
+                                gl,
+                                glyph_cache,
+                                self.mouse_pos - Vec2::new(875.0, 200.0),
+                                client_ship.as_ref().unwrap());
         
         self.star_map_button.draw(context, gl, glyph_cache);
         self.logout_button.draw(context, gl, glyph_cache);
@@ -139,9 +141,9 @@ impl<'a> StationGui<'a> {
     fn on_key_pressed(&mut self, key: keyboard::Key) {
     }
     
-    fn on_mouse_left_pressed(&mut self, x: f64, y: f64, client_ship: &Option<ShipStored>) {
+    fn on_mouse_left_pressed(&mut self, client_ship: &Option<ShipStored>) {
     }
     
-    fn on_mouse_right_pressed(&mut self, x: f64, y: f64, client_ship: &Option<ShipStored>) {
+    fn on_mouse_right_pressed(&mut self, client_ship: &Option<ShipStored>) {
     }
 }

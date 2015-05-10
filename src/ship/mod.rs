@@ -646,6 +646,17 @@ impl ShipStored {
         }
     }
     
+    pub fn is_space_free(&self, x: u8, y: u8, width: u8, height: u8) -> bool {
+        for module in &self.modules {
+
+            if module.x + module.width > x && module.x < x + width && module.y + module.height > y && module.y < y + height {
+                return false;
+            }
+        }
+        
+        true
+    }
+    
     #[cfg(feature = "client")]
     pub fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
         for module in &self.modules {

@@ -9,6 +9,12 @@ pub struct Vec2<T> {
     pub y: T,
 }
 
+impl<T> Vec2<T> {
+    pub fn new(x: T, y: T) -> Vec2<T> {
+        Vec2 { x: x, y: y }
+    }
+}
+
 impl<T: Float> Vec2<T> {
     pub fn normalize(self) -> Vec2<T> {
         Vec2 { x: self.x / self.length(), y: self.y / self.length() }
@@ -20,6 +26,14 @@ impl<T: Float> Vec2<T> {
     
     pub fn length(&self) -> T {
         (self.x*self.x + self.y*self.y).sqrt()
+    }
+    
+    pub fn floor(self) -> Vec2<T> {
+        Vec2 { x: self.x.floor(), y: self.y.floor() }
+    }
+    
+    pub fn ceil(self) -> Vec2<T> {
+        Vec2 { x: self.x.ceil(), y: self.y.ceil() }
     }
 }
 
