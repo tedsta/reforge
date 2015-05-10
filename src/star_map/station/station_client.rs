@@ -108,6 +108,9 @@ impl<'a> StationClient<'a> {
                                     module.y = y;
                                     
                                     ship.add_module(module);
+                                    
+                                    sim_effects.reset();
+                                    ship.add_simulation_effects(asset_store, sim_effects);
                                 },
                                 ShipEditAction::Remove(module) => {
                                 },
