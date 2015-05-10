@@ -78,7 +78,9 @@ impl<'a> StationGui<'a> {
             return None;
         }
         
-        self.ship_edit_gui.event(e, self.mouse_pos - Vec2::new(875.0, 200.0), client_ship.as_ref().unwrap());
+        if let Some(ship_edit) = self.ship_edit_gui.event(e, self.mouse_pos - Vec2::new(875.0, 200.0), client_ship.as_ref().unwrap()) {
+            return Some(StationAction::ShipEdit(ship_edit));
+        }
         
         e.press(|button| {
             match button {

@@ -656,6 +656,29 @@ impl ShipStored {
         
         true
     }
+    // Returns true if adding the module was successful, false if it failed.
+    pub fn add_module(&mut self, mut module: ModuleStored) -> bool {
+        // Add to state hp
+        self.state.total_module_hp += module.get_hp();
+        self.state.hp = self.state.total_module_hp/2;
+        self.state.module_stats.push(module.stats);
+        
+        // Modify the ship's dimensions
+        self.width = cmp::max(self.width, module.x + module.width);
+        self.height = cmp::max(self.height, module.y + module.height);
+        
+        // Setup module's index
+        module.index = ModuleIndex(self.modules.len() as u32);
+        
+        // Activate module if can
+        if module.is_active() {
+            module.inner.borrow_mut().on_activated(&mut self.state);
+        }
+        
+        // Add the module
+        self.modules.push(module);
+        true
+    }
     
     #[cfg(feature = "client")]
     pub fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {

@@ -365,7 +365,7 @@ pub struct ModuleStored {
     pub width: u8,
     pub height: u8,
 
-    stats: ModuleStats,
+    pub stats: ModuleStats,
     
     power: u8,     // Power consumption
     min_hp: u8,    // Minimum HP for the module to still operate
@@ -423,6 +423,34 @@ impl ModuleStored {
             
             inner: self.inner,
         }
+    }
+    
+    pub fn get_power(&self) -> u8 {
+        self.power
+    }
+    
+    pub fn get_hp(&self) -> u8 {
+        self.stats.hp
+    }
+    
+    pub fn get_min_hp(&self) -> u8 {
+        self.min_hp
+    }
+    
+    pub fn get_max_hp(&self) -> u8 {
+        self.max_hp
+    }
+    
+    pub fn get_class(&self) -> ModuleClass {
+        self.inner.borrow().get_class()
+    }
+    
+    pub fn get_target_mode(&self) -> Option<TargetMode> {
+        self.inner.borrow().get_target_mode()
+    }
+    
+    pub fn can_activate(&self) -> bool {
+        self.power > 0 && self.stats.hp >= self.min_hp
     }
     
     pub fn is_active(&self) -> bool {

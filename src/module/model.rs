@@ -1,12 +1,19 @@
 use super::{
-    Module,
+    ModuleStored,
     
     EngineModule,
 };
 
 pub struct Model {
     pub name: String,
-    pub factory: Box<Fn() -> Module + Sync + Send>,
+    factory: Box<Fn() -> ModuleStored + Sync + Send>,
+}
+
+impl Model {
+    pub fn create(&self) -> ModuleStored {
+        let ref factory = self.factory;
+        factory()
+    }
 }
 
 pub struct ModelStore {
@@ -19,7 +26,7 @@ impl ModelStore {
             vec![
                 Model {
                     name: "Engine Mk1".to_string(),
-                    factory: Box::new(move || EngineModule::new()),
+                    factory: Box::new(move || ModuleStored::from_module(EngineModule::new())),
                 },
             ];
     

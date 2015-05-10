@@ -12,7 +12,8 @@ use net::{Client, OutPacket};
 use sector_data::SectorData;
 use ship::ShipStored;
 use sim::SimEffects;
-use star_map::station::StationGui;
+
+use super::{ShipEditAction, StationAction, StationGui};
 
 pub struct StationClient<'a> {
     client: &'a mut Client,
@@ -94,7 +95,26 @@ impl<'a> StationClient<'a> {
                 packet.write(&gui_action);
                 self.client.send(&packet);
                 
-                return;
+                match gui_action {
+                    StationAction::Jump(_) => {
+                        return;
+                    },
+                    StationAction::ShipEdit(ship_edit) => {
+                        if let Some(ref mut ship) = self.player_ship {
+                            match ship_edit {
+                                ShipEditAction::Place(model, x, y) => {
+                                    let mut module = model.get(model_store).create();
+                                    module.x = x;
+                                    module.y = y;
+                                    
+                                    ship.add_module(module);
+                                },
+                                ShipEditAction::Remove(module) => {
+                                },
+                            }
+                        }
+                    },
+                }
             }
         }
     }

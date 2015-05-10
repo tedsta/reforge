@@ -6,7 +6,7 @@ use login::AccountBox;
 use module::ModelStore;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
 use star_map::StarMapAction;
-use star_map::station::StationAction;
+use star_map::station::{ShipEditAction, StationAction};
 
 pub struct StationServer {
     slot: ServerSlot,
@@ -78,6 +78,27 @@ impl StationServer {
                 self.slot.transfer_client(client_id, self.star_map_slot_id);
                 
                 to_map_sender.send((account, StarMapAction::Jump(sector)));
+            },
+            StationAction::ShipEdit(ship_edit) => {
+                let ref mut account = self.accounts.get_mut(&client_id).expect("Client's account must exist here.");
+                match account.ship {
+                    Some(ref mut ship) => {
+                        match ship_edit {
+                            ShipEditAction::Place(model, x, y) => {
+                                let mut module = model.get(&*self.model_store).create();
+                                module.x = x;
+                                module.y = y;
+                                
+                                ship.add_module(module);
+                            },
+                            ShipEditAction::Remove(module) => {
+                            },
+                        }
+                    },
+                    None => {
+                        println!("Player without ship tried to edit ship");
+                    },
+                }
             },
         }
     }

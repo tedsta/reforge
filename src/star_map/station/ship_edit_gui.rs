@@ -76,16 +76,16 @@ impl<'a> ShipEditGui<'a> {
     }
 
     fn on_mouse_left_pressed(&mut self, mouse_pos: Vec2f, button: mouse::MouseButton) {
-        for &(ref category, ref modules) in &self.inventory {
-            for (i, &(model, count)) in modules.iter().enumerate() {
-                let module_offset = Vec2::new(10.0 + (i as f64 * 50.0), 59.0);
-                
-                if mouse_pos.x >= module_offset.x &&
-                   mouse_pos.x <= module_offset.x + 48.0 &&
-                   mouse_pos.y >= module_offset.y &&
-                   mouse_pos.y <= module_offset.y + 48.0 {
-                    self.selected_model = Some(i);
-                }
+        let (_, ref modules) = self.inventory[self.selected_category];
+        
+        for (i, &(model, count)) in modules.iter().enumerate() {
+            let module_offset = Vec2::new(10.0 + (i as f64 * 50.0), 59.0);
+            
+            if mouse_pos.x >= module_offset.x &&
+               mouse_pos.x <= module_offset.x + 48.0 &&
+               mouse_pos.y >= module_offset.y &&
+               mouse_pos.y <= module_offset.y + 48.0 {
+                self.selected_model = Some(i);
             }
         }
     }
@@ -93,6 +93,14 @@ impl<'a> ShipEditGui<'a> {
     fn on_mouse_left_released(&mut self, mouse_pos: Vec2f, button: mouse::MouseButton, ship: &ShipStored) {
         if let Some(selected_model) = self.selected_model {
             let pos_on_ship = self.get_pos_on_ship(mouse_pos);
+            
+            if ship.is_space_free(pos_on_ship.x as u8, pos_on_ship.y as u8, 1, 1) &&
+               (pos_on_ship.x as u8) < 10 && (pos_on_ship.y as u8) < 8 {
+                let (_, ref models) = self.inventory[self.selected_category];
+                let (selected_model, _) = models[selected_model];
+               
+                self.action = Some(ShipEditAction::Place(selected_model, pos_on_ship.x as u8, pos_on_ship.y as u8));
+            }
         
             self.selected_model = None;
         }
@@ -139,7 +147,7 @@ impl<'a> ShipEditGui<'a> {
                 }
                 
                 // Draw module icons
-                {
+                if cat_num == self.selected_category {
                     let context = context.trans(5.0, 24.0);
                     
                     for (i, &(model, count)) in modules.iter().enumerate() {
