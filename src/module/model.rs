@@ -1,3 +1,7 @@
+use std::path::Path;
+
+use opengl_graphics::Texture;
+
 use super::{
     ModuleStored,
     
@@ -7,6 +11,15 @@ use super::{
 pub struct Model {
     pub name: String,
     factory: Box<Fn() -> ModuleStored + Sync + Send>,
+    
+    #[cfg(feature = "client")]
+    pub icon: Texture,
+    
+    pub width: u8,
+    pub height: u8,
+    pub power: u8,  // Power consumption
+    pub min_hp: u8, // Minimum HP for the module to still operate
+    pub max_hp: u8, // Maximum HP of module, including armor
 }
 
 impl Model {
@@ -27,6 +40,12 @@ impl ModelStore {
                 Model {
                     name: "Engine Mk1".to_string(),
                     factory: Box::new(move || ModuleStored::from_module(EngineModule::new())),
+                    icon: Texture::from_path(&Path::new("content/textures/modules/engine1.png")).unwrap(),
+                    width: 2,
+                    height: 1,
+                    power: 2,
+                    min_hp: 2,
+                    max_hp: 3,
                 },
             ];
     
