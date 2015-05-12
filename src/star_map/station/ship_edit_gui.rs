@@ -76,6 +76,19 @@ impl<'a> ShipEditGui<'a> {
     }
 
     fn on_mouse_left_pressed(&mut self, mouse_pos: Vec2f, button: mouse::MouseButton) {
+        for i in (0 .. self.inventory.len()) {
+            let category_offset = Vec2::new(5.0 + (i as f64 * 77.0), 35.0);
+            let label_width = 75.0;
+            let label_height = 19.0;
+            
+            if mouse_pos.x >= category_offset.x &&
+               mouse_pos.x <= category_offset.x + label_width &&
+               mouse_pos.y >= category_offset.y &&
+               mouse_pos.y <= category_offset.y + label_height {
+                self.selected_category = i;
+            }
+        }
+    
         let (_, ref modules) = self.inventory[self.selected_category];
         
         for (i, &(model_index, count)) in modules.iter().enumerate() {
@@ -134,8 +147,14 @@ impl<'a> ShipEditGui<'a> {
                 {
                     let context = context.trans(cat_num as f64 * 77.0, 0.0);
                 
-                    Rectangle::new([0.0, 1.0, 0.0, 1.0])
-                        .draw([0.0, 0.0, 75.0, 19.0], &context.draw_state, context.transform, gl);
+                    let rectangle =
+                        if cat_num == self.selected_category {
+                            Rectangle::new([1.0, 0.0, 0.0, 1.0])
+                        } else {
+                            Rectangle::new([0.0, 1.0, 0.0, 1.0])
+                        };
+                    
+                    rectangle.draw([0.0, 0.0, 75.0, 19.0], &context.draw_state, context.transform, gl);
                     
                     // Category label
                     {
