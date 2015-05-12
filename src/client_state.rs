@@ -7,6 +7,7 @@ use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
 use battle_context::BattleContext;
+use chat::ChatGui;
 use client_action::ClientAction;
 use module::ModelStore;
 use sector_client::ClientBattleState;
@@ -22,6 +23,8 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>,
                                 model_store: &ModelStore,
                                 mut client: Client) {
     use client_action::ClientAction::*;
+    
+    let ref mut chat_gui = ChatGui::new();
 
     // Receive the star map
     let mut packet = client.receive();
@@ -47,7 +50,7 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>,
                 
                 let mut battle = ClientBattleState::new(&mut client, battle_context);
 
-                battle.run(window, gl, glyph_cache, asset_store, sectors.clone(), server_results_sent);
+                battle.run(window, gl, glyph_cache, asset_store, chat_gui, sectors.clone(), server_results_sent);
                 
                 println!("I (client) left a sector");
             },
@@ -58,7 +61,7 @@ pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>,
                 
                 let mut station_client = StationClient::new(&mut client, my_ship);
                 
-                station_client.run(window, gl, glyph_cache, asset_store, model_store, sectors.clone());
+                station_client.run(window, gl, glyph_cache, asset_store, model_store, chat_gui, sectors.clone());
             },
             Logout => {
                 break;

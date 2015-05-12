@@ -7,6 +7,7 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
+use chat::ChatGui;
 use module::{ModelIndex, ModelStore};
 use net::{Client, OutPacket};
 use sector_data::SectorData;
@@ -36,6 +37,7 @@ impl<'a> StationClient<'a> {
                glyph_cache: &mut GlyphCache,
                asset_store: &AssetStore,
                model_store: &ModelStore,
+               chat_gui: &mut ChatGui,
                sectors: Vec<SectorData>) {
         use window::ShouldClose;
         use quack::Get;
@@ -49,7 +51,7 @@ impl<'a> StationClient<'a> {
                 ("weapons".to_string(), vec![(ModelIndex(4), 100), (ModelIndex(5), 100)]),
             ];
     
-        let ref mut gui = StationGui::new(model_store, sectors, module_inventory);
+        let ref mut gui = StationGui::new(model_store, chat_gui, sectors, module_inventory);
         let ref mut sim_effects = SimEffects::new();
         
         if let Some(ref ship) = self.player_ship {

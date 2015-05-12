@@ -14,6 +14,7 @@ use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
 use battle_context::{BattleContext, TICKS_PER_SECOND};
+use chat::ChatGui;
 use net::{Client, InPacket, OutPacket};
 use packet_types::{ClientBattlePacket, ServerBattlePacket};
 use sector_data::SectorData;
@@ -51,11 +52,18 @@ impl<'a> ClientBattleState<'a> {
         }
     }
     
-    pub fn run(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, sectors: Vec<SectorData>, server_results_sent: bool) {
+    pub fn run(&mut self,
+               window: &Rc<RefCell<Sdl2Window>>,
+               gl: &mut Gl,
+               glyph_cache: &mut GlyphCache,
+               asset_store: &AssetStore,
+               chat_gui: &mut ChatGui,
+               sectors: Vec<SectorData>,
+               server_results_sent: bool) {
         use window::ShouldClose;
         use quack::Get;
     
-        let ref mut gui = SpaceGui::new(asset_store, &self.bc, sectors, self.player_ship);
+        let ref mut gui = SpaceGui::new(asset_store, &self.bc, chat_gui, sectors, self.player_ship);
     
         let ref mut sim_effects = SimEffects::new();
         

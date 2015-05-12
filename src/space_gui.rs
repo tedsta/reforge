@@ -44,7 +44,7 @@ pub struct StatsLabels {
     power_texture: Texture,
 }
 
-pub struct SpaceGui {
+pub struct SpaceGui<'a> {
     // Plans for player's ship
     pub plans: ShipPlans,
 
@@ -78,7 +78,7 @@ pub struct SpaceGui {
     
     // Chat
     chat_gui_pos: Vec2f,
-    pub chat_gui: ChatGui,
+    pub chat_gui: &'a mut ChatGui,
     
     // Logout button
     logout_button: TextButton,
@@ -87,8 +87,12 @@ pub struct SpaceGui {
     target_icons: Vec<TargetIcon>,
 }
 
-impl SpaceGui {
-    pub fn new(asset_store: &AssetStore, context: &BattleContext, sectors: Vec<SectorData>, my_ship: ShipIndex) -> SpaceGui {
+impl<'a> SpaceGui<'a> {
+    pub fn new(asset_store: &AssetStore,
+               context: &BattleContext,
+               chat_gui: &'a mut ChatGui,
+               sectors: Vec<SectorData>,
+               my_ship: ShipIndex) -> SpaceGui<'a> {
         // Set up the render area
         //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
         //let texture = target.get_texture().expect("Failed to get render texture's texture");
@@ -141,7 +145,7 @@ impl SpaceGui {
             show_star_map: false,
             
             chat_gui_pos: Vec2::new(5.0, 720.0 - 200.0 - 5.0),
-            chat_gui: ChatGui::new(),
+            chat_gui: chat_gui,
             
             logout_button: TextButton::new("logout".to_string(), 20, [550.0, 100.0], [120.0, 40.0]),
 

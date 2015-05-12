@@ -26,7 +26,7 @@ pub struct StationGui<'a> {
     
     // Chat
     chat_gui_pos: Vec2f,
-    pub chat_gui: ChatGui,
+    pub chat_gui: &'a mut ChatGui,
     
     // Star map stuff
     star_map_button: TextButton,
@@ -39,6 +39,7 @@ pub struct StationGui<'a> {
 
 impl<'a> StationGui<'a> {
     pub fn new(model_store: &'a ModelStore,
+               chat_gui: &'a mut ChatGui,
                sectors: Vec<SectorData>,
                module_inventory: ModuleInventory) -> StationGui<'a> {
         StationGui {
@@ -47,7 +48,7 @@ impl<'a> StationGui<'a> {
             ship_edit_gui: ShipEditGui::new(model_store, module_inventory),
             
             chat_gui_pos: Vec2::new(5.0, 720.0 - 200.0 - 5.0),
-            chat_gui: ChatGui::new(),
+            chat_gui: chat_gui,
             
             star_map_button: TextButton::new("star map".to_string(), 20, [550.0, 50.0], [120.0, 40.0]),
             star_map_gui: StarMapGui::new(sectors),
