@@ -1,5 +1,6 @@
 use event::GenericEvent;
 use graphics::Context;
+use input::{keyboard, Button};
 use opengl_graphics::Gl;
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -44,10 +45,32 @@ impl ChatGui {
         self.send_button.event(e, [mouse_pos.x, mouse_pos.y]);
         
         if self.send_button.get_clicked() {
-            self.action = Some(ChatGuiAction::SendMsg(self.msg_box.text.clone()));
+            if self.msg_box.text.len() > 0 {
+                self.action = Some(ChatGuiAction::SendMsg(self.msg_box.text.clone()));
+                self.msg_box.text = "".to_string();
+            }
         }
         
+        e.press(|button| {
+            match button {
+                Button::Keyboard(key) => self.on_key_pressed(key), 
+                _ => { },
+            }
+        });
+        
         self.action.take()
+    }
+    
+    fn on_key_pressed(&mut self, key: keyboard::Key) {
+        match key {
+            keyboard::Key::Return => {
+                if self.msg_box.text.len() > 0 && self.msg_box.has_focus {
+                    self.action = Some(ChatGuiAction::SendMsg(self.msg_box.text.clone()));
+                    self.msg_box.text = "".to_string();
+                }
+            },
+            _ => { },
+        }
     }
 
     pub fn draw(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache) {
