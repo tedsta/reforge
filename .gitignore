@@ -3,6 +3,9 @@
 Cargo.lock
 reforge.aip
 
+# Content
+content/*
+
 # Binaries
 *.dll
 bin/*
