@@ -89,6 +89,11 @@ impl<'a> StationClient<'a> {
                 });
             });
             
+            if let Ok(mut packet) = self.client.try_receive() {
+                let chat_msg = packet.read().unwrap();
+                gui.chat_gui.add_message(chat_msg);
+            }
+            
             // Handle GUI action
             if let Some(gui_action) = gui_action {
                 let mut packet = OutPacket::new();
@@ -117,6 +122,7 @@ impl<'a> StationClient<'a> {
                             }
                         }
                     },
+                    StationAction::Chat(_) => { },
                 }
             }
         }

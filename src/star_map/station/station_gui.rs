@@ -5,6 +5,7 @@ use opengl_graphics::{Gl, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use asset_store::AssetStore;
+use chat::{ChatGui, ChatGuiAction};
 use gui::TextButton;
 use module::{IModule, ModelStore, Module, ModuleIndex};
 use net::ClientId;
@@ -23,6 +24,10 @@ pub struct StationGui<'a> {
     // Ship editor stuff
     ship_edit_gui: ShipEditGui<'a>,
     
+    // Chat
+    chat_gui_pos: Vec2f,
+    pub chat_gui: ChatGui,
+    
     // Star map stuff
     star_map_button: TextButton,
     star_map_gui: StarMapGui,
@@ -40,6 +45,9 @@ impl<'a> StationGui<'a> {
             mouse_pos: Vec2 { x: 0.0, y: 0.0 },
             
             ship_edit_gui: ShipEditGui::new(model_store, module_inventory),
+            
+            chat_gui_pos: Vec2::new(5.0, 720.0 - 200.0 - 5.0),
+            chat_gui: ChatGui::new(),
             
             star_map_button: TextButton::new("star map".to_string(), 20, [550.0, 50.0], [120.0, 40.0]),
             star_map_gui: StarMapGui::new(sectors),
@@ -76,6 +84,14 @@ impl<'a> StationGui<'a> {
             }
             
             return None;
+        }
+        
+        if let Some(chat_action) = self.chat_gui.event(e, self.mouse_pos - self.chat_gui_pos) {
+            match chat_action {
+                ChatGuiAction::SendMsg(msg) => {
+                    return Some(StationAction::Chat(msg));
+                },
+            }
         }
         
         if let Some(ship_edit) = self.ship_edit_gui.event(e, self.mouse_pos - Vec2::new(875.0, 200.0), client_ship.as_ref().unwrap()) {
@@ -134,6 +150,8 @@ impl<'a> StationGui<'a> {
         
         self.star_map_button.draw(context, gl, glyph_cache);
         self.logout_button.draw(context, gl, glyph_cache);
+        
+        self.chat_gui.draw(&context.trans(self.chat_gui_pos.x, self.chat_gui_pos.y), gl, glyph_cache);
         
         if self.show_star_map {
             self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);

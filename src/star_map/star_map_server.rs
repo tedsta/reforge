@@ -5,6 +5,7 @@ use std::thread::Builder;
 use time;
 
 use battle_context::BattleContext;
+use chat::ChatServer;
 use client_action::ClientAction;
 use login::AccountBox;
 use module::ModelStore;
@@ -42,18 +43,25 @@ pub struct StarMapServer {
 
 impl StarMapServer {
     pub fn new(slot: ServerSlot) -> StarMapServer {
+        // Chat server input channel
+        let (to_chat_server, chat_from_sector) = channel();
+        let mut chat_msg_senders = vec!();
+        
+        // Fire up the universe
+    
         let model_store = Arc::new(ModelStore::new());
-    
         let slot_id = slot.get_id();
-    
         let mut sectors = HashMap::new();
         
         // Station
         let (to_sector_sender, to_sector_receiver) = channel();
         let (from_sector_sender, from_sector_receiver) = channel();
         let (ack_sender, ack_receiver) = channel();
+        let (chat_sender, sector_chat_in) = channel();
+        chat_msg_senders.push(chat_sender);
         let sector_slot = slot.create_slot();
         let sector_id = SectorId(0);
+        let sector_chat_out = to_chat_server.clone();
         sectors.insert(sector_id, Sector {
             slot_id: sector_slot.get_id(),
             to_sector: to_sector_sender,
@@ -66,10 +74,15 @@ impl StarMapServer {
             },
         });
         
+        
         Builder::new()
             .name(format!("station_{}_thread", 0))
             .spawn(move || {
-                let mut sector_server = StationServer::new(sector_slot, slot_id, model_store.clone());
+                let mut sector_server = StationServer::new(sector_slot,
+                                                           slot_id,
+                                                           sector_chat_out,
+                                                           sector_chat_in,
+                                                           model_store.clone());
                 sector_server.run(from_sector_sender, to_sector_receiver, ack_sender);
             });
         
@@ -77,8 +90,11 @@ impl StarMapServer {
         let (to_sector_sender, to_sector_receiver) = channel();
         let (from_sector_sender, from_sector_receiver) = channel();
         let (ack_sender, ack_receiver) = channel();
+        let (chat_sender, sector_chat_in) = channel();
+        chat_msg_senders.push(chat_sender);
         let sector_slot = slot.create_slot();
         let sector_id = SectorId(1);
+        let sector_chat_out = to_chat_server.clone();
         sectors.insert(sector_id, Sector {
             slot_id: sector_slot.get_id(),
             to_sector: to_sector_sender,
@@ -94,7 +110,12 @@ impl StarMapServer {
         Builder::new()
             .name(format!("sector_{}_thread", 1))
             .spawn(move || {
-                let mut sector_server = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
+                let mut sector_server = SectorState::new(sector_slot,
+                                                         slot_id,
+                                                         sector_chat_out,
+                                                         sector_chat_in,
+                                                         BattleContext::new(vec!()),
+                                                         false);
                 sector_server.run(from_sector_sender, to_sector_receiver, ack_sender, false);
             });
         
@@ -102,8 +123,11 @@ impl StarMapServer {
         let (to_sector_sender, to_sector_receiver) = channel();
         let (from_sector_sender, from_sector_receiver) = channel();
         let (ack_sender, ack_receiver) = channel();
+        let (chat_sender, sector_chat_in) = channel();
+        chat_msg_senders.push(chat_sender);
         let sector_slot = slot.create_slot();
         let sector_id = SectorId(2);
+        let sector_chat_out = to_chat_server.clone();
         sectors.insert(sector_id, Sector {
             slot_id: sector_slot.get_id(),
             to_sector: to_sector_sender,
@@ -119,8 +143,21 @@ impl StarMapServer {
         Builder::new()
             .name(format!("sector_{}_thread", 2))
             .spawn(move || {
-                let mut sector_server = SectorState::new(sector_slot, slot_id, BattleContext::new(vec!()), false);
+                let mut sector_server = SectorState::new(sector_slot,
+                                                         slot_id,
+                                                         sector_chat_out,
+                                                         sector_chat_in,
+                                                         BattleContext::new(vec!()),
+                                                         false);
                 sector_server.run(from_sector_sender, to_sector_receiver, ack_sender, true);
+            });
+        
+        // Start the chat server
+        Builder::new()
+            .name("chat_server".to_string())
+            .spawn(move || {
+                let mut chat_server = ChatServer::new(chat_from_sector, chat_msg_senders);
+                chat_server.run();
             });
         
         ////////////////////////////////////////////////////////////////////////////////////////////

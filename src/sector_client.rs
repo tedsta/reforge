@@ -13,12 +13,13 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use sdl2_window::Sdl2Window;
 
 use asset_store::AssetStore;
-use battle_context::{BattleContext, ClientPacketId, ServerPacketId, TICKS_PER_SECOND};
+use battle_context::{BattleContext, TICKS_PER_SECOND};
 use net::{Client, InPacket, OutPacket};
+use packet_types::{ClientBattlePacket, ServerBattlePacket};
 use sector_data::SectorData;
 use ship::{Ship, ShipId, ShipIndex};
 use sim::{SimEvents, SimEffects};
-use space_gui::SpaceGui;
+use space_gui::{SpaceGui, SpaceGuiAction};
 
 pub struct ClientBattleState<'a> {
     client: &'a mut Client,
@@ -62,26 +63,25 @@ impl<'a> ClientBattleState<'a> {
         
         if server_results_sent {
             // Wait for the tick
-            let mut tick_packet = self.client.receive();
-            self.handle_tick_packet(&mut tick_packet);
+            loop {
+                // We might get chat packets here
+                let tick_packet = self.client.receive();
+                let ticked = self.handle_packet(gui, tick_packet);
+                
+                if ticked {
+                    break;
+                }
+            }
         }
         
         // Get first turn's results
-        self.receive_new_ships(gui);
-        self.receive_simulation_results();
-        let mut new_ships_post = self.client.receive();
-        
-        // Receive tick
-        let mut tick_packet = self.client.receive();
-        self.handle_tick_packet(&mut tick_packet);
-        
-        self.run_simulation_phase(window, gl, glyph_cache, asset_store, gui, sim_effects);
-        
-        self.handle_new_ships_packet(gui, &mut new_ships_post);
-        
-        // Handle possible player jump
-        if self.player_ship.get(&self.bc).jumping {
-            return;
+        loop {
+            // Loop until tick packet is received
+            let packet = self.client.receive();
+            let ticked = self.handle_packet(gui, packet);
+            if ticked {
+                break;
+            }
         }
     
         loop {
@@ -135,9 +135,6 @@ impl<'a> ClientBattleState<'a> {
         let start_time = time::now().to_timespec();
         let mut next_tick = 0;
         let mut plans_sent = false;
-        let mut new_ships_pre_received = false;
-        let mut results_received = false;
-        let mut new_ships_post_received = false;
         for e in Events::new(window.clone()) {
             use event;
             use input;
@@ -160,31 +157,13 @@ impl<'a> ClientBattleState<'a> {
             
             if !self.last_tick {
                 if plans_sent || self.player_ship.get(&self.bc).exploding {
-                    if !new_ships_pre_received {
-                        if let Ok(packet) = self.client.try_receive() {
-                            self.new_ships_pre = Some(packet);
-                            new_ships_pre_received = true;
-                        }
-                    } else if !results_received {
-                        if let Ok(packet) = self.client.try_receive() {
-                            self.results = Some(packet);
-                            results_received = true;
-                        }
-                    } else if !new_ships_post_received {
-                        if let Ok(packet) = self.client.try_receive() {
-                            self.new_ships_post = Some(packet);
-                            new_ships_post_received = true;
-                        }
-                    } else {
-                        // Wait for tick
-                        if let Ok(mut packet) = self.client.try_receive() {
-                            self.handle_tick_packet(&mut packet);
-                            
+                    if let Ok(packet) = self.client.try_receive() {
+                        let ticked = self.handle_packet(gui, packet);
+                        
+                        if ticked && !self.last_tick {
                             // If the tick we got isn't the last tick, this turn is done.
-                            if !self.last_tick {
-                                println!("Finished turn at {}", elapsed_seconds);
-                                break;
-                            }
+                            println!("Finished turn at {}", elapsed_seconds);
+                            break;
                         }
                     }
                 }
@@ -205,7 +184,15 @@ impl<'a> ClientBattleState<'a> {
             }
         
             // Forward events to GUI
-            gui.event(&self.bc, &e, self.player_ship.get(&self.bc));
+            let gui_action = gui.event(&self.bc, &e, self.player_ship.get(&self.bc));
+            
+            if let Some(gui_action) = gui_action {
+                match gui_action {
+                    SpaceGuiAction::Chat(msg) => {
+                        self.send_chat(msg);
+                    },
+                }
+            }
             
             // Render GUI
             e.render(|args: &RenderArgs| {
@@ -239,44 +226,45 @@ impl<'a> ClientBattleState<'a> {
     
     fn build_plans_packet(&mut self, gui: &SpaceGui) -> OutPacket {
         let mut packet = OutPacket::new();
-        match packet.write(&ServerPacketId::Plan) {
-            Ok(()) => {},
-            Err(_) => panic!("Failed to write plan packet ID"),
-        }
-
-        packet.write(&gui.plans).ok().expect("Failed to write player's plans");
-
+        packet.write(&ServerBattlePacket::Plan).unwrap();
+        packet.write(&gui.plans).unwrap();
         packet
     }
     
-    fn receive_simulation_results(&mut self) {
-        let mut packet = self.client.receive();
-        self.handle_simulation_results(&mut packet);
+    fn send_chat(&mut self, msg: String) {
+        let mut packet = OutPacket::new();
+        packet.write(&ServerBattlePacket::Chat(msg)).unwrap();
+        self.client.send(&packet);
+    }
+    
+    fn handle_packet(&mut self, gui: &mut SpaceGui, mut packet: InPacket) -> bool {
+        let battle_packet: ClientBattlePacket = packet.read().unwrap();
+        
+        match battle_packet {
+            ClientBattlePacket::NewShipsPre => {
+                self.new_ships_pre = Some(packet);
+            },
+            ClientBattlePacket::SimResults => {
+                self.results = Some(packet);
+            },
+            ClientBattlePacket::NewShipsPost => {
+                self.new_ships_post = Some(packet);
+            },
+            ClientBattlePacket::Tick(last_tick) => {
+                self.last_tick = last_tick;
+                return true;
+            },
+            ClientBattlePacket::Chat(msg) => {
+                gui.chat_gui.add_message(msg);
+            },
+        }
+        
+        false
     }
     
     fn handle_simulation_results(&mut self, packet: &mut InPacket) {
-        match packet.read::<ClientPacketId>() {
-            Ok(ref id) if *id != ClientPacketId::SimResults => panic!("Expected SimResults, got something else"),
-            Err(e) => panic!("Failed to read simulation results packet ID: {}", e),
-            _ => {}, // All good!
-        };
-        
         // Results packet has both plans and results
         self.bc.read_results(packet);
-    }
-    
-    fn try_receive_new_ships(&mut self, gui: &mut SpaceGui) -> io::Result<()> {
-        let mut packet = try!(self.client.try_receive());
-        
-        self.handle_new_ships_packet(gui, &mut packet);
-        
-        Ok(())
-    }
-    
-    fn receive_new_ships(&mut self, gui: &mut SpaceGui) {
-        let mut packet = self.client.receive();
-        
-        self.handle_new_ships_packet(gui, &mut packet);
     }
     
     fn handle_new_ships_packet(&mut self, gui: &mut SpaceGui, packet: &mut InPacket) {
@@ -309,20 +297,6 @@ impl<'a> ClientBattleState<'a> {
                 self.bc.add_ship(ship);
                 gui.try_lock(ship_index);
             }
-        }
-    }
-    
-    fn handle_tick_packet(&mut self, packet: &mut InPacket) {
-        let packet_id =
-            match packet.read::<ClientPacketId>() {
-                Ok(id) => id,
-                Err(e) => panic!("Failed to read tick packet ID: {}", e),
-            };
-        
-        match packet_id {
-            ClientPacketId::Tick => { },
-            ClientPacketId::LastTick => { self.last_tick = true; },
-            _ => { panic!("Expected tick packet, got something else"); },
         }
     }
 }

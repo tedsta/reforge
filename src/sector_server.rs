@@ -6,10 +6,12 @@ use std::sync::mpsc::{Sender, Receiver};
 use time;
 
 use ai::run_ai;
-use battle_context::{BattleContext, ClientPacketId, ServerPacketId};
+use battle_context::BattleContext;
+use chat::ChatMsg;
 use login::AccountBox;
 use module::Module;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
+use packet_types::{ClientBattlePacket, ServerBattlePacket};
 use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipStored};
 use sim::SimEvents;
 use star_map::StarMapAction;
@@ -17,6 +19,8 @@ use star_map::StarMapAction;
 pub struct SectorState {
     slot: ServerSlot,
     star_map_slot_id: ServerSlotId,
+    chat_sender: Sender<ChatMsg>,
+    chat_receiver: Receiver<ChatMsg>,
 
     // Context holding all the things involved in this battle
     context: BattleContext,
@@ -46,10 +50,17 @@ pub struct SectorState {
 }
 
 impl SectorState {
-    pub fn new(slot: ServerSlot, star_map_slot_id: ServerSlotId, context: BattleContext, debug: bool) -> SectorState {
+    pub fn new(slot: ServerSlot,
+               star_map_slot_id: ServerSlotId,
+               chat_sender: Sender<ChatMsg>,
+               chat_receiver: Receiver<ChatMsg>,
+               context: BattleContext,
+               debug: bool) -> SectorState {
         SectorState {
             slot: slot,
             star_map_slot_id: star_map_slot_id,
+            chat_sender: chat_sender,
+            chat_receiver: chat_receiver,
             context: context,
             turn_start_time: time::now().to_timespec(),
             simulated_turn: false,
@@ -121,6 +132,14 @@ impl SectorState {
             }
             
             ///////////////////////////////////////////////////////////
+            // Receive messages from chat server
+            if let Ok(msg) = self.chat_receiver.try_recv() {
+                let mut msg_packet = OutPacket::new();
+                msg_packet.write(&ClientBattlePacket::Chat(msg)).unwrap();
+                self.slot.broadcast(msg_packet);
+            }
+            
+            ///////////////////////////////////////////////////////////
             // Receive new clients
             if let Ok(mut account) = from_map_receiver.try_recv() {
                 if self.debug {
@@ -156,42 +175,47 @@ impl SectorState {
     }
     
     fn handle_packet(&mut self, client_id: ClientId, packet: &mut InPacket) {
-        let id: ServerPacketId = match packet.read() {
-            Ok(id) => id,
-            Err(e) => {
-                println!("Received invalid packet from client {}: {}", client_id, e);
-                return;
-            }
-        };
+        let battle_packet: ServerBattlePacket = packet.read().unwrap();
         
-        match id {
-            ServerPacketId::Plan => {
+        match battle_packet {
+            ServerBattlePacket::Plan => { self.handle_plans(client_id, packet); },
+            ServerBattlePacket::Chat(msg) => {
                 if self.debug {
-                    println!("Handling plans packet");
+                    println!("Handling chat packet");
                 }
+                
+                let ref account = self.accounts[&client_id];
             
-                self.received_plans.insert(client_id);
+                let msg = ChatMsg {
+                    author_name: account.username.clone(),
+                    content: msg,
+                };
                 
-                // Handle the plans
-                self.handle_plans_packet(client_id, packet);
-                
-                println!("Received plans packet from {} for turn {}", client_id, self.turn_number);
- 
-                if self.received_plans == self.clients_active {
-                    // TODO decide if we should simulate turn a little early here.
-                }
+                self.chat_sender.send(msg);
             },
         }
     }
     
-    fn handle_plans_packet(&mut self, client_id: ClientId, packet: &mut InPacket) {
+    fn handle_plans(&mut self, client_id: ClientId, packet: &mut InPacket) {
+        if self.debug {
+            println!("Handling plans packet");
+        }
+    
+        self.received_plans.insert(client_id);
+    
         let ship = self.context.get_ship_by_client_id(client_id);
-
-        let plans = packet.read().ok().expect("Failed to receive client's plans");
+        
+        let plans = packet.read().unwrap();
         
         if !ship.exploding {
             // Don't save these plans if the ship is exploding
             self.ship_plans.push((ship.index, plans));
+        }
+        
+        println!("Received plans packet from {} for turn {}", client_id, self.turn_number);
+ 
+        if self.received_plans == self.clients_active {
+            // TODO decide if we should simulate turn a little early here.
         }
     }
     
@@ -201,7 +225,7 @@ impl SectorState {
         }
     
         // Send new ships to added/removed before simulation
-        self.send_new_ships();
+        self.send_new_ships_pre();
     
         // Run AI on ships with no client
         for ship in self.context.ships_iter() {
@@ -280,7 +304,7 @@ impl SectorState {
         }
         
         // Send new ships
-        self.send_new_ships();
+        self.send_new_ships_post();
         
         // Send off all of the jumping ships
         for (jumped_ship, target_sector) in jumped_ships.into_iter() {
@@ -338,23 +362,29 @@ impl SectorState {
     
     fn build_results_packet(&mut self) -> OutPacket {
         let mut packet = OutPacket::new();
-        match packet.write(&ClientPacketId::SimResults) {
-            Ok(()) => {},
-            Err(_) => panic!("Failed to write results packet ID"),
-        }
-        
-        // Write the results!
+        packet.write(&ClientBattlePacket::SimResults).unwrap();
         self.context.write_results(&mut packet);
-
         packet
     }
     
-    fn send_new_ships(&mut self) {
+    fn send_new_ships_pre(&mut self) {
+        let mut ships_packet = OutPacket::new();
+        ships_packet.write(&ClientBattlePacket::NewShipsPre).unwrap();
+        self.write_new_ships(&mut ships_packet);
+        self.slot.broadcast(ships_packet);
+    }
+    
+    fn send_new_ships_post(&mut self) {
+        let mut ships_packet = OutPacket::new();
+        ships_packet.write(&ClientBattlePacket::NewShipsPost).unwrap();
+        self.write_new_ships(&mut ships_packet);
+        self.slot.broadcast(ships_packet);
+    }
+    
+    fn write_new_ships(&mut self, ships_packet: &mut OutPacket) {
         if self.debug {
             println!("Sending new ships");
         }
-    
-        let mut ships_packet = OutPacket::new();
         
         {
             let ships_to_add: Vec<&Ship> = self.ships_to_add.iter().map(|s| s.get(&self.context)).collect();
@@ -362,7 +392,6 @@ impl SectorState {
         }
         
         ships_packet.write(&self.ships_to_remove);
-        self.slot.broadcast(ships_packet);
         
         self.ships_to_add.clear();
         self.ships_to_remove.clear();
@@ -374,7 +403,7 @@ impl SectorState {
         }
 
         let mut packet = OutPacket::new();
-        packet.write(&ClientPacketId::Tick);
+        packet.write(&ClientBattlePacket::Tick(false));
         self.slot.broadcast(packet);
     }
     
@@ -384,7 +413,7 @@ impl SectorState {
         }
 
         let mut packet = OutPacket::new();
-        packet.write(&ClientPacketId::LastTick);
+        packet.write(&ClientBattlePacket::Tick(true));
         self.slot.send(client_id, packet);
     }
 }

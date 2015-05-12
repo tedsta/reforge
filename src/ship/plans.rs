@@ -2,7 +2,7 @@ use module::{Module, ModuleIndex, ModulePlans};
 use sector_data::SectorId;
 use ship::{Ship, ShipIndex, ShipState};
 
-#[derive(RustcEncodable, RustcDecodable)]
+#[derive(Clone, RustcEncodable, RustcDecodable)]
 pub struct ShipPlans {
     pub logout: bool,
     pub target_sector: Option<SectorId>,

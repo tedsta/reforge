@@ -2,10 +2,11 @@ use sector_data::SectorId;
 
 use super::ShipEditAction;
 
-#[derive(Copy, Clone, RustcEncodable, RustcDecodable)]
+#[derive(Clone, RustcEncodable, RustcDecodable)]
 pub enum StationAction {
     Jump(SectorId),
     ShipEdit(ShipEditAction),
+    Chat(String),
 }
 
 impl StationAction {

@@ -102,7 +102,7 @@ pub trait IModule : Send {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(RustcEncodable, RustcDecodable)]
+#[derive(Clone, RustcEncodable, RustcDecodable)]
 pub struct ModulePlans {
     pub plan_powered: bool,
     pub plan_target: Option<Target>,

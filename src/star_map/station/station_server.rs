@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver};
 
+use chat::ChatMsg;
 use login::AccountBox;
 use module::ModelStore;
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
@@ -11,6 +12,9 @@ use star_map::station::{ShipEditAction, StationAction};
 pub struct StationServer {
     slot: ServerSlot,
     star_map_slot_id: ServerSlotId,
+    chat_sender: Sender<ChatMsg>,
+    chat_receiver: Receiver<ChatMsg>,
+    
     model_store: Arc<ModelStore>,
 
     // All the clients' accounts
@@ -20,21 +24,23 @@ pub struct StationServer {
 impl StationServer {
     pub fn new(slot: ServerSlot,
                star_map_slot_id: ServerSlotId,
+               chat_sender: Sender<ChatMsg>,
+               chat_receiver: Receiver<ChatMsg>,
                model_store: Arc<ModelStore>) -> StationServer {
         StationServer {
             slot: slot,
             star_map_slot_id: star_map_slot_id,
+            chat_sender: chat_sender,
+            chat_receiver: chat_receiver,
             model_store: model_store,
             accounts: HashMap::new(),
         }
     }
     
-    pub fn run(
-        &mut self,
-        to_map_sender: Sender<(AccountBox, StarMapAction)>,
-        from_map_receiver: Receiver<AccountBox>,
-        ack: Sender<()>,
-    ) {    
+    pub fn run(&mut self,
+               to_map_sender: Sender<(AccountBox, StarMapAction)>,
+               from_map_receiver: Receiver<AccountBox>,
+               ack: Sender<()>) {    
         loop {
             ///////////////////////////////////////////////////////////
             // Receiver ServerSlot messages
@@ -48,6 +54,14 @@ impl StationServer {
                     },
                     _ => {}
                 }
+            }
+            
+            ///////////////////////////////////////////////////////////
+            // Receive messages from chat server
+            if let Ok(msg) = self.chat_receiver.try_recv() {
+                let mut msg_packet = OutPacket::new();
+                msg_packet.write(&msg).unwrap();
+                self.slot.broadcast(msg_packet);
             }
             
             ///////////////////////////////////////////////////////////
@@ -99,6 +113,16 @@ impl StationServer {
                         println!("Player without ship tried to edit ship");
                     },
                 }
+            },
+            StationAction::Chat(msg) => {
+                let ref account = self.accounts[&client_id];
+            
+                let msg = ChatMsg {
+                    author_name: account.username.clone(),
+                    content: msg,
+                };
+                
+                self.chat_sender.send(msg);
             },
         }
     }

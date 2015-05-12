@@ -12,6 +12,7 @@ use opengl_graphics::glyph_cache::GlyphCache;
 
 use asset_store::AssetStore;
 use battle_context::BattleContext;
+use chat::{ChatGui, ChatGuiAction};
 use gui::TextButton;
 use module;
 use module::{IModule, Module, ModuleIndex};
@@ -27,6 +28,10 @@ static SHIP_OFFSET_Y: f64 = 170.0;
 
 static ENEMY_OFFSET_X: f64 = 80.0;
 static ENEMY_OFFSET_Y: f64 = 50.0;
+
+pub enum SpaceGuiAction {
+    Chat(String),
+}
 
 pub struct ModuleIcons {
     pub power_on_texture: Texture,
@@ -52,8 +57,7 @@ pub struct SpaceGui {
     // Current state of targeting
     beam_targeting_state: Option<Vec2f>,
     
-    mouse_x: f64,
-    mouse_y: f64,
+    mouse_pos: Vec2f,
     
     // Textures
     small_ship_icon: Texture,
@@ -71,6 +75,10 @@ pub struct SpaceGui {
     star_map_button: TextButton,
     star_map_gui: StarMapGui,
     show_star_map: bool,
+    
+    // Chat
+    chat_gui_pos: Vec2f,
+    pub chat_gui: ChatGui,
     
     // Logout button
     logout_button: TextButton,
@@ -109,8 +117,7 @@ impl SpaceGui {
             render_area: render_area,
             selection: None,
             beam_targeting_state: None,
-            mouse_x: 0.0,
-            mouse_y: 0.0,
+            mouse_pos: Vec2::new(0.0, 0.0),
             
             small_ship_icon: Texture::from_path(&Path::new("content/textures/gui/small_target.png")).unwrap(),
             medium_ship_icon: Texture::from_path(&Path::new("content/textures/gui/medium_target.png")).unwrap(),
@@ -133,31 +140,42 @@ impl SpaceGui {
             star_map_gui: StarMapGui::new(sectors),
             show_star_map: false,
             
+            chat_gui_pos: Vec2::new(5.0, 720.0 - 200.0 - 5.0),
+            chat_gui: ChatGui::new(),
+            
             logout_button: TextButton::new("logout".to_string(), 20, [550.0, 100.0], [120.0, 40.0]),
 
             target_icons: target_icons,
         }
     }
     
-    pub fn event<E: GenericEvent>(&mut self, bc: &BattleContext, e: &E, client_ship: &Ship) {
+    pub fn event<E: GenericEvent>(&mut self, bc: &BattleContext, e: &E, client_ship: &Ship) -> Option<SpaceGuiAction> {
         use event::*;
         
         if client_ship.state.get_hp() == 0 {
-            return;
+            return None;
         }
     
         e.mouse_cursor(|x, y| {
-            self.mouse_x = x;
-            self.mouse_y = y;
+            self.mouse_pos.x = x;
+            self.mouse_pos.y = y;
         });
         
-        self.star_map_button.event(e, [self.mouse_x, self.mouse_y]);
+        if let Some(chat_action) = self.chat_gui.event(e, self.mouse_pos - self.chat_gui_pos) {
+            match chat_action {
+                ChatGuiAction::SendMsg(msg) => {
+                    return Some(SpaceGuiAction::Chat(msg));
+                },
+            }
+        }
+        
+        self.star_map_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.star_map_button.get_clicked() {
             self.show_star_map = true;
         }
         
         if self.show_star_map {
-            if let Some(star_map_result) = self.star_map_gui.event(e, [self.mouse_x - 200.0, self.mouse_y - 200.0]) {
+            if let Some(star_map_result) = self.star_map_gui.event(e, [self.mouse_pos.x - 200.0, self.mouse_pos.y - 200.0]) {
                 match star_map_result {
                     StarMapGuiAction::Jump(sector) => {
                         self.plans.target_sector = Some(sector);
@@ -173,7 +191,7 @@ impl SpaceGui {
                 match button {
                     Button::Keyboard(key) => self.on_key_pressed(key), 
                     Button::Mouse(button) => {
-                        let (mouse_x, mouse_y) = (self.mouse_x, self.mouse_y);
+                        let (mouse_x, mouse_y) = (self.mouse_pos.x, self.mouse_pos.y);
                         match button {
                             mouse::MouseButton::Left => self.on_mouse_left_pressed(bc, mouse_x, mouse_y, client_ship),
                             mouse::MouseButton::Right => self.on_mouse_right_pressed(bc, mouse_x, mouse_y, client_ship),
@@ -184,10 +202,12 @@ impl SpaceGui {
             });
         }
         
-        self.logout_button.event(e, [self.mouse_x, self.mouse_y]);
+        self.logout_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.logout_button.get_clicked() {
             // TODO: Logout
         }
+        
+        None
     }
     
     pub fn draw_simulating(
@@ -230,6 +250,8 @@ impl SpaceGui {
                     &context.draw_state, context.transform,
                     gl
                 );
+        
+        self.chat_gui.draw(&context.trans(self.chat_gui_pos.x, self.chat_gui_pos.y), gl, glyph_cache);
         
         if self.show_star_map {
             self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
@@ -291,8 +313,8 @@ impl SpaceGui {
             let selected_module = selected_module.get(client_ship);
             
             // Highlight selected module
-            let x = self.mouse_x - SHIP_OFFSET_X;
-            let y = self.mouse_y - SHIP_OFFSET_Y;
+            let x = self.mouse_pos.x - SHIP_OFFSET_X;
+            let y = self.mouse_pos.y - SHIP_OFFSET_Y;
 
             let Vec2{x: module_x, y: module_y} = selected_module.get_render_position();
             let Vec2{x: module_w, y: module_h} = selected_module.get_render_size();
@@ -315,8 +337,8 @@ impl SpaceGui {
                     
                     if let Some(ship) = self.render_area.ship {
                         let beam = self.beam_targeting_state.map(|beam_start| {
-                                let x = self.mouse_x - self.render_area.x - ENEMY_OFFSET_X;
-                                let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
+                                let x = self.mouse_pos.x - self.render_area.x - ENEMY_OFFSET_X;
+                                let y = self.mouse_pos.y - self.render_area.y - ENEMY_OFFSET_Y;
                                 let beam_length = (beam_length as f64) * 48.0;
                                 
                                 let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
@@ -355,8 +377,8 @@ impl SpaceGui {
                 &module::TargetMode::TargetModule => {
                     if let Some(ship) = self.render_area.ship {
                         // Highlight target modules the user mouses-over red
-                        let x = self.mouse_x - self.render_area.x - ENEMY_OFFSET_X;
-                        let y = self.mouse_y - self.render_area.y - ENEMY_OFFSET_Y;
+                        let x = self.mouse_pos.x - self.render_area.x - ENEMY_OFFSET_X;
+                        let y = self.mouse_pos.y - self.render_area.y - ENEMY_OFFSET_Y;
 
                         apply_to_module_if_point_inside(ship.get(bc), x, y, |_, _, module| {
                             let Vec2{x: module_x, y: module_y} = module.get_render_position();
@@ -380,8 +402,8 @@ impl SpaceGui {
             }
         } else {
             // If not currently selecting a module, highlight modules the user mouses-over
-            let x = self.mouse_x - SHIP_OFFSET_X;
-            let y = self.mouse_y - SHIP_OFFSET_Y;
+            let x = self.mouse_pos.x - SHIP_OFFSET_X;
+            let y = self.mouse_pos.y - SHIP_OFFSET_Y;
 
             apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
                 let Vec2{x: module_x, y: module_y} = module.get_render_position();
@@ -427,8 +449,8 @@ impl SpaceGui {
                         .draw([0.0, 0.0, 96.0, 96.0], &context.draw_state, context.transform, gl);
                 },
                 _ => {
-                    if self.mouse_x >= icon_x && self.mouse_x <= icon_x+96.0 &&
-                        self.mouse_y >= icon_y && self.mouse_y <= icon_y+96.0
+                    if self.mouse_pos.x >= icon_x && self.mouse_pos.x <= icon_x+96.0 &&
+                        self.mouse_pos.y >= icon_y && self.mouse_pos.y <= icon_y+96.0
                     {
                         Rectangle::new([0.0, 0.0, 1.0, 0.5])
                             .draw([0.0, 0.0, 96.0, 96.0], &context.draw_state, context.transform, gl);

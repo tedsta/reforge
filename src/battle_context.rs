@@ -191,17 +191,3 @@ impl BattleContext {
         }
     }
 }
-
-// Packets sent from client to server
-#[derive(Debug, PartialEq, RustcEncodable, RustcDecodable)]
-pub enum ServerPacketId {
-    Plan, // Player's plans
-}
-
-// Packets sent from server to client
-#[derive(Debug, PartialEq, RustcEncodable, RustcDecodable)]
-pub enum ClientPacketId {
-    SimResults, // Calculated simulation results from server
-    Tick,
-    LastTick,
-}
