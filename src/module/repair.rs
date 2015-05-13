@@ -48,7 +48,7 @@ impl IModule for RepairModule {
         let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/repair_sprite.png"));
         
         if context.is_active {
-            sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 18, 0.05));
+            sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 1, 18, 0.055));
         } else {
             sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
