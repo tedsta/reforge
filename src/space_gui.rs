@@ -402,6 +402,28 @@ impl<'a> SpaceGui<'a> {
                         });
                     }
                 },
+                &module::TargetMode::OwnModule => {
+                    // Highlight target modules the user mouses-over red
+                    let x = self.mouse_pos.x - SHIP_OFFSET_X;
+                    let y = self.mouse_pos.y - SHIP_OFFSET_Y;
+
+                    apply_to_module_if_point_inside(client_ship, x, y, |_, _, module| {
+                        let Vec2{x: module_x, y: module_y} = module.get_render_position();
+                        let Vec2{x: module_w, y: module_h} = module.get_render_size();
+                        
+                        let (module_x, module_y, module_w, module_h) =
+                            (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
+                        
+                        let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
+
+                        Rectangle::new([1.0, 0.0, 0.0, 0.5])
+                            .draw(
+                                [module_x, module_y, module_w, module_h],
+                                &context.draw_state, context.transform,
+                                gl
+                            );
+                    });
+                },
                 _ => { },
             }
         } else {
@@ -473,16 +495,24 @@ impl<'a> SpaceGui<'a> {
             let x = x - SHIP_OFFSET_X;
             let y = y - SHIP_OFFSET_Y;
             
+            let mut exit_after = false;
+            
             apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
                 if self.plans.module_plans(module.index).plan_powered {
                     if let Some(target_mode) = module.get_target_mode() {
                         // Select this module to begin targeting
                         self.selection = Some((module.index, target_mode));
+                        exit_after = true;
                     }
                 } else if self.plans.can_plan_activate_module(ship_state, module) {
                     self.plans.plan_activate_module(module);
+                    exit_after = true;
                 }
             });
+            
+            if exit_after {
+                return;
+            }
         }
         
         let mut clear_selection = false;

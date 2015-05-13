@@ -103,6 +103,15 @@ impl ShipState {
         }
     }
     
+    pub fn repair_damage(&mut self, module_index: ModuleIndex, repair: u8) {
+        // Get the amount of damage dealt to the module
+        let repair =
+            self.module_stats
+                .get_mut(module_index.to_usize())
+                .expect("Failed to deal damage to non-existant module")
+                .repair_damage(repair);
+    }
+    
     pub fn add_power(&mut self, power: u8) {
         self.max_power += power;
     }

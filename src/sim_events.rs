@@ -23,3 +23,25 @@ impl SimEvent for DamageEvent {
         ship_state.deal_damage(self.module_index, self.damage);
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct RepairEvent {
+    module_index: ModuleIndex,
+    repair: u8,
+}
+
+impl RepairEvent {
+    pub fn new(module_index: ModuleIndex, repair: u8) -> RepairEvent {
+        RepairEvent {
+            module_index: module_index,
+            repair: repair,
+        }
+    }
+}
+
+impl SimEvent for RepairEvent {
+    fn apply(&mut self, ship_state: &mut ShipState) {
+        ship_state.repair_damage(self.module_index, self.repair);
+    }
+}

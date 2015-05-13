@@ -11,6 +11,7 @@ use super::{
     SolarModule,
     CommandModule,
     BeamWeaponModule,
+    RepairModule,
 };
 
 pub struct Model {
@@ -96,6 +97,16 @@ impl ModelStore {
                     name: "Beam Mk1".to_string(),
                     factory: Box::new(move || ModuleStored::from_module(BeamWeaponModule::new())),
                     icon: Texture::from_path(&Path::new("content/textures/modules/icons/beam.png")).unwrap(),
+                    width: 1,
+                    height: 1,
+                    power: 2,
+                    min_hp: 2,
+                    max_hp: 3,
+                },
+                Model {
+                    name: "Repair Mk1".to_string(),
+                    factory: Box::new(move || ModuleStored::from_module(RepairModule::new())),
+                    icon: Texture::from_path(&Path::new("content/textures/modules/icons/repair.png")).unwrap(),
                     width: 1,
                     height: 1,
                     power: 2,

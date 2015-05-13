@@ -64,10 +64,10 @@ impl<'a> TargetManifestData<'a> {
                 TargetManifestData::TargetModule(module.get(ship))
             },
             &TargetData::OwnModule(module) => {
-                TargetManifestData::TargetModule(module.get(ship))
+                TargetManifestData::OwnModule(module.get(ship))
             },
             &TargetData::AnyModule(module) => {
-                TargetManifestData::TargetModule(module.get(ship))
+                TargetManifestData::AnyModule(module.get(ship))
             },
             &TargetData::Beam(start, end) => TargetManifestData::Beam(start, end),
         }

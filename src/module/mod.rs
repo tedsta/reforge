@@ -30,6 +30,7 @@ pub use self::shield::ShieldModule;
 pub use self::solar::SolarModule;
 pub use self::command::CommandModule;
 pub use self::beam_weapon::BeamWeaponModule;
+pub use self::repair::RepairModule;
 
 pub use self::target::{Target, TargetMode, TargetData, TargetManifest, TargetManifestData};
 pub use self::damage_visual::{DamageVisual, DamageVisualKind};
@@ -41,6 +42,7 @@ pub mod shield;
 pub mod solar;
 pub mod command;
 pub mod beam_weapon;
+pub mod repair;
 
 pub mod target;
 pub mod damage_visual;
@@ -133,6 +135,7 @@ impl ModulePlans {
 #[derive(Copy, Clone, RustcEncodable, RustcDecodable)]
 pub struct ModuleStats {
     pub hp: u8,
+    pub max_hp: u8,
 }
 
 impl ModuleStats {
@@ -145,6 +148,17 @@ impl ModuleStats {
             let dealt_damage = self.hp;
             self.hp = 0;
             dealt_damage
+        }
+    }
+
+    pub fn repair_damage(&mut self, repair: u8) -> u8 {
+        if self.max_hp - self.hp >= repair {
+            self.hp += repair;
+            repair
+        } else {
+            let dealt_repair = self.max_hp - self.hp;
+            self.hp = self.max_hp;
+            dealt_repair
         }
     }
 }
@@ -211,7 +225,7 @@ impl Module {
             width: width,
             height: height,
             
-            stats: ModuleStats { hp: hp },
+            stats: ModuleStats { hp: hp, max_hp: hp },
             
             power: power,
             min_hp: min_hp,
@@ -281,6 +295,18 @@ impl Module {
         }
         
         dealt_damage
+    }
+    
+    // Returns the amount of damage repaired
+    pub fn repair_damage(&mut self, repair: u8) -> u8 {
+        if self.max_hp - self.stats.hp >= repair {
+            self.stats.hp += repair;
+            repair
+        } else {
+            let dealt_repair = self.max_hp - self.stats.hp;
+            self.stats.hp = self.max_hp;
+            dealt_repair
+        }
     }
     
     #[cfg(feature = "client")]
@@ -487,6 +513,7 @@ pub enum ModuleClass {
     Solar,
     Command,
     BeamWeapon,
+    Repair,
 }
 
 impl Decodable for ModuleInnerBox {
@@ -508,6 +535,8 @@ impl Decodable for ModuleInnerBox {
                 Ok(Box::new(try!(<CommandModule as Decodable>::decode(d)))),
             BeamWeapon =>
                 Ok(Box::new(try!(<BeamWeaponModule as Decodable>::decode(d)))),
+            Repair =>
+                Ok(Box::new(try!(<RepairModule as Decodable>::decode(d)))),
         }
     }
 }
@@ -547,6 +576,10 @@ impl Encodable for ModuleInnerBox {
             BeamWeapon => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
                 try!(<BeamWeaponModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            Repair => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.deref());
+                try!(<RepairModule as Encodable>::encode(mem::transmute(to.data), s));
             },
         }
         Ok(())

@@ -1,20 +1,10 @@
-#[cfg(feature = "client")]
-use graphics::Context;
-#[cfg(feature = "client")]
-use opengl_graphics::Gl;
-
-use battle_context::BattleContext;
-use module;
 use module::{IModule, Module, ModuleClass, ModuleContext, TargetManifest};
-use net::{InPacket, OutPacket};
-use ship::{Ship, ShipState};
-use sim::SimEvents;
-use vec::{Vec2, Vec2f};
+use ship::ShipState;
 
 #[cfg(feature = "client")]
 use sim_visuals::SpriteVisual;
 #[cfg(feature = "client")]
-use sim::{SimEffects, SimVisual};
+use sim::SimEffects;
 #[cfg(feature = "client")]
 use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(feature = "client")]
