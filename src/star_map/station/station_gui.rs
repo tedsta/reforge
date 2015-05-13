@@ -137,6 +137,12 @@ impl<'a> StationGui<'a> {
         // Clear the screen
         clear([0.0; 4], gl);
         
+        // Draw placeable area for ship editor
+        if self.ship_edit_gui.selected_model.is_some() {
+            Rectangle::new([0.0, 1.0, 0.0, 0.5])
+                .draw([300.0, 300.0, 10.0 * 48.0, 8.0 * 48.0], &context.draw_state, context.transform, gl);
+        }
+        
         // Draw player's ship
         if let &Some(ref client_ship) = client_ship {
             let ref context = context.trans(300.0, 300.0);

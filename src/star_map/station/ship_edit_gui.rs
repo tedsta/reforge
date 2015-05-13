@@ -21,7 +21,7 @@ pub struct ShipEditGui<'a> {
     
     ship_offset: Vec2f,
     selected_category: usize,
-    selected_model: Option<usize>,
+    pub selected_model: Option<usize>,
 }
 
 impl<'a> ShipEditGui<'a> {
