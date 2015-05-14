@@ -1,7 +1,7 @@
 use event::GenericEvent;
 use graphics::Context;
 use input::{mouse, Button};
-use opengl_graphics::Gl;
+use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use gui::TextButton;
@@ -85,8 +85,7 @@ impl StarMapGui {
         }
     }
 
-    pub fn draw(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache) {
-        use quack::Set;
+    pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache) {
         use graphics::*;
         use graphics::text::Text;
         

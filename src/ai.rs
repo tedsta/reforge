@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
-use std::rand::Rng;
-use std::rand;
+use rand::Rng;
+use rand;
 use std::any::TypeId;
 
 use ship::{Ship, ShipPlans};

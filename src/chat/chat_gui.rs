@@ -1,7 +1,7 @@
 use event::GenericEvent;
 use graphics::Context;
 use input::{keyboard, Button};
-use opengl_graphics::Gl;
+use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use gui::{TextBox, TextButton};
@@ -73,8 +73,7 @@ impl ChatGui {
         }
     }
 
-    pub fn draw(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache) {
-        use quack::Set;
+    pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache) {
         use graphics::*;
         use graphics::text::Text;
         
@@ -96,7 +95,7 @@ impl ChatGui {
             for(i, msg) in self.messages.iter().rev().take(max_messages).enumerate() {
                 let context = context.trans(0.0, 16.0 + 15.0*((max_messages - 1 - i) as f64));
                 Text::colored([0.7, 0.7, 1.0, 1.0], 14).draw(
-                    msg.author_name.as_slice(),
+                    msg.author_name.as_str(),
                     glyph_cache,
                     &context.draw_state, context.transform,
                     gl,
@@ -104,7 +103,7 @@ impl ChatGui {
                 
                 let context = context.trans(msg.author_name.len() as f64 * 14.0, 0.0);
                 Text::colored([0.7, 0.7, 0.7, 1.0], 14).draw(
-                    msg.content.as_slice(),
+                    msg.content.as_str(),
                     glyph_cache,
                     &context.draw_state, context.transform,
                     gl,

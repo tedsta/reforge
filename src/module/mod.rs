@@ -2,8 +2,8 @@ use std::any::TypeId;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::ops::{Deref, DerefMut};
-use std::rand;
-use std::rand::Rng;
+use rand;
+use rand::Rng;
 use std::marker::Reflect;
 
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
@@ -17,7 +17,7 @@ use vec::{Vec2, Vec2f};
 #[cfg(feature = "client")]
 use graphics::Context;
 #[cfg(feature = "client")]
-use opengl_graphics::Gl;
+use opengl_graphics::GlGraphics;
 #[cfg(feature = "client")]
 use sim::SimEffects;
 #[cfg(feature = "client")]
@@ -237,7 +237,7 @@ impl Module {
             
             damage_visuals: vec!(),
             
-            index: ModuleIndex(-1),
+            index: ModuleIndex(0),
             
             inner: RefCell::new(Box::new(inner)),
         }

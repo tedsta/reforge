@@ -1,7 +1,7 @@
 use event::{Events, GenericEvent, RenderArgs};
 use graphics::{Context, Rectangle};
 use input::{keyboard, mouse, Button};
-use opengl_graphics::{Gl, Texture};
+use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use asset_store::AssetStore;
@@ -114,7 +114,7 @@ impl<'a> StationGui<'a> {
         
         self.logout_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.logout_button.get_clicked() {
-            // TODO: Logout
+            return Some(StationAction::Logout);
         }
         
         None
@@ -123,7 +123,7 @@ impl<'a> StationGui<'a> {
     pub fn draw(
         &mut self,
         context: &Context,
-        gl: &mut Gl,
+        gl: &mut GlGraphics,
         glyph_cache: &mut GlyphCache,
         asset_store: &AssetStore,
         sim_effects: &mut SimEffects,

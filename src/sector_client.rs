@@ -8,9 +8,10 @@ use std::time::Duration;
 use time;
 
 use event::Events;
-use opengl_graphics::Gl;
+use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
-use sdl2_window::Sdl2Window;
+use glutin_window::GlutinWindow;
+use window::Window;
 
 use asset_store::AssetStore;
 use battle_context::{BattleContext, TICKS_PER_SECOND};
@@ -53,15 +54,14 @@ impl<'a> ClientBattleState<'a> {
     }
     
     pub fn run(&mut self,
-               window: &Rc<RefCell<Sdl2Window>>,
-               gl: &mut Gl,
+               window: &Rc<RefCell<GlutinWindow>>,
+               gl: &mut GlGraphics,
                glyph_cache: &mut GlyphCache,
                asset_store: &AssetStore,
                chat_gui: &mut ChatGui,
                sectors: Vec<SectorData>,
                server_results_sent: bool) {
-        use window::ShouldClose;
-        use quack::Get;
+        use window::Window;
     
         let ref mut gui = SpaceGui::new(asset_store, &self.bc, chat_gui, sectors, self.player_ship);
     
@@ -115,12 +115,11 @@ impl<'a> ClientBattleState<'a> {
             self.handle_new_ships_packet(gui, &mut new_ships_post);
             
             // Check if it's time to exit
-            let ShouldClose(should_close) = window.borrow().get();
-            if should_close { break; }
+            if window.borrow().should_close() { break; }
         }
     }
     
-    fn run_simulation_phase(&mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
+    fn run_simulation_phase(&mut self, window: &Rc<RefCell<GlutinWindow>>, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
         // Unlock any exploding or jumping ships
         let ships_to_unlock: Vec<ShipIndex> =
             self.bc.ships_iter()
@@ -143,7 +142,7 @@ impl<'a> ClientBattleState<'a> {
         let start_time = time::now().to_timespec();
         let mut next_tick = 0;
         let mut plans_sent = false;
-        for e in Events::new(window.clone()) {
+        for e in Events::events(window.clone()) {
             use event;
             use input;
             use event::*;
@@ -204,7 +203,7 @@ impl<'a> ClientBattleState<'a> {
             
             // Render GUI
             e.render(|args: &RenderArgs| {
-                gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+                gl.draw(args.viewport(), |c, gl| {
                     gui.draw_simulating(&self.bc, &c, gl, glyph_cache, asset_store, &mut sim_effects, self.player_ship.get(&self.bc), elapsed_seconds, (1.0/60.0) + args.ext_dt);
                 });
             });

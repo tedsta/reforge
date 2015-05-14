@@ -245,7 +245,7 @@ impl SectorState {
         
         // Apply all the plans
         let mut jumped_ships = vec!();
-        for (ship, plans) in self.ship_plans.drain() {
+        for (ship, plans) in self.ship_plans.drain(..) {
             let ship = ship.get_mut(&mut self.context);
         
             ship.apply_plans(&plans);

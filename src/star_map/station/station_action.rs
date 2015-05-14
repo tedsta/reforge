@@ -7,6 +7,7 @@ pub enum StationAction {
     Jump(SectorId),
     ShipEdit(ShipEditAction),
     Chat(String),
+    Logout,
 }
 
 impl StationAction {

@@ -9,7 +9,7 @@ use ship::{ShipId, ShipIndex, ShipState};
 #[cfg(feature = "client")]
 use graphics::Context;
 #[cfg(feature = "client")]
-use opengl_graphics::Gl;
+use opengl_graphics::GlGraphics;
 #[cfg(feature = "client")]
 use sdl2_mixer;
 
@@ -36,7 +36,7 @@ impl<'a> SimEvents<'a> {
     
     pub fn apply_tick(&mut self, bc: &mut BattleContext, tick: u32) {
         let tick = tick as usize;
-        for (ship, mut event) in self.events[tick].drain() {
+        for (ship, mut event) in self.events[tick].drain(..) {
             event.apply(&mut ship.get_mut(bc).state);
         }
     }
@@ -53,7 +53,7 @@ static NUM_LAYERS: u8 = 4;
 
 #[cfg(feature = "client")]
 pub trait SimVisual {
-    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64);
+    fn draw(&mut self, context: &Context, gl: &mut GlGraphics, time: f64);
 }
 
 #[cfg(feature = "client")]
@@ -97,7 +97,7 @@ impl<'a> SimEffects<'a> {
         self.sounds.insert(index, (time, loops, sound));
     }
     
-    pub fn update(&mut self, context: &Context, gl: &mut Gl, ship: ShipId, time: f64) {
+    pub fn update(&mut self, context: &Context, gl: &mut GlGraphics, ship: ShipId, time: f64) {
         use std::default::Default;
     
         while self.next_sound < self.sounds.len() {

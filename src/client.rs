@@ -10,19 +10,23 @@
 #![feature(thread_sleep)]
 #![feature(collections)]
 #![feature(std_misc)]
+#![feature(convert)]
+#![feature(collections_drain)]
 
 extern crate bincode;
-extern crate time;
+extern crate float;
+extern crate num;
+extern crate rand;
 extern crate rustc_serialize;
+extern crate time;
 
 // Piston stuff
 extern crate sdl2;
-extern crate sdl2_window;
+extern crate glutin_window;
 extern crate opengl_graphics;
 extern crate graphics;
 extern crate event;
 extern crate input;
-extern crate quack;
 extern crate sdl2_mixer;
 extern crate shader_version;
 extern crate vecmath;
@@ -35,10 +39,10 @@ use std::path::Path;
 use std::thread::{Builder, Thread};
 use std::sync::mpsc::channel;
 
-use sdl2_window::Sdl2Window;
-use opengl_graphics::Gl;
+use glutin_window::GlutinWindow;
+use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
-use window::WindowSettings;
+use window::{WindowSettings, Size};
 
 use asset_store::AssetStore;
 use battle_context::BattleContext;
@@ -87,16 +91,10 @@ mod vec;
 fn main () {
     let opengl = shader_version::OpenGL::_3_2;
     
-    // Create an SDL window.
-    let window = Sdl2Window::new(
+    // Create an window.
+    let window = GlutinWindow::new(
         opengl,
-        WindowSettings {
-            title: "Reforge".to_string(),
-            size: [1280, 720],
-            samples: 0,
-            fullscreen: false,
-            exit_on_esc: true,
-        }
+        WindowSettings::new("Reforge".to_string(), Size { width: 1280, height: 720 }),
     );
     
     // Initialize SDL mixer
@@ -110,7 +108,7 @@ fn main () {
     sdl2_mixer::allocate_channels(512);
     
     // Create GL device
-    let mut gl = Gl::new(opengl);
+    let mut gl = GlGraphics::new(opengl);
     
     // Load our font
     let mut glyph_cache = GlyphCache::new(&Path::new("content/fonts/8bit.ttf")).unwrap();
@@ -174,7 +172,7 @@ fn main () {
                     });
                     
                     // Connect to server
-                    let mut client = Client::new(ip_address.as_slice());
+                    let mut client = Client::new(ip_address.as_str());
 
                     let mut packet = OutPacket::new();
                     packet.write(&LoginPacket{username: username, password: password});

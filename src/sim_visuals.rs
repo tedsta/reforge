@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use graphics::Context;
-use opengl_graphics::{Gl, Texture};
+use opengl_graphics::{GlGraphics, Texture};
 
 use sim::SimVisual;
 use sprite_sheet::SpriteSheet;
@@ -19,7 +19,7 @@ pub struct LerpVisual {
 }
 
 impl SimVisual for LerpVisual {
-    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
+    fn draw(&mut self, context: &Context, gl: &mut GlGraphics, time: f64) {
         if time >= self.start_time && time <= self.end_time {
             let interp = (time-self.start_time)/(self.end_time-self.start_time);
             let pos = self.start_pos + (self.end_pos-self.start_pos)*interp;
@@ -42,17 +42,16 @@ pub struct BeamExitVisual {
 }
 
 impl SimVisual for BeamExitVisual {
-    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
+    fn draw(&mut self, context: &Context, gl: &mut GlGraphics, time: f64) {
         use graphics::Image;
         use graphics::ImageSize;
-        use graphics::Rect;
-        use quack::Set;
         use std::ops::Deref;
     
         if time >= self.start_time && time <= self.end_time {
             let (_, height) = self.texture.get_size();
         
-            Image::new().set(Rect([self.beam_start.x, self.beam_start.y, 1500.0, height as f64]))
+            Image::new()
+                .rect([self.beam_start.x, self.beam_start.y, 1500.0, height as f64])
                 .draw(self.texture.deref(), &context.draw_state, context.transform, gl);
         }
     }
@@ -90,13 +89,10 @@ impl BeamVisual {
 }
 
 impl SimVisual for BeamVisual {
-    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
+    fn draw(&mut self, context: &Context, gl: &mut GlGraphics, time: f64) {
         use graphics::Image;
         use graphics::ImageSize;
-        use graphics::Rect;
-        use quack::Set;
-        use std::ops::Deref;
-        use std::num::Float;
+        use float::Radians;
     
         if time >= self.start_time && time <= self.end_time {
             let interp = (time-self.start_time)/(self.end_time-self.start_time);
@@ -107,11 +103,12 @@ impl SimVisual for BeamVisual {
             let (width, height) = (width as f64, height as f64);
         
             // Draw beam part
-            Image::new().set(Rect([beam_pos.x, beam_pos.y - (height/2.0), 1500.0, height as f64]))
-                .draw(self.part.deref(), &context.draw_state, context.transform, gl);
+            Image::new()
+                .rect([beam_pos.x, beam_pos.y - (height/2.0), 1500.0, height as f64])
+                .draw(&*self.part, &context.draw_state, context.transform, gl);
                 
             // Draw beam end
-            self.end.draw(&context, gl, beam_pos.x, beam_pos.y, (180.0).to_radians(), time - self.start_time);
+            self.end.draw(&context, gl, beam_pos.x, beam_pos.y, Radians::_180(), time - self.start_time);
         }
     }
 }
@@ -134,7 +131,7 @@ impl SpriteVisual {
 }
 
 impl SimVisual for SpriteVisual {
-    fn draw(&mut self, context: &Context, gl: &mut Gl, time: f64) {
+    fn draw(&mut self, context: &Context, gl: &mut GlGraphics, time: f64) {
         self.sprite_sheet.draw(context, gl, self.position.x, self.position.y, 0.0, time);
     }
 }

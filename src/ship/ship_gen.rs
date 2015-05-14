@@ -1,6 +1,6 @@
 use std::cmp;
-use std::rand::Rng;
-use std::rand;
+use rand::Rng;
+use rand;
 
 use ship::{Ship, ShipId};
 use module::{EngineModule, ProjectileWeaponModule, ShieldModule, SolarModule, CommandModule, BeamWeaponModule};

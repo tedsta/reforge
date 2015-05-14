@@ -23,7 +23,7 @@ use vec::{Vec2, Vec2f};
 #[cfg(feature = "client")]
 use graphics::Context;
 #[cfg(feature = "client")]
-use opengl_graphics::Gl;
+use opengl_graphics::GlGraphics;
 
 #[cfg(feature = "client")]
 use sim::SimEffects;
@@ -258,7 +258,7 @@ impl Ship {
         where
             F: FnMut(&Module, Vec2f, f64, Option<f64>)
     {
-        use std::num::Float;
+        use num::Float;
         use std::ops::Deref;
     
         for module in &self.modules {
@@ -369,8 +369,8 @@ impl Ship {
     
     #[cfg(feature = "client")]
     fn add_exploding_effects(&self, bc: &BattleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        use std::rand;
-        use std::rand::Rng;
+        use rand;
+        use rand::Rng;
     
         use sim_visuals::SpriteVisual;
         use sprite_sheet::{SpriteSheet, SpriteAnimation};
@@ -516,7 +516,7 @@ impl Ship {
     }
     
     #[cfg(feature = "client")]
-    pub fn draw(&self, context: &Context, gl: &mut Gl, asset_store: &AssetStore) {
+    pub fn draw(&self, context: &Context, gl: &mut GlGraphics, asset_store: &AssetStore) {
         use std::ops::Deref;
         use graphics::*;
         
@@ -532,7 +532,7 @@ impl Ship {
                     let context = context.trans((x as f64) * 48.0, (y as f64) * 48.0);
                     let context = context.trans(24.0 - shield_size_x/2.0, 24.0 - shield_size_y/2.0);
                     
-                    Image::colored([1.0, 1.0, 1.0, opacity])
+                    Image::new_colored([1.0, 1.0, 1.0, opacity])
                         .draw(shield_texture.deref(), &context.draw_state, context.transform, gl);
                 }
             }
@@ -540,8 +540,7 @@ impl Ship {
     }
     
     #[cfg(feature = "client")]
-    pub fn draw_module_hp(&self, context: &Context, gl: &mut Gl) {
-        use quack::Set;
+    pub fn draw_module_hp(&self, context: &Context, gl: &mut GlGraphics) {
         use graphics::*;
     
         for (module, stats) in self.modules.iter().zip(self.state.module_stats.iter()) {
@@ -571,7 +570,7 @@ impl Ship {
     }
     
     #[cfg(feature = "client")]
-    pub fn draw_module_powered_icons(&self, context: &Context, gl: &mut Gl, module_icons: &ModuleIcons, plans: &ShipPlans) {
+    pub fn draw_module_powered_icons(&self, context: &Context, gl: &mut GlGraphics, module_icons: &ModuleIcons, plans: &ShipPlans) {
         use graphics::*;
     
         for (module, plans) in self.modules.iter().zip(plans.module_plans.iter()) {

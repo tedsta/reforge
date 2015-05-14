@@ -1,7 +1,7 @@
 use event::{GenericEvent};
 use graphics::{Context};
 use input::{keyboard, mouse, Button};
-use opengl_graphics::{Gl};
+use opengl_graphics::{GlGraphics};
 use opengl_graphics::glyph_cache::GlyphCache;
 
 #[derive(PartialEq)]
@@ -48,7 +48,7 @@ impl TextButton {
         }
     }
     
-    pub fn draw(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache) {
+    pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache) {
         use graphics::*;
         use graphics::text::Text;
     
@@ -72,7 +72,7 @@ impl TextButton {
             let buffer = (self.size[1] - (self.font_size as f64)) / 2.0;
             let context = context.trans(self.position[0] + buffer, self.position[1] + self.size[1] - buffer);
             Text::colored(self.text_color, self.font_size).draw(
-                self.text.as_slice(),
+                self.text.as_str(),
                 glyph_cache,
                 &context.draw_state, context.transform,
                 gl,
@@ -173,7 +173,7 @@ impl TextBox {
         }
     }
     
-    pub fn draw(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache) {
+    pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache) {
         use graphics::*;
         use graphics::text::Text;
         
@@ -197,7 +197,7 @@ impl TextBox {
             let buffer = (self.size[1] - (self.font_size as f64)) / 2.0;
             let context = context.trans(self.position[0] + buffer, self.position[1] + self.size[1] - buffer);
             Text::colored(self.text_color, self.font_size).draw(
-                self.text.as_slice(),
+                self.text.as_str(),
                 glyph_cache,
                 &context.draw_state, context.transform,
                 gl,

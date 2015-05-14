@@ -1,7 +1,7 @@
 #[cfg(feature = "client")]
 use graphics::Context;
 #[cfg(feature = "client")]
-use opengl_graphics::Gl;
+use opengl_graphics::GlGraphics;
 
 use battle_context::BattleContext;
 use module;

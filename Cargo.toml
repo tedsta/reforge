@@ -23,13 +23,15 @@ path = "src/client.rs"
 #name = "reforge_server"
 #path = "src/server.rs"
 
-[dependencies.sdl2]
+#[dependencies.sdl2]
+#git = "https://github.com/AngryLawyer/rust-sdl2"
 
-git = "https://github.com/AngryLawyer/rust-sdl2"
+[dependencies.sdl2_mixer]
+git = "https://github.com/andelf/rust-sdl2_mixer"
 
-[dependencies.pistoncore-sdl2_window]
+[dependencies.pistoncore-glutin_window]
 
-git = "https://github.com/pistondevelopers/sdl2_window"
+git = "https://github.com/pistondevelopers/glutin_window"
 
 [dependencies.piston2d-opengl_graphics]
 
@@ -47,10 +49,6 @@ git = "https://github.com/pistondevelopers/event"
 
 git = "https://github.com/pistondevelopers/input"
 
-[dependencies.quack]
-
-git = "https://github.com/pistondevelopers/quack"
-
 [dependencies.shader_version]
 
 git = "https://github.com/pistondevelopers/shader_version"
@@ -63,13 +61,12 @@ git = "https://github.com/pistondevelopers/window"
 
 git = "https://github.com/pistondevelopers/vecmath"
 
+[dependencies.piston-float]
+git = "https://github.com/pistondevelopers/float"
+
 [dependencies.freetype-rs]
 
 git = "https://github.com/pistondevelopers/freetype-rs"
-
-[dependencies.sdl2_mixer]
-
-git = "https://github.com/tedsta/rust-sdl2_mixer"
 
 [dependencies.bincode]
 
@@ -79,3 +76,6 @@ git = "https://github.com/tyoverby/bincode.git"
 
 time = "0.1.*"
 rustc-serialize = "0.3.*"
+sdl2 = "0.2.1"
+rand = "0.3.7"
+num = "*"

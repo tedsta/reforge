@@ -1,14 +1,14 @@
 use std::cmp;
 use std::iter::repeat;
-use std::num::Float;
+use num::Float;
 use std::ops::DerefMut;
-use std::rand::Rng;
-use std::rand;
+use rand::Rng;
+use rand;
 
 #[cfg(feature = "client")]
 use graphics::Context;
 #[cfg(feature = "client")]
-use opengl_graphics::Gl;
+use opengl_graphics::GlGraphics;
 
 use battle_context::{BattleContext, tick_to_time};
 use module;

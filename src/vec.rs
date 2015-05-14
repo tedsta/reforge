@@ -1,4 +1,4 @@
-use std::num::Float;
+use num::Float;
 use std::ops::{Add, Sub, Mul, Div};
 
 pub type Vec2f = Vec2<f64>;

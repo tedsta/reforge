@@ -1,9 +1,9 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use opengl_graphics::Gl;
+use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
-use sdl2_window::Sdl2Window;
+use glutin_window::GlutinWindow;
 
 use asset_store::AssetStore;
 use battle_context::BattleContext;
@@ -16,8 +16,8 @@ use net::Client;
 use sector_data::SectorData;
 use ship::{Ship, ShipStored};
 
-pub fn run_client_state_manager(window: &Rc<RefCell<Sdl2Window>>,
-                                gl: &mut Gl,
+pub fn run_client_state_manager(window: &Rc<RefCell<GlutinWindow>>,
+                                gl: &mut GlGraphics,
                                 glyph_cache: &mut GlyphCache,
                                 asset_store: &AssetStore,
                                 model_store: &ModelStore,

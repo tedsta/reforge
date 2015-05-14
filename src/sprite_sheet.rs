@@ -1,10 +1,9 @@
 use std::collections::VecDeque;
 use std::rc::Rc;
-use std::num::Float;
-use std::ops::{Deref};
+use num::Float;
 
 use graphics::{Context, ImageSize};
-use opengl_graphics::{Gl, Texture};
+use opengl_graphics::{GlGraphics, Texture};
 
 use asset_store::SpriteInfo;
 
@@ -59,7 +58,7 @@ impl SpriteSheet {
         self.animations.push_back(animation);
     }
     
-    pub fn draw(&mut self, context: &Context, gl: &mut Gl, x: f64, y: f64, rotation: f64, time: f64) {
+    pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, x: f64, y: f64, rotation: f64, time: f64) {
         let mut anim_done = false;
         match self.animations.front() {
             Some(animation) =>
@@ -107,11 +106,8 @@ impl SpriteSheet {
         }
     }
     
-    fn draw_current_frame(&self, context: &Context, gl: &mut Gl, x: f64, y: f64, rotation: f64) {
-        use quack::Set;
-        use quack::Get;
+    fn draw_current_frame(&self, context: &Context, gl: &mut GlGraphics, x: f64, y: f64, rotation: f64) {
         use graphics::*;
-        use vecmath::row_mat2x3_mul;
     
         let source_x = ((self.current_frame % (self.columns as u32)) as f64) * (self.frame_width as f64);
         let source_y = ((self.current_frame / (self.columns as u32)) as f64) * (self.frame_height as f64);
@@ -129,16 +125,16 @@ impl SpriteSheet {
                 (0.0, 0.0)
             };
         
-        let rotation_matrix = row_mat2x3_mul(vecmath::rotate_radians(rotation), vecmath::translate([-offset_x, -offset_y]));
+        //let rotation_matrix = row_mat2x3_mul(rotate_radians(rotation), translate([-offset_x, -offset_y]));
         
-        let context = context.trans(x, y);
-        let context::Transform(transform) = context.get();
-        let context = context.set(context::Transform(row_mat2x3_mul(transform, rotation_matrix)));
+        let mut context = context.trans(x, y)
+                                 .rot_rad(rotation)
+                                 .trans(-offset_x, -offset_y);
+        //context.transform = row_mat2x3_mul(context.transform, rotation_matrix);
 
         Image::new()
-            .set(SrcRect([source_x as i32, source_y as i32, source_end_x as i32, source_end_y as i32]))
-            .set(Rect([0.0, 0.0, self.frame_width as f64, self.frame_height as f64]))
-            .draw(self.texture.deref(), &context.draw_state, context.transform, gl);
+            .src_rect([source_x as i32, source_y as i32, self.frame_width as i32, self.frame_height as i32])
+            .draw(&*self.texture, &context.draw_state, context.transform, gl);
     }
     
     pub fn set_frame(&mut self, frame: u32) {

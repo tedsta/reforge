@@ -1,11 +1,11 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use sdl2_window::Sdl2Window;
+use glutin_window::GlutinWindow;
 use event::{Events, GenericEvent};
-use graphics::{Color, Context};
+use graphics::Context;
 use input::{keyboard, mouse, Button};
-use opengl_graphics::{Gl, Texture};
+use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use gui::{TextBox, TextButton};
@@ -43,9 +43,9 @@ impl LoginScreen {
         }
     }
 
-    pub fn run(mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, glyph_cache: &mut GlyphCache, bg_texture: &Texture) -> Option<(String, String)> {
+    pub fn run(mut self, window: &Rc<RefCell<GlutinWindow>>, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, bg_texture: &Texture) -> Option<(String, String)> {
         // Main loop
-        for e in Events::new(window.clone()) {
+        for e in Events::events(window.clone()) {
             use event;
             use input;
             use event::*;
@@ -56,7 +56,7 @@ impl LoginScreen {
 
             // Render GUI
             e.render(|args| {
-                gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+                gl.draw(args.viewport(), |c, gl| {
                     self.draw(&c, gl, glyph_cache, bg_texture);
                 });
             });
@@ -116,8 +116,7 @@ impl LoginScreen {
         self.mouse_y = y;
     }
 
-    fn draw(&mut self, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, bg_texture: &Texture) {
-        use quack::Set;
+    fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, bg_texture: &Texture) {
         use graphics::*;
         use graphics::text::Text;
         

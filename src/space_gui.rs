@@ -1,5 +1,5 @@
-use std::rand::Rng;
-use std::rand;
+use rand::Rng;
+use rand;
 use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
@@ -7,7 +7,7 @@ use std::path::Path;
 use event::{Events, GenericEvent, RenderArgs};
 use graphics::{Context, Rectangle};
 use input::{keyboard, mouse, Button};
-use opengl_graphics::{Gl, Texture};
+use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use asset_store::AssetStore;
@@ -218,7 +218,7 @@ impl<'a> SpaceGui<'a> {
         &mut self,
         bc: &BattleContext,
         context: &Context,
-        gl: &mut Gl,
+        gl: &mut GlGraphics,
         glyph_cache: &mut GlyphCache,
         asset_store: &AssetStore,
         sim_effects: &mut SimEffects,
@@ -266,7 +266,7 @@ impl<'a> SpaceGui<'a> {
         &mut self,
         bc: &BattleContext,
         context: &Context,
-        gl: &mut Gl,
+        gl: &mut GlGraphics,
         glyph_cache: &mut GlyphCache,
         asset_store: &AssetStore,
         sim_effects: &mut SimEffects,
@@ -701,7 +701,7 @@ struct TargetIcon {
 }
 
 impl TargetIcon {
-    fn draw(&self, bc: &BattleContext, context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, asset_store: &AssetStore) {
+    fn draw(&self, bc: &BattleContext, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, asset_store: &AssetStore) {
         use graphics::*;
         use graphics::text::Text;
     
@@ -752,7 +752,7 @@ impl TargetIcon {
         {
             let context = context.trans(2.0, 94.0);
             Text::colored([1.0; 4], 10).draw(
-                ship.name.as_slice(),
+                ship.name.as_str(),
                 glyph_cache,
                 &context.draw_state, context.transform,
                 gl,
@@ -775,7 +775,7 @@ struct ShipRenderArea {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-fn draw_ship(context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_effects: &mut SimEffects, ship: &Ship, time: f64) {
+fn draw_ship(context: &Context, gl: &mut GlGraphics, asset_store: &AssetStore, sim_effects: &mut SimEffects, ship: &Ship, time: f64) {
     ship.draw(context, gl, asset_store);
     sim_effects.update(context, gl, ship.id, time);
     
@@ -786,7 +786,7 @@ fn draw_ship(context: &Context, gl: &mut Gl, asset_store: &AssetStore, sim_effec
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stats_labels: &StatsLabels, plans: &ShipPlans, ship: &Ship, is_client_ship: bool) {
+fn draw_stats(context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, stats_labels: &StatsLabels, plans: &ShipPlans, ship: &Ship, is_client_ship: bool) {
     use std::cmp;
 
     use graphics::*;
@@ -847,7 +847,7 @@ fn draw_stats(context: &Context, gl: &mut Gl, glyph_cache: &mut GlyphCache, stat
     {
         let context = context.trans(5.0, 160.0);
         Text::colored([1.0; 4], 30).draw(
-            ship.name.as_slice(),
+            ship.name.as_str(),
             glyph_cache,
             &context.draw_state, context.transform,
             gl,
@@ -903,7 +903,7 @@ impl SpaceStars {
         }
     }
     
-    pub fn draw(&self, context: &Context, gl: &mut Gl) {
+    pub fn draw(&self, context: &Context, gl: &mut GlGraphics) {
         use graphics::*;
         
         let star_rect = Rectangle::new([1.0, 1.0, 1.0, 1.0]);

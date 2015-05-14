@@ -124,6 +124,13 @@ impl StationServer {
                 
                 self.chat_sender.send(msg);
             },
+            StationAction::Logout => {
+                let mut account = self.accounts.remove(&client_id).expect("Client's account must exist here.");
+                
+                self.slot.transfer_client(client_id, self.star_map_slot_id);
+                
+                to_map_sender.send((account, StarMapAction::Logout));
+            },
         }
     }
 }

@@ -2,9 +2,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use event::Events;
-use opengl_graphics::Gl;
+use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
-use sdl2_window::Sdl2Window;
+use glutin_window::GlutinWindow;
 
 use asset_store::AssetStore;
 use chat::ChatGui;
@@ -32,16 +32,13 @@ impl<'a> StationClient<'a> {
     }
     
     pub fn run(&mut self,
-               window: &Rc<RefCell<Sdl2Window>>,
-               gl: &mut Gl,
+               window: &Rc<RefCell<GlutinWindow>>,
+               gl: &mut GlGraphics,
                glyph_cache: &mut GlyphCache,
                asset_store: &AssetStore,
                model_store: &ModelStore,
                chat_gui: &mut ChatGui,
-               sectors: Vec<SectorData>) {
-        use window::ShouldClose;
-        use quack::Get;
-        
+               sectors: Vec<SectorData>) {     
         let module_inventory =
             vec![
                 ("engine".to_string(), vec![(ModelIndex(0), 100)]),
@@ -59,7 +56,7 @@ impl<'a> StationClient<'a> {
         }
     
         let mut time: f64 = 0.0;
-        for e in Events::new(window.clone()) {
+        for e in Events::events(window.clone()) {
             use event;
             use input;
             use event::*;
@@ -71,7 +68,7 @@ impl<'a> StationClient<'a> {
             
             // Render GUI
             e.render(|args: &RenderArgs| {
-                gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+                gl.draw(args.viewport(), |c, gl| {
                     time += (1.0/60.0) + args.ext_dt;
                     if time > 5.0 {
                         time -= 5.0;
@@ -129,6 +126,9 @@ impl<'a> StationClient<'a> {
                         }
                     },
                     StationAction::Chat(_) => { },
+                    StationAction::Logout => {
+                        return;
+                    },
                 }
             }
         }

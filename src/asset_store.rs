@@ -80,8 +80,8 @@ impl AssetStore {
         let texture_path = "content/textures/".to_string() + &name;
         let texture =
             Rc::new(
-                Texture::from_path(&Path::new(texture_path.as_slice()))
-                    .ok().expect(format!("Failed to load {}", name).as_slice())
+                Texture::from_path(&Path::new(texture_path.as_str()))
+                    .ok().expect(format!("Failed to load {}", name).as_str())
             );
         self.sprite_info.insert(
             name,

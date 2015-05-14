@@ -1,15 +1,14 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::num::FromPrimitive;
 use std::path::Path;
 
-use sdl2_window::Sdl2Window;
+use glutin_window::GlutinWindow;
 use event::{Events, GenericEvent};
 use graphics::{Context, ImageSize};
 use input::{keyboard, mouse, Button};
-use opengl_graphics::{Gl, Texture};
+use opengl_graphics::{GlGraphics, Texture};
 
-#[derive(FromPrimitive, PartialEq)]
+#[derive(PartialEq)]
 pub enum MainMenuSelection {
     Multiplayer,
     Exit,
@@ -41,12 +40,12 @@ impl MainMenu {
         }
     }
 
-    pub fn run<F>(mut self, window: &Rc<RefCell<Sdl2Window>>, gl: &mut Gl, mut f: F)
+    pub fn run<F>(mut self, window: &Rc<RefCell<GlutinWindow>>, gl: &mut GlGraphics, mut f: F)
         where
-            F: FnMut(&Rc<RefCell<Sdl2Window>>, &mut Gl, &Texture, MainMenuSelection)
+            F: FnMut(&Rc<RefCell<GlutinWindow>>, &mut GlGraphics, &Texture, MainMenuSelection)
     {
         // Main loop
-        for e in Events::new(window.clone()) {
+        for e in Events::events(window.clone()) {
             use event;
             use input;
             use event::*;
@@ -57,13 +56,18 @@ impl MainMenu {
 
             // Render GUI
             e.render(|args| {
-                gl.draw([0, 0, args.width as i32, args.height as i32], |c, gl| {
+                gl.draw(args.viewport(), |c, gl| {
                     self.draw(&c, gl);
                 });
             });
 
             if self.done {
-                let menu_selection = FromPrimitive::from_u8(self.selected).expect("invalid MainMenuSelection");
+                let menu_selection =
+                    match self.selected {
+                        0 => MainMenuSelection::Multiplayer,
+                        1 => MainMenuSelection::Exit,
+                        _ => panic!("Invalid main menu selection"),
+                    };
                 if menu_selection == MainMenuSelection::Exit {
                     break;
                 }
@@ -140,8 +144,7 @@ impl MainMenu {
         selected
     }
 
-    fn draw(&mut self, context: &Context, gl: &mut Gl) {
-        use quack::Set;
+    fn draw(&mut self, context: &Context, gl: &mut GlGraphics) {
         use graphics::*;
         
         // Clear the screen
@@ -154,13 +157,13 @@ impl MainMenu {
         if self.selected == 0 {
             let context = context.trans(550.0, 300.0);
             Image::new()
-                .set(Color([1.0, 0.0, 0.0, 1.0]))
+                .color([1.0, 0.0, 0.0, 1.0])
                 .draw(&self.multiplayer_texture, &context.draw_state, context.transform, gl);
         }
         if self.selected == 1 {
             let context = context.trans(550.0, 400.0);
             Image::new()
-                .set(Color([1.0, 0.0, 0.0, 1.0]))
+                .color([1.0, 0.0, 0.0, 1.0])
                 .draw(&self.exit_texture, &context.draw_state, context.transform, gl);
         }
     }

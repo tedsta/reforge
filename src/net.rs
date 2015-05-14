@@ -4,7 +4,7 @@ use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::result::Result;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
-use std::thread::{Builder, Thread};
+use std::thread::{Builder, spawn};
 
 use rustc_serialize::Encodable;
 use rustc_serialize::Decodable;
@@ -157,7 +157,7 @@ impl Server {
         // Next ID to give to each client
         let mut next_client_id = 0;
         
-        Thread::spawn(move || {
+        spawn(move || {
             client_acceptor(listener, new_client_t);
         });
         
@@ -192,12 +192,12 @@ impl Server {
                         let out_stream = stream.try_clone().ok().expect("Failed to clone to-client stream");
                     
                         // Client input process
-                        Thread::spawn(move || {
+                        spawn(move || {
                             handle_client_in(client_id, stream, packet_in_t);
                         });
                         
                         // Client output process
-                        Thread::spawn(move || {
+                        spawn(move || {
                             handle_client_out(out_stream, client_out_r);
                         });
                         
@@ -392,9 +392,9 @@ impl Client {
         match self.packet_receiver.try_recv() {
             Ok(packet) => packet,
             Err(e) if e == TryRecvError::Empty =>
-                Err(Error::new(ErrorKind::TimedOut, "No packet ready yet", None)),
+                Err(Error::new(ErrorKind::TimedOut, "No packet ready yet")),
             Err(_) =>
-                Err(Error::new(ErrorKind::Other, "Client packet sending channel closed", None)),
+                Err(Error::new(ErrorKind::Other, "Client packet sending channel closed")),
         }
     }
     
@@ -480,7 +480,7 @@ impl InPacket {
     }
     
     pub fn read<T: Decodable>(&mut self) -> Result<T, DecodingError> {
-        decode_from(&mut self.buffer, SizeLimit::Infinite)
+        Ok(try!(decode_from(&mut self.buffer, SizeLimit::Infinite)).0)
     }
 }
 
@@ -497,7 +497,7 @@ fn read_u16<T: Read>(reader: &mut T) -> io::Result<u16> {
                 let data: u16 = unsafe { mem::transmute(buf) };
                 Ok(data)
             } else {
-                Err(Error::new(ErrorKind::Other, "Read incorrect number of bytes for u16", None))
+                Err(Error::new(ErrorKind::Other, "Read incorrect number of bytes for u16"))
             }
         },
         Err(e) =>{
@@ -516,7 +516,7 @@ fn write_u16<T: Write>(writer: &mut T, data: u16) -> io::Result<usize> {
             if bytes_written == 2 {
                 Ok(bytes_written)
             } else {
-                Err(Error::new(ErrorKind::Other, "Wrote incorrect number of bytes for u16", None))
+                Err(Error::new(ErrorKind::Other, "Wrote incorrect number of bytes for u16"))
             }
         },
         Err(e) =>{
@@ -536,7 +536,7 @@ fn read_u32<T: Read>(reader: &mut T) -> io::Result<u32> {
                 let data: u32 = unsafe { mem::transmute(buf) };
                 Ok(data)
             } else {
-                Err(Error::new(ErrorKind::Other, "Read incorrect number of bytes for u32", None))
+                Err(Error::new(ErrorKind::Other, "Read incorrect number of bytes for u32"))
             }
         },
         Err(e) =>{
@@ -555,7 +555,7 @@ fn write_u32<T: Write>(writer: &mut T, data: u32) -> io::Result<usize> {
             if bytes_written == 4 {
                 Ok(bytes_written)
             } else {
-                Err(Error::new(ErrorKind::Other, "Wrote incorrect number of bytes for u32", None))
+                Err(Error::new(ErrorKind::Other, "Wrote incorrect number of bytes for u32"))
             }
         },
         Err(e) => {
