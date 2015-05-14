@@ -14,6 +14,8 @@ pub struct StationServer {
     star_map_slot_id: ServerSlotId,
     chat_sender: Sender<ChatMsg>,
     chat_receiver: Receiver<ChatMsg>,
+    to_map_sender: Sender<(AccountBox, StarMapAction)>,
+    from_map_receiver: Receiver<AccountBox>,
     
     model_store: Arc<ModelStore>,
 
@@ -26,21 +28,22 @@ impl StationServer {
                star_map_slot_id: ServerSlotId,
                chat_sender: Sender<ChatMsg>,
                chat_receiver: Receiver<ChatMsg>,
+               to_map_sender: Sender<(AccountBox, StarMapAction)>,
+               from_map_receiver: Receiver<AccountBox>,
                model_store: Arc<ModelStore>) -> StationServer {
         StationServer {
             slot: slot,
             star_map_slot_id: star_map_slot_id,
             chat_sender: chat_sender,
             chat_receiver: chat_receiver,
+            to_map_sender: to_map_sender,
+            from_map_receiver: from_map_receiver,
             model_store: model_store,
             accounts: HashMap::new(),
         }
     }
     
-    pub fn run(&mut self,
-               to_map_sender: Sender<(AccountBox, StarMapAction)>,
-               from_map_receiver: Receiver<AccountBox>,
-               ack: Sender<()>) {    
+    pub fn run(&mut self, ack: Sender<()>) {    
         loop {
             ///////////////////////////////////////////////////////////
             // Receiver ServerSlot messages
@@ -50,7 +53,7 @@ impl StationServer {
                         println!("Client {} joined station {}", client_id, self.slot.get_id());
                     },
                     SlotInMsg::ReceivedPacket(client_id, mut packet) => {
-                        self.handle_packet(client_id, &mut packet, &to_map_sender);
+                        self.handle_packet(client_id, &mut packet);
                     },
                     _ => {}
                 }
@@ -66,7 +69,7 @@ impl StationServer {
             
             ///////////////////////////////////////////////////////////
             // Receive new clients
-            if let Ok(mut account) = from_map_receiver.try_recv() {
+            if let Ok(mut account) = self.from_map_receiver.try_recv() {
                 let client_id = account.client_id.expect("This must have a client ID");
                 
                 // Send initial join packet
@@ -82,7 +85,7 @@ impl StationServer {
         }
     }
     
-    fn handle_packet(&mut self, client_id: ClientId, packet: &mut InPacket, to_map_sender: &Sender<(AccountBox, StarMapAction)>) {
+    fn handle_packet(&mut self, client_id: ClientId, packet: &mut InPacket) {
         let action: StationAction = packet.read().ok().expect("Failed to read StationAction packet");
 
         match action {
@@ -91,7 +94,7 @@ impl StationServer {
                 
                 self.slot.transfer_client(client_id, self.star_map_slot_id);
                 
-                to_map_sender.send((account, StarMapAction::Jump(sector)));
+                self.to_map_sender.send((account, StarMapAction::Jump(sector)));
             },
             StationAction::ShipEdit(ship_edit) => {
                 let ref mut account = self.accounts.get_mut(&client_id).expect("Client's account must exist here.");
@@ -125,11 +128,11 @@ impl StationServer {
                 self.chat_sender.send(msg);
             },
             StationAction::Logout => {
-                let mut account = self.accounts.remove(&client_id).expect("Client's account must exist here.");
+                let account = self.accounts.remove(&client_id).expect("Client's account must exist here.");
                 
                 self.slot.transfer_client(client_id, self.star_map_slot_id);
                 
-                to_map_sender.send((account, StarMapAction::Logout));
+                self.to_map_sender.send((account, StarMapAction::Logout));
             },
         }
     }

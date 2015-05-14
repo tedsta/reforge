@@ -36,7 +36,7 @@ pub struct ClientBattleState<'a> {
     results: Option<InPacket>,
     new_ships_post: Option<InPacket>,
     
-    last_tick: bool,
+    final_ticks: Option<u8>,
 }
 
 impl<'a> ClientBattleState<'a> {
@@ -49,7 +49,7 @@ impl<'a> ClientBattleState<'a> {
             new_ships_pre: None,
             results: None,
             new_ships_post: None,
-            last_tick: false,
+            final_ticks: None,
         }
     }
     
@@ -106,9 +106,11 @@ impl<'a> ClientBattleState<'a> {
             
             self.run_simulation_phase(window, gl, glyph_cache, asset_store, gui, sim_effects);
             
-            // Handle possible player jump
-            if self.player_ship.get(&self.bc).jumping {
-                return;
+            if let Some(ref mut ticks_left) = self.final_ticks {
+                *ticks_left -= 1;
+                if *ticks_left == 0 {
+                    break;
+                }
             }
             
             // Receive ships after sim
@@ -119,7 +121,13 @@ impl<'a> ClientBattleState<'a> {
         }
     }
     
-    fn run_simulation_phase(&mut self, window: &Rc<RefCell<GlutinWindow>>, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, asset_store: &AssetStore, gui: &mut SpaceGui, mut sim_effects: &mut SimEffects) {
+    fn run_simulation_phase(&mut self,
+                            window: &Rc<RefCell<GlutinWindow>>,
+                            gl: &mut GlGraphics,
+                            glyph_cache: &mut GlyphCache,
+                            asset_store: &AssetStore,
+                            gui: &mut SpaceGui,
+                            mut sim_effects: &mut SimEffects) -> bool {
         // Unlock any exploding or jumping ships
         let ships_to_unlock: Vec<ShipIndex> =
             self.bc.ships_iter()
@@ -130,6 +138,8 @@ impl<'a> ClientBattleState<'a> {
             self.bc.on_ship_removed(ship_index);
             gui.plans.on_ship_removed(ship_index);
         }
+        
+        let mut logging_out = false;
         
         let mut sim_events = SimEvents::new();
             
@@ -154,7 +164,7 @@ impl<'a> ClientBattleState<'a> {
             let elapsed_time = current_time - start_time;
             let elapsed_seconds = (elapsed_time.num_milliseconds() as f64)/1000.0;
             
-            if !self.last_tick && !self.player_ship.get(&self.bc).exploding && !plans_sent && elapsed_seconds >= 2.5 {
+            if !self.final_ticks.is_some() && !self.player_ship.get(&self.bc).exploding && !plans_sent && elapsed_seconds >= 2.5 {
                 // Send plans
                 let packet = self.build_plans_packet(gui);
                 self.client.send(&packet);
@@ -162,12 +172,12 @@ impl<'a> ClientBattleState<'a> {
                 println!("Sent plans at {}", elapsed_seconds);
             }
             
-            if !self.last_tick {
+            if !self.final_ticks.is_some() {
                 if plans_sent || self.player_ship.get(&self.bc).exploding {
                     if let Ok(packet) = self.client.try_receive() {
                         let ticked = self.handle_packet(gui, packet);
                         
-                        if ticked && !self.last_tick {
+                        if ticked && !self.final_ticks.is_some() {
                             // If the tick we got isn't the last tick, this turn is done.
                             println!("Finished turn at {}", elapsed_seconds);
                             break;
@@ -197,6 +207,9 @@ impl<'a> ClientBattleState<'a> {
                 match gui_action {
                     SpaceGuiAction::Chat(msg) => {
                         self.send_chat(msg);
+                    },
+                    SpaceGuiAction::Logout => {
+                        self.send_logout();
                     },
                 }
             }
@@ -229,6 +242,8 @@ impl<'a> ClientBattleState<'a> {
                 ship.exploding = true;
             }
         }
+        
+        logging_out
     }
     
     fn build_plans_packet(&mut self, gui: &SpaceGui) -> OutPacket {
@@ -241,6 +256,12 @@ impl<'a> ClientBattleState<'a> {
     fn send_chat(&mut self, msg: String) {
         let mut packet = OutPacket::new();
         packet.write(&ServerBattlePacket::Chat(msg)).unwrap();
+        self.client.send(&packet);
+    }
+    
+    fn send_logout(&mut self) {
+        let mut packet = OutPacket::new();
+        packet.write(&ServerBattlePacket::Logout).unwrap();
         self.client.send(&packet);
     }
     
@@ -258,7 +279,9 @@ impl<'a> ClientBattleState<'a> {
                 self.new_ships_post = Some(packet);
             },
             ClientBattlePacket::Tick(last_tick) => {
-                self.last_tick = last_tick;
+                if last_tick {
+                    self.final_ticks = Some(2);
+                }
                 return true;
             },
             ClientBattlePacket::Chat(msg) => {

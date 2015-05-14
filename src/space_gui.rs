@@ -31,6 +31,7 @@ static ENEMY_OFFSET_Y: f64 = 50.0;
 
 pub enum SpaceGuiAction {
     Chat(String),
+    Logout,
 }
 
 pub struct ModuleIcons {
@@ -208,7 +209,7 @@ impl<'a> SpaceGui<'a> {
         
         self.logout_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.logout_button.get_clicked() {
-            // TODO: Logout
+            return Some(SpaceGuiAction::Logout);
         }
         
         None

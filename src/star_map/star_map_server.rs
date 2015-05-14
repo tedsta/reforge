@@ -82,8 +82,10 @@ impl StarMapServer {
                                                            slot_id,
                                                            sector_chat_out,
                                                            sector_chat_in,
+                                                           from_sector_sender,
+                                                           to_sector_receiver,
                                                            model_store.clone());
-                sector_server.run(from_sector_sender, to_sector_receiver, ack_sender);
+                sector_server.run(ack_sender);
             });
         
         // Sector 1
@@ -114,9 +116,11 @@ impl StarMapServer {
                                                          slot_id,
                                                          sector_chat_out,
                                                          sector_chat_in,
+                                                         from_sector_sender,
+                                                         to_sector_receiver,
                                                          BattleContext::new(vec!()),
                                                          false);
-                sector_server.run(from_sector_sender, to_sector_receiver, ack_sender, false);
+                sector_server.run(ack_sender, false);
             });
         
         // Sector 2
@@ -147,9 +151,11 @@ impl StarMapServer {
                                                          slot_id,
                                                          sector_chat_out,
                                                          sector_chat_in,
+                                                         from_sector_sender,
+                                                         to_sector_receiver,
                                                          BattleContext::new(vec!()),
                                                          false);
-                sector_server.run(from_sector_sender, to_sector_receiver, ack_sender, true);
+                sector_server.run(ack_sender, true);
             });
         
         // Start the chat server
@@ -169,7 +175,7 @@ impl StarMapServer {
         }
     }
     
-    pub fn run(&mut self, from_login: Receiver<AccountBox>) {
+    pub fn run(&mut self, from_login: Receiver<AccountBox>, logout_sender: Sender<AccountBox>) {
         loop {
             if let Ok(slot_msg) = self.slot.try_receive() {
                 match slot_msg {
@@ -217,7 +223,15 @@ impl StarMapServer {
                         StarMapAction::Jump(sector) => {
                             self.jumping_accounts.push_back((account, sector, time::now().to_timespec() + time::Duration::milliseconds(6000)));
                         },
-                        _ => { },
+                        StarMapAction::Logout => {    
+                            let client_id = account.client_id.expect("This needs to have a client ID");
+                        
+                            let mut action_packet = OutPacket::new();
+                            action_packet.write(&ClientAction::Logout).unwrap();
+                            self.slot.send(client_id, action_packet);
+                        
+                            logout_sender.send(account);
+                        },
                     }
                 }
             }
@@ -228,6 +242,8 @@ impl StarMapServer {
                     break;
                 } else {
                     let client_id = account.client_id.expect("This needs to have a client ID");
+                    
+                    account.sector = target_sector;
                     
                     let ref sector = self.sectors[&target_sector];
                     

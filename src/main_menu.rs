@@ -42,7 +42,7 @@ impl MainMenu {
 
     pub fn run<F>(mut self, window: &Rc<RefCell<GlutinWindow>>, gl: &mut GlGraphics, mut f: F)
         where
-            F: FnMut(&Rc<RefCell<GlutinWindow>>, &mut GlGraphics, &Texture, MainMenuSelection)
+            F: FnMut(&Rc<RefCell<GlutinWindow>>, &mut GlGraphics, &Texture, MainMenuSelection) -> bool
     {
         // Main loop
         for e in Events::events(window.clone()) {
@@ -68,10 +68,9 @@ impl MainMenu {
                         1 => MainMenuSelection::Exit,
                         _ => panic!("Invalid main menu selection"),
                     };
-                if menu_selection == MainMenuSelection::Exit {
+                if !f(window, gl, &self.bg_texture, menu_selection) {
                     break;
                 }
-                f(window, gl, &self.bg_texture, menu_selection);
                 self.done = false;
             }
         }

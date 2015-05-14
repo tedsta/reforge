@@ -5,6 +5,7 @@ use chat::ChatMsg;
 pub enum ServerBattlePacket {
     Plan,
     Chat(String),
+    Logout,
 }
 
 // Packets sent from server to client

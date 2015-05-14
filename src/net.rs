@@ -302,7 +302,15 @@ fn client_acceptor(listener: TcpListener, new_client_t: Sender<TcpStream>) {
 
 fn handle_client_in(client_id: ClientId, mut stream: TcpStream, packet_in_t: Sender<(ClientId, InPacket)>) {
     loop {
-        packet_in_t.send((client_id, InPacket::new_from_reader(&mut stream)));
+        let packet =
+            match InPacket::try_new_from_reader(&mut stream) {
+                Ok(packet) => packet,
+                Err(e) => {
+                    println!("Client {} disconnected: {}", client_id, e);
+                    break;
+                },
+            };
+        packet_in_t.send((client_id, packet));
     }
 }
 

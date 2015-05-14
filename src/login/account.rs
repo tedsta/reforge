@@ -76,4 +76,10 @@ impl AccountManager {
             Err(LoginError::NoSuchAccount)
         }
     }
+    
+    pub fn logout_account(&mut self, mut account: AccountBox) {
+        let username = account.username.clone();
+        account.client_id = None;
+        *self.accounts.get_mut(&username).expect("This must exist") = Some(account);
+    }
 }

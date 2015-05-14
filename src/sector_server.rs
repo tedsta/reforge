@@ -21,6 +21,8 @@ pub struct SectorState {
     star_map_slot_id: ServerSlotId,
     chat_sender: Sender<ChatMsg>,
     chat_receiver: Receiver<ChatMsg>,
+    to_map_sender: Sender<(AccountBox, StarMapAction)>,
+    from_map_receiver: Receiver<AccountBox>,
 
     // Context holding all the things involved in this battle
     context: BattleContext,
@@ -44,6 +46,8 @@ pub struct SectorState {
     // Ships to remove after simulation
     ships_to_remove: Vec<ShipIndex>,
     
+    ships_to_logout: Vec<ShipIndex>,
+    
     turn_number: u32,
     
     debug: bool,
@@ -54,6 +58,8 @@ impl SectorState {
                star_map_slot_id: ServerSlotId,
                chat_sender: Sender<ChatMsg>,
                chat_receiver: Receiver<ChatMsg>,
+               to_map_sender: Sender<(AccountBox, StarMapAction)>,
+               from_map_receiver: Receiver<AccountBox>,
                context: BattleContext,
                debug: bool) -> SectorState {
         SectorState {
@@ -61,6 +67,8 @@ impl SectorState {
             star_map_slot_id: star_map_slot_id,
             chat_sender: chat_sender,
             chat_receiver: chat_receiver,
+            to_map_sender: to_map_sender,
+            from_map_receiver: from_map_receiver,
             context: context,
             turn_start_time: time::now().to_timespec(),
             simulated_turn: false,
@@ -71,18 +79,13 @@ impl SectorState {
             accounts: HashMap::new(),
             ships_to_add: vec!(),
             ships_to_remove: vec!(),
+            ships_to_logout: vec!(),
             turn_number: 0,
             debug: debug,
         }
     }
     
-    pub fn run(
-        &mut self,
-        to_map_sender: Sender<(AccountBox, StarMapAction)>,
-        from_map_receiver: Receiver<AccountBox>,
-        ack: Sender<()>,
-        create_ai: bool
-    ) {
+    pub fn run(&mut self, ack: Sender<()>, create_ai: bool) {
         if create_ai {
             // TODO: come up with better way to generate AI ship IDs
             let ai_ship = Ship::generate((100000000) as ShipId, "n00bslayer808".to_string(), 2);
@@ -106,7 +109,7 @@ impl SectorState {
             let turn_time = time::now().to_timespec() - self.turn_start_time;
             
             if !self.simulated_turn && turn_time.num_milliseconds() >= 3500 {
-                self.simulate_next_turn(&to_map_sender);
+                self.simulate_next_turn();
 
                 self.simulated_turn = true;
             }
@@ -141,7 +144,7 @@ impl SectorState {
             
             ///////////////////////////////////////////////////////////
             // Receive new clients
-            if let Ok(mut account) = from_map_receiver.try_recv() {
+            if let Ok(mut account) = self.from_map_receiver.try_recv() {
                 if self.debug {
                     println!("Receiving account");
                 }
@@ -193,6 +196,10 @@ impl SectorState {
                 
                 self.chat_sender.send(msg);
             },
+            ServerBattlePacket::Logout => {
+                let ship = self.context.get_ship_by_client_id(client_id);
+                self.ships_to_logout.push(ship.index);
+            },
         }
     }
     
@@ -219,7 +226,7 @@ impl SectorState {
         }
     }
     
-    fn simulate_next_turn(&mut self, to_map_sender: &Sender<(AccountBox, StarMapAction)>) {
+    fn simulate_next_turn(&mut self) {
         if self.debug {
             println!("Simulating next turn");
         }
@@ -308,8 +315,6 @@ impl SectorState {
         
         // Send off all of the jumping ships
         for (jumped_ship, target_sector) in jumped_ships.into_iter() {
-            use std::rc::try_unwrap;
-            
             let ship = self.context.remove_ship(jumped_ship);
 
             if let Some(client_id) = ship.client_id {
@@ -323,9 +328,29 @@ impl SectorState {
                 
                 self.slot.transfer_client(client_id, self.star_map_slot_id);
                 
-                to_map_sender.send((account, StarMapAction::Jump(target_sector)));
+                self.to_map_sender.send((account, StarMapAction::Jump(target_sector)));
             }
         }
+        
+        // Send off all of the ships logging out
+        for ship in &self.ships_to_logout {
+            let ship = self.context.remove_ship(*ship);
+
+            if let Some(client_id) = ship.client_id {
+                // Send the last tick
+                self.send_last_tick(client_id);
+                
+                let ship_stored = ShipStored::from_ship(ship);
+                
+                let mut account = self.accounts.remove(&client_id).expect("Client's account must exist here.");
+                account.ship = Some(ship_stored);
+                
+                self.slot.transfer_client(client_id, self.star_map_slot_id);
+                
+                self.to_map_sender.send((account, StarMapAction::Logout));
+            }
+        }
+        self.ships_to_logout.clear();
         
         // Reset everything for the next turn
         self.received_plans.clear();
@@ -407,7 +432,7 @@ impl SectorState {
         self.slot.broadcast(packet);
     }
     
-    fn send_last_tick(&mut self, client_id: ClientId) {
+    fn send_last_tick(&self, client_id: ClientId) {
         if self.debug {
             println!("Sending tick");
         }

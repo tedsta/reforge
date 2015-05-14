@@ -126,6 +126,27 @@ fn main () {
     
     music.play(-1).ok().expect("Failed to play background music");
     
+    // Start a local server
+    let mut server = Server::new();
+    let login_slot = server.create_slot();
+    let star_map_slot = server.create_slot();
+    let star_map_slot_id = star_map_slot.get_id();
+    let (star_map_account_sender, star_map_account_receiver) = channel();
+    let (logout_sender, logout_receiver) = channel();
+    
+    Builder::new().name("server_master".to_string()).spawn(move || {
+        server.listen("localhost:30000");
+    });
+    
+    Builder::new().name("login_server".to_string()).spawn(move || {
+        login::run_login_server(login_slot, star_map_slot_id, star_map_account_sender, logout_receiver);
+    });
+    
+    Builder::new().name("star_map_server".to_string()).spawn(move || {
+        let mut star_map_server = StarMapServer::new(star_map_slot);
+        star_map_server.run(star_map_account_receiver, logout_sender);
+    });
+    
     // Create main menu
     let mut main_menu = MainMenu::new();
     main_menu.run(&window, &mut gl, |window, gl, menu_bg, selection| {
@@ -151,26 +172,6 @@ fn main () {
                     //let ip_address = String::from_str("132.160.65.227:30000");
                     //let ip_address = String::from_str("104.131.129.181:30000");
                     
-                    // Start a local server
-                    let mut server = Server::new();
-                    let login_slot = server.create_slot();
-                    let star_map_slot = server.create_slot();
-                    let star_map_slot_id = star_map_slot.get_id();
-                    let (star_map_account_sender, star_map_account_receiver) = channel();
-                    
-                    Builder::new().name("server_master".to_string()).spawn(move || {
-                        server.listen("localhost:30000");
-                    });
-                    
-                    Builder::new().name("login_server".to_string()).spawn(move || {
-                        login::run_login_server(login_slot, star_map_slot_id, star_map_account_sender);
-                    });
-                    
-                    Builder::new().name("star_map_server".to_string()).spawn(move || {
-                        let mut star_map_server = StarMapServer::new(star_map_slot);
-                        star_map_server.run(star_map_account_receiver);
-                    });
-                    
                     // Connect to server
                     let mut client = Client::new(ip_address.as_str());
 
@@ -180,8 +181,10 @@ fn main () {
                     
                     run_client_state_manager(&window, gl, &mut glyph_cache, asset_store, model_store, client);
                 }
+                
+                true
             },
-            MainMenuSelection::Exit => { },
+            MainMenuSelection::Exit => { false },
         }
     });
     
