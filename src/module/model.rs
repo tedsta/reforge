@@ -1,5 +1,6 @@
 use std::path::Path;
 
+#[cfg(feature = "client")]
 use opengl_graphics::Texture;
 
 use super::{
@@ -40,6 +41,7 @@ pub struct ModelStore {
 }
 
 impl ModelStore {
+    #[cfg(feature = "client")]
     pub fn new() -> ModelStore {
         let models =
             vec![
@@ -107,6 +109,80 @@ impl ModelStore {
                     name: "Repair Mk1".to_string(),
                     factory: Box::new(move || ModuleStored::from_module(RepairModule::new())),
                     icon: Texture::from_path(&Path::new("content/textures/modules/icons/repair.png")).unwrap(),
+                    width: 1,
+                    height: 1,
+                    power: 2,
+                    min_hp: 2,
+                    max_hp: 3,
+                },
+            ];
+    
+        ModelStore {
+            models: models,
+        }
+    }
+    
+    #[cfg(feature = "server")]
+    pub fn new() -> ModelStore {
+        let models =
+            vec![
+                Model {
+                    name: "Engine Mk1".to_string(),
+                    factory: Box::new(move || ModuleStored::from_module(EngineModule::new())),
+                    width: 2,
+                    height: 1,
+                    power: 2,
+                    min_hp: 2,
+                    max_hp: 3,
+                },
+                Model {
+                    name: "Command Mk1".to_string(),
+                    factory: Box::new(move || ModuleStored::from_module(CommandModule::new())),
+                    width: 1,
+                    height: 2,
+                    power: 2,
+                    min_hp: 2,
+                    max_hp: 4,
+                },
+                Model {
+                    name: "Solar Mk1".to_string(),
+                    factory: Box::new(move || ModuleStored::from_module(SolarModule::new())),
+                    width: 1,
+                    height: 1,
+                    power: 2,
+                    min_hp: 2,
+                    max_hp: 3,
+                },
+                Model {
+                    name: "Shield Mk1".to_string(),
+                    factory: Box::new(move || ModuleStored::from_module(ShieldModule::new())),
+                    width: 1,
+                    height: 1,
+                    power: 2,
+                    min_hp: 2,
+                    max_hp: 3,
+                },
+                Model {
+                    name: "Blaster Mk1".to_string(),
+                    factory: Box::new(move || ModuleStored::from_module(ProjectileWeaponModule::new())),
+                    width: 1,
+                    height: 1,
+                    power: 2,
+                    min_hp: 2,
+                    max_hp: 3,
+                },
+                Model {
+                    name: "Beam Mk1".to_string(),
+                    factory: Box::new(move || ModuleStored::from_module(BeamWeaponModule::new())),
+                    width: 1,
+                    height: 1,
+                    power: 2,
+                    min_hp: 2,
+                    max_hp: 3,
+                },
+                Model {
+                    name: "Repair Mk1".to_string(),
+                    factory: Box::new(move || ModuleStored::from_module(RepairModule::new())),
                     width: 1,
                     height: 1,
                     power: 2,
