@@ -8,8 +8,8 @@ authors = [
 
 [features]
 
-#default = ["client"]
-default = ["server"]
+default = ["client"]
+#default = ["server"]
 
 client = []
 
@@ -17,70 +17,50 @@ server = []
 
 [[bin]]
 
-#name = "reforge_client"
-#path = "src/client.rs"
+name = "reforge_client"
+path = "src/client.rs"
 
-name = "reforge_server"
-path = "src/server.rs"
+#name = "reforge_server"
+#path = "src/server.rs"
 
 [dependencies.sdl2]
 #git = "https://github.com/AngryLawyer/rust-sdl2"
 version = "0.2.1"
-optional = true
 
 [dependencies.sdl2_mixer]
 git = "https://github.com/andelf/rust-sdl2_mixer"
-optional = true
 
 [dependencies.pistoncore-glutin_window]
-
 git = "https://github.com/pistondevelopers/glutin_window"
-optional = true
 
 [dependencies.piston2d-opengl_graphics]
-
 git = "https://github.com/pistondevelopers/opengl_graphics"
-optional = true
 
 [dependencies.piston2d-graphics]
-
 git = "https://github.com/pistondevelopers/graphics"
-optional = true
 
 [dependencies.pistoncore-event]
-
 git = "https://github.com/pistondevelopers/event"
-optional = true
 
 [dependencies.pistoncore-input]
-
 git = "https://github.com/pistondevelopers/input"
-optional = true
 
 [dependencies.shader_version]
-
 git = "https://github.com/pistondevelopers/shader_version"
-optional = true
 
 [dependencies.pistoncore-window]
-
 git = "https://github.com/pistondevelopers/window"
-optional = true
 
 [dependencies.vecmath]
-
 git = "https://github.com/pistondevelopers/vecmath"
 
 [dependencies.piston-float]
 git = "https://github.com/pistondevelopers/float"
 
 [dependencies.freetype-rs]
-
 git = "https://github.com/pistondevelopers/freetype-rs"
-optional = true
 
 [dependencies.bincode]
-
 git = "https://github.com/tyoverby/bincode.git"
 
 [dependencies]

@@ -127,7 +127,7 @@ fn main () {
     music.play(-1).ok().expect("Failed to play background music");
     
     // Start a local server
-    let mut server = Server::new();
+    /*let mut server = Server::new();
     let login_slot = server.create_slot();
     let star_map_slot = server.create_slot();
     let star_map_slot_id = star_map_slot.get_id();
@@ -145,7 +145,7 @@ fn main () {
     Builder::new().name("star_map_server".to_string()).spawn(move || {
         let mut star_map_server = StarMapServer::new(star_map_slot);
         star_map_server.run(star_map_account_receiver, logout_sender);
-    });
+    });*/
     
     // Create main menu
     let mut main_menu = MainMenu::new();
@@ -168,9 +168,9 @@ fn main () {
                         };
                     ip_address.push_str(":30000"); // Add the port to the end of the address
                     */
-                    let ip_address = String::from_str("localhost:30000");
+                    //let ip_address = String::from_str("localhost:30000");
                     //let ip_address = String::from_str("132.160.65.227:30000");
-                    //let ip_address = String::from_str("104.131.129.181:30000");
+                    let ip_address = String::from_str("104.131.129.181:30000");
                     
                     // Connect to server
                     let mut client = Client::new(ip_address.as_str());
