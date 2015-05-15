@@ -53,7 +53,7 @@ fn main() {
     let (logout_sender, logout_receiver) = channel();
     
     Builder::new().name("server_master".to_string()).spawn(move || {
-        server.listen("localhost:30000");
+        server.listen("0.0.0.0:30000");
     });
     
     Builder::new().name("login_server".to_string()).spawn(move || {

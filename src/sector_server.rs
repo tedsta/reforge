@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
 use std::sync::mpsc::{Sender, Receiver};
@@ -289,7 +290,8 @@ impl SectorState {
         for ship in self.context.ships_iter() {
             // Replace dead ships with better ships
             if ship.exploding {
-                let mut better_ship = Ship::generate(ship.id, ship.name.clone(), ship.level + 1);
+                let next_level = cmp::min(ship.level + 1, 15);
+                let mut better_ship = Ship::generate(ship.id, ship.name.clone(), next_level);
                 better_ship.client_id = ship.client_id;
                 
                 // Remove the old ship
