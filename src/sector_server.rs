@@ -129,8 +129,15 @@ impl SectorState {
                     SlotInMsg::Joined(client_id) => {
                         println!("Client {} joined battle {}", client_id, self.slot.get_id());
                     },
-                    SlotInMsg::ReceivedPacket(client_id, mut packet) => { self.handle_packet(client_id, &mut packet); },
-                    _ => {}
+                    SlotInMsg::Disconnected(client_id) => {
+                        println!("Client {} disconnected at station {}, logging out...", client_id, self.slot.get_id());
+                        
+                        let ship = self.context.get_ship_by_client_id(client_id);
+                        self.ships_to_logout.push(ship.index);
+                    },
+                    SlotInMsg::ReceivedPacket(client_id, mut packet) => {
+                        self.handle_packet(client_id, &mut packet);
+                    },
                 }
             }
             

@@ -52,10 +52,15 @@ impl StationServer {
                     SlotInMsg::Joined(client_id) => {
                         println!("Client {} joined station {}", client_id, self.slot.get_id());
                     },
+                    SlotInMsg::Disconnected(client_id) => {
+                        println!("Client {} disconnected at station {}, logging out...", client_id, self.slot.get_id());
+                        
+                        let account = self.accounts.remove(&client_id).expect("Client's account must exist here.");
+                        self.to_map_sender.send((account, StarMapAction::Logout));
+                    },
                     SlotInMsg::ReceivedPacket(client_id, mut packet) => {
                         self.handle_packet(client_id, &mut packet);
                     },
-                    _ => {}
                 }
             }
             

@@ -50,15 +50,16 @@ fn main() {
     let star_map_slot = server.create_slot();
     let star_map_slot_id = star_map_slot.get_id();
     let (star_map_account_sender, star_map_account_receiver) = channel();
+    let (logout_sender, logout_receiver) = channel();
     
     Builder::new().name("server_master".to_string()).spawn(move || {
         server.listen("localhost:30000");
     });
     
     Builder::new().name("login_server".to_string()).spawn(move || {
-        login::run_login_server(login_slot, star_map_slot_id, star_map_account_sender);
+        login::run_login_server(login_slot, star_map_slot_id, star_map_account_sender, logout_receiver);
     });
     
     let mut star_map_server = StarMapServer::new(star_map_slot);
-    star_map_server.run(star_map_account_receiver);
+    star_map_server.run(star_map_account_receiver, logout_sender);
 }

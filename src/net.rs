@@ -149,7 +149,7 @@ impl Server {
         let mut client_outs: HashMap<ClientId, (ServerSlotId, Sender<OutPacket>)> = HashMap::new();
         
         // Client task to master: packet channel
-        let (packet_in_t, packet_in_r): (Sender<(ClientId, InPacket)>, Receiver<(ClientId, InPacket)>) = channel();
+        let (packet_in_t, packet_in_r): (Sender<(ClientId, Option<InPacket>)>, Receiver<(ClientId, Option<InPacket>)>) = channel();
         
         // Server listener task to master: TcpStream channel
         let (new_client_t, new_client_r): (Sender<TcpStream>, Receiver<TcpStream>) = channel();
@@ -217,13 +217,33 @@ impl Server {
             let mut received_packets = 0u32; // Packet counter. Move on after a while if packets keep coming
             loop {
                 match packet_in_r.try_recv() {
-                    Ok((client_id, packet)) => {
-                        received_packets += 1;
-                        
-                        // Send the received packet to the slot the client is in
-                        client_slots[&client_id].send(SlotInMsg::ReceivedPacket(client_id, packet));
+                    Ok((client_id, maybe_packet)) => {
+                        match maybe_packet {
+                            Some(packet) => {
+                                received_packets += 1;
+                                
+                                // Send the received packet to the slot the client is in
+                                client_slots[&client_id].send(SlotInMsg::ReceivedPacket(client_id, packet));
+                            },
+                            None => {
+                                // Client disconnected
+                                client_slots[&client_id].send(SlotInMsg::Disconnected(client_id));
+                                
+                                client_slots.remove(&client_id);
+                                client_outs.remove(&client_id);
+                                
+                                println!("Client {} disconnected from server master", client_id);
+                            },
+                        }
                     },
-                    Err(_) => { break; }
+                    Err(e) => {
+                        match e {
+                            TryRecvError::Empty => { break; }
+                            TryRecvError::Disconnected => {
+                                panic!("Server packet receiver channel is broken");
+                            },
+                        }
+                    },
                 }
                 
                 if received_packets >= 10 {
@@ -247,7 +267,7 @@ impl Server {
                                         println!("Failed to send packet to client {} from server slot {} because the client's server slot is {}", client_id, slot_id, client_slot_id);
                                     }*/
                                 },
-                                None => { println!("Failed to send packet to invalid client ID {}", client_id); }
+                                None => { println!("WARNING: Failed to send packet to invalid client ID {}", client_id); }
                             },
                             SlotOutMsg::BroadcastPacket(slot_id, packet) => for &(ref client_slot_id, ref c) in client_outs.values() {
                                 if slot_id == *client_slot_id {
@@ -262,15 +282,19 @@ impl Server {
                             SlotOutMsg::TransferClient(slot_id, client_id, new_slot_id) => {
                                 match self.slots.get(&new_slot_id) {
                                     Some(slot) => {
-                                        let &mut (ref mut client_slot_id, _) =
-                                            client_outs.get_mut(&client_id).expect("Failed to get client output stream");
-                                        if *client_slot_id == slot_id {
-                                            let &(ref slot_in_t, _) = slot;
-                                            *client_slot_id = new_slot_id; // set the client's new slot ID
-                                            client_slots.get_mut(&client_id)
-                                                .expect("Failed to get client slot")
-                                                .clone_from(slot_in_t);
-                                            slot_in_t.send(SlotInMsg::Joined(client_id));
+                                        if let Some(&mut (ref mut client_slot_id, _)) = client_outs.get_mut(&client_id) {
+                                            if *client_slot_id == slot_id {
+                                                let &(ref slot_in_t, _) = slot;
+                                                *client_slot_id = new_slot_id; // set the client's new slot ID
+                                                client_slots.get_mut(&client_id)
+                                                    .expect("Failed to get client slot")
+                                                    .clone_from(slot_in_t);
+                                                slot_in_t.send(SlotInMsg::Joined(client_id));
+                                            } else {
+                                                println!("WARNING: Non-owning slot can't transfer client {}", client_id);
+                                            }
+                                        } else {
+                                            println!("WARNING: Can't transfer non-existant client {}", client_id);
                                         }
                                     },
                                     None => panic!("Failed to transfer client {} to non-existant slot {}", client_id, slot_id)
@@ -300,17 +324,18 @@ fn client_acceptor(listener: TcpListener, new_client_t: Sender<TcpStream>) {
     }
 }
 
-fn handle_client_in(client_id: ClientId, mut stream: TcpStream, packet_in_t: Sender<(ClientId, InPacket)>) {
+fn handle_client_in(client_id: ClientId, mut stream: TcpStream, packet_in_t: Sender<(ClientId, Option<InPacket>)>) {
     loop {
         let packet =
             match InPacket::try_new_from_reader(&mut stream) {
                 Ok(packet) => packet,
                 Err(e) => {
-                    println!("Client {} disconnected: {}", client_id, e);
+                    println!("Client {} input thread shutting down: {}", client_id, e);
+                    packet_in_t.send((client_id, None));
                     break;
                 },
             };
-        packet_in_t.send((client_id, packet));
+        packet_in_t.send((client_id, Some(packet)));
     }
 }
 
@@ -320,7 +345,10 @@ fn handle_client_out(mut stream: TcpStream, out_r: Receiver<OutPacket>) {
         let packet = 
             match out_r.recv() {
                 Ok(packet) => packet,
-                _ => panic!("Failed to receive out packet over channel."),
+                Err(_) => {
+                    println!("Client out packet channel closed, shutting output thread down");
+                    break;
+                },
             };
         
         // Get the packet's data
@@ -328,10 +356,12 @@ fn handle_client_out(mut stream: TcpStream, out_r: Receiver<OutPacket>) {
         
         // Write the packet size, then the actual packet data
         if let Err(e) = write_u16(&mut stream, data.len() as u16) {
-            panic!("Failed to write packet length: {}", e);
+            println!("Client out failed to write packet length, shutting output thread down: {}", e);
+            break;
         }
         if let Err(e) = stream.write(data) {
-            panic!("Failed to write packet data: {}", e);
+            println!("Client out failed to write packet data, shutting output thread down: {}", e);
+            break;
         }
     }
 }
