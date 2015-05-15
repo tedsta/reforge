@@ -89,8 +89,6 @@ mod vec;
 
 #[cfg(feature = "client")]
 fn main () {
-    platform_setup();
-
     let opengl = shader_version::OpenGL::_3_2;
     
     // Create an window.
@@ -192,22 +190,4 @@ fn main () {
     
     sdl2_mixer::Music::halt();
     sdl2_mixer::quit();
-}
-
-#[cfg(target_os = "mac_os")]
-fn platform_setup() {
-    use std::env;
-
-    let mut dylib_path = env::current_dir();
-    dylib_path.push("libs");
-    
-    env::set_var("DYLD_LIBRARY_PATH", dylib_path);
-}
-
-#[cfg(target_os = "windows")]
-fn platform_setup() {
-}
-
-#[cfg(target_os = "linux")]
-fn platform_setup() {
 }
