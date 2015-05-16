@@ -8,7 +8,7 @@ use sector_data::SectorId;
 
 pub type AccountBox = Box<Account>;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, RustcEncodable, RustcDecodable)]
 pub enum LoginError {
     NoSuchAccount,
     WrongPassword,

@@ -49,7 +49,7 @@ use battle_context::BattleContext;
 use battle_type::BattleType;
 use sector_client::ClientBattleState;
 use client_state::run_client_state_manager;
-use login::LoginPacket;
+use login::{LoginPacket, LoginError};
 use login_screen::LoginScreen;
 use main_menu::{MainMenu, MainMenuSelection};
 use module::ModelStore;
@@ -168,9 +168,9 @@ fn main () {
                         };
                     ip_address.push_str(":30000"); // Add the port to the end of the address
                     */
-                    //let ip_address = String::from_str("localhost:30000");
+                    let ip_address = String::from_str("localhost:30000");
                     //let ip_address = String::from_str("132.160.65.227:30000");
-                    let ip_address = String::from_str("104.131.129.181:30000");
+                    //let ip_address = String::from_str("104.131.129.181:30000");
                     
                     // Connect to server
                     let mut client = Client::new(ip_address.as_str());
@@ -179,7 +179,17 @@ fn main () {
                     packet.write(&LoginPacket{username: username, password: password});
                     client.send(&packet);
                     
-                    run_client_state_manager(&window, gl, &mut glyph_cache, asset_store, model_store, client);
+                    let mut login_result_packet = client.receive();
+                    let login_result: Option<LoginError> = login_result_packet.read().unwrap();
+                    
+                    match login_result {
+                        Some(login_error) => {
+                            
+                        },
+                        None => {
+                            run_client_state_manager(&window, gl, &mut glyph_cache, asset_store, model_store, client);
+                        },
+                    }
                 }
                 
                 true

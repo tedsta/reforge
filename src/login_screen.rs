@@ -28,6 +28,9 @@ pub struct LoginScreen {
 
 impl LoginScreen {
     pub fn new() -> LoginScreen {
+        let mut password_box = TextBox::new("".to_string(), 20, [600.0, 370.0], [300.0, 40.0]);
+        password_box.hide_text = true;
+    
         LoginScreen {
             done: false,
             login_info: None,
@@ -36,7 +39,7 @@ impl LoginScreen {
             mouse_y: 0.0,
             
             username_box: TextBox::new("user".to_string(), 20, [600.0, 300.0], [300.0, 40.0]),
-            password_box: TextBox::new("pass".to_string(), 20, [600.0, 370.0], [300.0, 40.0]),
+            password_box: password_box,
             
             cancel_button: TextButton::new("Cancel".to_string(), 20, [450.0, 500.0], [150.0, 40.0]),
             login_button: TextButton::new("Login".to_string(), 20, [610.0, 500.0], [150.0, 40.0]),

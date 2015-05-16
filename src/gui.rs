@@ -150,6 +150,7 @@ pub struct TextBox {
     size: [f64; 2],
     
     pub has_focus: bool,
+    pub hide_text: bool,
     
     mouse_focus: MouseFocus,
 }
@@ -168,6 +169,7 @@ impl TextBox {
             size: size,
             
             has_focus: false,
+            hide_text: false,
             
             mouse_focus: MouseFocus::NoHover,
         }
@@ -194,10 +196,17 @@ impl TextBox {
         
         // Draw text
         {
+            let text =
+                if !self.hide_text {
+                    self.text.clone()
+                } else {
+                    self.text.chars().map(|_| '*').collect()
+                };
+        
             let buffer = (self.size[1] - (self.font_size as f64)) / 2.0;
             let context = context.trans(self.position[0] + buffer, self.position[1] + self.size[1] - buffer);
             Text::colored(self.text_color, self.font_size).draw(
-                self.text.as_str(),
+                text.as_str(),
                 glyph_cache,
                 &context.draw_state, context.transform,
                 gl,

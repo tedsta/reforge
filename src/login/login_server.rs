@@ -1,6 +1,7 @@
 use std::sync::mpsc::{Sender, Receiver};
 
 use net::{
+    OutPacket,
     ServerSlot,
     ServerSlotId,
     SlotInMsg,
@@ -32,11 +33,21 @@ pub fn run_login_server(slot: ServerSlot,
                     match account_manager.login_account(username.clone(), password.clone(), client_id) {
                         Ok(account) => {
                             // Login ok
+                            let mut result_packet = OutPacket::new();
+                            let login_result: Option<LoginError> = None;
+                            result_packet.write(&login_result);
+                            slot.send(client_id, result_packet);
                             
                             slot.transfer_client(account.client_id.expect("This must have a client ID"), star_map_slot_id);
                             star_map_chan.send(account);
                         },
                         Err(ref e) if *e == LoginError::NoSuchAccount => {
+                            // Login ok
+                            let mut result_packet = OutPacket::new();
+                            let login_result: Option<LoginError> = None;
+                            result_packet.write(&login_result);
+                            slot.send(client_id, result_packet);
+                        
                             // Account doesn't exist yet, make it
                             account_manager.create_account(username.clone(), password.clone());
                             
@@ -55,7 +66,9 @@ pub fn run_login_server(slot: ServerSlot,
                             }
                         },
                         Err(e) => {
-                            // TODO tell the client a login error occurred.
+                            let mut result_packet = OutPacket::new();
+                            result_packet.write(&Some(e));
+                            slot.send(client_id, result_packet);
                         },
                     }
                 },
