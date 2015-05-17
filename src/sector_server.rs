@@ -273,6 +273,11 @@ impl SectorState {
                 self.ships_to_remove.push(ship.index);
             }
         }
+        
+        // Handle ships that are logging out
+        for logging_out_ship in &self.ships_to_logout {
+            self.ships_to_remove.push(*logging_out_ship);
+        }
     
         // Do server-side precalculations
         self.context.server_preprocess();
