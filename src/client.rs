@@ -50,7 +50,7 @@ use battle_type::BattleType;
 use sector_client::ClientBattleState;
 use client_state::run_client_state_manager;
 use login::{LoginPacket, LoginError};
-use login_screen::LoginScreen;
+use login_screen::{LoginScreen, LoginGuiAction};
 use main_menu::{MainMenu, MainMenuSelection};
 use module::ModelStore;
 use net::{Client, OutPacket};
@@ -152,42 +152,52 @@ fn main () {
     main_menu.run(&window, &mut gl, |window, gl, menu_bg, selection| {
         match selection {
             MainMenuSelection::Multiplayer => {
-                if let Some((username, password)) = LoginScreen::new().run(&window, gl, &mut glyph_cache, menu_bg) {
-                    // Check for IP address in args
-                    /*
-                    let mut ip_address =
-                        if os::args().len() > 1 {
-                            os::args()[1].clone()
-                        } else {
-                            prisize!("IP Address: ");
-                            String::from_str(
-                                io::stdin().read_line()
-                                    .ok().expect("Failed to read IP address")
-                                    .trim_left()
-                            )
-                        };
-                    ip_address.push_str(":30000"); // Add the port to the end of the address
-                    */
-                    let ip_address = String::from_str("localhost:30000");
-                    //let ip_address = String::from_str("132.160.65.227:30000");
-                    //let ip_address = String::from_str("104.131.129.181:30000");
-                    
-                    // Connect to server
-                    let mut client = Client::new(ip_address.as_str());
-
-                    let mut packet = OutPacket::new();
-                    packet.write(&LoginPacket{username: username, password: password});
-                    client.send(&packet);
-                    
-                    let mut login_result_packet = client.receive();
-                    let login_result: Option<LoginError> = login_result_packet.read().unwrap();
-                    
-                    match login_result {
-                        Some(login_error) => {
+                let mut login_screen = LoginScreen::new();
+            
+                loop {
+                    match login_screen.run(&window, gl, &mut glyph_cache, menu_bg) {
+                        LoginGuiAction::Login(username, password) => {
+                            // Check for IP address in args
+                            /*
+                            let mut ip_address =
+                                if os::args().len() > 1 {
+                                    os::args()[1].clone()
+                                } else {
+                                    prisize!("IP Address: ");
+                                    String::from_str(
+                                        io::stdin().read_line()
+                                            .ok().expect("Failed to read IP address")
+                                            .trim_left()
+                                    )
+                                };
+                            ip_address.push_str(":30000"); // Add the port to the end of the address
+                            */
+                            let ip_address = String::from_str("localhost:30000");
+                            //let ip_address = String::from_str("132.160.65.227:30000");
+                            //let ip_address = String::from_str("104.131.129.181:30000");
                             
+                            // Connect to server
+                            let mut client = Client::new(ip_address.as_str());
+
+                            let mut packet = OutPacket::new();
+                            packet.write(&LoginPacket{username: username, password: password});
+                            client.send(&packet);
+                            
+                            let mut login_result_packet = client.receive();
+                            let login_result: Option<LoginError> = login_result_packet.read().unwrap();
+                            
+                            match login_result {
+                                Some(login_error) => {
+                                    login_screen.login_error = Some(login_error);
+                                },
+                                None => {
+                                    run_client_state_manager(&window, gl, &mut glyph_cache, asset_store, model_store, client);
+                                    break;
+                                },
+                            }
                         },
-                        None => {
-                            run_client_state_manager(&window, gl, &mut glyph_cache, asset_store, model_store, client);
+                        LoginGuiAction::Back => {
+                            break;
                         },
                     }
                 }

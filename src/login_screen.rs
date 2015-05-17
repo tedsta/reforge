@@ -9,20 +9,28 @@ use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use gui::{TextBox, TextButton};
+use login::LoginError;
+
+#[derive(Clone)]
+pub enum LoginGuiAction {
+    Login(String, String),
+    Back,
+}
 
 pub struct LoginScreen {
-    done: bool,
-    login_info: Option<(String, String)>,
+    action: Option<LoginGuiAction>,
 
     mouse_x: f64,
     mouse_y: f64,
+    
+    pub login_error: Option<LoginError>,
     
     // Text boxes
     username_box: TextBox,
     password_box: TextBox,
     
     // Buttons
-    cancel_button: TextButton,
+    back_button: TextButton,
     login_button: TextButton,
 }
 
@@ -32,21 +40,22 @@ impl LoginScreen {
         password_box.hide_text = true;
     
         LoginScreen {
-            done: false,
-            login_info: None,
+            action: None,
             
             mouse_x: 0.0,
             mouse_y: 0.0,
             
+            login_error: None,
+            
             username_box: TextBox::new("user".to_string(), 20, [600.0, 300.0], [300.0, 40.0]),
             password_box: password_box,
             
-            cancel_button: TextButton::new("Cancel".to_string(), 20, [450.0, 500.0], [150.0, 40.0]),
+            back_button: TextButton::new("Back".to_string(), 20, [450.0, 500.0], [150.0, 40.0]),
             login_button: TextButton::new("Login".to_string(), 20, [610.0, 500.0], [150.0, 40.0]),
         }
     }
 
-    pub fn run(mut self, window: &Rc<RefCell<GlutinWindow>>, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, bg_texture: &Texture) -> Option<(String, String)> {
+    pub fn run(&mut self, window: &Rc<RefCell<GlutinWindow>>, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, bg_texture: &Texture) -> LoginGuiAction {
         // Main loop
         for e in Events::events(window.clone()) {
             use event;
@@ -64,12 +73,12 @@ impl LoginScreen {
                 });
             });
 
-            if self.done {
+            if self.action.is_some() {
                 break;
             }
         }
         
-        self.login_info
+        self.action.take().unwrap()
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E) {
@@ -93,16 +102,15 @@ impl LoginScreen {
         
         // Handle buttons
         self.login_button.event(e, [self.mouse_x, self.mouse_y]);
-        self.cancel_button.event(e, [self.mouse_x, self.mouse_y]);
+        self.back_button.event(e, [self.mouse_x, self.mouse_y]);
         
-        if self.cancel_button.get_clicked() {
-            self.done = true;
-            self.login_info = None;
+        if self.back_button.get_clicked() {
+            self.action = Some(LoginGuiAction::Back);
         }
         
         if self.login_button.get_clicked() {
-            self.done = true;
-            self.login_info = Some((self.username_box.text.clone(), self.password_box.text.clone()));
+            self.action = Some(LoginGuiAction::Login(self.username_box.text.clone(),
+                                                     self.password_box.text.clone()));
         }
     }
 
@@ -154,7 +162,40 @@ impl LoginScreen {
         self.password_box.draw(context, gl, glyph_cache);
         
         // Draw the buttons
-        self.cancel_button.draw(context, gl, glyph_cache);
+        self.back_button.draw(context, gl, glyph_cache);
         self.login_button.draw(context, gl, glyph_cache);
+        
+        // Draw error messages
+        if let Some(login_error) = self.login_error {
+            match login_error {
+                LoginError::NoSuchAccount => {
+                    let context = context.trans(910.0, 330.0);
+                    Text::colored([1.0, 0.0, 0.0, 1.0], 30).draw(
+                        "User doesn't exist",
+                        glyph_cache,
+                        &context.draw_state, context.transform,
+                        gl,
+                    );
+                },
+                LoginError::AlreadyLoggedIn => {
+                    let context = context.trans(910.0, 330.0);
+                    Text::colored([1.0, 0.0, 0.0, 1.0], 30).draw(
+                        "User already logged in",
+                        glyph_cache,
+                        &context.draw_state, context.transform,
+                        gl,
+                    );
+                },
+                LoginError::WrongPassword => {
+                    let context = context.trans(910.0, 400.0);
+                    Text::colored([1.0, 0.0, 0.0, 1.0], 30).draw(
+                        "Incorrect password",
+                        glyph_cache,
+                        &context.draw_state, context.transform,
+                        gl,
+                    );
+                },
+            }
+        }
     }
 }
