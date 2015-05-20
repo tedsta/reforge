@@ -48,12 +48,12 @@ impl LoginScreen {
             
             login_error: None,
             
-            username_box: TextBox::new("user".to_string(), 20, [600.0, 300.0], [300.0, 40.0]),
+            username_box: TextBox::new("user".to_string(), 24, [600.0, 300.0], [300.0, 40.0]),
             password_box: password_box,
-            ip_box: TextBox::new("localhost".to_string(), 20, [600.0, 440.0], [300.0, 40.0]),
+            ip_box: TextBox::new("localhost".to_string(), 24, [600.0, 440.0], [300.0, 40.0]),
             
-            back_button: TextButton::new("Back".to_string(), 20, [450.0, 500.0], [150.0, 40.0]),
-            login_button: TextButton::new("Login".to_string(), 20, [610.0, 500.0], [150.0, 40.0]),
+            back_button: TextButton::new("Back".to_string(), 24, [450.0, 500.0], [150.0, 40.0]),
+            login_button: TextButton::new("Login".to_string(), 24, [610.0, 500.0], [150.0, 40.0]),
         }
     }
 
@@ -143,7 +143,7 @@ impl LoginScreen {
         // Draw the username and password labels
         {
             let context = context.trans(400.0, 330.0);
-            Text::colored([1.0; 4], 30).draw(
+            Text::colored([1.0; 4], 32).draw(
                 "Username",
                 glyph_cache,
                 &context.draw_state, context.transform,
@@ -153,7 +153,7 @@ impl LoginScreen {
         
         {
             let context = context.trans(400.0, 400.0);
-            Text::colored([1.0; 4], 30).draw(
+            Text::colored([1.0; 4], 32).draw(
                 "Password",
                 glyph_cache,
                 &context.draw_state, context.transform,
@@ -163,7 +163,7 @@ impl LoginScreen {
         
         {
             let context = context.trans(400.0, 470.0);
-            Text::colored([1.0; 4], 30).draw(
+            Text::colored([1.0; 4], 32).draw(
                 "IP Address",
                 glyph_cache,
                 &context.draw_state, context.transform,

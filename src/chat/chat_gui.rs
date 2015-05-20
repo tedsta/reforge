@@ -27,8 +27,8 @@ impl ChatGui {
         ChatGui {
             action: None,
             
-            msg_box: TextBox::new("".to_string(), 14, [5.0, 175.0], [238.0, 20.0]),
-            send_button: TextButton::new("send".to_string(), 14, [245.0, 175.0], [50.0, 20.0]),
+            msg_box: TextBox::new("".to_string(), 10, [5.0, 175.0], [238.0, 20.0]),
+            send_button: TextButton::new("send".to_string(), 10, [245.0, 175.0], [50.0, 20.0]),
             
             messages: vec!(),
         }
@@ -84,7 +84,7 @@ impl ChatGui {
         {
             // Label text
             let context = context.trans(5.0, 20.0);
-            Text::colored([1.0; 4], 15).draw(
+            Text::colored([1.0; 4], 18).draw(
                 "chat",
                 glyph_cache,
                 &context.draw_state, context.transform,
@@ -93,16 +93,16 @@ impl ChatGui {
             
             let max_messages = 10;
             for(i, msg) in self.messages.iter().rev().take(max_messages).enumerate() {
-                let context = context.trans(0.0, 16.0 + 15.0*((max_messages - 1 - i) as f64));
-                Text::colored([0.7, 0.7, 1.0, 1.0], 14).draw(
+                let context = context.trans(0.0, 18.0 + 15.0*((max_messages - 1 - i) as f64));
+                Text::colored([0.7, 0.7, 1.0, 1.0], 10).draw(
                     msg.author_name.as_str(),
                     glyph_cache,
                     &context.draw_state, context.transform,
                     gl,
                 );
                 
-                let context = context.trans(msg.author_name.len() as f64 * 14.0, 0.0);
-                Text::colored([0.7, 0.7, 0.7, 1.0], 14).draw(
+                let context = context.trans(msg.author_name.len() as f64 * 10.0, 0.0);
+                Text::colored([0.7, 0.7, 0.7, 1.0], 10).draw(
                     msg.content.as_str(),
                     glyph_cache,
                     &context.draw_state, context.transform,

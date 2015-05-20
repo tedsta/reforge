@@ -141,14 +141,14 @@ impl<'a> SpaceGui<'a> {
             
             space_bg: SpaceStars::new(),
             
-            star_map_button: TextButton::new("star map".to_string(), 20, [550.0, 50.0], [120.0, 40.0]),
+            star_map_button: TextButton::new("star map".to_string(), 24, [550.0, 50.0], [120.0, 40.0]),
             star_map_gui: StarMapGui::new(sectors),
             show_star_map: false,
             
             chat_gui_pos: Vec2::new(5.0, 720.0 - 200.0 - 5.0),
             chat_gui: chat_gui,
             
-            logout_button: TextButton::new("logout".to_string(), 20, [550.0, 100.0], [120.0, 40.0]),
+            logout_button: TextButton::new("logout".to_string(), 24, [550.0, 100.0], [120.0, 40.0]),
 
             target_icons: target_icons,
         }

@@ -33,7 +33,7 @@ impl<'a> ShipEditGui<'a> {
         
             action: None,
             
-            ship_offset: Vec2 { x: -575.0, y: 100.0 },
+            ship_offset: Vec2 { x: -500.0, y: 100.0 },
             selected_category: 0,
             selected_model: None,
         }
@@ -77,9 +77,9 @@ impl<'a> ShipEditGui<'a> {
 
     fn on_mouse_left_pressed(&mut self, mouse_pos: Vec2f, button: mouse::MouseButton) {
         for i in (0 .. self.inventory.len()) {
-            let category_offset = Vec2::new(5.0 + (i as f64 * 77.0), 35.0);
-            let label_width = 75.0;
-            let label_height = 19.0;
+            let category_offset = Vec2::new(5.0 + (i as f64 * 97.0), 35.0);
+            let label_width = 95.0;
+            let label_height = 24.0;
             
             if mouse_pos.x >= category_offset.x &&
                mouse_pos.x <= category_offset.x + label_width &&
@@ -128,12 +128,12 @@ impl<'a> ShipEditGui<'a> {
         
         // Render background window
         Rectangle::new([0.2, 0.05, 0.3, 0.8])
-            .draw([0.0, 0.0, 400.0, 450.0], &context.draw_state, context.transform, gl);
+            .draw([0.0, 0.0, 475.0, 450.0], &context.draw_state, context.transform, gl);
         
         // Label text
         {
             let context = context.trans(5.0, 30.0);
-            Text::colored([1.0; 4], 25).draw(
+            Text::colored([1.0; 4], 24).draw(
                 "module inventory",
                 glyph_cache,
                 &context.draw_state, context.transform,
@@ -144,7 +144,7 @@ impl<'a> ShipEditGui<'a> {
             let context = context.trans(0.0, 5.0);
             for (cat_num, &(ref category, ref modules)) in self.inventory.iter().enumerate() {
                 {
-                    let context = context.trans(cat_num as f64 * 77.0, 0.0);
+                    let context = context.trans(cat_num as f64 * 97.0, 0.0);
                 
                     let rectangle =
                         if cat_num == self.selected_category {
@@ -153,12 +153,12 @@ impl<'a> ShipEditGui<'a> {
                             Rectangle::new([0.0, 1.0, 0.0, 1.0])
                         };
                     
-                    rectangle.draw([0.0, 0.0, 75.0, 19.0], &context.draw_state, context.transform, gl);
+                    rectangle.draw([0.0, 0.0, 95.0, 24.0], &context.draw_state, context.transform, gl);
                     
                     // Category label
                     {
-                        let context = context.trans(5.0, 17.0);
-                        Text::colored([1.0; 4], 15).draw(
+                        let context = context.trans(5.0, 21.0);
+                        Text::colored([1.0; 4], 18).draw(
                             category,
                             glyph_cache,
                             &context.draw_state, context.transform,
@@ -169,7 +169,7 @@ impl<'a> ShipEditGui<'a> {
                 
                 // Draw module icons
                 if cat_num == self.selected_category {
-                    let context = context.trans(5.0, 24.0);
+                    let context = context.trans(5.0, 30.0);
                     
                     for (i, &(model_index, count)) in modules.iter().enumerate() {
                         let model = model_index.get(self.model_store);

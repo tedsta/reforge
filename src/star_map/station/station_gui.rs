@@ -50,11 +50,11 @@ impl<'a> StationGui<'a> {
             chat_gui_pos: Vec2::new(5.0, 720.0 - 200.0 - 5.0),
             chat_gui: chat_gui,
             
-            star_map_button: TextButton::new("star map".to_string(), 20, [550.0, 50.0], [120.0, 40.0]),
+            star_map_button: TextButton::new("star map".to_string(), 24, [550.0, 50.0], [120.0, 40.0]),
             star_map_gui: StarMapGui::new(sectors),
             show_star_map: false,
             
-            logout_button: TextButton::new("logout".to_string(), 20, [550.0, 100.0], [120.0, 40.0]),
+            logout_button: TextButton::new("logout".to_string(), 24, [550.0, 100.0], [120.0, 40.0]),
         }
     }
     
@@ -95,7 +95,7 @@ impl<'a> StationGui<'a> {
             }
         }
         
-        if let Some(ship_edit) = self.ship_edit_gui.event(e, self.mouse_pos - Vec2::new(875.0, 200.0), client_ship.as_ref().unwrap()) {
+        if let Some(ship_edit) = self.ship_edit_gui.event(e, self.mouse_pos - Vec2::new(800.0, 200.0), client_ship.as_ref().unwrap()) {
             return Some(StationAction::ShipEdit(ship_edit));
         }
         
@@ -149,10 +149,10 @@ impl<'a> StationGui<'a> {
             sim_effects.update(context, gl, client_ship.id, time);
         }
         
-        self.ship_edit_gui.draw(&context.trans(875.0, 200.0),
+        self.ship_edit_gui.draw(&context.trans(800.0, 200.0),
                                 gl,
                                 glyph_cache,
-                                self.mouse_pos - Vec2::new(875.0, 200.0),
+                                self.mouse_pos - Vec2::new(800.0, 200.0),
                                 client_ship.as_ref().unwrap());
         
         self.star_map_button.draw(context, gl, glyph_cache);
