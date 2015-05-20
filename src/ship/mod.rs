@@ -431,6 +431,9 @@ impl Ship {
                 self.state.power_use -= module.get_power();
                 module.powered = false;
                 module.inner.borrow_mut().on_deactivated(&mut self.state);
+            } else if !was_active && module.is_active() {
+                // Module just got activated
+                module.inner.borrow_mut().on_activated(&mut self.state);
             }
         }
     }
