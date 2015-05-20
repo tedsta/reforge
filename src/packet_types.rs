@@ -14,6 +14,6 @@ pub enum ClientBattlePacket {
     NewShipsPre,
     SimResults,
     NewShipsPost,
-    Tick(bool), // Tick and whether it's the last
+    Tick(Option<u8>), // Tick and whether it's the last
     Chat(ChatMsg),
 }

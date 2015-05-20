@@ -96,6 +96,14 @@ impl<'a> ClientBattleState<'a> {
             ////////////////////////////////
             // Simulate
             
+            if let Some(ref mut ticks_left) = self.final_ticks {
+                if *ticks_left == 0 {
+                    break;
+                } else {
+                    *ticks_left -= 1;
+                }
+            }
+            
             // Receive simulation results
             let mut new_ships_pre = self.new_ships_pre.take().expect("New ships pre packet must exist here");
             let mut results = self.results.take().expect("Results packet must exist here");
@@ -105,13 +113,6 @@ impl<'a> ClientBattleState<'a> {
             self.handle_simulation_results(&mut results);
             
             self.run_simulation_phase(window, gl, glyph_cache, asset_store, gui, sim_effects);
-            
-            if let Some(ref mut ticks_left) = self.final_ticks {
-                *ticks_left -= 1;
-                if *ticks_left == 0 {
-                    break;
-                }
-            }
             
             // Receive ships after sim
             self.handle_new_ships_packet(gui, &mut new_ships_post);
@@ -278,10 +279,8 @@ impl<'a> ClientBattleState<'a> {
             ClientBattlePacket::NewShipsPost => {
                 self.new_ships_post = Some(packet);
             },
-            ClientBattlePacket::Tick(last_tick) => {
-                if last_tick {
-                    self.final_ticks = Some(2);
-                }
+            ClientBattlePacket::Tick(final_ticks) => {
+                self.final_ticks = final_ticks;
                 return true;
             },
             ClientBattlePacket::Chat(msg) => {

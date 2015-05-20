@@ -333,7 +333,7 @@ impl SectorState {
 
             if let Some(client_id) = ship.client_id {
                 // Send the last tick
-                self.send_last_tick(client_id);
+                self.send_final_ticks(client_id, 1);
                 
                 let ship_stored = ShipStored::from_ship(ship);
                 
@@ -352,7 +352,7 @@ impl SectorState {
 
             if let Some(client_id) = ship.client_id {
                 // Send the last tick
-                self.send_last_tick(client_id);
+                self.send_final_ticks(client_id, 1);
                 
                 let ship_stored = ShipStored::from_ship(ship);
                 
@@ -442,17 +442,17 @@ impl SectorState {
         }
 
         let mut packet = OutPacket::new();
-        packet.write(&ClientBattlePacket::Tick(false));
+        packet.write(&ClientBattlePacket::Tick(None));
         self.slot.broadcast(packet);
     }
     
-    fn send_last_tick(&self, client_id: ClientId) {
+    fn send_final_ticks(&self, client_id: ClientId, ticks_left: u8) {
         if self.debug {
             println!("Sending tick");
         }
 
         let mut packet = OutPacket::new();
-        packet.write(&ClientBattlePacket::Tick(true));
+        packet.write(&ClientBattlePacket::Tick(Some(ticks_left)));
         self.slot.send(client_id, packet);
     }
 }
