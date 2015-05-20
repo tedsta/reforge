@@ -82,7 +82,7 @@ impl IModule for ProjectileWeaponModule {
                         events.add(
                             hit_tick,
                             target.ship.index,
-                            Box::new(DamageEvent::new(target_module.index, 1)),
+                            Box::new(DamageEvent::new(target_module.index, 1, 0, true)),
                         );
                     }
                 }

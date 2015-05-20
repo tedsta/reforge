@@ -140,14 +140,11 @@ pub struct ModuleStats {
 
 impl ModuleStats {
     // Returns the amount of damage dealt
-    pub fn deal_damage(&mut self, damage: u8) -> u8 {
+    pub fn deal_damage(&mut self, damage: u8) {
         if self.hp >= damage {
             self.hp -= damage;
-            damage
         } else {
-            let dealt_damage = self.hp;
             self.hp = 0;
-            dealt_damage
         }
     }
 
@@ -276,8 +273,8 @@ impl Module {
     }
     
     // Returns the amount of damage dealt
-    pub fn deal_damage(&mut self, damage: u8) -> u8 {
-        let dealt_damage = self.stats.deal_damage(damage);
+    pub fn deal_damage(&mut self, damage: u8) {
+        self.stats.deal_damage(damage);
         
         // Create damage visual at random location
         if self.stats.hp < self.min_hp {
@@ -293,8 +290,6 @@ impl Module {
                 kind: DamageVisualKind::Fire,
             });
         }
-        
-        dealt_damage
     }
     
     // Returns the amount of damage repaired

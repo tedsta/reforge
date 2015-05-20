@@ -13,7 +13,7 @@ use login::LoginError;
 
 #[derive(Clone)]
 pub enum LoginGuiAction {
-    Login(String, String),
+    Login(String, String, String),
     Back,
 }
 
@@ -28,6 +28,7 @@ pub struct LoginScreen {
     // Text boxes
     username_box: TextBox,
     password_box: TextBox,
+    ip_box: TextBox,
     
     // Buttons
     back_button: TextButton,
@@ -49,6 +50,7 @@ impl LoginScreen {
             
             username_box: TextBox::new("user".to_string(), 20, [600.0, 300.0], [300.0, 40.0]),
             password_box: password_box,
+            ip_box: TextBox::new("localhost".to_string(), 20, [600.0, 440.0], [300.0, 40.0]),
             
             back_button: TextButton::new("Back".to_string(), 20, [450.0, 500.0], [150.0, 40.0]),
             login_button: TextButton::new("Login".to_string(), 20, [610.0, 500.0], [150.0, 40.0]),
@@ -99,6 +101,7 @@ impl LoginScreen {
         // Handle text boxes
         self.username_box.event(e, [self.mouse_x, self.mouse_y]);
         self.password_box.event(e, [self.mouse_x, self.mouse_y]);
+        self.ip_box.event(e, [self.mouse_x, self.mouse_y]);
         
         // Handle buttons
         self.login_button.event(e, [self.mouse_x, self.mouse_y]);
@@ -110,7 +113,8 @@ impl LoginScreen {
         
         if self.login_button.get_clicked() {
             self.action = Some(LoginGuiAction::Login(self.username_box.text.clone(),
-                                                     self.password_box.text.clone()));
+                                                     self.password_box.text.clone(),
+                                                     self.ip_box.text.clone()));
         }
     }
 
@@ -157,9 +161,20 @@ impl LoginScreen {
             );
         }
         
+        {
+            let context = context.trans(400.0, 470.0);
+            Text::colored([1.0; 4], 30).draw(
+                "IP Address",
+                glyph_cache,
+                &context.draw_state, context.transform,
+                gl,
+            );
+        }
+        
         // Draw the text boxes
         self.username_box.draw(context, gl, glyph_cache);
         self.password_box.draw(context, gl, glyph_cache);
+        self.ip_box.draw(context, gl, glyph_cache);
         
         // Draw the buttons
         self.back_button.draw(context, gl, glyph_cache);

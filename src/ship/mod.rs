@@ -84,23 +84,32 @@ impl ShipState {
         }
     }
     
-    pub fn deal_damage(&mut self, module_index: ModuleIndex, damage: u8) {
-        // Can't deal more damage than there is HP
-        let damage = cmp::min(self.hp, damage);
+    pub fn deal_damage(&mut self,
+                       module_index: ModuleIndex,
+                       damage: u8,
+                       shield_piercing: u8,
+                       damage_shields: bool) {
+        let shield_absorption =
+            if self.shields > shield_piercing {
+                cmp::min(self.shields - shield_piercing, damage)
+            } else {
+                0
+            };
         
-        if self.shields > 0 {
-            self.shields -= cmp::min(self.shields, damage);
-        } else {
-            // Get the amount of damage dealt to the module
-            let damage =
-                self.module_stats
-                    .get_mut(module_index.to_usize())
-                    .expect("Failed to deal damage to non-existant module")
-                    .deal_damage(damage);
-            
-            // Adjust the ship's HP state
-            self.hp -= damage;
+        let ship_damage = damage - shield_absorption;
+        
+        if damage_shields {
+            self.shields -= shield_absorption;
         }
+        
+        // Get the amount of damage dealt to the module
+        self.module_stats
+            .get_mut(module_index.to_usize())
+            .expect("Failed to deal damage to non-existant module")
+            .deal_damage(ship_damage);
+        
+        // Adjust the ship's HP state
+        self.hp -= cmp::min(self.hp, ship_damage);
     }
     
     pub fn repair_damage(&mut self, module_index: ModuleIndex, repair: u8) {
