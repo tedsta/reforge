@@ -1,0 +1,33 @@
+[package]
+
+name = "reforge"
+version = "0.0.0"
+authors = [
+    "tedsta <tderego94@gmail.com>"
+]
+
+[features]
+
+default = ["server"]
+server = []
+
+[[bin]]
+
+name = "reforge_server"
+path = "../src/server.rs"
+
+[dependencies.vecmath]
+git = "https://github.com/pistondevelopers/vecmath"
+
+[dependencies.piston-float]
+git = "https://github.com/pistondevelopers/float"
+
+[dependencies.bincode]
+git = "https://github.com/tyoverby/bincode.git"
+
+[dependencies]
+
+time = "0.1.*"
+rustc-serialize = "0.3.*"
+rand = "0.3.7"
+num = "*"

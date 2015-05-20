@@ -4,15 +4,12 @@ Cargo.lock
 reforge.aip
 
 # Content
-content/*
+*/content/*
 
 # Binaries
 *.dll
-bin/*
-lib/*
-target/*
+*/target/*
 dist/*
 reForge-cache/*
 reForge-SetupFiles/*
-reforge.zip
-Thumbs.db
+*/Thumbs.db

@@ -9,19 +9,12 @@ authors = [
 [features]
 
 default = ["client"]
-#default = ["server"]
-
 client = []
-
-server = []
 
 [[bin]]
 
 name = "reforge_client"
-path = "src/client.rs"
-
-#name = "reforge_server"
-#path = "src/server.rs"
+path = "../src/client.rs"
 
 [dependencies.sdl2]
 #git = "https://github.com/AngryLawyer/rust-sdl2"
@@ -51,14 +44,14 @@ git = "https://github.com/pistondevelopers/shader_version"
 [dependencies.pistoncore-window]
 git = "https://github.com/pistondevelopers/window"
 
+[dependencies.freetype-rs]
+git = "https://github.com/pistondevelopers/freetype-rs"
+
 [dependencies.vecmath]
 git = "https://github.com/pistondevelopers/vecmath"
 
 [dependencies.piston-float]
 git = "https://github.com/pistondevelopers/float"
-
-[dependencies.freetype-rs]
-git = "https://github.com/pistondevelopers/freetype-rs"
 
 [dependencies.bincode]
 git = "https://github.com/tyoverby/bincode.git"

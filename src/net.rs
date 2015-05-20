@@ -518,7 +518,7 @@ impl InPacket {
     }
     
     pub fn read<T: Decodable>(&mut self) -> Result<T, DecodingError> {
-        Ok(try!(decode_from(&mut self.buffer, SizeLimit::Infinite)).0)
+        Ok(try!(decode_from(&mut self.buffer, SizeLimit::Infinite)))
     }
 }
 
