@@ -438,7 +438,7 @@ impl<'a> SpaceGui<'a> {
                 let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
             
                 let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
-                if self.plans.module_plans(module.index).plan_powered {
+                if self.plans.module_plans(module.index).active {
                     Rectangle::new([0.0, 0.0, 1.0, 0.5])
                         .draw(
                             [module_x, module_y, module_w, module_h],
@@ -499,7 +499,7 @@ impl<'a> SpaceGui<'a> {
             let mut exit_after = false;
             
             apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
-                if self.plans.module_plans(module.index).plan_powered {
+                if self.plans.module_plans(module.index).active {
                     if let Some(target_mode) = module.get_target_mode() {
                         // Select this module to begin targeting
                         self.selection = Some((module.index, target_mode));
@@ -533,7 +533,7 @@ impl<'a> SpaceGui<'a> {
                             let ref mut plans = self.plans;
                             
                             apply_to_module_if_point_inside(ship.get(bc), x, y, |ship_index, _, module| {
-                                plans.module_plans(selected_module).plan_target =
+                                plans.module_plans(selected_module).target =
                                     Some(module::Target {
                                         ship: ship_index,
                                         data: TargetData::TargetModule(module.index),
@@ -550,7 +550,7 @@ impl<'a> SpaceGui<'a> {
                     let ref mut plans = self.plans;
                     
                     apply_to_module_if_point_inside(client_ship, x, y, |ship_index, _, module| {
-                        plans.module_plans(selected_module).plan_target =
+                        plans.module_plans(selected_module).target =
                             Some(module::Target {
                                 ship: ship_index,
                                 data: TargetData::OwnModule(module.index),
@@ -568,7 +568,7 @@ impl<'a> SpaceGui<'a> {
                             if !ship.get(bc).jumping && !ship.get(bc).exploding {
                                 if let Some(beam_start) = self.beam_targeting_state {
                                     let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
-                                    self.plans.module_plans(selected_module).plan_target =
+                                    self.plans.module_plans(selected_module).target =
                                         Some(module::Target {
                                             ship: ship,
                                             data: TargetData::Beam(beam_start, beam_end),
@@ -623,7 +623,7 @@ impl<'a> SpaceGui<'a> {
             let y = y - SHIP_OFFSET_Y;
             
             apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
-                if self.plans.module_plans(module.index).plan_powered {
+                if module.get_power() > 0 && self.plans.module_plans(module.index).active {
                     self.plans.plan_deactivate_module(module);
                 }
                 module_was_deactivated = true;

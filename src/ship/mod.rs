@@ -252,7 +252,8 @@ impl Ship {
         module.index = ModuleIndex(self.modules.len() as u32);
         
         // Activate module if can
-        if module.is_active() {
+        if module.get_power() == 0 && !module.is_damaged() {
+            module.active = true;
             module.inner.borrow_mut().on_activated(&mut self.state);
         }
         
@@ -340,7 +341,7 @@ impl Ship {
     
     pub fn server_preprocess(&self, bc: &BattleContext) {
         for module in &self.modules {
-            if module.is_active() {
+            if module.active {
                 let ref module_context = module.create_module_context(bc, self);
                 module.inner.borrow_mut().server_preprocess(module_context);
             }
@@ -349,7 +350,7 @@ impl Ship {
     
     pub fn before_simulation(&self, bc: &BattleContext, events: &mut SimEvents) {
         for module in &self.modules {
-            if module.is_active() {
+            if module.active {
                 let ref module_context = module.create_module_context(bc, self);
                 module.inner.borrow_mut().before_simulation(module_context, events);
             }
@@ -409,7 +410,7 @@ impl Ship {
     
     pub fn after_simulation(&mut self) {
         for module in &self.modules {
-            if module.is_active() {
+            if module.active {
                 module.inner.borrow_mut().after_simulation(&mut self.state);
             }
         }
@@ -418,21 +419,19 @@ impl Ship {
     pub fn apply_module_stats(&mut self) {
         let module_stats: Vec<ModuleStats> = self.state.module_stats.iter().cloned().collect();
         for (module, stats) in self.modules.iter_mut().zip(module_stats.iter()) {
-            // Get if module was active before applying the stats
-            let was_active = module.is_active();
-            
             if module.stats.hp != stats.hp {
                 module.stats.hp = stats.hp;
             }
             
             // Activate or deactivate module if the active state changed
-            if was_active && !module.is_active() {
+            if module.active && module.is_damaged() {
                 // Module just got deactivated
                 self.state.power_use -= module.get_power();
-                module.powered = false;
+                module.active = false;
                 module.inner.borrow_mut().on_deactivated(&mut self.state);
-            } else if !was_active && module.is_active() {
-                // Module just got activated
+            } else if !module.active && module.get_power() == 0 && !module.is_damaged() {
+                // Module should be re-activated
+                module.active = true;
                 module.inner.borrow_mut().on_activated(&mut self.state);
             }
         }
@@ -444,9 +443,9 @@ impl Ship {
                 break;
             } else {
                 if module.get_power() > 0 {
-                    if module.powered {
+                    if module.active {
                         self.state.power_use -= module.get_power();
-                        module.powered = false;
+                        module.active = false;
                         module.inner.borrow_mut().on_deactivated(&mut self.state);
                     }
                 }
@@ -472,20 +471,20 @@ impl Ship {
     pub fn apply_plans(&mut self, plans: &ShipPlans) {
         for (module, module_plans) in self.modules.iter_mut().zip(plans.module_plans.iter()) {
             // Apply powered plans
-            if module_plans.plan_powered != module.powered {
-                if module_plans.plan_powered && self.state.can_activate_module(module) {
-                    module.powered = true;
+            if module_plans.active != module.active {
+                if module_plans.active && self.state.can_activate_module(module) {
+                    module.active = true;
                     self.state.power_use += module.get_power();
                     module.inner.borrow_mut().on_activated(&mut self.state);
-                } else if module.powered {
-                    module.powered = false;
+                } else if module.active {
+                    module.active = false;
                     self.state.power_use -= module.get_power();
                     module.inner.borrow_mut().on_deactivated(&mut self.state);
                 }
             }
             
             // Apply target plans
-            module.target = module_plans.plan_target;
+            module.target = module_plans.target;
         }
     }
     
@@ -499,7 +498,7 @@ impl Ship {
         for module in &self.modules {
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Write the base results
-            packet.write(&module.powered);
+            packet.write(&module.active);
             packet.write(&module.target);
         
             module.inner.borrow().write_results(packet);
@@ -512,12 +511,12 @@ impl Ship {
         for module in &mut self.modules {
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Read the base results
-            let was_powered = module.powered;
-            module.powered = packet.read().ok().expect("Failed to read Module powered");
+            let was_active = module.active;
+            module.active = packet.read().ok().expect("Failed to read Module powered");
             
-            if !was_powered && module.powered {
+            if !was_active && module.active {
                 module.inner.borrow_mut().on_activated(&mut self.state);
-            } else if was_powered && !module.powered {
+            } else if was_active && !module.active {
                 module.inner.borrow_mut().on_deactivated(&mut self.state);
             }
             
@@ -590,11 +589,11 @@ impl Ship {
             if module.get_power() == 0 { continue; }
             
             // Skip modules that aren't changing powered states
-            if plans.plan_powered == module.powered { continue; }
+            if plans.active == module.active { continue; }
             
             let context = context.trans((module.x as f64) * 48.0, (module.y as f64) * 48.0).trans((module.width as f64)*48.0 - 20.0, 2.0);
             
-            if plans.plan_powered {
+            if plans.active {
                 // Module is powering up, draw on icon
                 image(&module_icons.power_on_texture, context.transform, gl);
             } else {
@@ -691,7 +690,8 @@ impl ShipStored {
         module.index = ModuleIndex(self.modules.len() as u32);
         
         // Activate module if can
-        if module.is_active() {
+        if module.get_power() == 0 && !module.is_damaged() {
+            module.active = true;
             module.inner.borrow_mut().on_activated(&mut self.state);
         }
         

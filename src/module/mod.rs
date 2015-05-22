@@ -106,8 +106,8 @@ pub trait IModule : Send {
 
 #[derive(Clone, RustcEncodable, RustcDecodable)]
 pub struct ModulePlans {
-    pub plan_powered: bool,
-    pub plan_target: Option<Target>,
+    pub active: bool,
+    pub target: Option<Target>,
 }
 
 impl ModulePlans {
@@ -118,14 +118,14 @@ impl ModulePlans {
         
         let mut remove = false;
     
-        if let Some(ref target) = self.plan_target {
+        if let Some(ref target) = self.target {
             if target.ship == ship {
                 remove = true;
             }
         }
         
         if remove {
-            self.plan_target = None;
+            self.target = None;
         }
     }
 }
@@ -195,7 +195,7 @@ pub struct Module {
     min_hp: u8,    // Minimum HP for the module to still operate
     max_hp: u8,    // Maximum HP of module, including armor
     
-    pub powered: bool, // If the module consumes power, whether or not it's currently powered
+    pub active: bool,
     
     pub target: Option<Target>,
     
@@ -228,7 +228,7 @@ impl Module {
             min_hp: min_hp,
             max_hp: hp,
             
-            powered: false,
+            active: false,
             
             target: None,
             
@@ -264,12 +264,12 @@ impl Module {
         self.inner.borrow().get_target_mode()
     }
     
-    pub fn can_activate(&self) -> bool {
-        self.power > 0 && self.stats.hp >= self.min_hp
+    pub fn is_damaged(&self) -> bool {
+        self.stats.hp < self.min_hp
     }
     
-    pub fn is_active(&self) -> bool {
-        self.stats.hp >= self.min_hp && (self.powered || self.power == 0)
+    pub fn can_activate(&self) -> bool {
+        self.power > 0 && !self.is_damaged()
     }
     
     // Returns the amount of damage dealt
@@ -324,8 +324,8 @@ impl Module {
     
     pub fn create_plans(&self) -> ModulePlans {
         ModulePlans {
-            plan_powered: self.powered,
-            plan_target: self.target,
+            active: self.active,
+            target: self.target,
         }
     }
     
@@ -337,7 +337,7 @@ impl Module {
             height: self.height,
             
             index: self.index,
-            is_active: self.is_active(),
+            is_active: self.active,
             target: self.target.as_ref().map(|t| TargetManifest::from_target(bc, t)),
             
             ship_id: ship.id,
@@ -392,7 +392,7 @@ pub struct ModuleStored {
     min_hp: u8,    // Minimum HP for the module to still operate
     max_hp: u8,    // Maximum HP of module, including armor
     
-    pub powered: bool,      // If the module consumes power, whether or not it's currently powered (useless otherwise)
+    pub active: bool,
     
     pub index: ModuleIndex, // Array index in ship. Used for referencing modules across network.
     
@@ -413,7 +413,7 @@ impl ModuleStored {
             min_hp: module.min_hp,
             max_hp: module.max_hp,
             
-            powered: module.powered,
+            active: module.active,
             
             index: module.index,
             
@@ -434,7 +434,7 @@ impl ModuleStored {
             min_hp: self.min_hp,
             max_hp: self.max_hp,
             
-            powered: self.powered,
+            active: self.active,
             
             target: None,
             
@@ -470,12 +470,12 @@ impl ModuleStored {
         self.inner.borrow().get_target_mode()
     }
     
-    pub fn can_activate(&self) -> bool {
-        self.power > 0 && self.stats.hp >= self.min_hp
+    pub fn is_damaged(&self) -> bool {
+        self.stats.hp < self.min_hp
     }
     
-    pub fn is_active(&self) -> bool {
-        self.stats.hp >= self.min_hp && (self.powered || self.power == 0)
+    pub fn can_activate(&self) -> bool {
+        self.power > 0 && !self.is_damaged()
     }
     
     pub fn create_module_context<'a>(&self, ship: &'a ShipStored) -> ModuleContext<'a> {
@@ -486,7 +486,7 @@ impl ModuleStored {
             height: self.height,
             
             index: self.index,
-            is_active: self.is_active(),
+            is_active: self.active,
             target: None,
             
             ship_id: ship.id,

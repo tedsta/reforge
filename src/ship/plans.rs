@@ -26,7 +26,7 @@ impl ShipPlans {
     
     pub fn can_plan_activate_module(&self, ship_state: &ShipState, module: &Module) -> bool {
         module.can_activate()
-            && !self.module_plans[module.index.to_usize()].plan_powered
+            && !self.module_plans[module.index.to_usize()].active
             && self.available_plan_power(ship_state) >= module.get_power()
     }
     
@@ -34,14 +34,14 @@ impl ShipPlans {
         self.plan_power_use += module.get_power();
         self.module_plans.get_mut(module.index.to_usize())
             .expect("Failed to plan activate non-existant module")
-            .plan_powered = true;
+            .active = true;
     }
     
     pub fn plan_deactivate_module(&mut self, module: &Module) {
         self.plan_power_use -= module.get_power();
         self.module_plans.get_mut(module.index.to_usize())
             .expect("Failed to plan activate non-existant module")
-            .plan_powered = false;
+            .active = false;
     }
     
     pub fn deactivate_unpowerable_modules(&mut self, ship: &Ship) {
@@ -50,7 +50,7 @@ impl ShipPlans {
                 break;
             } else {
                 if module.get_power() > 0 {
-                    if !module.powered && self.module_plans[module.index.to_usize()].plan_powered {
+                    if !module.active && self.module_plans[module.index.to_usize()].active {
                         self.plan_deactivate_module(module);
                     }
                 }
