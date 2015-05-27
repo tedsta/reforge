@@ -21,7 +21,8 @@ path = "../src/client.rs"
 version = "0.2.1"
 
 [dependencies.sdl2_mixer]
-git = "https://github.com/andelf/rust-sdl2_mixer"
+#git = "https://github.com/andelf/rust-sdl2_mixer"
+version = "0.2.1"
 
 [dependencies.pistoncore-glutin_window]
 git = "https://github.com/pistondevelopers/glutin_window"
