@@ -1,6 +1,6 @@
-use event::{Events, GenericEvent, RenderArgs};
+use piston::event::{Events, GenericEvent, RenderArgs};
 use graphics::{Context, Rectangle};
-use input::{keyboard, mouse, Button};
+use piston::input::{keyboard, mouse, Button};
 use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -59,7 +59,7 @@ impl<'a> StationGui<'a> {
     }
     
     pub fn event<E: GenericEvent>(&mut self, e: &E, client_ship: &Option<ShipStored>) -> Option<StationAction> {
-        use event::*;
+        use piston::event::*;
         
         e.mouse_cursor(|x, y| {
             self.mouse_pos.x = x;

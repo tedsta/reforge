@@ -12,6 +12,7 @@
 #![feature(std_misc)]
 #![feature(convert)]
 #![feature(collections_drain)]
+#![feature(duration)]
 
 extern crate bincode;
 extern crate float;

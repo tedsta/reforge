@@ -12,6 +12,7 @@
 #![feature(std_misc)]
 #![feature(convert)]
 #![feature(collections_drain)]
+#![feature(duration)]
 
 extern crate bincode;
 extern crate float;
@@ -22,15 +23,12 @@ extern crate time;
 
 // Piston stuff
 extern crate sdl2;
+extern crate piston;
 extern crate glutin_window;
 extern crate opengl_graphics;
 extern crate graphics;
-extern crate event;
-extern crate input;
 extern crate sdl2_mixer;
-extern crate shader_version;
 extern crate vecmath;
-extern crate window;
 
 use std::os;
 use std::rc::Rc;
@@ -40,9 +38,12 @@ use std::thread::{Builder, Thread};
 use std::sync::mpsc::channel;
 
 use glutin_window::GlutinWindow;
-use opengl_graphics::GlGraphics;
+use opengl_graphics::{
+    GlGraphics,
+    OpenGL,
+};
 use opengl_graphics::glyph_cache::GlyphCache;
-use window::{WindowSettings, Size};
+use piston::window::{WindowSettings, Size};
 
 use asset_store::AssetStore;
 use battle_context::BattleContext;
@@ -89,7 +90,7 @@ mod vec;
 
 #[cfg(feature = "client")]
 fn main () {
-    let opengl = shader_version::OpenGL::_3_2;
+    let opengl = OpenGL::_3_2;
     
     // Create an window.
     let window = GlutinWindow::new(
@@ -142,8 +143,8 @@ fn main () {
         login::run_login_server(login_slot, star_map_slot_id, star_map_account_sender, logout_receiver);
     });
     
+    let mut star_map_server = StarMapServer::new(star_map_slot);
     Builder::new().name("star_map_server".to_string()).spawn(move || {
-        let mut star_map_server = StarMapServer::new(star_map_slot);
         star_map_server.run(star_map_account_receiver, logout_sender);
     });
     

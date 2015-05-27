@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use event::Events;
+use piston::event::Events;
 use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 use glutin_window::GlutinWindow;
@@ -57,9 +57,9 @@ impl<'a> StationClient<'a> {
     
         let mut time: f64 = 0.0;
         for e in Events::events(window.clone()) {
-            use event;
-            use input;
-            use event::*;
+            use piston::event;
+            use piston::input;
+            use piston::event::*;
 
             let e: event::Event<input::Input> = e;
         

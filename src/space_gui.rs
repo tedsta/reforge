@@ -4,9 +4,9 @@ use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
-use event::{Events, GenericEvent, RenderArgs};
+use piston::event::{Events, GenericEvent, RenderArgs};
 use graphics::{Context, Rectangle};
-use input::{keyboard, mouse, Button};
+use piston::input::{keyboard, mouse, Button};
 use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -155,7 +155,7 @@ impl<'a> SpaceGui<'a> {
     }
     
     pub fn event<E: GenericEvent>(&mut self, bc: &BattleContext, e: &E, client_ship: &Ship) -> Option<SpaceGuiAction> {
-        use event::*;
+        use piston::event::*;
         
         if client_ship.state.get_hp() == 0 {
             return None;

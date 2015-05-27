@@ -24,6 +24,9 @@ version = "0.2.1"
 #git = "https://github.com/andelf/rust-sdl2_mixer"
 version = "0.2.1"
 
+[dependencies.piston]
+git = "https://github.com/pistondevelopers/piston"
+
 [dependencies.pistoncore-glutin_window]
 git = "https://github.com/pistondevelopers/glutin_window"
 
@@ -33,29 +36,21 @@ git = "https://github.com/pistondevelopers/opengl_graphics"
 [dependencies.piston2d-graphics]
 git = "https://github.com/pistondevelopers/graphics"
 
-[dependencies.pistoncore-event]
-git = "https://github.com/pistondevelopers/event"
-
-[dependencies.pistoncore-input]
-git = "https://github.com/pistondevelopers/input"
-
-[dependencies.shader_version]
-git = "https://github.com/pistondevelopers/shader_version"
-
-[dependencies.pistoncore-window]
-git = "https://github.com/pistondevelopers/window"
-
 [dependencies.freetype-rs]
 git = "https://github.com/pistondevelopers/freetype-rs"
+#version = "0.0.10"
 
 [dependencies.vecmath]
-git = "https://github.com/pistondevelopers/vecmath"
+#git = "https://github.com/pistondevelopers/vecmath"
+version = "0.0.23"
 
 [dependencies.piston-float]
-git = "https://github.com/pistondevelopers/float"
+#git = "https://github.com/pistondevelopers/float"
+version = "0.0.2"
 
 [dependencies.bincode]
-git = "https://github.com/tyoverby/bincode.git"
+#git = "https://github.com/tyoverby/bincode.git"
+version = "0.3.0"
 
 [dependencies]
 

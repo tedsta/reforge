@@ -7,11 +7,11 @@ use std::thread;
 use std::time::Duration;
 use time;
 
-use event::Events;
+use piston::event::Events;
 use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 use glutin_window::GlutinWindow;
-use window::Window;
+use piston::window::Window;
 
 use asset_store::AssetStore;
 use battle_context::{BattleContext, TICKS_PER_SECOND};
@@ -61,7 +61,7 @@ impl<'a> ClientBattleState<'a> {
                chat_gui: &mut ChatGui,
                sectors: Vec<SectorData>,
                server_results_sent: bool) {
-        use window::Window;
+        use piston::window::Window;
     
         let ref mut gui = SpaceGui::new(asset_store, &self.bc, chat_gui, sectors, self.player_ship);
     
@@ -154,9 +154,9 @@ impl<'a> ClientBattleState<'a> {
         let mut next_tick = 0;
         let mut plans_sent = false;
         for e in Events::events(window.clone()) {
-            use event;
-            use input;
-            use event::*;
+            use piston::event;
+            use piston::input;
+            use piston::event::*;
 
             let e: event::Event<input::Input> = e;
         
