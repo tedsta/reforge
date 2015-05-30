@@ -28,6 +28,7 @@ pub use self::engine::EngineModule;
 pub use self::proj_weapon::ProjectileWeaponModule;
 pub use self::shield::ShieldModule;
 pub use self::solar::SolarModule;
+pub use self::cabin::CabinModule;
 pub use self::command::CommandModule;
 pub use self::beam_weapon::BeamWeaponModule;
 pub use self::repair::RepairModule;
@@ -40,6 +41,7 @@ pub mod engine;
 pub mod proj_weapon;
 pub mod shield;
 pub mod solar;
+pub mod cabin;
 pub mod command;
 pub mod beam_weapon;
 pub mod repair;
@@ -507,6 +509,7 @@ pub enum ModuleClass {
     Engine,
     Solar,
     Command,
+    Cabin,
     BeamWeapon,
     Repair,
 }
@@ -528,6 +531,8 @@ impl Decodable for ModuleInnerBox {
                 Ok(Box::new(try!(<SolarModule as Decodable>::decode(d)))),
             Command =>
                 Ok(Box::new(try!(<CommandModule as Decodable>::decode(d)))),
+            Cabin =>
+                Ok(Box::new(try!(<CabinModule as Decodable>::decode(d)))),
             BeamWeapon =>
                 Ok(Box::new(try!(<BeamWeaponModule as Decodable>::decode(d)))),
             Repair =>
@@ -567,6 +572,10 @@ impl Encodable for ModuleInnerBox {
             Command => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
                 try!(<CommandModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            Cabin => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.deref());
+                try!(<CabinModule as Encodable>::encode(mem::transmute(to.data), s));
             },
             BeamWeapon => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());

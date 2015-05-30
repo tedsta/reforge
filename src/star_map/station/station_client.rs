@@ -42,7 +42,7 @@ impl<'a> StationClient<'a> {
         let module_inventory =
             vec![
                 ("engine".to_string(), vec![(ModelIndex(0), 100)]),
-                ("command".to_string(), vec![(ModelIndex(1), 100)]),
+                ("command".to_string(), vec![(ModelIndex(1), 100), (ModelIndex(7), 100)]),
                 ("power".to_string(), vec![(ModelIndex(2), 100)]),
                 ("shields".to_string(), vec![(ModelIndex(3), 100)]),
                 ("weapons".to_string(), vec![(ModelIndex(4), 100), (ModelIndex(5), 100), (ModelIndex(6), 100)]),

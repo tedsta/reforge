@@ -11,6 +11,7 @@ use super::{
     ShieldModule,
     SolarModule,
     CommandModule,
+    CabinModule,
     BeamWeaponModule,
     RepairModule,
 };
@@ -115,6 +116,16 @@ impl ModelStore {
                     min_hp: 2,
                     max_hp: 3,
                 },
+                Model {
+                    name: "Cabin Mk1".to_string(),
+                    factory: Box::new(move || ModuleStored::from_module(CabinModule::new())),
+                    icon: Texture::from_path(&Path::new("content/textures/modules/icons/cabin.png")).unwrap(),
+                    width: 2,
+                    height: 3,
+                    power: 0,
+                    min_hp: 3,
+                    max_hp: 8,
+                },
             ];
     
         ModelStore {
@@ -188,6 +199,15 @@ impl ModelStore {
                     power: 2,
                     min_hp: 2,
                     max_hp: 3,
+                },
+                Model {
+                    name: "Cabin Mk1".to_string(),
+                    factory: Box::new(move || ModuleStored::from_module(CabinModule::new())),
+                    width: 2,
+                    height: 3,
+                    power: 0,
+                    min_hp: 3,
+                    max_hp: 8,
                 },
             ];
     
