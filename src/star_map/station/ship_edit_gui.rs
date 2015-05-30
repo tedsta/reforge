@@ -1,6 +1,6 @@
-use event::GenericEvent;
+use piston::event::GenericEvent;
 use graphics::Context;
-use input::{mouse, Button};
+use piston::input::{mouse, Button};
 use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -40,7 +40,7 @@ impl<'a> ShipEditGui<'a> {
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: Vec2f, ship: &ShipStored) -> Option<ShipEditAction> {
-        use event::*;
+        use piston::event::*;
         
         e.press(|button| {
             match button {

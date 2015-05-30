@@ -1,6 +1,6 @@
-use event::{GenericEvent};
+use piston::event::{GenericEvent};
 use graphics::{Context};
-use input::{keyboard, mouse, Button};
+use piston::input::{keyboard, mouse, Button};
 use opengl_graphics::{GlGraphics};
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -81,7 +81,7 @@ impl TextButton {
     }
     
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) {
-        use event::*;
+        use piston::event::*;
         
         e.mouse_cursor(|_, _| {
             if self.mouse_focus != MouseFocus::Focus {
@@ -215,7 +215,7 @@ impl TextBox {
     }
     
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) {
-        use event::*;
+        use piston::event::*;
         
         e.mouse_cursor(|_, _| {
             if self.mouse_focus != MouseFocus::Focus {

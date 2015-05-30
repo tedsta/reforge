@@ -1,6 +1,6 @@
-use event::GenericEvent;
+use piston::event::GenericEvent;
 use graphics::Context;
-use input::{keyboard, Button};
+use piston::input::{keyboard, Button};
 use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -39,7 +39,7 @@ impl ChatGui {
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: Vec2f) -> Option<ChatGuiAction> {
-        use event::*;
+        use piston::event::*;
         
         self.msg_box.event(e, [mouse_pos.x, mouse_pos.y]);
         self.send_button.event(e, [mouse_pos.x, mouse_pos.y]);

@@ -2,9 +2,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use glutin_window::GlutinWindow;
-use event::{Events, GenericEvent};
+use piston::event::{Events, GenericEvent};
 use graphics::Context;
-use input::{keyboard, mouse, Button};
+use piston::input::{keyboard, mouse, Button};
 use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -60,9 +60,9 @@ impl LoginScreen {
     pub fn run(&mut self, window: &Rc<RefCell<GlutinWindow>>, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, bg_texture: &Texture) -> LoginGuiAction {
         // Main loop
         for e in Events::events(window.clone()) {
-            use event;
-            use input;
-            use event::*;
+            use piston::event;
+            use piston::input;
+            use piston::event::*;
 
             let e: event::Event<input::Input> = e;
 
@@ -84,7 +84,7 @@ impl LoginScreen {
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E) {
-        use event::*;
+        use piston::event::*;
         
         e.mouse_cursor(|x, y| {
             self.on_mouse_moved(x, y);
