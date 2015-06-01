@@ -24,21 +24,9 @@ version = "0.2.1"
 #git = "https://github.com/andelf/rust-sdl2_mixer"
 version = "0.2.1"
 
-[dependencies.piston]
-git = "https://github.com/pistondevelopers/piston"
-
-[dependencies.pistoncore-glutin_window]
-git = "https://github.com/pistondevelopers/glutin_window"
-
-[dependencies.piston2d-opengl_graphics]
-git = "https://github.com/pistondevelopers/opengl_graphics"
-
-[dependencies.piston2d-graphics]
-git = "https://github.com/pistondevelopers/graphics"
-
 [dependencies.freetype-rs]
-git = "https://github.com/pistondevelopers/freetype-rs"
-#version = "0.0.10"
+#git = "https://github.com/pistondevelopers/freetype-rs"
+version = "0.1.0"
 
 [dependencies.vecmath]
 #git = "https://github.com/pistondevelopers/vecmath"
@@ -58,3 +46,8 @@ time = "0.1.*"
 rustc-serialize = "0.3.*"
 rand = "0.3.7"
 num = "*"
+
+piston = "0.1.4"
+piston2d-graphics = "0.1.4"
+pistoncore-glutin_window = "0.1.0"
+piston2d-opengl_graphics = "0.1.0"
