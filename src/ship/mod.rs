@@ -289,66 +289,68 @@ impl Ship {
             
             for x in (0..module.shape.side()) {
                 for y in (0..module.shape.side()) {
-                    let circle_pos = module.get_render_position() + (Vec2::new(x as f64, y as f64)*48.0);
-                    let circle_radius = 48.0 / 2.5;
-                    
-                    match beam {
-                        Some((start, end)) => {
-                            // We are using the algorithm described here:
-                            // http://stackoverflow.com/a/1084899/4006804
+                    if module.shape.get(x, y) == 1 {
+                        let circle_pos = module.get_render_position() + (Vec2::new(x as f64, y as f64)*48.0 + Vec2::new(48.0/2.0, 48.0/2.0));
+                        let circle_radius = 48.0 / 2.5;
                         
-                            // The beam's direction vector
-                            let d = end - start;
+                        match beam {
+                            Some((start, end)) => {
+                                // We are using the algorithm described here:
+                                // http://stackoverflow.com/a/1084899/4006804
                             
-                            // The vector from the circle center to the beam start
-                            let f = start - circle_pos;
-                            
-                            // Some variables for the algorithm. These correspond to variables in the quadratic
-                            // formula.
-                            let a = d.dot(d);
-                            let b = 2.0 * f.dot(d);
-                            let c = f.dot(f) - circle_radius*circle_radius;
-                            
-                            let discriminant = b*b - 4.0*a*c;
-                            
-                            if discriminant < 0.0 {
-                                // No intersection
-                                to_apply(module, circle_pos, circle_radius, None);
-                            } else {
-                                // Ray didn't totally miss sphere, so there is a solution to the equation.
-
-                                let discriminant = discriminant.sqrt();
-
-                                // Either solution may be on or off the ray so need to test both t1 is always the
-                                // smaller value, because BOTH discriminant and a are nonnegative.
-                                let t1 = (-b - discriminant)/(2.0*a);
-                                let t2 = (-b + discriminant)/(2.0*a);
-
-                                // 3x HIT cases:
-                                //          -o->             --|-->  |            |  --|->
-                                // Impale(t1 hit,t2 hit), Poke(t1 hit,t2>1), ExitWound(t1<0, t2 hit), 
-
-                                // 3x MISS cases:
-                                //       ->  o                     o ->              | -> |
-                                // FallShort (t1>1,t2>1), Past (t1<0,t2<0), CompletelyInside(t1<0, t2>1)
-
-                                if t1 >= 0.0 && t1 <= 1.0 {
-                                    // Impale, poke
-                                    to_apply(module, circle_pos, circle_radius, Some(t1));
-                                } else if t2 >= 0.0 && t2 <= 1.0 {
-                                    // Exit wound
-                                    to_apply(module, circle_pos, circle_radius, Some(t2));
-                                } else if t1 < 0.0 && t2 > 1.0 {
-                                    // Completely inside
-                                    to_apply(module, circle_pos, circle_radius, Some(0.0));
-                                } else {
-                                    // No hit
+                                // The beam's direction vector
+                                let d = end - start;
+                                
+                                // The vector from the circle center to the beam start
+                                let f = start - circle_pos;
+                                
+                                // Some variables for the algorithm. These correspond to variables in the quadratic
+                                // formula.
+                                let a = d.dot(d);
+                                let b = 2.0 * f.dot(d);
+                                let c = f.dot(f) - circle_radius*circle_radius;
+                                
+                                let discriminant = b*b - 4.0*a*c;
+                                
+                                if discriminant < 0.0 {
+                                    // No intersection
                                     to_apply(module, circle_pos, circle_radius, None);
+                                } else {
+                                    // Ray didn't totally miss sphere, so there is a solution to the equation.
+
+                                    let discriminant = discriminant.sqrt();
+
+                                    // Either solution may be on or off the ray so need to test both t1 is always the
+                                    // smaller value, because BOTH discriminant and a are nonnegative.
+                                    let t1 = (-b - discriminant)/(2.0*a);
+                                    let t2 = (-b + discriminant)/(2.0*a);
+
+                                    // 3x HIT cases:
+                                    //          -o->             --|-->  |            |  --|->
+                                    // Impale(t1 hit,t2 hit), Poke(t1 hit,t2>1), ExitWound(t1<0, t2 hit), 
+
+                                    // 3x MISS cases:
+                                    //       ->  o                     o ->              | -> |
+                                    // FallShort (t1>1,t2>1), Past (t1<0,t2<0), CompletelyInside(t1<0, t2>1)
+
+                                    if t1 >= 0.0 && t1 <= 1.0 {
+                                        // Impale, poke
+                                        to_apply(module, circle_pos, circle_radius, Some(t1));
+                                    } else if t2 >= 0.0 && t2 <= 1.0 {
+                                        // Exit wound
+                                        to_apply(module, circle_pos, circle_radius, Some(t2));
+                                    } else if t1 < 0.0 && t2 > 1.0 {
+                                        // Completely inside
+                                        to_apply(module, circle_pos, circle_radius, Some(0.0));
+                                    } else {
+                                        // No hit
+                                        to_apply(module, circle_pos, circle_radius, None);
+                                    }
                                 }
+                            },
+                            None => {
+                                to_apply(module, circle_pos, circle_radius, None);
                             }
-                        },
-                        None => {
-                            to_apply(module, circle_pos, circle_radius, None);
                         }
                     }
                 }

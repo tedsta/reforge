@@ -318,22 +318,38 @@ impl<'a> SpaceGui<'a> {
             let selected_module = selected_module.get(client_ship);
             
             // Highlight selected module
+            {
+                let Vec2{x: module_x, y: module_y} = selected_module.get_render_position();
+                
+                let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
+                
+                for x in (0..selected_module.shape.side()) {
+                    for y in (0..selected_module.shape.side()) {
+                        if selected_module.shape.get(x, y) == 1 {
+                            let offset_x = x as f64 * 48.0;
+                            let offset_y = y as f64 * 48.0;
+                            if self.plans.module_plans(selected_module.index).active {
+                                Rectangle::new([0.0, 0.0, 1.0, 0.5])
+                                    .draw(
+                                        [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
+                                        &context.draw_state, context.transform,
+                                        gl
+                                    );
+                            } else if self.plans.can_plan_activate_module(&client_ship.state, selected_module) {
+                                Rectangle::new([1.0, 1.0, 0.0, 0.5])
+                                    .draw(
+                                        [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
+                                        &context.draw_state, context.transform,
+                                        gl
+                                    );
+                            }
+                        }
+                    }
+                }
+            }
+            
             let x = self.mouse_pos.x - SHIP_OFFSET_X;
             let y = self.mouse_pos.y - SHIP_OFFSET_Y;
-
-            let Vec2{x: module_x, y: module_y} = selected_module.get_render_position();
-            let Vec2{x: module_w, y: module_h} = selected_module.get_render_size();
-            let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
-        
-            {
-                let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
-                Rectangle::new([0.0, 1.0, 0.0, 0.5])
-                    .draw(
-                        [module_x, module_y, module_w, module_h],
-                        &context.draw_state, context.transform,
-                        gl
-                    );
-            }
             
             // Draw beam targeting visual
             match target_mode {
@@ -387,19 +403,24 @@ impl<'a> SpaceGui<'a> {
 
                         apply_to_module_if_point_inside(ship.get(bc), x, y, |_, _, module| {
                             let Vec2{x: module_x, y: module_y} = module.get_render_position();
-                            let Vec2{x: module_w, y: module_h} = module.get_render_size();
-                            
-                            let (module_x, module_y, module_w, module_h) =
-                                (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
                             
                             let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
-
-                            Rectangle::new([1.0, 0.0, 0.0, 0.5])
-                                .draw(
-                                    [module_x, module_y, module_w, module_h],
-                                    &context.draw_state, context.transform,
-                                    gl
-                                );
+                            
+                            for x in (0..module.shape.side()) {
+                                for y in (0..module.shape.side()) {
+                                    if module.shape.get(x, y) == 1 {
+                                        let offset_x = x as f64 * 48.0;
+                                        let offset_y = y as f64 * 48.0;
+                                        
+                                        Rectangle::new([1.0, 0.0, 0.0, 0.5])
+                                            .draw(
+                                                [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
+                                                &context.draw_state, context.transform,
+                                                gl
+                                            );
+                                    }
+                                }
+                            }
                         });
                     }
                 },
@@ -410,19 +431,24 @@ impl<'a> SpaceGui<'a> {
 
                     apply_to_module_if_point_inside(client_ship, x, y, |_, _, module| {
                         let Vec2{x: module_x, y: module_y} = module.get_render_position();
-                        let Vec2{x: module_w, y: module_h} = module.get_render_size();
                         
-                        let (module_x, module_y, module_w, module_h) =
-                            (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
-                        
-                        let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
-
-                        Rectangle::new([1.0, 0.0, 0.0, 0.5])
-                            .draw(
-                                [module_x, module_y, module_w, module_h],
-                                &context.draw_state, context.transform,
-                                gl
-                            );
+                        let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
+                            
+                        for x in (0..module.shape.side()) {
+                            for y in (0..module.shape.side()) {
+                                if module.shape.get(x, y) == 1 {
+                                    let offset_x = x as f64 * 48.0;
+                                    let offset_y = y as f64 * 48.0;
+                                    
+                                    Rectangle::new([0.0, 1.0, 0.0, 0.5])
+                                        .draw(
+                                            [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
+                                            &context.draw_state, context.transform,
+                                            gl
+                                        );
+                                }
+                            }
+                        }
                     });
                 },
                 _ => { },
@@ -434,24 +460,31 @@ impl<'a> SpaceGui<'a> {
 
             apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
                 let Vec2{x: module_x, y: module_y} = module.get_render_position();
-                let Vec2{x: module_w, y: module_h} = module.get_render_size();
-                let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
             
                 let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
-                if self.plans.module_plans(module.index).active {
-                    Rectangle::new([0.0, 0.0, 1.0, 0.5])
-                        .draw(
-                            [module_x, module_y, module_w, module_h],
-                            &context.draw_state, context.transform,
-                            gl
-                        );
-                } else if self.plans.can_plan_activate_module(ship_state, module) {
-                    Rectangle::new([1.0, 1.0, 0.0, 0.5])
-                        .draw(
-                            [module_x, module_y, module_w, module_h],
-                            &context.draw_state, context.transform,
-                            gl
-                        );
+                
+                for x in (0..module.shape.side()) {
+                    for y in (0..module.shape.side()) {
+                        if module.shape.get(x, y) == 1 {
+                            let offset_x = x as f64 * 48.0;
+                            let offset_y = y as f64 * 48.0;
+                            if self.plans.module_plans(module.index).active {
+                                Rectangle::new([0.0, 0.0, 1.0, 0.5])
+                                    .draw(
+                                        [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
+                                        &context.draw_state, context.transform,
+                                        gl
+                                    );
+                            } else if self.plans.can_plan_activate_module(ship_state, module) {
+                                Rectangle::new([1.0, 1.0, 0.0, 0.5])
+                                    .draw(
+                                        [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
+                                        &context.draw_state, context.transform,
+                                        gl
+                                    );
+                            }
+                        }
+                    }
                 }
             });
         }
@@ -678,12 +711,17 @@ pub fn apply_to_module_if_point_inside<F>(ship: &Ship, x: f64, y: f64, mut f: F)
         F: FnMut(ShipIndex, &ShipState, &Module)
 {
     for module in ship.modules.iter() {
-        // Get module position and size on screen
-        let Vec2{x: module_x, y: module_y} = module.get_render_position();
-        let Vec2{x: module_w, y: module_h} = module.get_render_size();
-        let (module_x, module_y, module_w, module_h) = (module_x as f64, module_y as f64, module_w as f64, module_h as f64);
-        if x >= module_x && x <= module_x+module_w && y >= module_y && y <= module_y+module_h {
-            f(ship.index, &ship.state, module);
+        for cx in (0..module.shape.side()) {
+            for cy in (0..module.shape.side()) {
+                if module.shape.get(cx, cy) == 1 {
+                    // Get module position and size on screen
+                    let Vec2{x: module_x, y: module_y} = module.get_render_position() + Vec2::new(cx as f64, cy as f64)*48.0;
+                    if x >= module_x && x <= module_x+48.0 && y >= module_y && y <= module_y+48.0 {
+                        f(ship.index, &ship.state, module);
+                        return;
+                    }
+                }
+            }
         }
     }
 }
