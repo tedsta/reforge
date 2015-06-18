@@ -12,7 +12,7 @@ use opengl_graphics::GlGraphics;
 
 use battle_context::{BattleContext, tick_to_time};
 use module;
-use module::{IModule, Module, ModuleClass, ModuleContext, TargetManifest, TargetManifestData};
+use module::{IModule, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{Ship, ShipId, ShipState};
 use sim::SimEvents;
@@ -40,7 +40,7 @@ impl ProjectileWeaponModule {
             hit: false,
         };
     
-        Module::new(1, 1, 2, 2, 3,
+        Module::new(ModuleShape::new(vec![vec![1]]), 2, 2, 3,
             ProjectileWeaponModule {
                 projectiles: repeat(projectile).take(3).collect(),
             }

@@ -5,7 +5,7 @@ use opengl_graphics::GlGraphics;
 
 use battle_context::BattleContext;
 use module;
-use module::{IModule, Module, ModuleClass, ModuleContext, TargetManifest, TargetManifestData};
+use module::{IModule, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData};
 use net::{InPacket, OutPacket};
 use ship::{Ship, ShipState};
 use sim::SimEvents;
@@ -26,7 +26,7 @@ pub struct BeamWeaponModule;
 
 impl BeamWeaponModule {
     pub fn new() -> Module {
-        Module::new(1, 1, 3, 2, 3, BeamWeaponModule)
+        Module::new(ModuleShape::new(vec![vec![1]]), 3, 2, 3, BeamWeaponModule)
     }
 }
 

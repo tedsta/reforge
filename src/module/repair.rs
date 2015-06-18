@@ -1,4 +1,4 @@
-use module::{IModule, Module, ModuleClass, ModuleContext, TargetManifest, TargetManifestData, TargetMode};
+use module::{IModule, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData, TargetMode};
 use ship::ShipState;
 use sim::SimEvents;
 use sim_events::RepairEvent;
@@ -18,7 +18,7 @@ pub struct RepairModule;
 
 impl RepairModule {
     pub fn new() -> Module {
-        Module::new(1, 1, 2, 2, 3, RepairModule)
+        Module::new(ModuleShape::new(vec![vec![1]]), 2, 2, 3, RepairModule)
     }
 }
 

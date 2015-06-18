@@ -3,7 +3,16 @@ use rand::Rng;
 use rand;
 
 use ship::{Ship, ShipId};
-use module::{EngineModule, ProjectileWeaponModule, ShieldModule, SolarModule, CommandModule, BeamWeaponModule};
+use module::{
+    ModuleShape,
+
+    EngineModule,
+    ProjectileWeaponModule,
+    ShieldModule,
+    SolarModule,
+    CommandModule,
+    BeamWeaponModule
+};
 
 pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     if level == 0 {
@@ -108,7 +117,7 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     let mut command_x = ship.get_width();
     let command_y = cmp::min(height - 1, rng.gen::<u8>()%(height + 1));
     
-    while ship.is_space_free(command_x - 1, command_y, 1, 2) {
+    while ship.is_space_free(command_x - 1, command_y, &ModuleShape::new(vec![vec![1, 0], vec![1, 0]])) {
         command_x -= 1;
     }
     

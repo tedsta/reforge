@@ -97,9 +97,9 @@ impl<'a> ShipEditGui<'a> {
             let module_offset = Vec2::new(10.0 + (i as f64 * 50.0), 59.0);
             
             if mouse_pos.x >= module_offset.x &&
-               mouse_pos.x <= module_offset.x + (model.width as f64 * 48.0) &&
+               mouse_pos.x <= module_offset.x + (model.shape.side() as f64 * 48.0) &&
                mouse_pos.y >= module_offset.y &&
-               mouse_pos.y <= module_offset.y + (model.height as f64 * 48.0) {
+               mouse_pos.y <= module_offset.y + (model.shape.side() as f64 * 48.0) {
                 self.selected_model = Some(i);
             }
         }
@@ -113,7 +113,7 @@ impl<'a> ShipEditGui<'a> {
             let (model_index, _) = models[selected_model];
             let model = model_index.get(self.model_store);
             
-            if ship.is_space_free(pos_on_ship.x as u8, pos_on_ship.y as u8, model.width, model.height) &&
+            if ship.is_space_free(pos_on_ship.x as u8, pos_on_ship.y as u8, &model.shape) &&
                (pos_on_ship.x as u8) < 10 && (pos_on_ship.y as u8) < 8 {
                 self.action = Some(ShipEditAction::Place(model_index, pos_on_ship.x as u8, pos_on_ship.y as u8));
             }
@@ -189,14 +189,14 @@ impl<'a> ShipEditGui<'a> {
         
             let pos_on_ship = self.get_pos_on_ship(mouse_pos);
             
-            if ship.is_space_free(pos_on_ship.x as u8, pos_on_ship.y as u8, model.width, model.height) &&
+            if ship.is_space_free(pos_on_ship.x as u8, pos_on_ship.y as u8, &model.shape) &&
                (pos_on_ship.x as u8) < 10 && (pos_on_ship.y as u8) < 8 {
                 let render_pos = pos_on_ship*48.0 + self.ship_offset;
                 
                 let context = context.trans(render_pos.x, render_pos.y);
                 image(&model.icon, context.transform, gl);
             } else {
-                let context = context.trans(mouse_pos.x - (model.width as f64 * 48.0 / 2.0), mouse_pos.y - (model.height as f64 * 48.0 / 2.0));
+                let context = context.trans(mouse_pos.x - (48.0 / 2.0), mouse_pos.y - (48.0 / 2.0));
                 image(&model.icon, context.transform, gl);
             }
         }

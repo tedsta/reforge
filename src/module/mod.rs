@@ -55,8 +55,7 @@ pub mod model;
 pub struct ModuleContext<'a> {
     pub x: u8,
     pub y: u8,
-    pub width: u8,
-    pub height: u8,
+    pub shape: &'a ModuleShape,
 
     pub index: ModuleIndex,
     pub is_active: bool,
@@ -72,7 +71,7 @@ impl<'a> ModuleContext<'a> {
     }
     
     pub fn get_render_size(&self) -> Vec2f {
-        Vec2{x: (self.width as f64) * 48.0, y: (self.height as f64) * 48.0}
+        Vec2{x: (self.shape.side() as f64) * 48.0, y: (self.shape.side() as f64) * 48.0}
     }
     
     pub fn get_render_center(&self) -> Vec2f {
@@ -183,13 +182,51 @@ impl ModuleIndex {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#[derive(Clone, RustcEncodable, RustcDecodable)]
+pub struct ModuleShape {
+    grid: Vec<Vec<u8>>,
+    side: u8, // Has to be a square, because squares are easy to rotate
+}
+
+impl ModuleShape {
+    pub fn new(grid: Vec<Vec<u8>>) -> ModuleShape {
+        ModuleShape {
+            side: grid.len() as u8,
+            grid: grid,
+        }
+    }
+    
+    pub fn rotate_90(&mut self) {
+        for n in (0..self.side - 1) {
+            for m in (n + 1..self.side) {
+                let tmp = self.get(m, n);
+                *self.get_mut(m, n) = self.get(n, m);
+                *self.get_mut(n, m) = tmp;
+            }
+        }
+    }
+    
+    pub fn get(&self, x: u8, y: u8) -> u8 {
+        *self.grid.get(y as usize).unwrap().get(x as usize).unwrap()
+    }
+    
+    pub fn get_mut(&mut self, x: u8, y: u8) -> &mut u8 {
+        self.grid.get_mut(y as usize).unwrap().get_mut(x as usize).unwrap()
+    }
+    
+    pub fn side(&self) -> u8 {
+        self.side
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct Module {
     // Module position/size stuff
     pub x: u8,
     pub y: u8,
-    pub width: u8,
-    pub height: u8,
+    pub shape: ModuleShape,
 
     pub stats: ModuleStats,
     
@@ -211,8 +248,7 @@ pub struct Module {
 
 impl Module {
     pub fn new<M: IModule+'static>(
-        width: u8,
-        height: u8,
+        shape: ModuleShape,
         power: u8,
         min_hp: u8,
         hp: u8,
@@ -221,8 +257,7 @@ impl Module {
         Module {
             x: 0,
             y: 0,
-            width: width,
-            height: height,
+            shape: shape,
             
             stats: ModuleStats { hp: hp, max_hp: hp },
             
@@ -283,8 +318,8 @@ impl Module {
             // Random number generater
             let mut rng = rand::thread_rng();
             
-            let x = rng.gen::<f64>() * ((self.width as f64) * 48.0);
-            let y = rng.gen::<f64>() * ((self.height as f64) * 48.0);
+            let x = rng.gen::<f64>() * ((self.shape.side() as f64) * 48.0);
+            let y = rng.gen::<f64>() * ((self.shape.side() as f64) * 48.0);
 
             self.damage_visuals.push(DamageVisual {
                 x: x,
@@ -331,12 +366,11 @@ impl Module {
         }
     }
     
-    pub fn create_module_context<'a>(&self, bc: &'a BattleContext, ship: &'a Ship) -> ModuleContext<'a> {
+    pub fn create_module_context<'a>(&'a self, bc: &'a BattleContext, ship: &'a Ship) -> ModuleContext<'a> {
         ModuleContext {
             x: self.x,
             y: self.y,
-            width: self.width,
-            height: self.height,
+            shape: &self.shape,
             
             index: self.index,
             is_active: self.active,
@@ -370,7 +404,7 @@ impl Module {
     }
     
     pub fn get_render_size(&self) -> Vec2f {
-        Vec2{x: (self.width as f64) * 48.0, y: (self.height as f64) * 48.0}
+        Vec2{x: (self.shape.side() as f64) * 48.0, y: (self.shape.side() as f64) * 48.0}
     }
     
     pub fn get_render_center(&self) -> Vec2f {
@@ -385,8 +419,7 @@ pub struct ModuleStored {
     // Module position/size stuff
     pub x: u8,
     pub y: u8,
-    pub width: u8,
-    pub height: u8,
+    pub shape: ModuleShape,
 
     pub stats: ModuleStats,
     
@@ -406,8 +439,7 @@ impl ModuleStored {
         ModuleStored {
             x: module.x,
             y: module.y,
-            width: module.width,
-            height: module.height,
+            shape: module.shape,
             
             stats: module.stats,
             
@@ -427,8 +459,7 @@ impl ModuleStored {
         Module {
             x: self.x,
             y: self.y,
-            width: self.width,
-            height: self.height,
+            shape: self.shape,
             
             stats: self.stats,
             
@@ -480,12 +511,11 @@ impl ModuleStored {
         self.power > 0 && !self.is_damaged()
     }
     
-    pub fn create_module_context<'a>(&self, ship: &'a ShipStored) -> ModuleContext<'a> {
+    pub fn create_module_context<'a>(&'a self, ship: &'a ShipStored) -> ModuleContext<'a> {
         ModuleContext {
             x: self.x,
             y: self.y,
-            width: self.width,
-            height: self.height,
+            shape: &self.shape,
             
             index: self.index,
             is_active: self.active,

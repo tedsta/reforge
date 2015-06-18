@@ -1,4 +1,4 @@
-use module::{IModule, Module, ModuleClass, ModuleContext, TargetManifest};
+use module::{IModule, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
 use ship::ShipState;
 
 #[cfg(feature = "client")]
@@ -15,7 +15,7 @@ pub struct ShieldModule;
 
 impl ShieldModule {
     pub fn new() -> Module {
-        Module::new(1, 1, 2, 2, 3, ShieldModule)
+        Module::new(ModuleShape::new(vec![vec![1]]), 2, 2, 3, ShieldModule)
     }
 }
 

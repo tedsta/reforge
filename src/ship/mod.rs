@@ -9,6 +9,7 @@ use module::{
     IModule,
     Module,
     ModuleIndex,
+    ModuleShape,
     ModuleStats,
     ModuleStored,
     Target,
@@ -226,11 +227,23 @@ impl Ship {
         self.height
     }
     
-    pub fn is_space_free(&self, x: u8, y: u8, width: u8, height: u8) -> bool {
+    pub fn is_space_free(&self, x: u8, y: u8, shape: &ModuleShape) -> bool {
         for module in &self.modules {
-
-            if module.x + module.width > x && module.x < x + width && module.y + module.height > y && module.y < y + height {
-                return false;
+            if module.x + module.shape.side() > x && module.x < x + shape.side() && module.y + module.shape.side() > y && module.y < y + shape.side() {
+                let (start_x, start_y, end_x, end_y) =
+                    (cmp::max(x, module.x),
+                     cmp::max(y, module.y),
+                     cmp::min(x + shape.side(), module.x + module.shape.side()),
+                     cmp::min(y + shape.side(), module.y + module.shape.side()));
+                
+                for cx in (start_x..end_x) {
+                    for cy in (start_y..end_y) {
+                        if shape.get(cx - x, cy - y) == 1 &&
+                            module.shape.get(cx - module.x, cy - module.y) == 1 {
+                            return false;
+                        }
+                    }
+                }
             }
         }
         
@@ -245,8 +258,8 @@ impl Ship {
         self.state.module_stats.push(module.stats);
         
         // Modify the ship's dimensions
-        self.width = cmp::max(self.width, module.x + module.width);
-        self.height = cmp::max(self.height, module.y + module.height);
+        self.width = cmp::max(self.width, module.x + module.shape.side());
+        self.height = cmp::max(self.height, module.y + module.shape.side());
         
         // Setup module's index
         module.index = ModuleIndex(self.modules.len() as u32);
@@ -274,66 +287,70 @@ impl Ship {
         for module in &self.modules {
             let module_size = module.get_render_size();
             
-            let circle_pos = module.get_render_center();
-            let circle_radius = module_size.x.min(module_size.y) / 2.5;
-            
-            match beam {
-                Some((start, end)) => {
-                    // We are using the algorithm described here:
-                    // http://stackoverflow.com/a/1084899/4006804
-                
-                    // The beam's direction vector
-                    let d = end - start;
+            for x in (0..module.shape.side()) {
+                for y in (0..module.shape.side()) {
+                    let circle_pos = module.get_render_position() + (Vec2::new(x as f64, y as f64)*48.0);
+                    let circle_radius = 48.0 / 2.5;
                     
-                    // The vector from the circle center to the beam start
-                    let f = start - circle_pos;
-                    
-                    // Some variables for the algorithm. These correspond to variables in the quadratic
-                    // formula.
-                    let a = d.dot(d);
-                    let b = 2.0 * f.dot(d);
-                    let c = f.dot(f) - circle_radius*circle_radius;
-                    
-                    let discriminant = b*b - 4.0*a*c;
-                    
-                    if discriminant < 0.0 {
-                        // No intersection
-                        to_apply(module, circle_pos, circle_radius, None);
-                    } else {
-                        // Ray didn't totally miss sphere, so there is a solution to the equation.
+                    match beam {
+                        Some((start, end)) => {
+                            // We are using the algorithm described here:
+                            // http://stackoverflow.com/a/1084899/4006804
+                        
+                            // The beam's direction vector
+                            let d = end - start;
+                            
+                            // The vector from the circle center to the beam start
+                            let f = start - circle_pos;
+                            
+                            // Some variables for the algorithm. These correspond to variables in the quadratic
+                            // formula.
+                            let a = d.dot(d);
+                            let b = 2.0 * f.dot(d);
+                            let c = f.dot(f) - circle_radius*circle_radius;
+                            
+                            let discriminant = b*b - 4.0*a*c;
+                            
+                            if discriminant < 0.0 {
+                                // No intersection
+                                to_apply(module, circle_pos, circle_radius, None);
+                            } else {
+                                // Ray didn't totally miss sphere, so there is a solution to the equation.
 
-                        let discriminant = discriminant.sqrt();
+                                let discriminant = discriminant.sqrt();
 
-                        // Either solution may be on or off the ray so need to test both t1 is always the
-                        // smaller value, because BOTH discriminant and a are nonnegative.
-                        let t1 = (-b - discriminant)/(2.0*a);
-                        let t2 = (-b + discriminant)/(2.0*a);
+                                // Either solution may be on or off the ray so need to test both t1 is always the
+                                // smaller value, because BOTH discriminant and a are nonnegative.
+                                let t1 = (-b - discriminant)/(2.0*a);
+                                let t2 = (-b + discriminant)/(2.0*a);
 
-                        // 3x HIT cases:
-                        //          -o->             --|-->  |            |  --|->
-                        // Impale(t1 hit,t2 hit), Poke(t1 hit,t2>1), ExitWound(t1<0, t2 hit), 
+                                // 3x HIT cases:
+                                //          -o->             --|-->  |            |  --|->
+                                // Impale(t1 hit,t2 hit), Poke(t1 hit,t2>1), ExitWound(t1<0, t2 hit), 
 
-                        // 3x MISS cases:
-                        //       ->  o                     o ->              | -> |
-                        // FallShort (t1>1,t2>1), Past (t1<0,t2<0), CompletelyInside(t1<0, t2>1)
+                                // 3x MISS cases:
+                                //       ->  o                     o ->              | -> |
+                                // FallShort (t1>1,t2>1), Past (t1<0,t2<0), CompletelyInside(t1<0, t2>1)
 
-                        if t1 >= 0.0 && t1 <= 1.0 {
-                            // Impale, poke
-                            to_apply(module, circle_pos, circle_radius, Some(t1));
-                        } else if t2 >= 0.0 && t2 <= 1.0 {
-                            // Exit wound
-                            to_apply(module, circle_pos, circle_radius, Some(t2));
-                        } else if t1 < 0.0 && t2 > 1.0 {
-                            // Completely inside
-                            to_apply(module, circle_pos, circle_radius, Some(0.0));
-                        } else {
-                            // No hit
+                                if t1 >= 0.0 && t1 <= 1.0 {
+                                    // Impale, poke
+                                    to_apply(module, circle_pos, circle_radius, Some(t1));
+                                } else if t2 >= 0.0 && t2 <= 1.0 {
+                                    // Exit wound
+                                    to_apply(module, circle_pos, circle_radius, Some(t2));
+                                } else if t1 < 0.0 && t2 > 1.0 {
+                                    // Completely inside
+                                    to_apply(module, circle_pos, circle_radius, Some(0.0));
+                                } else {
+                                    // No hit
+                                    to_apply(module, circle_pos, circle_radius, None);
+                                }
+                            }
+                        },
+                        None => {
                             to_apply(module, circle_pos, circle_radius, None);
                         }
                     }
-                },
-                None => {
-                    to_apply(module, circle_pos, circle_radius, None);
                 }
             }
         }
@@ -538,13 +555,15 @@ impl Ship {
             let (shield_size_x, shield_size_y) = shield_texture.get_size();
             let (shield_size_x, shield_size_y) = (shield_size_x as f64, shield_size_y as f64);
             
-            for x in module.x..module.x+module.width {
-                for y in module.y..module.y+module.height {
-                    let context = context.trans((x as f64) * 48.0, (y as f64) * 48.0);
-                    let context = context.trans(24.0 - shield_size_x/2.0, 24.0 - shield_size_y/2.0);
-                    
-                    Image::new_colored([1.0, 1.0, 1.0, opacity])
-                        .draw(shield_texture.deref(), &context.draw_state, context.transform, gl);
+            for x in module.x..module.x+module.shape.side() {
+                for y in module.y..module.y+module.shape.side() {
+                    if module.shape.get(x - module.x, y - module.y) == 1 {
+                        let context = context.trans((x as f64) * 48.0, (y as f64) * 48.0);
+                        let context = context.trans(24.0 - shield_size_x/2.0, 24.0 - shield_size_y/2.0);
+                        
+                        Image::new_colored([1.0, 1.0, 1.0, opacity])
+                            .draw(shield_texture.deref(), &context.draw_state, context.transform, gl);
+                    }
                 }
             }
         }
@@ -591,7 +610,7 @@ impl Ship {
             // Skip modules that aren't changing powered states
             if plans.active == module.active { continue; }
             
-            let context = context.trans((module.x as f64) * 48.0, (module.y as f64) * 48.0).trans((module.width as f64)*48.0 - 20.0, 2.0);
+            let context = context.trans((module.x as f64) * 48.0, (module.y as f64) * 48.0).trans(48.0/2.0 - 20.0, 2.0);
             
             if plans.active {
                 // Module is powering up, draw on icon
@@ -665,16 +684,37 @@ impl ShipStored {
         }
     }
     
-    pub fn is_space_free(&self, x: u8, y: u8, width: u8, height: u8) -> bool {
+    pub fn get_width(&self) -> u8 {
+        self.width
+    }
+    
+    pub fn get_height(&self) -> u8 {
+        self.height
+    }
+    
+    pub fn is_space_free(&self, x: u8, y: u8, shape: &ModuleShape) -> bool {
         for module in &self.modules {
-
-            if module.x + module.width > x && module.x < x + width && module.y + module.height > y && module.y < y + height {
-                return false;
+            if module.x + module.shape.side() > x && module.x < x + shape.side() && module.y + module.shape.side() > y && module.y < y + shape.side() {
+                let (start_x, start_y, end_x, end_y) =
+                    (cmp::max(x, module.x),
+                     cmp::max(y, module.y),
+                     cmp::min(x + shape.side(), module.x + module.shape.side()),
+                     cmp::min(y + shape.side(), module.y + module.shape.side()));
+                
+                for cx in (start_x..end_x) {
+                    for cy in (start_y..end_y) {
+                        if shape.get(cx - x, cy - y) == 1 &&
+                            module.shape.get(cx - module.x, cy - module.y) == 1 {
+                            return false;
+                        }
+                    }
+                }
             }
         }
         
         true
     }
+    
     // Returns true if adding the module was successful, false if it failed.
     pub fn add_module(&mut self, mut module: ModuleStored) -> bool {
         // Add to state hp
@@ -683,8 +723,8 @@ impl ShipStored {
         self.state.module_stats.push(module.stats);
         
         // Modify the ship's dimensions
-        self.width = cmp::max(self.width, module.x + module.width);
-        self.height = cmp::max(self.height, module.y + module.height);
+        self.width = cmp::max(self.width, module.x + module.shape.side());
+        self.height = cmp::max(self.height, module.y + module.shape.side());
         
         // Setup module's index
         module.index = ModuleIndex(self.modules.len() as u32);
