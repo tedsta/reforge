@@ -418,10 +418,10 @@ impl Ship {
             let time = rng.gen::<f64>() * 4.5;
         
             let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/ship_explosion1.png"));
-            sprite.centered = true;
+            sprite.center();
             sprite.add_animation(SpriteAnimation::PlayOnce(time, time+0.5, 0, 8));
         
-            effects.add_visual(self.id, 2, SpriteVisual::new(Vec2 { x: x, y: y }, sprite));
+            effects.add_visual(self.id, 2, SpriteVisual::new(Vec2 { x: x, y: y }, 0.0, sprite));
             
             effects.add_sound(time, 0, asset_store.get_sound(&"effects/ship_explosion1.ogg".to_string()).clone());
         }

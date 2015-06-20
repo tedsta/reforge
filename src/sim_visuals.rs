@@ -23,7 +23,7 @@ impl SimVisual for LerpVisual {
         if time >= self.start_time && time <= self.end_time {
             let interp = (time-self.start_time)/(self.end_time-self.start_time);
             let pos = self.start_pos + (self.end_pos-self.start_pos)*interp;
-            let rot = self.start_rot + (self.start_rot-self.end_rot)*interp;
+            let rot = self.start_rot + (self.end_rot-self.start_rot)*interp;
             self.sprite_sheet.draw(context, gl, pos.x, pos.y, rot, time);
         }
     }
@@ -73,7 +73,7 @@ pub struct BeamVisual {
 
 impl BeamVisual {
     pub fn new(start_time: f64, end_time: f64, beam_start: Vec2f, beam_end: Vec2f, part: Rc<Texture>, mut end: SpriteSheet) -> BeamVisual {
-        end.centered = true;
+        end.center();
     
         BeamVisual {
             start_time: start_time,
@@ -118,13 +118,15 @@ impl SimVisual for BeamVisual {
 // Sprite sheet sim visual
 pub struct SpriteVisual {
     pub position: Vec2f,
+    pub rotation: f64,
     pub sprite_sheet: SpriteSheet,
 }
 
 impl SpriteVisual {
-    pub fn new(position: Vec2f, sprite_sheet: SpriteSheet) -> SpriteVisual {
+    pub fn new(position: Vec2f, rotation: f64, sprite_sheet: SpriteSheet) -> SpriteVisual {
         SpriteVisual {
             position: position,
+            rotation: rotation,
             sprite_sheet: sprite_sheet,
         }
     }
@@ -132,6 +134,6 @@ impl SpriteVisual {
 
 impl SimVisual for SpriteVisual {
     fn draw(&mut self, context: &Context, gl: &mut GlGraphics, time: f64) {
-        self.sprite_sheet.draw(context, gl, self.position.x, self.position.y, 0.0, time);
+        self.sprite_sheet.draw(context, gl, self.position.x, self.position.y, self.rotation, time);
     }
 }

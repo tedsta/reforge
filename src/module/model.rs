@@ -87,7 +87,7 @@ impl ModelStore {
                 Model {
                     name: "Blaster Mk1".to_string(),
                     factory: Box::new(move || ModuleStored::from_module(ProjectileWeaponModule::new())),
-                    icon: Texture::from_path(&Path::new("content/textures/modules/icons/blaster.png")).unwrap(),
+                    icon: Texture::from_path(&Path::new("content/textures/modules/icons/pewpew.png")).unwrap(),
                     shape: ModuleShape::new(vec![vec![1]]),
                     power: 2,
                     min_hp: 2,

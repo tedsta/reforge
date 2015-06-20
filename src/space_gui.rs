@@ -913,9 +913,15 @@ impl SpaceStars {
         
         // Generate a bunch of stars
         let mut stars = Vec::with_capacity(5); // Five layers of stars
-        for _ in 0..stars.capacity() {
+        for i in 0..stars.capacity() {
             let mut layer = Vec::with_capacity(50);
-            for _ in 0u8..20 {
+            let star_count = 
+                if i == 0 {
+                    200
+                } else {
+                    20
+                };
+            for _ in 0u8..star_count {
                 layer.push(Star {
                     position: [rng.gen::<f64>() * 1290.0, rng.gen::<f64>() * 730.0],
                     size: (rng.gen::<u8>() % 5 + 1) as f64,

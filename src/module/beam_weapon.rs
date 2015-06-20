@@ -65,7 +65,7 @@ impl IModule for BeamWeaponModule {
             sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
     
-        effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), sprite));
+        effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, sprite));
     }
     
     #[cfg(feature = "client")]

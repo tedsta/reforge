@@ -30,6 +30,8 @@ use asset_store::AssetStore;
 
 #[derive(RustcEncodable, RustcDecodable, Clone)]
 pub struct ProjectileWeaponModule {
+    old_rotation: f64,
+    rotation: f64,
     projectiles: Vec<Projectile>,
 }
 
@@ -42,6 +44,8 @@ impl ProjectileWeaponModule {
     
         Module::new(ModuleShape::new(vec![vec![1]]), 2, 2, 3,
             ProjectileWeaponModule {
+                old_rotation: 0.0,
+                rotation: 0.0,
                 projectiles: repeat(projectile).take(3).collect(),
             }
         )
@@ -71,8 +75,16 @@ impl IModule for ProjectileWeaponModule {
     }
 
     fn before_simulation(&mut self, context: &ModuleContext, events: &mut SimEvents) {
+        use std::f64::consts::PI;
+    
+        let mut rng = rand::thread_rng();
+        
+        self.old_rotation = self.rotation;
+    
         if let Some(ref target) = context.target {
             if let module::TargetManifestData::TargetModule(ref target_module) = target.data {
+                self.rotation = rng.gen::<f64>() * 2.0 * PI;
+            
                 for (i, projectile) in self.projectiles.iter_mut().enumerate() {                                            
                     let start = (i*10) as u32;
                     
@@ -92,22 +104,49 @@ impl IModule for ProjectileWeaponModule {
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/weapon_sprite.png"));
+        let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/pewpewbase.png"));
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/pewpewfire.png"));
+        
+        weapon_sprite.center = Vec2::new(22.0, 24.0);
+        
+        base_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         
         if context.is_active {
-            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 1));
+            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 5));
         } else {
             weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
-    
-        effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), weapon_sprite));
+        
+        effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, base_sprite));
+        effects.add_visual(context.ship_id, 1, SpriteVisual::new(context.get_render_position() + weapon_sprite.center, self.rotation, weapon_sprite));
     }
     
     #[cfg(feature = "client")]
     fn add_simulation_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
         let ship_id = context.ship_id;
+        
+        // Add rotating lerp visual
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/pewpewfire.png"));
+        weapon_sprite.center = Vec2::new(18.0, 24.0);
+        weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, tick_to_time(10), 5));
+        effects.add_visual(ship_id, 1,
+            LerpVisual {
+                start_time: 0.0,
+                end_time: tick_to_time(10),
+                start_pos: context.get_render_position() + weapon_sprite.center,
+                end_pos: context.get_render_position() + weapon_sprite.center,
+                start_rot: self.old_rotation,
+                end_rot: self.rotation,
+                sprite_sheet: weapon_sprite,
+            });
     
-        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/weapon_sprite.png"));
+        // Firing visuals
+        let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/pewpewbase.png"));
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/pewpewfire.png"));
+        
+        weapon_sprite.center = Vec2::new(18.0, 24.0);
+        
+        base_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         
         if context.is_active {
             if let Some(ref target) = context.target {
@@ -131,7 +170,7 @@ impl IModule for ProjectileWeaponModule {
                             };
                         
                         // Calculate ticks
-                        let start = (i*10) as u32;
+                        let start = (i*10) as u32 + 10;
                         let fire_tick = start;
                         let offscreen_tick = start + 20;
                         let hit_tick = start + 40;
@@ -146,15 +185,17 @@ impl IModule for ProjectileWeaponModule {
                         let rotation = dist.y.atan2(dist.x);
                         
                         let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/laser1.png"));
-                        laser_sprite.centered = true;
+                        laser_sprite.center();
                         laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
                         
                         let weapon_anim_start = start_time;
                         let weapon_anim_end = start_time+0.15;
                         
                         // Add weapon fire animations for this projectile
-                        weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, weapon_anim_start, 1));
-                        weapon_sprite.add_animation(SpriteAnimation::PlayOnce(weapon_anim_start, weapon_anim_end, 1, 6));
+                        if i != 0 {
+                            weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, weapon_anim_start, 6));
+                        }
+                        weapon_sprite.add_animation(SpriteAnimation::PlayOnce(weapon_anim_start, weapon_anim_end, 6, 14));
                         
                         // Set the last end for the next projectile
                         last_weapon_anim_end = weapon_anim_end;
@@ -183,7 +224,7 @@ impl IModule for ProjectileWeaponModule {
                         let rotation = dist.y.atan2(dist.x);
 
                         let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/laser1.png"));
-                        laser_sprite.centered = true;
+                        laser_sprite.center();
                         laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
                         
                         // Add the simulation visual for projectile entering target screen
@@ -202,26 +243,27 @@ impl IModule for ProjectileWeaponModule {
                         let end_time = start_time + 0.7;
                         
                         let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info_str("effects/explosion1.png"));
-                        explosion_sprite.centered = true;
+                        explosion_sprite.center();
                         explosion_sprite.add_animation(SpriteAnimation::PlayOnce(start_time, end_time, 0, 9));
                         
-                        effects.add_visual(target_ship_id, 3, SpriteVisual::new(hit_pos, explosion_sprite));
+                        effects.add_visual(target_ship_id, 3, SpriteVisual::new(hit_pos, 0.0, explosion_sprite));
                         
                         // Add the sound for projectile exploding
                         effects.add_sound(start_time, 0, asset_store.get_sound(&"effects/small_explosion.wav".to_string()).clone());
                     }
                     
                     // Add last stay animation
-                    weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, 7.0, 1));
+                    weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, 7.0, 5));
                 }
             } else {
-                weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 1));
+                weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 5));
             }
         } else {
             weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
         
-        effects.add_visual(ship_id, 0, SpriteVisual::new(context.get_render_position(), weapon_sprite));
+        effects.add_visual(ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, base_sprite));
+        effects.add_visual(ship_id, 1, SpriteVisual::new(context.get_render_position() + weapon_sprite.center, self.rotation, weapon_sprite));
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {

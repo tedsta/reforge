@@ -353,6 +353,7 @@ impl Module {
             effects.add_visual(ship_id, 1,
                 SpriteVisual::new(
                     self.get_render_position() + Vec2 { x: 10.0, y: 0.0 },
+                    0.0,
                     sprite,
                 ),
             );

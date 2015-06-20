@@ -6,6 +6,7 @@ use graphics::{Context, ImageSize};
 use opengl_graphics::{GlGraphics, Texture};
 
 use asset_store::SpriteInfo;
+use vec::{Vec2, Vec2f};
 
 pub enum SpriteAnimation {
     PlayOnce(f64, f64, u32, u32),
@@ -29,7 +30,7 @@ pub struct SpriteSheet {
     animations: VecDeque<SpriteAnimation>,
     
     // Whether or not to center the texture
-    pub centered: bool,
+    pub center: Vec2f,
 }
 
 impl SpriteSheet {
@@ -46,12 +47,16 @@ impl SpriteSheet {
             frame_height: texture_height/(rows as u32),
             current_frame: 0,
             animations: VecDeque::new(),
-            centered: false,
+            center: Vec2::new(0.0, 0.0),
         }
     }
     
     pub fn get_frame_size(&self) -> (u32, u32) {
         (self.frame_width, self.frame_height)
+    }
+    
+    pub fn center(&mut self) {
+        self.center = Vec2::new(self.frame_width as f64 / 2.0, self.frame_height as f64 / 2.0);
     }
     
     pub fn add_animation(&mut self, animation: SpriteAnimation) {
@@ -115,23 +120,10 @@ impl SpriteSheet {
         let source_end_x = source_x + (self.frame_width as f64);
         let source_end_y = source_y + (self.frame_height as f64);
         
-        let half_frame_x = (self.frame_width / 2) as f64;
-        let half_frame_y = (self.frame_height / 2) as f64;
-        
-        let (offset_x, offset_y) =
-            if self.centered {
-                (half_frame_x, half_frame_y)
-            } else {
-                (0.0, 0.0)
-            };
-        
-        //let rotation_matrix = row_mat2x3_mul(rotate_radians(rotation), translate([-offset_x, -offset_y]));
-        
         let mut context = context.trans(x, y)
                                  .rot_rad(rotation)
-                                 .trans(-offset_x, -offset_y);
-        //context.transform = row_mat2x3_mul(context.transform, rotation_matrix);
-
+                                 .trans(-self.center.x, -self.center.y);
+        
         Image::new()
             .src_rect([source_x as i32, source_y as i32, self.frame_width as i32, self.frame_height as i32])
             .draw(&*self.texture, &context.draw_state, context.transform, gl);

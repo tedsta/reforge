@@ -32,7 +32,7 @@ impl IModule for ShieldModule {
             shield_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
         }
     
-        effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), shield_sprite));
+        effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, shield_sprite));
     }
     
     #[cfg(feature = "client")]
