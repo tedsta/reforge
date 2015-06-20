@@ -63,6 +63,7 @@ impl AssetStore {
         asset_store.load_texture("modules/pewpewbase.png", 1, 1);
         asset_store.load_texture("modules/pewpewfire.png", 15, 1);
         asset_store.load_texture("effects/laser1.png", 1, 4);
+        asset_store.load_texture("effects/laser2.png", 4, 1);
         asset_store.load_texture("effects/explosion1.png", 1, 10);
         asset_store.load_texture("effects/propulsion_sprite.png", 1, 7);
         asset_store.load_texture("effects/fire_sprite.png", 8, 1);

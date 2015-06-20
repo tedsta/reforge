@@ -160,7 +160,7 @@ impl IModule for ProjectileWeaponModule {
                         
                         // Calculate positions
                         let fire_pos = context.get_render_center() + Vec2{x: 20.0, y: 0.0};
-                        let to_offscreen_pos = fire_pos + Vec2{x: 1500.0, y: 0.0};
+                        let to_offscreen_pos = fire_pos + Vec2{x: 1500.0 * self.rotation.cos(), y: 1500.0 * self.rotation.sin()};
                         let from_offscreen_pos = Vec2{x: 1500.0, y: 0.0};
                         let hit_pos =
                             if projectile.hit {
@@ -184,7 +184,7 @@ impl IModule for ProjectileWeaponModule {
                         let dist = end_pos - start_pos;
                         let rotation = dist.y.atan2(dist.x);
                         
-                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/laser1.png"));
+                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/laser2.png"));
                         laser_sprite.center();
                         laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
                         
@@ -223,7 +223,7 @@ impl IModule for ProjectileWeaponModule {
                         let dist = end_pos - start_pos;
                         let rotation = dist.y.atan2(dist.x);
 
-                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/laser1.png"));
+                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/laser2.png"));
                         laser_sprite.center();
                         laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
                         
