@@ -159,8 +159,8 @@ impl IModule for ProjectileWeaponModule {
                         use std::f64::consts::FRAC_PI_2;
                         
                         // Calculate positions
-                        let fire_pos = context.get_render_center() + Vec2{x: 20.0, y: 0.0};
-                        let to_offscreen_pos = fire_pos + Vec2{x: 1500.0 * self.rotation.cos(), y: 1500.0 * self.rotation.sin()};
+                        let fire_pos = context.get_render_center() + Vec2::new(30.0, 0.0).rotate(self.rotation);
+                        let to_offscreen_pos = fire_pos + Vec2::new(1500.0, 0.0).rotate(self.rotation);
                         let from_offscreen_pos = Vec2{x: 1500.0, y: 0.0};
                         let hit_pos =
                             if projectile.hit {

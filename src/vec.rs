@@ -28,6 +28,12 @@ impl<T: Float> Vec2<T> {
         (self.x*self.x + self.y*self.y).sqrt()
     }
     
+    pub fn rotate(self, radians: T) -> Vec2<T> {
+        let px = self.x * radians.cos() - self.y * radians.sin(); 
+        let py = self.x * radians.sin() + self.y * radians.cos();
+        Vec2 { x: px, y: py }
+    }
+    
     pub fn floor(self) -> Vec2<T> {
         Vec2 { x: self.x.floor(), y: self.y.floor() }
     }
