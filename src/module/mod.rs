@@ -277,6 +277,30 @@ impl Module {
         }
     }
     
+    pub fn from_model<M: IModule+'static>(model: &Model, inner: M) -> Module {
+        Module {
+            x: 0,
+            y: 0,
+            shape: model.shape.clone(),
+            
+            stats: ModuleStats { hp: model.max_hp, max_hp: model.max_hp },
+            
+            power: model.power,
+            min_hp: model.min_hp,
+            max_hp: model.max_hp,
+            
+            active: false,
+            
+            target: None,
+            
+            damage_visuals: vec!(),
+            
+            index: ModuleIndex(0),
+            
+            inner: RefCell::new(Box::new(inner)),
+        }
+    }
+    
     pub fn get_power(&self) -> u8 {
         self.power
     }

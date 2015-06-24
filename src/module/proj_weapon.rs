@@ -1,4 +1,5 @@
 use std::cmp;
+use std::collections::HashMap;
 use std::iter::repeat;
 use num::Float;
 use std::ops::DerefMut;
@@ -12,7 +13,7 @@ use opengl_graphics::GlGraphics;
 
 use battle_context::{BattleContext, tick_to_time};
 use module;
-use module::{IModule, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData};
+use module::{IModule, Model, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{Ship, ShipId, ShipState};
 use sim::SimEvents;
@@ -42,12 +43,27 @@ impl ProjectileWeaponModule {
             hit: false,
         };
     
-        Module::new(ModuleShape::new(vec![vec![1]]), 2, 2, 3,
+        Module::new(ModuleShape::new(vec![vec![b'#']]), 2, 2, 3,
             ProjectileWeaponModule {
                 old_rotation: 0.0,
                 rotation: 0.0,
                 projectiles: repeat(projectile).take(3).collect(),
-            }
+            },
+        )
+    }
+    
+    pub fn from_properties(model: &Model, prop: &HashMap<String, String>) -> Module {
+        let projectile = Projectile {
+            damage: prop["projectile_damage"].parse().unwrap(),
+            hit: false,
+        };
+    
+        Module::from_model(model,
+            ProjectileWeaponModule {
+                old_rotation: 0.0,
+                rotation: 0.0,
+                projectiles: repeat(projectile).take(prop["num_projectiles"].parse().unwrap()).collect(),
+            },
         )
     }
 }

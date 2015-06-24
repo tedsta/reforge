@@ -15,7 +15,7 @@ pub struct ShieldModule;
 
 impl ShieldModule {
     pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![1]]), 2, 2, 3, ShieldModule)
+        Module::new(ModuleShape::new(vec![vec![b'#']]), 2, 2, 3, ShieldModule)
     }
 }
 

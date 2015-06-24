@@ -25,8 +25,8 @@ pub struct EngineModule;
 
 impl EngineModule {
     pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![1, 1],
-                                          vec![0, 0]]), 2, 2, 3, EngineModule)
+        Module::new(ModuleShape::new(vec![vec![b'#', b'#'],
+                                          vec![b'.', b'.']]), 2, 2, 3, EngineModule)
     }
 }
 

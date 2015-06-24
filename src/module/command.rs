@@ -25,8 +25,8 @@ pub struct CommandModule;
 
 impl CommandModule {
     pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![1, 0],
-                                          vec![1, 0]]), 0, 2, 4, CommandModule)
+        Module::new(ModuleShape::new(vec![vec![b'#', b'.'],
+                                          vec![b'#', b'.']]), 0, 2, 4, CommandModule)
     }
 }
 

@@ -117,7 +117,7 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     let mut command_x = ship.get_width();
     let command_y = cmp::min(height - 1, rng.gen::<u8>()%(height + 1));
     
-    while ship.is_space_free(command_x - 1, command_y, &ModuleShape::new(vec![vec![1, 0], vec![1, 0]])) {
+    while ship.is_space_free(command_x - 1, command_y, &ModuleShape::new(vec![vec![b'#', b'.'], vec![b'#', b'.']])) {
         command_x -= 1;
     }
     

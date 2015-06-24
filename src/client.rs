@@ -19,6 +19,7 @@
 #![feature(rc_unique)]
 #![feature(os)]
 #![feature(std_misc)]
+#![feature(path_ext)]
 
 extern crate bincode;
 extern crate float;

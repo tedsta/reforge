@@ -25,7 +25,7 @@ pub struct SolarModule;
 
 impl SolarModule {
     pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![1]]), 0, 2, 3, SolarModule)
+        Module::new(ModuleShape::new(vec![vec![b'#']]), 0, 2, 3, SolarModule)
     }
 }
 
