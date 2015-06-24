@@ -1,14 +1,133 @@
 use piston::event::{GenericEvent};
-use graphics::{Context};
+use graphics::{Context, ImageSize};
 use piston::input::{keyboard, mouse, Button};
-use opengl_graphics::{GlGraphics};
+use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
+use std::path::Path;
 
 #[derive(PartialEq)]
 enum MouseFocus {
     NoHover,
     Hover,
     Focus,
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+pub struct SpriteButton {
+    texture: Texture,
+    
+    columns: u8,
+    rows: u8,
+    frame_width: u32,
+    frame_height: u32,
+    current_frame: u8,
+    
+    position: [f64; 2],
+    size: [f64; 2],
+    
+    clicked: bool,
+    mouse_focus: MouseFocus,
+}
+
+impl SpriteButton {
+    pub fn new(path: &str, frames_per_row: u8, rows: u8, position: [f64; 2]) -> SpriteButton {
+        let texture = Texture::from_path(&Path::new(path)).unwrap();
+        let (texture_width, texture_height) = texture.get_size();
+        let (frame_width, frame_height) = (texture_width/(frames_per_row as u32), texture_height/(rows as u32));
+        
+        SpriteButton {
+            texture: texture,
+            
+            columns: frames_per_row,
+            rows: rows,
+            frame_width: frame_width,
+            frame_height: frame_height,
+            current_frame: 0,
+            
+            position: position,
+            size: [frame_width as f64, frame_height as f64],
+            
+            clicked: false,
+            mouse_focus: MouseFocus::NoHover,
+        }
+    }
+    
+    pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics) {  
+        use graphics::*;
+    
+        let source_x = ((self.current_frame % (self.columns)) as f64) * (self.frame_width as f64);
+        let source_y = ((self.current_frame / (self.columns)) as f64) * (self.frame_height as f64);
+        
+        let source_end_x = source_x + (self.frame_width as f64);
+        let source_end_y = source_y + (self.frame_height as f64);
+        
+        let mut context = context.trans(self.position[0], self.position[1]);
+        
+        Image::new()
+            .src_rect([source_x as i32, source_y as i32, self.frame_width as i32, self.frame_height as i32])
+            .draw(&self.texture, &context.draw_state, context.transform, gl);
+    }
+    
+    pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) {
+        use piston::event::*;
+        
+        e.mouse_cursor(|_, _| {
+            if self.mouse_focus != MouseFocus::Focus {
+                let x = mouse_pos[0];
+                let y = mouse_pos[1];
+                if x >= self.position[0] && x <= self.position[0]+self.size[0] &&
+                    y >= self.position[1] && y <= self.position[1]+self.size[1]
+                {
+                    self.mouse_focus = MouseFocus::Hover;
+                    self.current_frame = 0;
+                } else {
+                    self.mouse_focus = MouseFocus::NoHover;
+                    self.current_frame = 0;
+                }
+            }
+        });
+        e.press(|button| {
+            if let Button::Mouse(button) = button {
+                if button == mouse::MouseButton::Left {
+                    let x = mouse_pos[0];
+                    let y = mouse_pos[1];
+                    if x >= self.position[0] && x <= self.position[0]+self.size[0] &&
+                        y >= self.position[1] && y <= self.position[1]+self.size[1]
+                    {
+                        self.mouse_focus = MouseFocus::Focus;
+                        self.current_frame = 1;
+                    } else {
+                        self.mouse_focus = MouseFocus::NoHover;
+                        self.current_frame = 0;
+                    }
+                }
+            }
+        });
+        e.release(|button| {
+            if let Button::Mouse(button) = button {
+                if button == mouse::MouseButton::Left {
+                    let x = mouse_pos[0];
+                    let y = mouse_pos[1];
+                    if x >= self.position[0] && x <= self.position[0]+self.size[0] &&
+                        y >= self.position[1] && y <= self.position[1]+self.size[1]
+                    {
+                        self.clicked = true;
+                        self.mouse_focus = MouseFocus::Hover;
+                        self.current_frame = 0;
+                    } else {
+                        self.mouse_focus = MouseFocus::NoHover;
+                        self.current_frame = 0;
+                    }
+                }
+            }
+        });
+    }
+    
+    pub fn get_clicked(&mut self) -> bool {
+        let clicked = self.clicked;
+        self.clicked = false;
+        clicked
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

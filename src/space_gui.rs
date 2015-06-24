@@ -13,7 +13,7 @@ use opengl_graphics::glyph_cache::GlyphCache;
 use asset_store::AssetStore;
 use battle_context::BattleContext;
 use chat::{ChatGui, ChatGuiAction};
-use gui::TextButton;
+use gui::{TextButton, SpriteButton};
 use module;
 use module::{IModule, Module, ModuleIndex};
 use net::ClientId;
@@ -61,6 +61,8 @@ pub struct SpaceGui<'a> {
     mouse_pos: Vec2f,
     
     // Textures
+    overlay_hud: Texture,
+    
     small_ship_icon: Texture,
     medium_ship_icon: Texture,
     big_ship_icon: Texture,
@@ -73,18 +75,20 @@ pub struct SpaceGui<'a> {
     space_bg: SpaceStars,
     
     // Star map stuff
-    star_map_button: TextButton,
+    star_map_button: SpriteButton,
     star_map_gui: StarMapGui,
     show_star_map: bool,
     
     // Chat
+    chat_button: SpriteButton,
     chat_gui_pos: Vec2f,
     pub chat_gui: &'a mut ChatGui,
     
     // Logout button
-    logout_button: TextButton,
+    logout_button: SpriteButton,
 
     // targets
+    target_button: SpriteButton,
     target_icons: Vec<TargetIcon>,
 }
 
@@ -124,6 +128,8 @@ impl<'a> SpaceGui<'a> {
             beam_targeting_state: None,
             mouse_pos: Vec2::new(0.0, 0.0),
             
+            overlay_hud: Texture::from_path(&Path::new("content/textures/gui/overlay_hud.png")).unwrap(),
+            
             small_ship_icon: Texture::from_path(&Path::new("content/textures/gui/small_target.png")).unwrap(),
             medium_ship_icon: Texture::from_path(&Path::new("content/textures/gui/medium_target.png")).unwrap(),
             big_ship_icon: Texture::from_path(&Path::new("content/textures/gui/big_target.png")).unwrap(),
@@ -141,15 +147,17 @@ impl<'a> SpaceGui<'a> {
             
             space_bg: SpaceStars::new(),
             
-            star_map_button: TextButton::new("star map".to_string(), 24, [550.0, 50.0], [120.0, 40.0]),
+            star_map_button: SpriteButton::new("content/textures/gui/starmap.png", 2, 1, [566.0, 15.0]),
             star_map_gui: StarMapGui::new(sectors),
             show_star_map: false,
             
+            chat_button: SpriteButton::new("content/textures/gui/chat.png", 2, 1, [133.0, 662.0]),
             chat_gui_pos: Vec2::new(5.0, 720.0 - 200.0 - 5.0),
             chat_gui: chat_gui,
             
-            logout_button: TextButton::new("logout".to_string(), 24, [550.0, 100.0], [120.0, 40.0]),
-
+            logout_button: SpriteButton::new("content/textures/gui/logout.png", 2, 1, [16.0, 14.0]),
+            
+            target_button: SpriteButton::new("content/textures/gui/target.png", 2, 1, [646.0, 22.0]),
             target_icons: target_icons,
         }
     }
@@ -173,6 +181,8 @@ impl<'a> SpaceGui<'a> {
                 },
             }
         }
+        
+        self.chat_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         
         self.star_map_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.star_map_button.get_clicked() {
@@ -211,6 +221,8 @@ impl<'a> SpaceGui<'a> {
         if self.logout_button.get_clicked() {
             return Some(SpaceGuiAction::Logout);
         }
+        
+        self.target_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         
         None
     }
@@ -256,7 +268,7 @@ impl<'a> SpaceGui<'a> {
                     gl
                 );
         
-        self.chat_gui.draw(&context.trans(self.chat_gui_pos.x, self.chat_gui_pos.y), gl, glyph_cache);
+        //self.chat_gui.draw(&context.trans(self.chat_gui_pos.x, self.chat_gui_pos.y), gl, glyph_cache);
         
         if self.show_star_map {
             self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
@@ -277,6 +289,7 @@ impl<'a> SpaceGui<'a> {
     )
     {
         use graphics::*;
+        image(&self.overlay_hud, context.transform, gl);
         
         // Draw the space background
         self.space_bg.update(dt);
@@ -489,8 +502,10 @@ impl<'a> SpaceGui<'a> {
             });
         }
         
-        self.star_map_button.draw(context, gl, glyph_cache);
-        self.logout_button.draw(context, gl, glyph_cache);
+        self.chat_button.draw(context, gl);
+        self.star_map_button.draw(context, gl);
+        self.logout_button.draw(context, gl);
+        self.target_button.draw(context, gl);
 
         // Draw target icons
         for (i, icon) in self.target_icons.iter().enumerate() {
