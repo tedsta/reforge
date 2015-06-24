@@ -238,8 +238,8 @@ impl Ship {
                 
                 for cx in (start_x..end_x) {
                     for cy in (start_y..end_y) {
-                        if shape.get(cx - x, cy - y) == 1 &&
-                            module.shape.get(cx - module.x, cy - module.y) == 1 {
+                        if shape.get(cx - x, cy - y) == b'#' &&
+                            module.shape.get(cx - module.x, cy - module.y) == b'#' {
                             return false;
                         }
                     }
@@ -289,7 +289,7 @@ impl Ship {
             
             for x in (0..module.shape.side()) {
                 for y in (0..module.shape.side()) {
-                    if module.shape.get(x, y) == 1 {
+                    if module.shape.get(x, y) == b'#' {
                         let circle_pos = module.get_render_position() + (Vec2::new(x as f64, y as f64)*48.0 + Vec2::new(48.0/2.0, 48.0/2.0));
                         let circle_radius = 48.0 / 2.5;
                         
@@ -559,7 +559,7 @@ impl Ship {
             
             for x in module.x..module.x+module.shape.side() {
                 for y in module.y..module.y+module.shape.side() {
-                    if module.shape.get(x - module.x, y - module.y) == 1 {
+                    if module.shape.get(x - module.x, y - module.y) == b'#' {
                         let context = context.trans((x as f64) * 48.0, (y as f64) * 48.0);
                         let context = context.trans(24.0 - shield_size_x/2.0, 24.0 - shield_size_y/2.0);
                         
@@ -705,8 +705,8 @@ impl ShipStored {
                 
                 for cx in (start_x..end_x) {
                     for cy in (start_y..end_y) {
-                        if shape.get(cx - x, cy - y) == 1 &&
-                            module.shape.get(cx - module.x, cy - module.y) == 1 {
+                        if shape.get(cx - x, cy - y) == b'#' &&
+                            module.shape.get(cx - module.x, cy - module.y) == b'#' {
                             return false;
                         }
                     }

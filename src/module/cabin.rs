@@ -25,9 +25,9 @@ pub struct CabinModule;
 
 impl CabinModule {
     pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![1, 0, 0],
-                                          vec![1, 1, 0],
-                                          vec![1, 0, 0]]), 0, 2, 4, CabinModule)
+        Module::new(ModuleShape::new(vec![vec![b'#', b'.', b'.'],
+                                          vec![b'#', b'#', b'.'],
+                                          vec![b'#', b'.', b'.']]), 0, 2, 4, CabinModule)
     }
 }
 

@@ -26,7 +26,7 @@ pub struct BeamWeaponModule;
 
 impl BeamWeaponModule {
     pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![1]]), 3, 2, 3, BeamWeaponModule)
+        Module::new(ModuleShape::new(vec![vec![b'#']]), 3, 2, 3, BeamWeaponModule)
     }
 }
 
