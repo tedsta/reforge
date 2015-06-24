@@ -80,6 +80,7 @@ pub struct SpaceGui<'a> {
     show_star_map: bool,
     
     // Chat
+    show_chat: bool,
     chat_button: SpriteButton,
     chat_gui_pos: Vec2f,
     pub chat_gui: &'a mut ChatGui,
@@ -151,6 +152,7 @@ impl<'a> SpaceGui<'a> {
             star_map_gui: StarMapGui::new(sectors),
             show_star_map: false,
             
+            show_chat: false, 
             chat_button: SpriteButton::new("content/textures/gui/chat.png", 2, 1, [133.0, 662.0]),
             chat_gui_pos: Vec2::new(5.0, 720.0 - 200.0 - 5.0),
             chat_gui: chat_gui,
@@ -174,15 +176,20 @@ impl<'a> SpaceGui<'a> {
             self.mouse_pos.y = y;
         });
         
-        if let Some(chat_action) = self.chat_gui.event(e, self.mouse_pos - self.chat_gui_pos) {
-            match chat_action {
-                ChatGuiAction::SendMsg(msg) => {
-                    return Some(SpaceGuiAction::Chat(msg));
-                },
+        if self.show_chat {
+            if let Some(chat_action) = self.chat_gui.event(e, self.mouse_pos - self.chat_gui_pos) {
+                match chat_action {
+                    ChatGuiAction::SendMsg(msg) => {
+                        return Some(SpaceGuiAction::Chat(msg));
+                    },
+                }
             }
         }
         
         self.chat_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
+        if self.chat_button.get_clicked() {
+            self.show_chat = !self.show_chat;
+        }
         
         self.star_map_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.star_map_button.get_clicked() {
@@ -268,7 +275,9 @@ impl<'a> SpaceGui<'a> {
                     gl
                 );
         
-        //self.chat_gui.draw(&context.trans(self.chat_gui_pos.x, self.chat_gui_pos.y), gl, glyph_cache);
+        if self.show_chat {
+            self.chat_gui.draw(&context.trans(self.chat_gui_pos.x, self.chat_gui_pos.y), gl, glyph_cache);
+        }
         
         if self.show_star_map {
             self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
