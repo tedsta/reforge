@@ -13,6 +13,12 @@
 #![feature(convert)]
 #![feature(collections_drain)]
 #![feature(duration)]
+#![feature(reflect_marker)]
+#![feature(raw)]
+#![feature(drain)]
+#![feature(rc_unique)]
+#![feature(os)]
+#![feature(std_misc)]
 
 extern crate bincode;
 extern crate float;
@@ -90,7 +96,7 @@ mod vec;
 
 #[cfg(feature = "client")]
 fn main () {
-    let opengl = OpenGL::_3_2;
+    let opengl = OpenGL::_3_0;
     
     // Create an window.
     let window = GlutinWindow::new(
