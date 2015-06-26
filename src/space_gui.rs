@@ -347,11 +347,11 @@ impl<'a> SpaceGui<'a> {
                 
                 for x in (0..selected_module.shape.side()) {
                     for y in (0..selected_module.shape.side()) {
-                        if selected_module.shape.get(x, y) == 1 {
+                        if selected_module.shape.get(x, y) == b'#' {
                             let offset_x = x as f64 * 48.0;
                             let offset_y = y as f64 * 48.0;
                             if self.plans.module_plans(selected_module.index).active {
-                                Rectangle::new([0.0, 0.0, 1.0, 0.5])
+                                Rectangle::new([0.0, 1.0, 0.0, 0.5])
                                     .draw(
                                         [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
                                         &context.draw_state, context.transform,
@@ -428,15 +428,21 @@ impl<'a> SpaceGui<'a> {
                             
                             let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
                             
-                            let offset_x = x as f64 * 48.0;
-                            let offset_y = y as f64 * 48.0;
-                            
-                            Rectangle::new([1.0, 0.0, 0.0, 0.5])
-                                .draw(
-                                    [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                    &context.draw_state, context.transform,
-                                    gl
-                                );
+                            for x in (0..module.shape.side()) {
+                                for y in (0..module.shape.side()) {
+                                    if module.shape.get(x, y) == b'#' {
+                                        let offset_x = x as f64 * 48.0;
+                                        let offset_y = y as f64 * 48.0;
+                                        
+                                        Rectangle::new([1.0, 0.0, 0.0, 0.5])
+                                            .draw(
+                                                [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
+                                                &context.draw_state, context.transform,
+                                                gl
+                                            );
+                                    }
+                                }
+                            }
                         });
                     }
                 },
@@ -450,15 +456,21 @@ impl<'a> SpaceGui<'a> {
                         
                         let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
                             
-                        let offset_x = x as f64 * 48.0;
-                        let offset_y = y as f64 * 48.0;
-                        
-                        Rectangle::new([0.0, 1.0, 0.0, 0.5])
-                            .draw(
-                                [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                &context.draw_state, context.transform,
-                                gl
-                            );
+                        for x in (0..module.shape.side()) {
+                            for y in (0..module.shape.side()) {
+                                if module.shape.get(x, y) == b'#' {
+                                    let offset_x = x as f64 * 48.0;
+                                    let offset_y = y as f64 * 48.0;
+                                    
+                                    Rectangle::new([0.0, 1.0, 0.0, 0.5])
+                                        .draw(
+                                            [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
+                                            &context.draw_state, context.transform,
+                                            gl
+                                        );
+                                }
+                            }
+                        }
                     });
                 },
                 _ => { },
@@ -473,22 +485,28 @@ impl<'a> SpaceGui<'a> {
             
                 let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
                 
-                let offset_x = x as f64 * 48.0;
-                let offset_y = y as f64 * 48.0;
-                if self.plans.module_plans(module.index).active {
-                    Rectangle::new([0.0, 0.0, 1.0, 0.5])
-                        .draw(
-                            [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                            &context.draw_state, context.transform,
-                            gl
-                        );
-                } else if self.plans.can_plan_activate_module(ship_state, module) {
-                    Rectangle::new([1.0, 1.0, 0.0, 0.5])
-                        .draw(
-                            [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                            &context.draw_state, context.transform,
-                            gl
-                        );
+                for x in (0..module.shape.side()) {
+                    for y in (0..module.shape.side()) {
+                        if module.shape.get(x, y) == b'#' {
+                            let offset_x = x as f64 * 48.0;
+                            let offset_y = y as f64 * 48.0;
+                            if self.plans.module_plans(module.index).active {
+                                Rectangle::new([0.0, 0.0, 1.0, 0.5])
+                                    .draw(
+                                        [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
+                                        &context.draw_state, context.transform,
+                                        gl
+                                    );
+                            } else if self.plans.can_plan_activate_module(ship_state, module) {
+                                Rectangle::new([1.0, 1.0, 0.0, 0.5])
+                                    .draw(
+                                        [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
+                                        &context.draw_state, context.transform,
+                                        gl
+                                    );
+                            }
+                        }
+                    }
                 }
             });
         }
