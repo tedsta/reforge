@@ -774,9 +774,9 @@ impl TargetIcon {
         
         let icon =
             match ship.get_height() {
-                1...2 => asset_store.get_texture_str("gui/small_target.png"),
-                3 => asset_store.get_texture_str("gui/medium_target.png"),
-                4...255 => asset_store.get_texture_str("gui/big_target.png"),
+                1...2 => asset_store.get_texture_str("small_target"),
+                3 => asset_store.get_texture_str("medium_target"),
+                4...255 => asset_store.get_texture_str("big_target"),
                 _ => unreachable!(),
             };
         

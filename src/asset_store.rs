@@ -95,6 +95,8 @@ impl AssetStore {
     }
     
     fn load_sprite(&mut self, prop: &HashMap<String, String>) {
+        println!("loading {:?}", prop);
+    
         let name = prop["name"].clone();
         
         let texture_path = "content/textures/".to_string() + &prop["texture"];
@@ -105,16 +107,18 @@ impl AssetStore {
                 Texture::from_path(&Path::new(texture_path.as_str()))
                     .ok().expect(format!("Failed to load {}", name).as_str())
             );
-        let animations: Vec<String> = prop["animations"].split("\n")
-                                                        .map(|s| s.trim_left().trim_right().to_string())
-                                                        .collect();
         let mut anim_map = HashMap::new();
-        for animation in animations {
-            let parts: Vec<String> = animation.split(":")
-                                              .map(|s| s.trim_left().trim_right().to_string())
-                                              .collect();
-            if parts.len() == 3 {
-                anim_map.insert(parts[0].clone(), (parts[1].parse().unwrap(), parts[2].parse().unwrap()));
+        if prop.contains_key("animations") {
+            let animations: Vec<String> = prop["animations"].split("\n")
+                                                            .map(|s| s.trim_left().trim_right().to_string())
+                                                            .collect();
+            for animation in animations {
+                let parts: Vec<String> = animation.split(":")
+                                                  .map(|s| s.trim_left().trim_right().to_string())
+                                                  .collect();
+                if parts.len() == 3 {
+                    anim_map.insert(parts[0].clone(), (parts[1].parse().unwrap(), parts[2].parse().unwrap()));
+                }
             }
         }
         self.sprite_info.insert(name,

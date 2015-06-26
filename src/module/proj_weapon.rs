@@ -13,7 +13,7 @@ use opengl_graphics::GlGraphics;
 
 use battle_context::{BattleContext, tick_to_time};
 use module;
-use module::{IModule, Model, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData};
+use module::{IModule, Model, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData};
 use net::{ClientId, InPacket, OutPacket};
 use ship::{Ship, ShipId, ShipState};
 use sim::SimEvents;
@@ -37,13 +37,13 @@ pub struct ProjectileWeaponModule {
 }
 
 impl ProjectileWeaponModule {
-    pub fn new() -> Module {
+    pub fn new(model: ModelIndex) -> Module {
         let projectile = Projectile {
             damage: 1,
             hit: false,
         };
     
-        Module::new(ModuleShape::new(vec![vec![b'#']]), 2, 2, 3,
+        Module::new(model, ModuleShape::new(vec![vec![b'#']]), 2, 2, 3,
             ProjectileWeaponModule {
                 old_rotation: 0.0,
                 rotation: 0.0,

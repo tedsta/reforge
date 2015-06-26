@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::iter;
 use std::slice;
 
+use module::ModelStore;
 use net::{ClientId, InPacket, OutPacket};
 use ship::{Ship, ShipId, ShipIndex};
 use sim::SimEvents;
@@ -124,29 +125,29 @@ impl BattleContext {
         self.ships[ship_index.to_usize()].take().expect("Tried to remove non-existant ship")
     }
 
-    pub fn server_preprocess(&self) {
+    pub fn server_preprocess(&self, model_store: &ModelStore) {
         for ship in self.ships_iter() {
-            ship.server_preprocess(self);
+            ship.server_preprocess(self, model_store);
         }
     }
     
-    pub fn before_simulation(&self, events: &mut SimEvents) {
+    pub fn before_simulation(&self, model_store: &ModelStore, events: &mut SimEvents) {
         for ship in self.ships_iter() {
-            ship.before_simulation(self, events);
-        }
-    }
-    
-    #[cfg(feature = "client")]
-    pub fn add_plan_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
-        for ship in self.ships_iter() {
-            ship.add_plan_effects(self, asset_store, effects);
+            ship.before_simulation(self, model_store, events);
         }
     }
     
     #[cfg(feature = "client")]
-    pub fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
+    pub fn add_plan_effects(&self, asset_store: &AssetStore, model_store: &ModelStore, effects: &mut SimEffects) {
         for ship in self.ships_iter() {
-            ship.add_simulation_effects(self, asset_store, effects);
+            ship.add_plan_effects(self, asset_store, model_store, effects);
+        }
+    }
+    
+    #[cfg(feature = "client")]
+    pub fn add_simulation_effects(&self, asset_store: &AssetStore, model_store: &ModelStore, effects: &mut SimEffects) {
+        for ship in self.ships_iter() {
+            ship.add_simulation_effects(self, asset_store, model_store, effects);
         }
     }
     

@@ -3,6 +3,7 @@ use std::cell::RefCell;
 use std::cmp;
 use std::collections::{HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver};
 use time;
 
@@ -10,7 +11,7 @@ use ai::run_ai;
 use battle_context::BattleContext;
 use chat::ChatMsg;
 use login::AccountBox;
-use module::Module;
+use module::{ModelStore, Module};
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
 use packet_types::{ClientBattlePacket, ServerBattlePacket};
 use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipStored};
@@ -27,6 +28,8 @@ pub struct SectorState {
 
     // Context holding all the things involved in this battle
     context: BattleContext,
+    
+    model_store: Arc<ModelStore>,
     
     turn_start_time: time::Timespec,
     simulated_turn: bool,
@@ -62,6 +65,7 @@ impl SectorState {
                to_map_sender: Sender<(AccountBox, StarMapAction)>,
                from_map_receiver: Receiver<AccountBox>,
                context: BattleContext,
+               model_store: Arc<ModelStore>,
                debug: bool) -> SectorState {
         SectorState {
             slot: slot,
@@ -71,6 +75,7 @@ impl SectorState {
             to_map_sender: to_map_sender,
             from_map_receiver: from_map_receiver,
             context: context,
+            model_store: model_store,
             turn_start_time: time::now().to_timespec(),
             simulated_turn: false,
             received_plans: HashSet::new(),
@@ -280,7 +285,7 @@ impl SectorState {
         }
     
         // Do server-side precalculations
-        self.context.server_preprocess();
+        self.context.server_preprocess(&*self.model_store);
         
         // Send the results packet
         let mut results_packet = self.build_results_packet();
@@ -378,7 +383,7 @@ impl SectorState {
         let mut sim_events = SimEvents::new();
     
         // Pre simulation
-        self.context.before_simulation(&mut sim_events);
+        self.context.before_simulation(&*self.model_store, &mut sim_events);
         
         // Simulation!!!
         self.simulate(&mut sim_events);

@@ -5,7 +5,7 @@ use opengl_graphics::GlGraphics;
 
 use battle_context::BattleContext;
 use module;
-use module::{IModule, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
+use module::{IModule, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
 use net::{InPacket, OutPacket};
 use ship::{Ship, ShipState};
 use sim::SimEvents;
@@ -24,8 +24,8 @@ use asset_store::AssetStore;
 pub struct SolarModule;
 
 impl SolarModule {
-    pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![b'#']]), 0, 2, 3, SolarModule)
+    pub fn new(model: ModelIndex) -> Module {
+        Module::new(model, ModuleShape::new(vec![vec![b'#']]), 0, 2, 3, SolarModule)
     }
 }
 

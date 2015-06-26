@@ -56,6 +56,7 @@ pub struct ModuleContext<'a> {
     pub x: u8,
     pub y: u8,
     pub shape: &'a ModuleShape,
+    pub model: &'a Model,
 
     pub index: ModuleIndex,
     pub is_active: bool,
@@ -223,6 +224,8 @@ impl ModuleShape {
 
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct Module {
+    pub model: ModelIndex,
+
     // Module position/size stuff
     pub x: u8,
     pub y: u8,
@@ -248,6 +251,7 @@ pub struct Module {
 
 impl Module {
     pub fn new<M: IModule+'static>(
+        model: ModelIndex,
         shape: ModuleShape,
         power: u8,
         min_hp: u8,
@@ -255,6 +259,8 @@ impl Module {
         inner: M,
     ) -> Module {
         Module {
+            model: model,
+            
             x: 0,
             y: 0,
             shape: shape,
@@ -279,6 +285,8 @@ impl Module {
     
     pub fn from_model<M: IModule+'static>(model: &Model, inner: M) -> Module {
         Module {
+            model: model.index,
+        
             x: 0,
             y: 0,
             shape: model.shape.clone(),
@@ -391,8 +399,10 @@ impl Module {
         }
     }
     
-    pub fn create_module_context<'a>(&'a self, bc: &'a BattleContext, ship: &'a Ship) -> ModuleContext<'a> {
+    pub fn create_module_context<'a>(&'a self, bc: &'a BattleContext, model_store: &'a ModelStore, ship: &'a Ship) -> ModuleContext<'a> {
         ModuleContext {
+            model: self.model.get(model_store),
+            
             x: self.x,
             y: self.y,
             shape: &self.shape,
@@ -441,6 +451,8 @@ impl Module {
 
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct ModuleStored {
+    pub model: ModelIndex,
+
     // Module position/size stuff
     pub x: u8,
     pub y: u8,
@@ -462,6 +474,8 @@ pub struct ModuleStored {
 impl ModuleStored {
     pub fn from_module(module: Module) -> ModuleStored {
         ModuleStored {
+            model: module.model,
+        
             x: module.x,
             y: module.y,
             shape: module.shape,
@@ -482,6 +496,8 @@ impl ModuleStored {
     
     pub fn to_module(self) -> Module {
         Module {
+            model: self.model,
+        
             x: self.x,
             y: self.y,
             shape: self.shape,
@@ -536,8 +552,10 @@ impl ModuleStored {
         self.power > 0 && !self.is_damaged()
     }
     
-    pub fn create_module_context<'a>(&'a self, ship: &'a ShipStored) -> ModuleContext<'a> {
+    pub fn create_module_context<'a>(&'a self, model_store: &'a ModelStore, ship: &'a ShipStored) -> ModuleContext<'a> {
         ModuleContext {
+            model: self.model.get(model_store),
+        
             x: self.x,
             y: self.y,
             shape: &self.shape,

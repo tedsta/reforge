@@ -63,6 +63,10 @@ impl SpriteSheet {
         self.animations.push_back(animation);
     }
     
+    pub fn add_named_once(&mut self, name: &String) {
+        //self.animations.push_back(animation);
+    }
+    
     pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, x: f64, y: f64, rotation: f64, time: f64) {
         let mut anim_done = false;
         match self.animations.front() {

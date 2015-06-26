@@ -16,6 +16,7 @@ use piston::window::Window;
 use asset_store::AssetStore;
 use battle_context::{BattleContext, TICKS_PER_SECOND};
 use chat::ChatGui;
+use module::ModelStore;
 use net::{Client, InPacket, OutPacket};
 use packet_types::{ClientBattlePacket, ServerBattlePacket};
 use sector_data::SectorData;
@@ -58,6 +59,7 @@ impl<'a> ClientBattleState<'a> {
                gl: &mut GlGraphics,
                glyph_cache: &mut GlyphCache,
                asset_store: &AssetStore,
+               model_store: &ModelStore,
                chat_gui: &mut ChatGui,
                sectors: Vec<SectorData>,
                server_results_sent: bool) {
@@ -112,7 +114,7 @@ impl<'a> ClientBattleState<'a> {
             self.handle_new_ships_packet(gui, &mut new_ships_pre);
             self.handle_simulation_results(&mut results);
             
-            self.run_simulation_phase(window, gl, glyph_cache, asset_store, gui, sim_effects);
+            self.run_simulation_phase(window, gl, glyph_cache, asset_store, model_store, gui, sim_effects);
             
             // Receive ships after sim
             self.handle_new_ships_packet(gui, &mut new_ships_post);
@@ -127,6 +129,7 @@ impl<'a> ClientBattleState<'a> {
                             gl: &mut GlGraphics,
                             glyph_cache: &mut GlyphCache,
                             asset_store: &AssetStore,
+                            model_store: &ModelStore,
                             gui: &mut SpaceGui,
                             mut sim_effects: &mut SimEffects) -> bool {
         // Unlock any exploding or jumping ships
@@ -146,8 +149,8 @@ impl<'a> ClientBattleState<'a> {
             
         // Before simulation
         sim_effects.reset();
-        self.bc.before_simulation(&mut sim_events);
-        self.bc.add_simulation_effects(asset_store, &mut sim_effects);
+        self.bc.before_simulation(model_store, &mut sim_events);
+        self.bc.add_simulation_effects(asset_store, model_store, &mut sim_effects);
         
         // Simulation
         let start_time = time::now().to_timespec();

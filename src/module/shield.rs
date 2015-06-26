@@ -1,4 +1,4 @@
-use module::{IModule, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
+use module::{IModule, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
 use ship::ShipState;
 
 #[cfg(feature = "client")]
@@ -14,8 +14,8 @@ use asset_store::AssetStore;
 pub struct ShieldModule;
 
 impl ShieldModule {
-    pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![b'#']]), 2, 2, 3, ShieldModule)
+    pub fn new(model: ModelIndex) -> Module {
+        Module::new(model, ModuleShape::new(vec![vec![b'#']]), 2, 2, 3, ShieldModule)
     }
 }
 

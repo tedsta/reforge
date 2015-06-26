@@ -1,4 +1,4 @@
-use module::{IModule, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData, TargetMode};
+use module::{IModule, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData, TargetMode};
 use ship::ShipState;
 use sim::SimEvents;
 use sim_events::RepairEvent;
@@ -17,8 +17,8 @@ use asset_store::AssetStore;
 pub struct RepairModule;
 
 impl RepairModule {
-    pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![b'#']]), 2, 2, 3, RepairModule)
+    pub fn new(model: ModelIndex) -> Module {
+        Module::new(model, ModuleShape::new(vec![vec![b'#']]), 2, 2, 3, RepairModule)
     }
 }
 
