@@ -120,8 +120,8 @@ impl IModule for ProjectileWeaponModule {
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/pewpewbase.png"));
-        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/pewpewfire.png"));
+        let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("pewpewbase"));
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("pewpewfire"));
         
         weapon_sprite.center = Vec2::new(22.0, 24.0);
         
@@ -142,7 +142,7 @@ impl IModule for ProjectileWeaponModule {
         let ship_id = context.ship_id;
         
         // Add rotating lerp visual
-        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/pewpewfire.png"));
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("pewpewfire"));
         weapon_sprite.center = Vec2::new(18.0, 24.0);
         weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, tick_to_time(10), 5));
         effects.add_visual(ship_id, 1,
@@ -157,8 +157,8 @@ impl IModule for ProjectileWeaponModule {
             });
     
         // Firing visuals
-        let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/pewpewbase.png"));
-        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/pewpewfire.png"));
+        let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("pewpewbase"));
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("pewpewfire"));
         
         weapon_sprite.center = Vec2::new(18.0, 24.0);
         
@@ -200,7 +200,7 @@ impl IModule for ProjectileWeaponModule {
                         let dist = end_pos - start_pos;
                         let rotation = dist.y.atan2(dist.x);
                         
-                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/laser2.png"));
+                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("laser2"));
                         laser_sprite.center();
                         laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
                         
@@ -239,7 +239,7 @@ impl IModule for ProjectileWeaponModule {
                         let dist = end_pos - start_pos;
                         let rotation = dist.y.atan2(dist.x);
 
-                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/laser2.png"));
+                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("laser2"));
                         laser_sprite.center();
                         laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
                         
@@ -258,7 +258,7 @@ impl IModule for ProjectileWeaponModule {
                         let start_time = tick_to_time(hit_tick);
                         let end_time = start_time + 0.7;
                         
-                        let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info_str("effects/explosion1.png"));
+                        let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info_str("explosion1"));
                         explosion_sprite.center();
                         explosion_sprite.add_animation(SpriteAnimation::PlayOnce(start_time, end_time, 0, 9));
                         

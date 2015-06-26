@@ -24,7 +24,7 @@ impl IModule for ShieldModule {
 
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/shield_sprite.png"));
+        let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("shield"));
         
         if context.is_active {
             shield_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 9, 0.05));

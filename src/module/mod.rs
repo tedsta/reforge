@@ -371,7 +371,7 @@ impl Module {
         use sprite_sheet::{SpriteSheet, SpriteAnimation};
     
         for visual in &self.damage_visuals {
-            let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/fire_sprite.png"));
+            let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("fire"));
             sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.05));
         
             effects.add_visual(ship_id, 1,

@@ -34,7 +34,7 @@ impl IModule for SolarModule {
 
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut solar_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/solar_panel_sprite.png"));
+        let mut solar_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("solar"));
         
         if context.is_active {
             solar_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 1, 4, 0.1));

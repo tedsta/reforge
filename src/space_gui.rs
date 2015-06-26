@@ -467,6 +467,8 @@ impl<'a> SpaceGui<'a> {
                 _ => { },
             }
         } else {
+            println!("thing");
+        
             // If not currently selecting a module, highlight modules the user mouses-over
             let x = self.mouse_pos.x - SHIP_OFFSET_X;
             let y = self.mouse_pos.y - SHIP_OFFSET_Y;

@@ -45,7 +45,7 @@ impl IModule for RepairModule {
 
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/repair_sprite.png"));
+        let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("repair"));
         
         if context.is_active {
             sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 1, 18, 0.055));

@@ -35,7 +35,7 @@ impl IModule for CommandModule {
 
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/big_command_sprite.png"));
+        let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("big_command"));
 
         if context.is_active {
             command_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.2));

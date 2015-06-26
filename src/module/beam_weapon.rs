@@ -57,7 +57,7 @@ impl IModule for BeamWeaponModule {
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/small_beam_sprite.png"));
+        let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("small_beam_weap"));
 
         if context.is_active {
             sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 1, 23, 0.2));
@@ -89,20 +89,18 @@ impl IModule for BeamWeaponModule {
                         
                         beam_start: context.get_render_center() + Vec2 { x: 12.0, y: 0.0 },
                         
-                        texture: asset_store.get_texture_str("effects/small_beam_part.png").clone(),
+                        texture: asset_store.get_texture_str("small_beam_mid").clone(),
                     });
                     
                     // Add the simulation visual for beam entering target screen
-                    let mut beam_end_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/small_beam_end.png"));
+                    let mut beam_end_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("small_beam_end"));
                     beam_end_sprite.add_animation(SpriteAnimation::Loop(0.0, 2.0, 0, 3, 0.1)); // 2 second beam duration
                     
                     let beam_visual =
-                        BeamVisual::new(
-                            start_time, end_time,
-                            beam_start, beam_end,
-                            asset_store.get_texture_str("effects/small_beam_part.png").clone(),
-                            beam_end_sprite
-                        );
+                        BeamVisual::new(start_time, end_time,
+                                        beam_start, beam_end,
+                                        asset_store.get_texture_str("small_beam_mid").clone(),
+                                        beam_end_sprite);
                     
                     effects.add_visual(target_ship_id, 2, beam_visual);
                     
