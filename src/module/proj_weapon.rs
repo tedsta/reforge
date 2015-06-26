@@ -34,6 +34,13 @@ pub struct ProjectileWeaponModule {
     old_rotation: f64,
     rotation: f64,
     projectiles: Vec<Projectile>,
+    
+    base_sprite: Option<String>,
+    turret_sprite: String,
+    projectile_sprite: String,
+    explosion_sprite: String,
+    
+    turret_center: Vec2f,
 }
 
 impl ProjectileWeaponModule {
@@ -48,6 +55,13 @@ impl ProjectileWeaponModule {
                 old_rotation: 0.0,
                 rotation: 0.0,
                 projectiles: repeat(projectile).take(3).collect(),
+                
+                base_sprite: Some("pewpewbase".to_string()),
+                turret_sprite: "pewpewfire".to_string(),
+                projectile_sprite: "laser2".to_string(),
+                explosion_sprite: "explosion1".to_string(),
+                
+                turret_center: Vec2::new(18.0, 24.0),
             },
         )
     }
@@ -57,12 +71,28 @@ impl ProjectileWeaponModule {
             damage: prop["projectile_damage"].parse().unwrap(),
             hit: false,
         };
+        
+        let turret_center =
+            match prop.get(&"turret_center_x".to_string()) {
+                Some(ref turret_center_x) => {
+                    Vec2::new(prop[&"turret_center_x".to_string()].parse().unwrap(),
+                              prop[&"turret_center_y".to_string()].parse().unwrap())
+                },
+                None => { Vec2::new(0.0, 0.0) },
+            };
     
         Module::from_model(model,
             ProjectileWeaponModule {
                 old_rotation: 0.0,
                 rotation: 0.0,
                 projectiles: repeat(projectile).take(prop["num_projectiles"].parse().unwrap()).collect(),
+                
+                base_sprite: prop.get(&"base".to_string()).map(|s| s.clone()),
+                turret_sprite: prop[&"turret".to_string()].clone(),
+                projectile_sprite: prop[&"projectile".to_string()].clone(),
+                explosion_sprite: prop[&"explosion".to_string()].clone(),
+                
+                turret_center: turret_center,
             },
         )
     }
@@ -120,20 +150,21 @@ impl IModule for ProjectileWeaponModule {
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("pewpewbase"));
-        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("pewpewfire"));
+        if let Some(ref base_sprite_name) = self.base_sprite {
+            let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info(base_sprite_name));
+            base_sprite.add_named_stay(&"idle".to_string(), 0.0, 7.0);
+            effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, base_sprite));
+        }
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.turret_sprite));
         
-        weapon_sprite.center = Vec2::new(22.0, 24.0);
-        
-        base_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
+        weapon_sprite.center = self.turret_center;
         
         if context.is_active {
-            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 5));
+            weapon_sprite.add_named_stay(&"idle".to_string(), 0.0, 7.0);
         } else {
-            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
+            weapon_sprite.add_named_stay(&"off".to_string(), 0.0, 7.0);
         }
         
-        effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, base_sprite));
         effects.add_visual(context.ship_id, 1, SpriteVisual::new(context.get_render_position() + weapon_sprite.center, self.rotation, weapon_sprite));
     }
     
@@ -142,9 +173,9 @@ impl IModule for ProjectileWeaponModule {
         let ship_id = context.ship_id;
         
         // Add rotating lerp visual
-        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("pewpewfire"));
-        weapon_sprite.center = Vec2::new(18.0, 24.0);
-        weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, tick_to_time(10), 5));
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.turret_sprite));
+        weapon_sprite.center = self.turret_center;
+        weapon_sprite.add_named_stay(&"idle".to_string(), 0.0, tick_to_time(10));
         effects.add_visual(ship_id, 1,
             LerpVisual {
                 start_time: 0.0,
@@ -157,12 +188,15 @@ impl IModule for ProjectileWeaponModule {
             });
     
         // Firing visuals
-        let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("pewpewbase"));
-        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("pewpewfire"));
+        if let Some(ref base_sprite_name) = self.base_sprite {
+            let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info(base_sprite_name));
+            base_sprite.add_named_stay(&"idle".to_string(), 0.0, 7.0);
+            effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, base_sprite));
+        }
         
-        weapon_sprite.center = Vec2::new(18.0, 24.0);
+        let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.turret_sprite));
         
-        base_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
+        weapon_sprite.center = self.turret_center;
         
         if context.is_active {
             if let Some(ref target) = context.target {
@@ -200,18 +234,18 @@ impl IModule for ProjectileWeaponModule {
                         let dist = end_pos - start_pos;
                         let rotation = dist.y.atan2(dist.x);
                         
-                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("laser2"));
+                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.projectile_sprite));
                         laser_sprite.center();
-                        laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
+                        laser_sprite.add_named_loop(&"loop".to_string(), 0.0, 7.0, 0.05);
                         
                         let weapon_anim_start = start_time;
                         let weapon_anim_end = start_time+0.15;
                         
                         // Add weapon fire animations for this projectile
                         if i != 0 {
-                            weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, weapon_anim_start, 6));
+                            weapon_sprite.add_named_stay(&"idle".to_string(), last_weapon_anim_end, weapon_anim_start);
                         }
-                        weapon_sprite.add_animation(SpriteAnimation::PlayOnce(weapon_anim_start, weapon_anim_end, 6, 14));
+                        weapon_sprite.add_named_once(&"fire".to_string(), weapon_anim_start, weapon_anim_end);
                         
                         // Set the last end for the next projectile
                         last_weapon_anim_end = weapon_anim_end;
@@ -239,9 +273,9 @@ impl IModule for ProjectileWeaponModule {
                         let dist = end_pos - start_pos;
                         let rotation = dist.y.atan2(dist.x);
 
-                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("laser2"));
+                        let mut laser_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.projectile_sprite));
                         laser_sprite.center();
-                        laser_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 4, 0.05));
+                        laser_sprite.add_named_loop(&"loop".to_string(), 0.0, 7.0, 0.05);
                         
                         // Add the simulation visual for projectile entering target screen
                         effects.add_visual(target_ship_id, 2, LerpVisual {
@@ -258,9 +292,9 @@ impl IModule for ProjectileWeaponModule {
                         let start_time = tick_to_time(hit_tick);
                         let end_time = start_time + 0.7;
                         
-                        let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info_str("explosion1"));
+                        let mut explosion_sprite =  SpriteSheet::new(asset_store.get_sprite_info(&self.explosion_sprite));
                         explosion_sprite.center();
-                        explosion_sprite.add_animation(SpriteAnimation::PlayOnce(start_time, end_time, 0, 9));
+                        explosion_sprite.add_named_once(&"explode".to_string(), start_time, end_time);
                         
                         effects.add_visual(target_ship_id, 3, SpriteVisual::new(hit_pos, 0.0, explosion_sprite));
                         
@@ -269,16 +303,15 @@ impl IModule for ProjectileWeaponModule {
                     }
                     
                     // Add last stay animation
-                    weapon_sprite.add_animation(SpriteAnimation::Stay(last_weapon_anim_end, 7.0, 5));
+                    weapon_sprite.add_named_stay(&"idle".to_string(), last_weapon_anim_end, 7.0);
                 }
             } else {
-                weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 5));
+                weapon_sprite.add_named_stay(&"idle".to_string(), 0.0, 7.0);
             }
         } else {
-            weapon_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
+            weapon_sprite.add_named_stay(&"off".to_string(), 0.0, 7.0);
         }
         
-        effects.add_visual(ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, base_sprite));
         effects.add_visual(ship_id, 1, SpriteVisual::new(context.get_render_position() + weapon_sprite.center, self.rotation, weapon_sprite));
     }
     

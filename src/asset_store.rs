@@ -121,6 +121,7 @@ impl AssetStore {
                 }
             }
         }
+        println!("animations: {:?}", anim_map);
         self.sprite_info.insert(name,
                                 SpriteInfo {
                                     texture: texture,

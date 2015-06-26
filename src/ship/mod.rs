@@ -418,7 +418,7 @@ impl Ship {
             let y = rng.gen::<f64>() * ((self.height as f64) * 48.0);
             let time = rng.gen::<f64>() * 4.5;
         
-            let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/ship_explosion1.png"));
+            let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("ship_explosion1"));
             sprite.center();
             sprite.add_animation(SpriteAnimation::PlayOnce(time, time+0.5, 0, 8));
         

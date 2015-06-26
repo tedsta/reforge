@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 use num::Float;
 
@@ -29,6 +29,9 @@ pub struct SpriteSheet {
     // Time stuff
     animations: VecDeque<SpriteAnimation>,
     
+    // Animation name -> frames map
+    anim_map: HashMap<String, (u32, u32)>,
+    
     // Whether or not to center the texture
     pub center: Vec2f,
 }
@@ -47,6 +50,7 @@ impl SpriteSheet {
             frame_height: texture_height/(rows as u32),
             current_frame: 0,
             animations: VecDeque::new(),
+            anim_map: sprite_info.animations.clone(),
             center: Vec2::new(0.0, 0.0),
         }
     }
@@ -63,8 +67,22 @@ impl SpriteSheet {
         self.animations.push_back(animation);
     }
     
-    pub fn add_named_once(&mut self, name: &String) {
-        //self.animations.push_back(animation);
+    pub fn add_named_once(&mut self, name: &String, start: f64, end: f64) {
+        let ref frame_interval = self.anim_map[name];
+        self.animations.push_back(SpriteAnimation::PlayOnce(start, end, frame_interval.0, frame_interval.1));
+    }
+    
+    pub fn add_named_loop(&mut self, name: &String, start: f64, end: f64, interval: f64) {
+        let ref frame_interval = self.anim_map[name];
+        self.animations.push_back(SpriteAnimation::Loop(start, end, frame_interval.0, frame_interval.1, interval));
+    }
+    
+    pub fn add_named_stay(&mut self, name: &String, start: f64, end: f64) {
+        let ref frame_interval = self.anim_map[name];
+        if frame_interval.0 != frame_interval.1 {
+            println!("WARNING: stay animation {} doesn't have equal frame start and end values", name);
+        }
+        self.animations.push_back(SpriteAnimation::Stay(start, end, frame_interval.0));
     }
     
     pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, x: f64, y: f64, rotation: f64, time: f64) {
@@ -83,10 +101,10 @@ impl SpriteSheet {
                             self.draw_current_frame(context, gl, x, y, rotation);
                         }
                     },
-                    SpriteAnimation::Loop(start_time, end_time, start_frame, end_frame, isizeerval) => {
+                    SpriteAnimation::Loop(start_time, end_time, start_frame, end_frame, interval) => {
                         if time >= start_time {
                             if time <= end_time {
-                                let mut frame = ((time-start_time) / isizeerval).floor() as u32;
+                                let mut frame = ((time-start_time) / interval).floor() as u32;
                                 frame = frame % (end_frame - start_frame + 1);
                                 frame += start_frame;
                                 self.current_frame = frame;
