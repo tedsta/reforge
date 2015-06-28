@@ -188,12 +188,12 @@ impl<'a> SpaceGui<'a> {
         
         self.chat_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.chat_button.get_clicked() {
-            //self.show_chat = !self.show_chat;
+            self.show_chat = !self.show_chat;
         }
         
         self.star_map_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.star_map_button.get_clicked() {
-            //self.show_star_map = !self.show_star_map;
+            self.show_star_map = !self.show_star_map;
         }
         
         if self.show_star_map {
