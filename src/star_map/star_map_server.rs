@@ -62,6 +62,7 @@ impl StarMapServer {
         let sector_slot = slot.create_slot();
         let sector_id = SectorId(0);
         let sector_chat_out = to_chat_server.clone();
+        let sector_model_store = model_store.clone();
         sectors.insert(sector_id, Sector {
             slot_id: sector_slot.get_id(),
             to_sector: to_sector_sender,
@@ -84,7 +85,7 @@ impl StarMapServer {
                                                            sector_chat_in,
                                                            from_sector_sender,
                                                            to_sector_receiver,
-                                                           model_store.clone());
+                                                           sector_model_store);
                 sector_server.run(ack_sender);
             });
         
@@ -97,6 +98,7 @@ impl StarMapServer {
         let sector_slot = slot.create_slot();
         let sector_id = SectorId(1);
         let sector_chat_out = to_chat_server.clone();
+        let sector_model_store = model_store.clone();
         sectors.insert(sector_id, Sector {
             slot_id: sector_slot.get_id(),
             to_sector: to_sector_sender,
@@ -119,6 +121,7 @@ impl StarMapServer {
                                                          from_sector_sender,
                                                          to_sector_receiver,
                                                          BattleContext::new(vec!()),
+                                                         sector_model_store,
                                                          false);
                 sector_server.run(ack_sender, false);
             });
@@ -132,6 +135,7 @@ impl StarMapServer {
         let sector_slot = slot.create_slot();
         let sector_id = SectorId(2);
         let sector_chat_out = to_chat_server.clone();
+        let sector_model_store = model_store.clone();
         sectors.insert(sector_id, Sector {
             slot_id: sector_slot.get_id(),
             to_sector: to_sector_sender,
@@ -154,6 +158,7 @@ impl StarMapServer {
                                                          from_sector_sender,
                                                          to_sector_receiver,
                                                          BattleContext::new(vec!()),
+                                                         sector_model_store,
                                                          false);
                 sector_server.run(ack_sender, true);
             });

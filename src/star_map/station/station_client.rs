@@ -45,14 +45,14 @@ impl<'a> StationClient<'a> {
                 ("command".to_string(), vec![(ModelIndex(1), 100), (ModelIndex(7), 100)]),
                 ("power".to_string(), vec![(ModelIndex(2), 100)]),
                 ("shields".to_string(), vec![(ModelIndex(3), 100)]),
-                ("weapons".to_string(), vec![(ModelIndex(4), 100), (ModelIndex(5), 100), (ModelIndex(6), 100)]),
+                ("weapons".to_string(), vec![(ModelIndex(4), 100), (ModelIndex(5), 100), (ModelIndex(6), 100), (ModelIndex(8), 100)]),
             ];
     
         let ref mut gui = StationGui::new(model_store, chat_gui, sectors, module_inventory);
         let ref mut sim_effects = SimEffects::new();
         
         if let Some(ref ship) = self.player_ship {
-            ship.add_simulation_effects(asset_store, sim_effects);
+            ship.add_simulation_effects(asset_store, model_store, sim_effects);
         }
     
         let mut time: f64 = 0.0;
@@ -75,7 +75,7 @@ impl<'a> StationClient<'a> {
                         
                         if let Some(ref ship) = self.player_ship {
                             sim_effects.reset();
-                            ship.add_simulation_effects(asset_store, sim_effects);
+                            ship.add_simulation_effects(asset_store, model_store, sim_effects);
                         }
                     }
                 
@@ -118,7 +118,7 @@ impl<'a> StationClient<'a> {
                                     ship.add_module(module);
                                     
                                     sim_effects.reset();
-                                    ship.add_simulation_effects(asset_store, sim_effects);
+                                    ship.add_simulation_effects(asset_store, model_store, sim_effects);
                                 },
                                 ShipEditAction::Remove(module) => {
                                 },

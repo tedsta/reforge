@@ -6,6 +6,7 @@ use std::marker::Reflect;
 use battle_context::BattleContext;
 use module;
 use module::{
+    ModelStore,
     IModule,
     Module,
     ModuleIndex,
@@ -358,46 +359,46 @@ impl Ship {
         }
     }
     
-    pub fn server_preprocess(&self, bc: &BattleContext) {
+    pub fn server_preprocess(&self, bc: &BattleContext, model_store: &ModelStore) {
         for module in &self.modules {
             if module.active {
-                let ref module_context = module.create_module_context(bc, self);
+                let ref module_context = module.create_module_context(bc, model_store, self);
                 module.inner.borrow_mut().server_preprocess(module_context);
             }
         }
     }
     
-    pub fn before_simulation(&self, bc: &BattleContext, events: &mut SimEvents) {
+    pub fn before_simulation(&self, bc: &BattleContext, model_store: &ModelStore, events: &mut SimEvents) {
         for module in &self.modules {
             if module.active {
-                let ref module_context = module.create_module_context(bc, self);
+                let ref module_context = module.create_module_context(bc, model_store, self);
                 module.inner.borrow_mut().before_simulation(module_context, events);
             }
         }
     }
     
     #[cfg(feature = "client")]
-    pub fn add_plan_effects(&self, bc: &BattleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
+    pub fn add_plan_effects(&self, bc: &BattleContext, asset_store: &AssetStore, model_store: &ModelStore, effects: &mut SimEffects) {
         for module in &self.modules {
-            let ref module_context = module.create_module_context(bc, self);
+            let ref module_context = module.create_module_context(bc, model_store, self);
             module.inner.borrow().add_plan_effects(module_context, asset_store, effects);
         }
     }
     
     #[cfg(feature = "client")]
-    pub fn add_simulation_effects(&self, bc: &BattleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
+    pub fn add_simulation_effects(&self, bc: &BattleContext, asset_store: &AssetStore, model_store: &ModelStore, effects: &mut SimEffects) {
         if self.exploding {
-            self.add_exploding_effects(bc, asset_store, effects);
+            self.add_exploding_effects(bc, asset_store, model_store, effects);
         } else {
             for module in &self.modules {
-                let ref module_context = module.create_module_context(bc, self);
+                let ref module_context = module.create_module_context(bc, model_store, self);
                 module.inner.borrow().add_simulation_effects(module_context, asset_store, effects);
             }
         }
     }
     
     #[cfg(feature = "client")]
-    fn add_exploding_effects(&self, bc: &BattleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
+    fn add_exploding_effects(&self, bc: &BattleContext, asset_store: &AssetStore, model_store: &ModelStore, effects: &mut SimEffects) {
         use rand;
         use rand::Rng;
     
@@ -405,7 +406,7 @@ impl Ship {
         use sprite_sheet::{SpriteSheet, SpriteAnimation};
     
         for module in &self.modules {
-            let ref module_context = module.create_module_context(bc, self);
+            let ref module_context = module.create_module_context(bc, model_store, self);
             module.inner.borrow().add_plan_effects(module_context, asset_store, effects);
         }
         
@@ -417,7 +418,7 @@ impl Ship {
             let y = rng.gen::<f64>() * ((self.height as f64) * 48.0);
             let time = rng.gen::<f64>() * 4.5;
         
-            let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/ship_explosion1.png"));
+            let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("ship_explosion1"));
             sprite.center();
             sprite.add_animation(SpriteAnimation::PlayOnce(time, time+0.5, 0, 8));
         
@@ -553,7 +554,7 @@ impl Ship {
         let opacity = (self.state.shields as f32)/8.0;
     
         for module in &self.modules {
-            let shield_texture = asset_store.get_texture_str("effects/1_module_shield.png");
+            let shield_texture = asset_store.get_texture_str("1_module_shield");
             let (shield_size_x, shield_size_y) = shield_texture.get_size();
             let (shield_size_x, shield_size_y) = (shield_size_x as f64, shield_size_y as f64);
             
@@ -743,9 +744,9 @@ impl ShipStored {
     }
     
     #[cfg(feature = "client")]
-    pub fn add_simulation_effects(&self, asset_store: &AssetStore, effects: &mut SimEffects) {
+    pub fn add_simulation_effects(&self, asset_store: &AssetStore, model_store: &ModelStore, effects: &mut SimEffects) {
         for module in &self.modules {
-            let ref module_context = module.create_module_context(self);
+            let ref module_context = module.create_module_context(model_store, self);
             module.inner.borrow().add_simulation_effects(module_context, asset_store, effects);
         }
     }

@@ -347,11 +347,11 @@ impl<'a> SpaceGui<'a> {
                 
                 for x in (0..selected_module.shape.side()) {
                     for y in (0..selected_module.shape.side()) {
-                        if selected_module.shape.get(x, y) == 1 {
+                        if selected_module.shape.get(x, y) == b'#' {
                             let offset_x = x as f64 * 48.0;
                             let offset_y = y as f64 * 48.0;
                             if self.plans.module_plans(selected_module.index).active {
-                                Rectangle::new([0.0, 0.0, 1.0, 0.5])
+                                Rectangle::new([0.0, 1.0, 0.0, 0.5])
                                     .draw(
                                         [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
                                         &context.draw_state, context.transform,
@@ -430,7 +430,7 @@ impl<'a> SpaceGui<'a> {
                             
                             for x in (0..module.shape.side()) {
                                 for y in (0..module.shape.side()) {
-                                    if module.shape.get(x, y) == 1 {
+                                    if module.shape.get(x, y) == b'#' {
                                         let offset_x = x as f64 * 48.0;
                                         let offset_y = y as f64 * 48.0;
                                         
@@ -458,7 +458,7 @@ impl<'a> SpaceGui<'a> {
                             
                         for x in (0..module.shape.side()) {
                             for y in (0..module.shape.side()) {
-                                if module.shape.get(x, y) == 1 {
+                                if module.shape.get(x, y) == b'#' {
                                     let offset_x = x as f64 * 48.0;
                                     let offset_y = y as f64 * 48.0;
                                     
@@ -487,7 +487,7 @@ impl<'a> SpaceGui<'a> {
                 
                 for x in (0..module.shape.side()) {
                     for y in (0..module.shape.side()) {
-                        if module.shape.get(x, y) == 1 {
+                        if module.shape.get(x, y) == b'#' {
                             let offset_x = x as f64 * 48.0;
                             let offset_y = y as f64 * 48.0;
                             if self.plans.module_plans(module.index).active {
@@ -737,7 +737,7 @@ pub fn apply_to_module_if_point_inside<F>(ship: &Ship, x: f64, y: f64, mut f: F)
     for module in ship.modules.iter() {
         for cx in (0..module.shape.side()) {
             for cy in (0..module.shape.side()) {
-                if module.shape.get(cx, cy) == 1 {
+                if module.shape.get(cx, cy) == b'#' {
                     // Get module position and size on screen
                     let Vec2{x: module_x, y: module_y} = module.get_render_position() + Vec2::new(cx as f64, cy as f64)*48.0;
                     if x >= module_x && x <= module_x+48.0 && y >= module_y && y <= module_y+48.0 {
@@ -772,9 +772,9 @@ impl TargetIcon {
         
         let icon =
             match ship.get_height() {
-                1...2 => asset_store.get_texture_str("gui/small_target.png"),
-                3 => asset_store.get_texture_str("gui/medium_target.png"),
-                4...255 => asset_store.get_texture_str("gui/big_target.png"),
+                1...2 => asset_store.get_texture_str("small_target"),
+                3 => asset_store.get_texture_str("medium_target"),
+                4...255 => asset_store.get_texture_str("big_target"),
                 _ => unreachable!(),
             };
         

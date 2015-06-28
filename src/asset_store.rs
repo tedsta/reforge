@@ -1,3 +1,7 @@
+use std::fs;
+use std::fs::{File, PathExt};
+use std::io::{BufRead, BufReader, Read};
+
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -7,10 +11,13 @@ use graphics::ImageSize;
 use opengl_graphics::Texture;
 use sdl2_mixer;
 
+use config;
+
 pub struct SpriteInfo {
     pub texture: Rc<Texture>,
     pub columns: u8, 
     pub rows: u8,
+    pub animations: HashMap<String, (u32, u32)>,
 }
 
 pub struct AssetStore {
@@ -52,7 +59,15 @@ impl AssetStore {
             sounds: sounds,
         };
         
-        asset_store.load_texture("modules/engine1.png", 1, 1);
+        // Read module models from text files
+        let paths = fs::read_dir(&Path::new("content/data/sprites")).unwrap();
+        for path in paths.map(|p| p.unwrap().path()) {
+            if path.is_file() {
+                asset_store.load_sprite(&config::read_properties(BufReader::new(File::open(&path).unwrap())));
+            }
+        }
+        
+        /*asset_store.load_texture("modules/engine1.png", 1, 1);
         asset_store.load_texture("modules/weapon_sprite.png", 7, 1);
         asset_store.load_texture("modules/shield_sprite.png", 5, 2);
         asset_store.load_texture("modules/solar_panel_sprite.png", 5, 3);
@@ -74,27 +89,46 @@ impl AssetStore {
         asset_store.load_texture("effects/ship_explosion1.png", 9, 1);
         asset_store.load_texture("gui/small_target.png", 1, 1);
         asset_store.load_texture("gui/medium_target.png", 1, 1);
-        asset_store.load_texture("gui/big_target.png", 1, 1);
+        asset_store.load_texture("gui/big_target.png", 1, 1);*/
         
         asset_store
     }
     
-    fn load_texture(&mut self, name: &str, columns: u8, rows: u8) {
-        let name = name.to_string();
-        let texture_path = "content/textures/".to_string() + &name;
+    fn load_sprite(&mut self, prop: &HashMap<String, String>) {
+        println!("loading {:?}", prop);
+    
+        let name = prop["name"].clone();
+        
+        let texture_path = "content/textures/".to_string() + &prop["texture"];
+        let rows = prop["rows"].parse().unwrap();
+        let columns = prop["columns"].parse().unwrap();
         let texture =
             Rc::new(
                 Texture::from_path(&Path::new(texture_path.as_str()))
                     .ok().expect(format!("Failed to load {}", name).as_str())
             );
-        self.sprite_info.insert(
-            name,
-            SpriteInfo {
-                texture: texture,
-                columns: columns,
-                rows: rows,
-            },
-        );
+        let mut anim_map = HashMap::new();
+        if prop.contains_key("animations") {
+            let animations: Vec<String> = prop["animations"].split("\n")
+                                                            .map(|s| s.trim_left().trim_right().to_string())
+                                                            .collect();
+            for animation in animations {
+                let parts: Vec<String> = animation.split(":")
+                                                  .map(|s| s.trim_left().trim_right().to_string())
+                                                  .collect();
+                if parts.len() == 3 {
+                    anim_map.insert(parts[0].clone(), (parts[1].parse().unwrap(), parts[2].parse().unwrap()));
+                }
+            }
+        }
+        println!("animations: {:?}", anim_map);
+        self.sprite_info.insert(name,
+                                SpriteInfo {
+                                    texture: texture,
+                                    columns: columns,
+                                    rows: rows,
+                                    animations: anim_map,
+                                });
     }
     
     pub fn get_texture<'a>(&'a self, texture: &String) -> &'a Rc<Texture> {

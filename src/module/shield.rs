@@ -1,4 +1,4 @@
-use module::{IModule, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
+use module::{IModule, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
 use ship::ShipState;
 
 #[cfg(feature = "client")]
@@ -14,8 +14,8 @@ use asset_store::AssetStore;
 pub struct ShieldModule;
 
 impl ShieldModule {
-    pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![b'#']]), 2, 2, 3, ShieldModule)
+    pub fn new(model: ModelIndex) -> Module {
+        Module::new(model, ModuleShape::new(vec![vec![b'#']]), 2, 2, 3, ShieldModule)
     }
 }
 
@@ -24,7 +24,7 @@ impl IModule for ShieldModule {
 
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/shield_sprite.png"));
+        let mut shield_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("shield"));
         
         if context.is_active {
             shield_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 9, 0.05));

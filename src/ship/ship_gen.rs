@@ -4,6 +4,7 @@ use rand;
 
 use ship::{Ship, ShipId};
 use module::{
+    ModelIndex,
     ModuleShape,
 
     EngineModule,
@@ -37,7 +38,7 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     
     // Add top half engines
     for i in 0 .. num_engines/2 + num_engines%2 {
-        let mut engine = EngineModule::new();
+        let mut engine = EngineModule::new(ModelIndex(0));
         engine.x = 0;
         engine.y = i;
         ship.add_module(engine);
@@ -45,7 +46,7 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     
     // Add bottom half engines
     for i in 0 .. num_engines/2 {
-        let mut engine = EngineModule::new();
+        let mut engine = EngineModule::new(ModelIndex(0));
         engine.x = 0;
         engine.y = height - 1 - i;
         ship.add_module(engine);
@@ -53,7 +54,7 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     
     // Fill in any remaining space between engines with power modules
     for i in 0 .. height - num_engines {
-        let mut solar = SolarModule::new();
+        let mut solar = SolarModule::new(ModelIndex(2));
         solar.x = 1;
         solar.y = num_engines/2 + num_engines%2 + i;
         ship.add_module(solar);
@@ -81,22 +82,22 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
         
         // Power module
         if choice == 0 {
-            let mut solar = SolarModule::new();
+            let mut solar = SolarModule::new(ModelIndex(2));
             solar.x = x;
             solar.y = y;
             ship.add_module(solar);
         } else if choice == 1 {
-            let mut shield = ShieldModule::new();
+            let mut shield = ShieldModule::new(ModelIndex(3));
             shield.x = x;
             shield.y = y;
             ship.add_module(shield);
         } else if choice == 2 {
-            let mut weapon = ProjectileWeaponModule::new();
+            let mut weapon = ProjectileWeaponModule::new(ModelIndex(4));
             weapon.x = x;
             weapon.y = y;
             ship.add_module(weapon);
         } else if choice == 3 {
-            let mut beam = BeamWeaponModule::new();
+            let mut beam = BeamWeaponModule::new(ModelIndex(5));
             beam.x = x;
             beam.y = y;
             ship.add_module(beam);
@@ -122,7 +123,7 @@ pub fn generate_ship(id: ShipId, name: String, level: u8) -> Ship {
     }
     
     // Finally, add the command module
-    let mut command = CommandModule::new();
+    let mut command = CommandModule::new(ModelIndex(1));
     command.x = command_x;
     command.y = command_y;
     ship.add_module(command);

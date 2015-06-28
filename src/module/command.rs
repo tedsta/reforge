@@ -5,7 +5,7 @@ use opengl_graphics::GlGraphics;
 
 use battle_context::BattleContext;
 use module;
-use module::{IModule, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
+use module::{IModule, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
 use net::{InPacket, OutPacket};
 use ship::{Ship, ShipState};
 use sim::SimEvents;
@@ -24,9 +24,9 @@ use asset_store::AssetStore;
 pub struct CommandModule;
 
 impl CommandModule {
-    pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![b'#', b'.'],
-                                          vec![b'#', b'.']]), 0, 2, 4, CommandModule)
+    pub fn new(model: ModelIndex) -> Module {
+        Module::new(model, ModuleShape::new(vec![vec![b'#', b'.'],
+                                                 vec![b'#', b'.']]), 0, 2, 4, CommandModule)
     }
 }
 
@@ -35,7 +35,7 @@ impl IModule for CommandModule {
 
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/big_command_sprite.png"));
+        let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("big_command"));
 
         if context.is_active {
             command_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.2));

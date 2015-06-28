@@ -75,6 +75,7 @@ mod sector_client;
 mod chat;
 mod client_action;
 mod client_state;
+mod config;
 mod gui;
 mod login;
 mod login_screen;

@@ -5,7 +5,7 @@ use opengl_graphics::GlGraphics;
 
 use battle_context::BattleContext;
 use module;
-use module::{IModule, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
+use module::{IModule, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
 use net::{InPacket, OutPacket};
 use ship::{Ship, ShipState};
 use sim::SimEvents;
@@ -24,9 +24,9 @@ use asset_store::AssetStore;
 pub struct EngineModule;
 
 impl EngineModule {
-    pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![b'#', b'#'],
-                                          vec![b'.', b'.']]), 2, 2, 3, EngineModule)
+    pub fn new(model: ModelIndex) -> Module {
+        Module::new(model, ModuleShape::new(vec![vec![b'#', b'#'],
+                                                 vec![b'.', b'.']]), 2, 2, 3, EngineModule)
     }
 }
 
@@ -35,14 +35,14 @@ impl IModule for EngineModule {
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut engine_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/engine1.png"));
+        let mut engine_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("engine1"));
         engine_sprite.add_animation(SpriteAnimation::Stay(0.0, 7.0, 0));
     
         effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, engine_sprite));
         
         // Propulsion sprite
         if context.is_active {
-            let mut prop_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("effects/propulsion_sprite.png"));
+            let mut prop_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("propulsion1"));
             prop_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.05));
         
             effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position() + Vec2{x: -48.0, y: 2.0}, 0.0, prop_sprite));

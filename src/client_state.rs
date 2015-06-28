@@ -50,7 +50,7 @@ pub fn run_client_state_manager(window: &Rc<RefCell<GlutinWindow>>,
                 
                 let mut battle = ClientBattleState::new(&mut client, battle_context);
 
-                battle.run(window, gl, glyph_cache, asset_store, chat_gui, sectors.clone(), server_results_sent);
+                battle.run(window, gl, glyph_cache, asset_store, model_store, chat_gui, sectors.clone(), server_results_sent);
                 
                 println!("I (client) left a sector");
             },

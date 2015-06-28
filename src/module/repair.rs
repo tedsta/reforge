@@ -1,4 +1,4 @@
-use module::{IModule, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData, TargetMode};
+use module::{IModule, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData, TargetMode};
 use ship::ShipState;
 use sim::SimEvents;
 use sim_events::RepairEvent;
@@ -17,8 +17,8 @@ use asset_store::AssetStore;
 pub struct RepairModule;
 
 impl RepairModule {
-    pub fn new() -> Module {
-        Module::new(ModuleShape::new(vec![vec![b'#']]), 2, 2, 3, RepairModule)
+    pub fn new(model: ModelIndex) -> Module {
+        Module::new(model, ModuleShape::new(vec![vec![b'#']]), 2, 2, 3, RepairModule)
     }
 }
 
@@ -45,7 +45,7 @@ impl IModule for RepairModule {
 
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("modules/repair_sprite.png"));
+        let mut sprite = SpriteSheet::new(asset_store.get_sprite_info_str("repair"));
         
         if context.is_active {
             sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 1, 18, 0.055));
