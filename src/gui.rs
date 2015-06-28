@@ -79,7 +79,7 @@ impl SpriteButton {
                     y >= self.position[1] && y <= self.position[1]+self.size[1]
                 {
                     self.mouse_focus = MouseFocus::Hover;
-                    self.current_frame = 0;
+                    self.current_frame = 1;
                 } else {
                     self.mouse_focus = MouseFocus::NoHover;
                     self.current_frame = 0;
@@ -95,7 +95,7 @@ impl SpriteButton {
                         y >= self.position[1] && y <= self.position[1]+self.size[1]
                     {
                         self.mouse_focus = MouseFocus::Focus;
-                        self.current_frame = 1;
+                        self.current_frame = 2;
                     } else {
                         self.mouse_focus = MouseFocus::NoHover;
                         self.current_frame = 0;
@@ -113,7 +113,7 @@ impl SpriteButton {
                     {
                         self.clicked = true;
                         self.mouse_focus = MouseFocus::Hover;
-                        self.current_frame = 0;
+                        self.current_frame = 1;
                     } else {
                         self.mouse_focus = MouseFocus::NoHover;
                         self.current_frame = 0;
@@ -272,6 +272,8 @@ pub struct TextBox {
     pub hide_text: bool,
     
     mouse_focus: MouseFocus,
+    
+    cursor_position: u8,
 }
 
 impl TextBox {
@@ -291,6 +293,8 @@ impl TextBox {
             hide_text: false,
             
             mouse_focus: MouseFocus::NoHover,
+            
+            cursor_position: 0,
         }
     }
     

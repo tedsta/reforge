@@ -43,7 +43,7 @@ impl AccountManager {
             password: password,
             ship: None,
             client_id: None,
-            sector: SectorId(0),
+            sector: SectorId(1),
             module_inventory: HashMap::new(),
         })));
     }

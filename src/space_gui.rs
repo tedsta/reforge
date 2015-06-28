@@ -148,18 +148,18 @@ impl<'a> SpaceGui<'a> {
             
             space_bg: SpaceStars::new(),
             
-            star_map_button: SpriteButton::new("content/textures/gui/starmap.png", 2, 1, [566.0, 15.0]),
+            star_map_button: SpriteButton::new("content/textures/gui/starmap.png", 3, 1, [488.0, 1.0]),
             star_map_gui: StarMapGui::new(sectors),
             show_star_map: false,
             
             show_chat: false, 
-            chat_button: SpriteButton::new("content/textures/gui/chat.png", 2, 1, [133.0, 662.0]),
+            chat_button: SpriteButton::new("content/textures/gui/chat.png", 3, 1, [86.0, 654.0]),
             chat_gui_pos: Vec2::new(5.0, 720.0 - 200.0 - 5.0),
             chat_gui: chat_gui,
             
-            logout_button: SpriteButton::new("content/textures/gui/logout.png", 2, 1, [16.0, 14.0]),
+            logout_button: SpriteButton::new("content/textures/gui/logout.png", 3, 1, [16.0, 14.0]),
             
-            target_button: SpriteButton::new("content/textures/gui/target.png", 2, 1, [646.0, 22.0]),
+            target_button: SpriteButton::new("content/textures/gui/target.png", 3, 1, [626.0, 7.0]),
             target_icons: target_icons,
         }
     }
@@ -188,12 +188,12 @@ impl<'a> SpaceGui<'a> {
         
         self.chat_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.chat_button.get_clicked() {
-            self.show_chat = !self.show_chat;
+            //self.show_chat = !self.show_chat;
         }
         
         self.star_map_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.star_map_button.get_clicked() {
-            self.show_star_map = true;
+            //self.show_star_map = !self.show_star_map;
         }
         
         if self.show_star_map {
@@ -298,11 +298,11 @@ impl<'a> SpaceGui<'a> {
     )
     {
         use graphics::*;
-        image(&self.overlay_hud, context.transform, gl);
-        
         // Draw the space background
         self.space_bg.update(dt);
         self.space_bg.draw(context, gl);
+        
+        image(&self.overlay_hud, context.transform, gl);
         
         // Draw player ship
         draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, asset_store, sim_effects, client_ship, time);
