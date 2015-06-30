@@ -67,6 +67,8 @@ impl AssetStore {
             }
         }
         
+        println!("Done loading stuff");
+        
         /*asset_store.load_texture("modules/engine1.png", 1, 1);
         asset_store.load_texture("modules/weapon_sprite.png", 7, 1);
         asset_store.load_texture("modules/shield_sprite.png", 5, 2);

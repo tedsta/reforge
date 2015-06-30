@@ -142,13 +142,18 @@ impl ModelStore {
         
         let mut model_store = ModelStore { models: models };
         
+        println!("about to load models client");
+        
         // Read module models from text files
         let paths = fs::read_dir(&Path::new("content/data/modules")).unwrap();
         for path in paths.map(|p| p.unwrap().path()) {
             if path.is_file() {
+                println!("pre adding model");
                 model_store.add_model_from_properties(&config::read_properties(BufReader::new(File::open(&path).unwrap())));
             }
         }
+        
+        println!("loaded models client");
     
         model_store
     }
@@ -236,7 +241,7 @@ impl ModelStore {
             ];
         
         let mut model_store = ModelStore { models: models };
-        
+
         // Read module models from text files
         let paths = fs::read_dir(&Path::new("content/data/modules")).unwrap();
         for path in paths.map(|p| p.unwrap().path()) {
@@ -311,49 +316,52 @@ fn factory_from_properties(prop: &HashMap<String, String>)
 {
     let module_class = prop["class"].as_str();
     let prop_cloned = prop.clone();
-    match module_class {
-        "ProjectileWeapon" => {
-            Box::new(move |model| {
-                ModuleStored::from_module(ProjectileWeaponModule::from_properties(model, &prop_cloned))
-            })
-        },
-        "BeamWeapon" => {
-            Box::new(move |_| {
-                ModuleStored::from_module(BeamWeaponModule::new(ModelIndex(5)))
-            })
-        },
-        "Command" => {
-            Box::new(move |_| {
-                ModuleStored::from_module(CommandModule::new(ModelIndex(1)))
-            })
-        },
-        "Cabin" => {
-            Box::new(move |_| {
-                ModuleStored::from_module(CabinModule::new(ModelIndex(7)))
-            })
-        },
-        "Shield" => {
-            Box::new(move |_| {
-                ModuleStored::from_module(ShieldModule::new(ModelIndex(3)))
-            })
-        },
-        "Solar" => {
-            Box::new(move |_| {
-                ModuleStored::from_module(SolarModule::new(ModelIndex(2)))
-            })
-        },
-        "Repair" => {
-            Box::new(move |_| {
-                ModuleStored::from_module(RepairModule::new(ModelIndex(6)))
-            })
-        },
-        "Engine" => {
-            Box::new(move |_| {
-                ModuleStored::from_module(EngineModule::new(ModelIndex(0)))
-            })
-        },
-        _ => {
-            panic!("Unknown module class: {}", module_class);
-        },
-    }
+    let factory: Box<Fn(&Model) -> ModuleStored + Sync + Send> =
+        match module_class {
+            "ProjectileWeapon" => {
+                Box::new(move |model| {
+                    ModuleStored::from_module(ProjectileWeaponModule::from_properties(model, &prop_cloned))
+                })
+            },
+            "BeamWeapon" => {
+                Box::new(move |model| {
+                    ModuleStored::from_module(BeamWeaponModule::from_properties(model, &prop_cloned))
+                })
+            },
+            "Command" => {
+                Box::new(move |_| {
+                    ModuleStored::from_module(CommandModule::new(ModelIndex(1)))
+                })
+            },
+            "Cabin" => {
+                Box::new(move |_| {
+                    ModuleStored::from_module(CabinModule::new(ModelIndex(7)))
+                })
+            },
+            "Shield" => {
+                Box::new(move |_| {
+                    ModuleStored::from_module(ShieldModule::new(ModelIndex(3)))
+                })
+            },
+            "Solar" => {
+                Box::new(move |_| {
+                    ModuleStored::from_module(SolarModule::new(ModelIndex(2)))
+                })
+            },
+            "Repair" => {
+                Box::new(move |_| {
+                    ModuleStored::from_module(RepairModule::new(ModelIndex(6)))
+                })
+            },
+            "Engine" => {
+                Box::new(move |_| {
+                    ModuleStored::from_module(EngineModule::new(ModelIndex(0)))
+                })
+            },
+            _ => {
+                panic!("Unknown module class: {}", module_class);
+            },
+        };
+    
+    factory
 }

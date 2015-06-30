@@ -129,7 +129,11 @@ impl IModule for ProjectileWeaponModule {
     
         if let Some(ref target) = context.target {
             if let module::TargetManifestData::TargetModule(ref target_module) = target.data {
-                self.rotation = rng.gen::<f64>() * 2.0 * PI;
+                if self.base_sprite.is_some() {
+                    self.rotation = rng.gen::<f64>() * 2.0 * PI;
+                } else {
+                    self.rotation = 0.0;
+                };
             
                 for (i, projectile) in self.projectiles.iter_mut().enumerate() {                                            
                     let start = (i*10) as u32;
