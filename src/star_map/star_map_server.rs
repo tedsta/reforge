@@ -17,6 +17,7 @@ use net::{
 };
 use sector_data::{SectorData, SectorId, SectorKind};
 use sector_server::SectorState;
+use ship::{Ship, ShipId};
 use super::station::StationServer;
 use vec::Vec2;
 
@@ -99,6 +100,9 @@ impl StarMapServer {
         let sector_id = SectorId(1);
         let sector_chat_out = to_chat_server.clone();
         let sector_model_store = model_store.clone();
+        let ai_ships = vec![Some(Ship::generate_dummy((100000004) as ShipId, "test dummy".to_string()))];
+        //let ai_ships = vec![];
+
         sectors.insert(sector_id, Sector {
             slot_id: sector_slot.get_id(),
             to_sector: to_sector_sender,
@@ -120,10 +124,10 @@ impl StarMapServer {
                                                          sector_chat_in,
                                                          from_sector_sender,
                                                          to_sector_receiver,
-                                                         BattleContext::new(vec!()),
+                                                         BattleContext::new(ai_ships),
                                                          sector_model_store,
                                                          false);
-                sector_server.run(ack_sender, false);
+                sector_server.run(ack_sender);
             });
         
         // Sector 2
@@ -136,6 +140,10 @@ impl StarMapServer {
         let sector_id = SectorId(2);
         let sector_chat_out = to_chat_server.clone();
         let sector_model_store = model_store.clone();
+        let ai_ships = vec![Some(Ship::generate((100000000) as ShipId, "n00bslayer808".to_string(), 2)),
+                            Some(Ship::generate((100000001) as ShipId, "thing1".to_string(), 2)),
+                            Some(Ship::generate((100000002) as ShipId, "thing2".to_string(), 2)),
+                            Some(Ship::generate((100000003) as ShipId, "daisy_girl".to_string(), 2))];
         sectors.insert(sector_id, Sector {
             slot_id: sector_slot.get_id(),
             to_sector: to_sector_sender,
@@ -157,10 +165,10 @@ impl StarMapServer {
                                                          sector_chat_in,
                                                          from_sector_sender,
                                                          to_sector_receiver,
-                                                         BattleContext::new(vec!()),
+                                                         BattleContext::new(ai_ships),
                                                          sector_model_store,
                                                          false);
-                sector_server.run(ack_sender, true);
+                sector_server.run(ack_sender);
             });
         
         // Start the chat server
@@ -195,7 +203,7 @@ impl StarMapServer {
             
             if let Ok(account) = from_login.try_recv() {
                 let client_id = account.client_id.expect("This needs to have a client ID");
-            
+                
                 let sector_data: Vec<SectorData> = self.sectors.iter().map(|(_, s)| s.data.clone()).collect();
                 
                 let ref sector = self.sectors[&account.sector];

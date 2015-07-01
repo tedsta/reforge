@@ -53,8 +53,8 @@ impl BeamWeaponModule {
                 beam_mid: "small_beam_mid".to_string(),
                 beam_end: "small_beam_end".to_string(),
                 
-                turret_center: Vec2::new(18.0, 24.0),
-                beam_pos: Vec2::new(0.0, 0.0),
+                turret_center: Vec2::new(24.0, 24.0),
+                beam_pos: Vec2::new(12.0, 0.0),
             },
         )
     }
@@ -137,7 +137,7 @@ impl IModule for BeamWeaponModule {
             if self.base_sprite.is_some() {
                 2
             } else {
-                1
+                0
             };
         
         effects.add_visual(context.ship_id, layer, SpriteVisual::new(context.get_render_position() + weapon_sprite.center, self.rotation, weapon_sprite));
@@ -188,7 +188,7 @@ impl IModule for BeamWeaponModule {
                                         asset_store.get_texture(&self.beam_mid).clone(),
                                         beam_end_sprite);
                     
-                    effects.add_visual(target_ship_id, 1, beam_visual);
+                    effects.add_visual(target_ship_id, 2, beam_visual);
                     
                     effects.add_sound(start_time, 1, asset_store.get_sound(&"effects/beam1.ogg".to_string()).clone());
                 }
@@ -205,7 +205,7 @@ impl IModule for BeamWeaponModule {
             if self.base_sprite.is_some() {
                 2
             } else {
-                1
+                0
             };
         
         effects.add_visual(context.ship_id, layer, SpriteVisual::new(context.get_render_position() + weapon_sprite.center, self.rotation, weapon_sprite));

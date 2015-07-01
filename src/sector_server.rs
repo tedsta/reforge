@@ -91,22 +91,7 @@ impl SectorState {
         }
     }
     
-    pub fn run(&mut self, ack: Sender<()>, create_ai: bool) {
-        if create_ai {
-            // TODO: come up with better way to generate AI ship IDs
-            let ai_ship = Ship::generate((100000000) as ShipId, "n00bslayer808".to_string(), 2);
-            self.context.add_ship(ai_ship);
-            
-            let ai_ship = Ship::generate((100000001) as ShipId, "thing1".to_string(), 2);
-            self.context.add_ship(ai_ship);
-            
-            let ai_ship = Ship::generate((100000002) as ShipId, "thing2".to_string(), 2);
-            self.context.add_ship(ai_ship);
-            
-            let ai_ship = Ship::generate((100000003) as ShipId, "daisy_girl".to_string(), 2);
-            self.context.add_ship(ai_ship);
-        }
-    
+    pub fn run(&mut self, ack: Sender<()>) {
         loop {
             ///////////////////////////////////////////////////////////
             // Check if it's time to simulate next turn

@@ -169,7 +169,7 @@ impl IModule for ProjectileWeaponModule {
             weapon_sprite.add_named_stay(&"off".to_string(), 0.0, 7.0);
         }
         
-        effects.add_visual(context.ship_id, 1, SpriteVisual::new(context.get_render_position() + weapon_sprite.center, self.rotation, weapon_sprite));
+        effects.add_visual(context.ship_id, 2, SpriteVisual::new(context.get_render_position() + weapon_sprite.center, self.rotation, weapon_sprite));
     }
     
     #[cfg(feature = "client")]
@@ -180,7 +180,7 @@ impl IModule for ProjectileWeaponModule {
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.turret_sprite));
         weapon_sprite.center = self.turret_center;
         weapon_sprite.add_named_stay(&"idle".to_string(), 0.0, tick_to_time(10));
-        effects.add_visual(ship_id, 1,
+        effects.add_visual(ship_id, 2,
             LerpVisual {
                 start_time: 0.0,
                 end_time: tick_to_time(10),
@@ -255,7 +255,7 @@ impl IModule for ProjectileWeaponModule {
                         last_weapon_anim_end = weapon_anim_end;
                     
                         // Add the simulation visual for projectile leaving
-                        effects.add_visual(ship_id, 2, LerpVisual {
+                        effects.add_visual(ship_id, 3, LerpVisual {
                             start_time: start_time,
                             end_time: end_time,
                             start_pos: start_pos,
@@ -282,7 +282,7 @@ impl IModule for ProjectileWeaponModule {
                         laser_sprite.add_named_loop(&"loop".to_string(), 0.0, 7.0, 0.05);
                         
                         // Add the simulation visual for projectile entering target screen
-                        effects.add_visual(target_ship_id, 2, LerpVisual {
+                        effects.add_visual(target_ship_id, 3, LerpVisual {
                             start_time: start_time,
                             end_time: end_time,
                             start_pos: start_pos,
@@ -300,7 +300,7 @@ impl IModule for ProjectileWeaponModule {
                         explosion_sprite.center();
                         explosion_sprite.add_named_once(&"explode".to_string(), start_time, end_time);
                         
-                        effects.add_visual(target_ship_id, 3, SpriteVisual::new(hit_pos, 0.0, explosion_sprite));
+                        effects.add_visual(target_ship_id, 4, SpriteVisual::new(hit_pos, 0.0, explosion_sprite));
                         
                         // Add the sound for projectile exploding
                         effects.add_sound(start_time, 0, asset_store.get_sound(&"effects/small_explosion.wav".to_string()).clone());
@@ -316,7 +316,7 @@ impl IModule for ProjectileWeaponModule {
             weapon_sprite.add_named_stay(&"off".to_string(), 0.0, 7.0);
         }
         
-        effects.add_visual(ship_id, 1, SpriteVisual::new(context.get_render_position() + weapon_sprite.center, self.rotation, weapon_sprite));
+        effects.add_visual(ship_id, 2, SpriteVisual::new(context.get_render_position() + weapon_sprite.center, self.rotation, weapon_sprite));
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {

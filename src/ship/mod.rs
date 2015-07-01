@@ -17,7 +17,7 @@ use module::{
     TargetManifest,
 };
 use net::{ClientId, InPacket, OutPacket};
-use self::ship_gen::generate_ship;
+use self::ship_gen::{generate_ship, generate_dummy_ship};
 use sector_data::SectorId;
 use sim::SimEvents;
 use vec::{Vec2, Vec2f};
@@ -218,6 +218,10 @@ impl Ship {
     
     pub fn generate(id: ShipId, name: String, level: u8) -> Ship {
         generate_ship(id, name, level)
+    }
+    
+    pub fn generate_dummy(id: ShipId, name: String) -> Ship {
+        generate_dummy_ship(id, name)
     }
     
     pub fn get_width(&self) -> u8 {

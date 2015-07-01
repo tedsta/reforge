@@ -49,7 +49,7 @@ impl<'a> SimEvents<'a> {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #[cfg(feature = "client")]
-static NUM_LAYERS: u8 = 4;
+static NUM_LAYERS: u8 = 20;
 
 #[cfg(feature = "client")]
 pub trait SimVisual {
@@ -58,7 +58,7 @@ pub trait SimVisual {
 
 #[cfg(feature = "client")]
 pub struct SimEffects<'a> {
-    effects: [Vec<(ShipId, Box<SimVisual+'a>)>; 4],
+    effects: [Vec<(ShipId, Box<SimVisual+'a>)>; 20],
     
     // Audio stuff
     sounds: Vec<(f64, isize, Rc<RefCell<sdl2_mixer::Chunk>>)>,
@@ -71,7 +71,8 @@ impl<'a> SimEffects<'a> {
         use std::default::Default;
     
         SimEffects {
-            effects: [vec!(), vec!(), vec!(), vec!()],
+            effects: [vec!(), vec!(), vec!(), vec!(), vec!(), vec!(), vec!(), vec!(), vec!(), vec!(),
+                      vec!(), vec!(), vec!(), vec!(), vec!(), vec!(), vec!(), vec!(), vec!(), vec!()],
             
             sounds: vec!(),
             next_sound: 0,
