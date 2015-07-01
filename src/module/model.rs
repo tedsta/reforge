@@ -10,7 +10,7 @@ use opengl_graphics::Texture;
 
 use super::{
     ModuleShape,
-    ModuleStored,
+    Module,
     
     EngineModule,
     ProjectileWeaponModule,
@@ -27,7 +27,7 @@ pub struct Model {
     pub index: ModelIndex,
 
     pub name: String,
-    factory: Box<Fn(&Model) -> ModuleStored + Sync + Send>,
+    factory: Box<Fn(&Model) -> Module + Sync + Send>,
     
     #[cfg(feature = "client")]
     pub icon: Texture,
@@ -39,7 +39,7 @@ pub struct Model {
 }
 
 impl Model {
-    pub fn create(&self) -> ModuleStored {
+    pub fn create(&self) -> Module {
         let ref factory = self.factory;
         factory(self)
     }
@@ -57,7 +57,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(0),
                     name: "Engine Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(EngineModule::new(ModelIndex(0)))),
+                    factory: Box::new(move |_| EngineModule::new(ModelIndex(0))),
                     icon: Texture::from_path(&Path::new("content/textures/modules/icons/engine.png")).unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#', b'#'],
                                                  vec![b'.', b'.']]),
@@ -68,7 +68,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(1),
                     name: "Command Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(CommandModule::new(ModelIndex(1)))),
+                    factory: Box::new(move |_| CommandModule::new(ModelIndex(1))),
                     icon: Texture::from_path(&Path::new("content/textures/modules/icons/command.png")).unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#', b'.'],
                                                  vec![b'#', b'.']]),
@@ -79,7 +79,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(2),
                     name: "Solar Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(SolarModule::new(ModelIndex(2)))),
+                    factory: Box::new(move |_| SolarModule::new(ModelIndex(2))),
                     icon: Texture::from_path(&Path::new("content/textures/modules/icons/solar.png")).unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
@@ -89,7 +89,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(3),
                     name: "Shield Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(ShieldModule::new(ModelIndex(3)))),
+                    factory: Box::new(move |_| ShieldModule::new(ModelIndex(3))),
                     icon: Texture::from_path(&Path::new("content/textures/modules/icons/shield.png")).unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
@@ -99,7 +99,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(4),
                     name: "Blaster Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(ProjectileWeaponModule::new(ModelIndex(4)))),
+                    factory: Box::new(move |_| ProjectileWeaponModule::new(ModelIndex(4))),
                     icon: Texture::from_path(&Path::new("content/textures/modules/icons/pewpew.png")).unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
@@ -109,7 +109,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(5),
                     name: "Beam Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(BeamWeaponModule::new(ModelIndex(5)))),
+                    factory: Box::new(move |_| BeamWeaponModule::new(ModelIndex(5))),
                     icon: Texture::from_path(&Path::new("content/textures/modules/icons/beam.png")).unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
@@ -119,7 +119,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(6),
                     name: "Repair Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(RepairModule::new(ModelIndex(6)))),
+                    factory: Box::new(move |_| RepairModule::new(ModelIndex(6))),
                     icon: Texture::from_path(&Path::new("content/textures/modules/icons/repair.png")).unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
@@ -129,7 +129,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(7),
                     name: "Cabin Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(CabinModule::new(ModelIndex(7)))),
+                    factory: Box::new(move |_| CabinModule::new(ModelIndex(7))),
                     icon: Texture::from_path(&Path::new("content/textures/modules/icons/cabin.png")).unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#', b'.', b'.'],
                                                  vec![b'#', b'#', b'.'],
@@ -165,7 +165,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(0),
                     name: "Engine Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(EngineModule::new(ModelIndex(0)))),
+                    factory: Box::new(move |_| EngineModule::new(ModelIndex(0))),
                     shape: ModuleShape::new(vec![vec![b'#', b'#'],
                                                  vec![b'.', b'.']]),
                     power: 2,
@@ -175,7 +175,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(1),
                     name: "Command Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(CommandModule::new(ModelIndex(1)))),
+                    factory: Box::new(move |_| CommandModule::new(ModelIndex(1))),
                     shape: ModuleShape::new(vec![vec![b'#', b'.'],
                                                  vec![b'#', b'.']]),
                     power: 2,
@@ -185,7 +185,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(2),
                     name: "Solar Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(SolarModule::new(ModelIndex(2)))),
+                    factory: Box::new(move |_| SolarModule::new(ModelIndex(2))),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
                     min_hp: 2,
@@ -194,7 +194,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(3),
                     name: "Shield Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(ShieldModule::new(ModelIndex(3)))),
+                    factory: Box::new(move |_| ShieldModule::new(ModelIndex(3))),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
                     min_hp: 2,
@@ -203,7 +203,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(4),
                     name: "Blaster Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(ProjectileWeaponModule::new(ModelIndex(4)))),
+                    factory: Box::new(move |_| ProjectileWeaponModule::new(ModelIndex(4))),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
                     min_hp: 2,
@@ -212,7 +212,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(5),
                     name: "Beam Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(BeamWeaponModule::new(ModelIndex(5)))),
+                    factory: Box::new(move |_| BeamWeaponModule::new(ModelIndex(5))),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
                     min_hp: 2,
@@ -221,7 +221,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(6),
                     name: "Repair Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(RepairModule::new(ModelIndex(6)))),
+                    factory: Box::new(move |_| RepairModule::new(ModelIndex(6))),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
                     min_hp: 2,
@@ -230,7 +230,7 @@ impl ModelStore {
                 Model {
                     index: ModelIndex(7),
                     name: "Cabin Mk1".to_string(),
-                    factory: Box::new(move |_| ModuleStored::from_module(CabinModule::new(ModelIndex(7)))),
+                    factory: Box::new(move |_| CabinModule::new(ModelIndex(7))),
                     shape: ModuleShape::new(vec![vec![b'#', b'.', b'.'],
                                                  vec![b'#', b'#', b'.'],
                                                  vec![b'#', b'.', b'.']]),
@@ -300,6 +300,10 @@ impl ModelStore {
             max_hp: prop["max_hp"].parse().unwrap(),
         });
     }
+    
+    pub fn models(&self) -> &Vec<Model> {
+        &self.models
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, RustcEncodable, RustcDecodable)]
@@ -312,50 +316,50 @@ impl ModelIndex {
 }
 
 fn factory_from_properties(prop: &HashMap<String, String>)
-    -> Box<Fn(&Model) -> ModuleStored + Sync + Send> 
+    -> Box<Fn(&Model) -> Module + Sync + Send> 
 {
     let module_class = prop["class"].as_str();
     let prop_cloned = prop.clone();
-    let factory: Box<Fn(&Model) -> ModuleStored + Sync + Send> =
+    let factory: Box<Fn(&Model) -> Module + Sync + Send> =
         match module_class {
             "ProjectileWeapon" => {
                 Box::new(move |model| {
-                    ModuleStored::from_module(ProjectileWeaponModule::from_properties(model, &prop_cloned))
+                    ProjectileWeaponModule::from_properties(model, &prop_cloned)
                 })
             },
             "BeamWeapon" => {
                 Box::new(move |model| {
-                    ModuleStored::from_module(BeamWeaponModule::from_properties(model, &prop_cloned))
+                    BeamWeaponModule::from_properties(model, &prop_cloned)
                 })
             },
             "Command" => {
                 Box::new(move |_| {
-                    ModuleStored::from_module(CommandModule::new(ModelIndex(1)))
+                    CommandModule::new(ModelIndex(1))
                 })
             },
             "Cabin" => {
                 Box::new(move |_| {
-                    ModuleStored::from_module(CabinModule::new(ModelIndex(7)))
+                    CabinModule::new(ModelIndex(7))
                 })
             },
             "Shield" => {
                 Box::new(move |_| {
-                    ModuleStored::from_module(ShieldModule::new(ModelIndex(3)))
+                    ShieldModule::new(ModelIndex(3))
                 })
             },
             "Solar" => {
                 Box::new(move |_| {
-                    ModuleStored::from_module(SolarModule::new(ModelIndex(2)))
+                    SolarModule::new(ModelIndex(2))
                 })
             },
             "Repair" => {
                 Box::new(move |_| {
-                    ModuleStored::from_module(RepairModule::new(ModelIndex(6)))
+                    RepairModule::new(ModelIndex(6))
                 })
             },
             "Engine" => {
                 Box::new(move |_| {
-                    ModuleStored::from_module(EngineModule::new(ModelIndex(0)))
+                    EngineModule::new(ModelIndex(0))
                 })
             },
             _ => {

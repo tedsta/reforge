@@ -4,7 +4,7 @@ use std::sync::mpsc::{Sender, Receiver};
 
 use chat::ChatMsg;
 use login::AccountBox;
-use module::ModelStore;
+use module::{ModelStore, ModuleStored};
 use net::{ClientId, ServerSlot, ServerSlotId, SlotInMsg, InPacket, OutPacket};
 use star_map::StarMapAction;
 use star_map::station::{ShipEditAction, StationAction};
@@ -107,7 +107,7 @@ impl StationServer {
                     Some(ref mut ship) => {
                         match ship_edit {
                             ShipEditAction::Place(model, x, y) => {
-                                let mut module = model.get(&*self.model_store).create();
+                                let mut module = ModuleStored::from_module(model.get(&*self.model_store).create());
                                 module.x = x;
                                 module.y = y;
                                 

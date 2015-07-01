@@ -42,6 +42,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::path::Path;
 use std::thread::{Builder, Thread};
+use std::sync::Arc;
 use std::sync::mpsc::channel;
 
 use glutin_window::GlutinWindow;
@@ -142,16 +143,18 @@ fn main () {
     let star_map_slot_id = star_map_slot.get_id();
     let (star_map_account_sender, star_map_account_receiver) = channel();
     let (logout_sender, logout_receiver) = channel();
+    let login_model_store = Arc::new(ModelStore::new());
+    let star_map_model_store = login_model_store.clone();
     
     Builder::new().name("server_master".to_string()).spawn(move || {
         server.listen("localhost:30000");
     });
     
     Builder::new().name("login_server".to_string()).spawn(move || {
-        login::run_login_server(login_slot, star_map_slot_id, star_map_account_sender, logout_receiver);
+        login::run_login_server(login_model_store, login_slot, star_map_slot_id, star_map_account_sender, logout_receiver);
     });
     
-    let mut star_map_server = StarMapServer::new(star_map_slot);
+    let mut star_map_server = StarMapServer::new(star_map_model_store, star_map_slot);
     Builder::new().name("star_map_server".to_string()).spawn(move || {
         star_map_server.run(star_map_account_receiver, logout_sender);
     });

@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver};
 
 use net::{
@@ -13,9 +14,11 @@ use super::{
     LoginError,
 };
 use super::LoginPacket;
+use module::ModelStore;
 use ship::{Ship, ShipId, ShipStored};
 
-pub fn run_login_server(slot: ServerSlot,
+pub fn run_login_server(model_store: Arc<ModelStore>, 
+                        slot: ServerSlot,
                         star_map_slot_id: ServerSlotId,
                         star_map_chan: Sender<AccountBox>,
                         logout_receiver: Receiver<AccountBox>) {
@@ -54,7 +57,7 @@ pub fn run_login_server(slot: ServerSlot,
                             // Log into the new account
                             if let Ok(mut account) = account_manager.login_account(username.clone(), password.clone(), client_id) {
                                 // Create ships
-                                let player_ship = ShipStored::from_ship(Ship::generate(client_id as ShipId, username.clone(), 5));
+                                let player_ship = ShipStored::from_ship(Ship::generate_dev(&*model_store, client_id as ShipId, username.clone()));
                                 
                                 account.ship = Some(player_ship);
                                 

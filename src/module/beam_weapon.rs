@@ -37,6 +37,8 @@ pub struct BeamWeaponModule {
     
     turret_center: Vec2f,
     beam_pos: Vec2f,
+    
+    fire_anim_interval: (f64, f64),
 }
 
 impl BeamWeaponModule {
@@ -55,6 +57,8 @@ impl BeamWeaponModule {
                 
                 turret_center: Vec2::new(24.0, 24.0),
                 beam_pos: Vec2::new(12.0, 0.0),
+                
+                fire_anim_interval: (1.0, 3.0),
             },
         )
     }
@@ -84,6 +88,9 @@ impl BeamWeaponModule {
                 turret_center: turret_center,
                 beam_pos: Vec2::new(prop[&"beam_pos_x".to_string()].parse().unwrap(),
                                     prop[&"beam_pos_y".to_string()].parse().unwrap()),
+                
+                fire_anim_interval: (prop[&"fire_anim_start".to_string()].parse().unwrap(),
+                                     prop[&"fire_anim_end".to_string()].parse().unwrap()),
             },
         )
     }
@@ -165,8 +172,8 @@ impl IModule for BeamWeaponModule {
                     let end_time = 3.0;
                     
                     weapon_sprite.add_named_once(&"pre_fire".to_string(), 0.0, 1.0);
-                    weapon_sprite.add_named_once(&"fire".to_string(), 1.0, 3.0);
-                    weapon_sprite.add_named_stay(&"idle".to_string(), 3.0, 7.0);
+                    weapon_sprite.add_named_once(&"fire".to_string(), self.fire_anim_interval.0, self.fire_anim_interval.1);
+                    weapon_sprite.add_named_stay(&"post_fire".to_string(), self.fire_anim_interval.1, 7.0);
                     
                     // Add the simulation visual for beam leaving ship screen
                     effects.add_visual(ship_id, 1, BeamExitVisual {

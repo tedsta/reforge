@@ -8,7 +8,7 @@ use glutin_window::GlutinWindow;
 
 use asset_store::AssetStore;
 use chat::ChatGui;
-use module::{ModelIndex, ModelStore};
+use module::{ModelIndex, ModelStore, ModuleStored};
 use net::{Client, OutPacket};
 use sector_data::SectorData;
 use ship::ShipStored;
@@ -113,7 +113,7 @@ impl<'a> StationClient<'a> {
                         if let Some(ref mut ship) = self.player_ship {
                             match ship_edit {
                                 ShipEditAction::Place(model, x, y) => {
-                                    let mut module = model.get(model_store).create();
+                                    let mut module = ModuleStored::from_module(model.get(model_store).create());
                                     module.x = x;
                                     module.y = y;
                                     

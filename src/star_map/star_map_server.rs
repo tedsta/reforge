@@ -43,14 +43,13 @@ pub struct StarMapServer {
 }
 
 impl StarMapServer {
-    pub fn new(slot: ServerSlot) -> StarMapServer {
+    pub fn new(model_store: Arc<ModelStore>, slot: ServerSlot) -> StarMapServer {
         // Chat server input channel
         let (to_chat_server, chat_from_sector) = channel();
         let mut chat_msg_senders = vec!();
         
         // Fire up the universe
-    
-        let model_store = Arc::new(ModelStore::new());
+
         let slot_id = slot.get_id();
         let mut sectors = HashMap::new();
         
