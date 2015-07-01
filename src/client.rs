@@ -121,7 +121,7 @@ fn main () {
     let mut gl = GlGraphics::new(opengl);
     
     // Load our font
-    let mut glyph_cache = GlyphCache::new(&Path::new("content/fonts/8bit.ttf")).unwrap();
+    let mut glyph_cache = GlyphCache::new(&Path::new("content/fonts/OCRAStd.ttf")).unwrap();
     
     // Create the asset store
     let ref asset_store = AssetStore::new();

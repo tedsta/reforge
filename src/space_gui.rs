@@ -6,6 +6,8 @@ use std::path::Path;
 
 use piston::event::{Events, GenericEvent, RenderArgs};
 use graphics::{Context, Rectangle};
+use graphics::math::Matrix2d;
+use graphics::types::Color;
 use piston::input::{keyboard, mouse, Button};
 use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
@@ -523,24 +525,23 @@ impl<'a> SpaceGui<'a> {
             let icon_x = 715.0+(i*100.0);
             let icon_y = 5.0;
             
-            let ref context = context.trans(icon_x, icon_y);
+            let target_screen = [840.0, 74.0, 1140.0, 104.0];
             
-            icon.draw(bc, context, gl, glyph_cache, asset_store);
-            
+            let mut highlight_color = [0.0; 4];
             match self.render_area.ship {
                 Some(ship) if ship == icon.ship => {
-                    Rectangle::new([1.0, 0.0, 0.0, 0.5])
-                        .draw([0.0, 0.0, 96.0, 96.0], &context.draw_state, context.transform, gl);
+                    highlight_color = [1.0, 0.0, 0.0, 0.5];
                 },
                 _ => {
                     if self.mouse_pos.x >= icon_x && self.mouse_pos.x <= icon_x+96.0 &&
                         self.mouse_pos.y >= icon_y && self.mouse_pos.y <= icon_y+96.0
                     {
-                        Rectangle::new([0.0, 0.0, 1.0, 0.5])
-                            .draw([0.0, 0.0, 96.0, 96.0], &context.draw_state, context.transform, gl);
+                        highlight_color = [0.0, 0.0, 1.0, 0.5];
                     }
                 },
             }
+            
+            icon.draw(bc, &context, gl, glyph_cache, asset_store, target_screen, i, highlight_color);
         }
     }
     
@@ -764,10 +765,20 @@ struct TargetIcon {
 }
 
 impl TargetIcon {
-    fn draw(&self, bc: &BattleContext, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, asset_store: &AssetStore) {
+    fn draw(&self, bc: &BattleContext,
+            context: &Context,
+            gl: &mut GlGraphics,
+            glyph_cache: &mut GlyphCache,
+            asset_store: &AssetStore,
+            target_screen: [f64; 4],
+            i: f64,
+            highlight_color: Color) {
         use graphics::*;
         use graphics::text::Text;
-    
+        
+        let (target_screen_x1, target_screen_h1, target_screen_x2, target_screen_h2) =
+            (target_screen[0], target_screen[1], target_screen[2], target_screen[3]);
+        
         let ship = self.ship.get(bc);
         
         let icon =
@@ -777,11 +788,45 @@ impl TargetIcon {
                 4...255 => asset_store.get_texture_str("big_target"),
                 _ => unreachable!(),
             };
-        
         let (icon_w, icon_h) = icon.get_size();
-        let (half_icon_w, half_icon_h) = ((icon_w/2) as f64, (icon_h/2) as f64);
         
-        image(icon.deref(), context.trans(48.0 - half_icon_w, 34.0 - half_icon_h).transform, gl);
+        let section_width = (target_screen_x2 - target_screen_x1)/5.0;
+        
+        let icon_offset_x = (section_width - icon_w as f64) / 2.0;
+        let icon_offset_y_top = (target_screen_h1 - icon_h as f64) / 2.0 - 10.0;
+        let icon_offset_y_bot = (target_screen_h1 - icon_h as f64) / 2.0 + 10.0;
+        
+        let icon_x = target_screen_x1 + (target_screen_x2 - target_screen_x1)*(i/5.0);
+        let icon_y = 2.0;
+        let icon_x2 = target_screen_x1 + (target_screen_x2 - target_screen_x1)*((i + 1.0)/5.0);
+        let icon_cur_h1 = target_screen_h1 + (target_screen_h2 - target_screen_h1)*(i/5.0);
+        let icon_cur_h2 = target_screen_h1 + (target_screen_h2 - target_screen_h1)*((i + 1.0)/5.0);
+        
+        //let (half_icon_w, half_icon_h) = ((icon_w/2) as f64, (icon_h/2) as f64);
+        //image(icon.deref(), context.trans(48.0 - half_icon_w, 34.0 - half_icon_h).transform, gl);
+        
+        gl.tri_list_uv(
+            &context.draw_state,
+            &[1.0; 4],
+            icon.deref(),
+            |f| f(
+                &squish_rect_tri_list_xy(context.transform, [icon_x + icon_offset_x,
+                                                             icon_y + icon_offset_y_top,
+                                                             icon_x2 - icon_offset_x,
+                                                             icon_cur_h1 - icon_offset_y_bot,
+                                                             icon_cur_h2 - icon_offset_y_bot]),
+                &triangulation::rect_tri_list_uv(icon.deref(), [0, 0, icon_w as i32, icon_h as i32])
+            )
+        );
+        
+        // Squished highlight rectangle
+        gl.tri_list(
+            &context.draw_state,
+            &highlight_color,
+            |f| f(
+                &squish_rect_tri_list_xy(context.transform, [icon_x, icon_y, icon_x2, icon_cur_h1, icon_cur_h2]),
+            )
+        );
         
         // Draw stats bars
         
@@ -795,7 +840,7 @@ impl TargetIcon {
         // HP
         //Rectangle::new([0.0, 1.0, 0.0, 0.5])
         //    .draw([2.0, 72.0, max_hp, 3.0], &context.draw_state, context.transform, gl);
-        Rectangle::new([0.0, 1.0, 0.0, 1.0])
+        /*Rectangle::new([0.0, 1.0, 0.0, 1.0])
             .draw([2.0, 72.0, hp, 3.0], &context.draw_state, context.transform, gl);
         
         // Shields
@@ -808,20 +853,36 @@ impl TargetIcon {
         Rectangle::new([1.0, 1.0, 0.0, 0.5])
             .draw([2.0, 80.0, max_power, 3.0], &context.draw_state, context.transform, gl);
         Rectangle::new([1.0, 1.0, 0.0, 1.0])
-            .draw([2.0, 80.0, power, 3.0], &context.draw_state, context.transform, gl);
+            .draw([2.0, 80.0, power, 3.0], &context.draw_state, context.transform, gl);*/
         
         
         // Draw ship's name
         {
-            let context = context.trans(2.0, 94.0);
+            /*let context = context.trans(2.0, 94.0);
             Text::colored([1.0; 4], 10).draw(
                 ship.name.as_str(),
                 glyph_cache,
                 &context.draw_state, context.transform,
                 gl,
-            );
+            );*/
         }
     }
+}
+
+/// Creates triangle list vertices from a rotated rectangle.
+#[inline(always)]
+pub fn squish_rect_tri_list_xy(m: Matrix2d, rect: [f64; 5]) -> [f32; 12] {
+    use graphics::triangulation;
+    
+    let (x, y, x2, bot_left, bot_right) = (rect[0], rect[1], rect[2], rect[3], rect[4]);
+    [
+        triangulation::tx(m, x, y), triangulation::ty(m, x, y),
+        triangulation::tx(m, x2, y), triangulation::ty(m, x2, y),
+        triangulation::tx(m, x, bot_left), triangulation::ty(m, x, bot_left),
+        triangulation::tx(m, x2, y), triangulation::ty(m, x2, y),
+        triangulation::tx(m, x2, bot_right), triangulation::ty(m, x2, bot_right),
+        triangulation::tx(m, x, bot_left), triangulation::ty(m, x, bot_left)
+    ]
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
