@@ -1,8 +1,9 @@
 use piston::event::GenericEvent;
 use graphics::Context;
-use piston::input::{keyboard, Button};
-use opengl_graphics::GlGraphics;
+use piston::input::{keyboard, mouse, Button};
+use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
+use std::path::Path;
 
 use gui::{TextBox, TextButton};
 use vec::Vec2f;
@@ -17,18 +18,29 @@ pub struct ChatGui {
     action: Option<ChatGuiAction>,
     
     msg_box: TextBox,
-    send_button: TextButton,
+    chat_base: Texture,
+    chat_slider: Texture,
+    
+    dragging: bool,
     
     messages: Vec<ChatMsg>,
 }
 
 impl ChatGui {
     pub fn new() -> ChatGui {
+        let mut msg_box = TextBox::new("".to_string(), 10, [5.0, 175.0], [238.0, 20.0]);
+        msg_box.bg_color = [0.0, 0.0, 0.0, 0.0];
+        msg_box.bg_color_hover = [0.0, 0.0, 0.0, 0.0];
+        msg_box.bg_color_focus = [0.0, 0.0, 0.0, 0.0];
+        
         ChatGui {
             action: None,
             
-            msg_box: TextBox::new("".to_string(), 10, [5.0, 175.0], [238.0, 20.0]),
-            send_button: TextButton::new("send".to_string(), 10, [245.0, 175.0], [50.0, 20.0]),
+            msg_box: msg_box,
+            chat_base: Texture::from_path(&Path::new("content/textures/gui/textbase.png")).unwrap(),
+            chat_slider: Texture::from_path(&Path::new("content/textures/gui/textglass.png")).unwrap(),
+            
+            dragging: false,
             
             messages: vec!(),
         }
@@ -42,20 +54,33 @@ impl ChatGui {
         use piston::event::*;
         
         self.msg_box.event(e, [mouse_pos.x, mouse_pos.y]);
-        self.send_button.event(e, [mouse_pos.x, mouse_pos.y]);
-        
-        if self.send_button.get_clicked() {
-            if self.msg_box.text.len() > 0 {
-                self.action = Some(ChatGuiAction::SendMsg(self.msg_box.text.clone()));
-                self.msg_box.text = "".to_string();
-            }
-        }
         
         e.press(|button| {
             match button {
                 Button::Keyboard(key) => self.on_key_pressed(key), 
+                Button::Mouse(button) => {
+                    match button {
+                        mouse::MouseButton::Left => self.on_mouse_left_pressed(mouse_pos.x, mouse_pos.y),
+                        _ => {},
+                    }
+                },
+            }
+        });
+        
+        e.release(|button| {
+            match button {
+                Button::Mouse(button) => {
+                    match button {
+                        mouse::MouseButton::Left => self.on_mouse_left_released(mouse_pos.x, mouse_pos.y),
+                        _ => {},
+                    }
+                }, 
                 _ => { },
             }
+        });
+        
+        e.mouse_relative(|x, y| {
+            self.on_mouse_moved(mouse_pos.x, mouse_pos.y, x, y);
         });
         
         self.action.take()
@@ -72,25 +97,27 @@ impl ChatGui {
             _ => { },
         }
     }
+    
+    fn on_mouse_left_pressed(&mut self, x: f64, y: f64,) {
+        self.dragging = true;
+    }
+    
+    fn on_mouse_left_released(&mut self, x: f64, y: f64,) {
+        self.dragging = false;
+    }
+    
+    fn on_mouse_moved(&mut self, x: f64, y: f64, moveX: f64, moveY: f64) {
+        println!("{}, {}", moveX, moveY);
+    }
 
     pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache) {
         use graphics::*;
         use graphics::text::Text;
         
-        // Render background window
-        Rectangle::new([0.2, 0.05, 0.3, 0.8])
-            .draw([0.0, 0.0, 300.0, 200.0], &context.draw_state, context.transform, gl);
+        image(&self.chat_slider, context.trans(0.0, 0.0).transform, gl);
+        image(&self.chat_base, context.trans(0.0, 73.0).transform, gl);
         
         {
-            // Label text
-            let context = context.trans(5.0, 20.0);
-            Text::colored([1.0; 4], 18).draw(
-                "chat",
-                glyph_cache,
-                &context.draw_state, context.transform,
-                gl,
-            );
-            
             let max_messages = 10;
             for(i, msg) in self.messages.iter().rev().take(max_messages).enumerate() {
                 let context = context.trans(0.0, 18.0 + 15.0*((max_messages - 1 - i) as f64));
@@ -112,6 +139,5 @@ impl ChatGui {
         }
         
         self.msg_box.draw(context, gl, glyph_cache);
-        self.send_button.draw(context, gl, glyph_cache);
     }
 }

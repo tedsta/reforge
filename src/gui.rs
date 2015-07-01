@@ -259,11 +259,11 @@ impl TextButton {
 
 pub struct TextBox {
     pub text: String,
-    font_size: u32,
-    bg_color: [f32; 4],
-    bg_color_hover: [f32; 4],
-    bg_color_focus: [f32; 4],
-    text_color: [f32; 4],
+    pub font_size: u32,
+    pub bg_color: [f32; 4],
+    pub bg_color_hover: [f32; 4],
+    pub bg_color_focus: [f32; 4],
+    pub text_color: [f32; 4],
     
     position: [f64; 2],
     size: [f64; 2],
