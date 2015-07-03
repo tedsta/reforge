@@ -82,6 +82,7 @@ mod login;
 mod login_screen;
 mod main_menu;
 mod module;
+mod nav_map_gui;
 mod net;
 mod no_encode;
 mod packet_types;

@@ -18,6 +18,7 @@ use chat::{ChatGui, ChatGuiAction};
 use gui::{TextButton, SpriteButton};
 use module;
 use module::{IModule, Module, ModuleIndex};
+use nav_map_gui::{NavMapGui, NavMapGuiAction};
 use net::ClientId;
 use sector_data::SectorData;
 use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipState};
@@ -81,6 +82,11 @@ pub struct SpaceGui<'a> {
     star_map_gui: StarMapGui,
     show_star_map: bool,
     
+    // Nav map stuff
+    nav_map_button: SpriteButton,
+    nav_map_gui: NavMapGui,
+    show_nav_map: bool,
+    
     // Chat
     chat_button: SpriteButton,
     chat_gui_pos: Vec2f,
@@ -90,7 +96,6 @@ pub struct SpaceGui<'a> {
     logout_button: SpriteButton,
 
     // targets
-    target_button: SpriteButton,
     target_icons: Vec<TargetIcon>,
 }
 
@@ -153,13 +158,16 @@ impl<'a> SpaceGui<'a> {
             star_map_gui: StarMapGui::new(sectors),
             show_star_map: false,
             
+            nav_map_button: SpriteButton::new("content/textures/gui/target.png", 3, 1, [626.0, 7.0]),
+            nav_map_gui: NavMapGui::new(),
+            show_nav_map: false,
+            
             chat_button: SpriteButton::new("content/textures/gui/chat.png", 3, 1, [86.0, 654.0]),
             chat_gui_pos: Vec2::new(437.0, 608.0),
             chat_gui: chat_gui,
             
             logout_button: SpriteButton::new("content/textures/gui/logout.png", 3, 1, [16.0, 14.0]),
             
-            target_button: SpriteButton::new("content/textures/gui/target.png", 3, 1, [626.0, 7.0]),
             target_icons: target_icons,
         }
     }
@@ -194,6 +202,11 @@ impl<'a> SpaceGui<'a> {
             self.show_star_map = !self.show_star_map;
         }
         
+        self.nav_map_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
+        if self.nav_map_button.get_clicked() {
+            self.show_nav_map = !self.show_nav_map;
+        }
+        
         if self.show_star_map {
             if let Some(star_map_result) = self.star_map_gui.event(e, [self.mouse_pos.x - 200.0, self.mouse_pos.y - 200.0]) {
                 match star_map_result {
@@ -204,6 +217,15 @@ impl<'a> SpaceGui<'a> {
                     StarMapGuiAction::Close => {
                         self.show_star_map = false;
                     },
+                }
+            }
+        } else if self.show_nav_map {
+            if let Some(nav_map_result) = self.nav_map_gui.event(e, [self.mouse_pos.x - 200.0, self.mouse_pos.y - 200.0]) {
+                match nav_map_result {
+                    NavMapGuiAction::Close => {
+                        self.show_nav_map = false;
+                    },
+                    _ => { },
                 }
             }
         } else {
@@ -226,8 +248,6 @@ impl<'a> SpaceGui<'a> {
         if self.logout_button.get_clicked() {
             return Some(SpaceGuiAction::Logout);
         }
-        
-        self.target_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         
         None
     }
@@ -277,6 +297,10 @@ impl<'a> SpaceGui<'a> {
         
         if self.show_star_map {
             self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
+        }
+        
+        if self.show_nav_map {
+            self.nav_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
         }
     }
     
@@ -510,7 +534,7 @@ impl<'a> SpaceGui<'a> {
         self.chat_button.draw(context, gl);
         self.star_map_button.draw(context, gl);
         self.logout_button.draw(context, gl);
-        self.target_button.draw(context, gl);
+        self.nav_map_button.draw(context, gl);
 
         // Draw target icons
         for (i, icon) in self.target_icons.iter().enumerate() {
