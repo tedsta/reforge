@@ -172,7 +172,7 @@ impl<'a> SpaceGui<'a> {
         }
     }
     
-    pub fn event<E: GenericEvent>(&mut self, bc: &BattleContext, e: &E, client_ship: &Ship) -> Option<SpaceGuiAction> {
+    pub fn event<E: GenericEvent>(&mut self, bc: &BattleContext, e: &E, client_ship: &mut Ship) -> Option<SpaceGuiAction> {
         use piston::event::*;
         
         if client_ship.state.get_hp() == 0 {
@@ -220,12 +220,14 @@ impl<'a> SpaceGui<'a> {
                 }
             }
         } else if self.show_nav_map {
-            if let Some(nav_map_result) = self.nav_map_gui.event(e, [self.mouse_pos.x - 200.0, self.mouse_pos.y - 200.0]) {
+            if let Some(nav_map_result) =
+                self.nav_map_gui.event(e, [self.mouse_pos.x - 200.0, self.mouse_pos.y - 200.0],
+                                       client_ship)
+            {
                 match nav_map_result {
                     NavMapGuiAction::Close => {
                         self.show_nav_map = false;
                     },
-                    _ => { },
                 }
             }
         } else {
@@ -300,7 +302,7 @@ impl<'a> SpaceGui<'a> {
         }
         
         if self.show_nav_map {
-            self.nav_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
+            self.nav_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache, client_ship);
         }
     }
     

@@ -20,6 +20,7 @@ pub struct ChatGui {
     msg_box: TextBox,
     chat_base: Texture,
     chat_slider: Texture,
+    screen_glow: Texture,
     
     dragging: bool,
     
@@ -28,7 +29,7 @@ pub struct ChatGui {
 
 impl ChatGui {
     pub fn new() -> ChatGui {
-        let mut msg_box = TextBox::new("".to_string(), 10, [5.0, 175.0], [238.0, 20.0]);
+        let mut msg_box = TextBox::new("".to_string(), 12, [36.0, 84.0], [290.0, 20.0]);
         msg_box.bg_color = [0.0, 0.0, 0.0, 0.0];
         msg_box.bg_color_hover = [0.0, 0.0, 0.0, 0.0];
         msg_box.bg_color_focus = [0.0, 0.0, 0.0, 0.0];
@@ -39,6 +40,7 @@ impl ChatGui {
             msg_box: msg_box,
             chat_base: Texture::from_path(&Path::new("content/textures/gui/textbase.png")).unwrap(),
             chat_slider: Texture::from_path(&Path::new("content/textures/gui/textglass.png")).unwrap(),
+            screen_glow: Texture::from_path(&Path::new("content/textures/gui/glowchat.png")).unwrap(),
             
             dragging: false,
             
@@ -115,13 +117,18 @@ impl ChatGui {
         use graphics::text::Text;
         
         image(&self.chat_slider, context.trans(0.0, 0.0).transform, gl);
-        image(&self.chat_base, context.trans(0.0, 73.0).transform, gl);
+        {
+            let context = context.trans(30.0, 0.0);
+            Image::new_colored([1.0, 1.0, 1.0, 0.75])
+                .draw(&self.screen_glow, &context.draw_state, context.transform, gl);
+        }
+        //image(&self.screen_glow, context.trans(30.0, 0.0).transform, gl);
         
         {
-            let max_messages = 10;
+            let max_messages = 3;
             for(i, msg) in self.messages.iter().rev().take(max_messages).enumerate() {
-                let context = context.trans(0.0, 18.0 + 15.0*((max_messages - 1 - i) as f64));
-                Text::colored([0.7, 0.7, 1.0, 1.0], 10).draw(
+                let context = context.trans(45.0, 40.0 + 15.0*((max_messages - 1 - i) as f64));
+                Text::colored([0.7, 0.7, 1.0, 1.0], 12).draw(
                     msg.author_name.as_str(),
                     glyph_cache,
                     &context.draw_state, context.transform,
@@ -129,7 +136,7 @@ impl ChatGui {
                 );
                 
                 let context = context.trans(msg.author_name.len() as f64 * 10.0, 0.0);
-                Text::colored([0.7, 0.7, 0.7, 1.0], 10).draw(
+                Text::colored([0.7, 0.7, 0.7, 1.0], 12).draw(
                     msg.content.as_str(),
                     glyph_cache,
                     &context.draw_state, context.transform,
@@ -139,5 +146,7 @@ impl ChatGui {
         }
         
         self.msg_box.draw(context, gl, glyph_cache);
+        
+        image(&self.chat_base, context.trans(0.0, 72.0).transform, gl);
     }
 }

@@ -5,10 +5,10 @@ use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
 use gui::TextButton;
+use ship::Ship;
 use vec::{Vec2, Vec2f};
 
 pub enum NavMapGuiAction {
-    AddWaypoint(Vec2f),
     Close,
 }
 
@@ -28,14 +28,14 @@ impl NavMapGui {
         }
     }
 
-    pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) -> Option<NavMapGuiAction> {
+    pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2], client_ship: &mut Ship) -> Option<NavMapGuiAction> {
         use piston::event::*;
         
         e.press(|button| {
             match button {
                 Button::Mouse(button) => {
                     match button {
-                        mouse::MouseButton::Left => { self.on_mouse_left_pressed(mouse_pos, button); },
+                        mouse::MouseButton::Left => { self.on_mouse_left_pressed(mouse_pos, button, client_ship); },
                         mouse::MouseButton::Right => { },
                         _ => {},
                     }
@@ -54,13 +54,13 @@ impl NavMapGui {
         self.action.take()
     }
 
-    fn on_mouse_left_pressed(&mut self, mouse_pos: [f64; 2], button: mouse::MouseButton) {
+    fn on_mouse_left_pressed(&mut self, mouse_pos: [f64; 2], button: mouse::MouseButton, client_ship: &mut Ship) {
         let mouse_pos = Vec2 { x: mouse_pos[0] - 5.0, y: mouse_pos[1] - 25.0 };
     
         // TODO: see if they clicked something
     }
 
-    pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache) {
+    pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, client_ship: &Ship) {
         use graphics::*;
         use graphics::text::Text;
         

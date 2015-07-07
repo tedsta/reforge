@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::cmp;
+use std::collections::VecDeque;
 use std::marker::Reflect;
 
 use battle_context::BattleContext;
@@ -188,6 +189,10 @@ pub struct Ship {
     width: u8,
     height: u8,
     
+    // Nav map stuff
+    position: Vec2f,
+    waypoints: VecDeque<Vec2f>,
+    
     pub level: u8, // TODO: This is very temporary only for IC US semifinals
     
     // Whether or not the ship successfully jumped
@@ -208,6 +213,9 @@ impl Ship {
             
             width: 0,
             height: 0,
+            
+            position: Vec2::new(0.0, 0.0),
+            waypoints: VecDeque::new(),
             
             level: level,
 
@@ -689,6 +697,8 @@ impl ShipStored {
             modules: self.modules.into_iter().map(|m| m.to_module()).collect(),
             width: self.width,
             height: self.height,
+            position: Vec2::new(0.0, 0.0),
+            waypoints: VecDeque::new(),
             level: self.level,
             jumping: false,
             exploding: false,
