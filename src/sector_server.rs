@@ -7,6 +7,9 @@ use std::sync::Arc;
 use std::sync::mpsc::{Sender, Receiver};
 use time;
 
+use rand::Rng;
+use rand;
+
 use ai::run_ai;
 use battle_context::BattleContext;
 use chat::ChatMsg;
@@ -17,6 +20,7 @@ use packet_types::{ClientBattlePacket, ServerBattlePacket};
 use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipStored};
 use sim::SimEvents;
 use star_map::StarMapAction;
+use vec::Vec2;
 
 pub struct SectorState {
     slot: ServerSlot,
@@ -92,6 +96,8 @@ impl SectorState {
     }
     
     pub fn run(&mut self, ack: Sender<()>) {
+        let mut rng = rand::thread_rng();
+    
         loop {
             ///////////////////////////////////////////////////////////
             // Check if it's time to simulate next turn
@@ -154,7 +160,9 @@ impl SectorState {
                 
                 // Get the ship out of storage
                 let ship_stored = account.ship.take().expect("This account must have a ship");
-                let ship = ship_stored.to_ship(Some(client_id));
+                let mut ship = ship_stored.to_ship(Some(client_id));
+                
+                ship.position = Vec2::new(rng.gen::<f64>() * 300.0 - 150.0, rng.gen::<f64>() * 300.0 - 150.0);
                 
                 // Add the player's account
                 self.accounts.insert(client_id, account);

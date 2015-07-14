@@ -190,8 +190,8 @@ pub struct Ship {
     height: u8,
     
     // Nav map stuff
-    position: Vec2f,
-    waypoints: VecDeque<Vec2f>,
+    pub position: Vec2f,
+    pub waypoints: VecDeque<Vec2f>,
     
     pub level: u8, // TODO: This is very temporary only for IC US semifinals
     

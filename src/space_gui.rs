@@ -159,7 +159,7 @@ impl<'a> SpaceGui<'a> {
             show_star_map: false,
             
             nav_map_button: SpriteButton::new("content/textures/gui/target.png", 3, 1, [626.0, 7.0]),
-            nav_map_gui: NavMapGui::new(),
+            nav_map_gui: NavMapGui::new(asset_store),
             show_nav_map: false,
             
             chat_button: SpriteButton::new("content/textures/gui/chat.png", 3, 1, [86.0, 654.0]),
@@ -172,10 +172,10 @@ impl<'a> SpaceGui<'a> {
         }
     }
     
-    pub fn event<E: GenericEvent>(&mut self, bc: &BattleContext, e: &E, client_ship: &mut Ship) -> Option<SpaceGuiAction> {
+    pub fn event<E: GenericEvent>(&mut self, bc: &mut BattleContext, e: &E, client_ship: ShipIndex) -> Option<SpaceGuiAction> {
         use piston::event::*;
         
-        if client_ship.state.get_hp() == 0 {
+        if client_ship.get(bc).state.get_hp() == 0 {
             return None;
         }
     
@@ -222,7 +222,7 @@ impl<'a> SpaceGui<'a> {
         } else if self.show_nav_map {
             if let Some(nav_map_result) =
                 self.nav_map_gui.event(e, [self.mouse_pos.x - 200.0, self.mouse_pos.y - 200.0],
-                                       client_ship)
+                                       bc, client_ship)
             {
                 match nav_map_result {
                     NavMapGuiAction::Close => {
@@ -237,8 +237,8 @@ impl<'a> SpaceGui<'a> {
                     Button::Mouse(button) => {
                         let (mouse_x, mouse_y) = (self.mouse_pos.x, self.mouse_pos.y);
                         match button {
-                            mouse::MouseButton::Left => self.on_mouse_left_pressed(bc, mouse_x, mouse_y, client_ship),
-                            mouse::MouseButton::Right => self.on_mouse_right_pressed(bc, mouse_x, mouse_y, client_ship),
+                            mouse::MouseButton::Left => self.on_mouse_left_pressed(bc, mouse_x, mouse_y, client_ship.get(bc)),
+                            mouse::MouseButton::Right => self.on_mouse_right_pressed(bc, mouse_x, mouse_y, client_ship.get(bc)),
                             _ => {},
                         }
                     },
@@ -302,7 +302,7 @@ impl<'a> SpaceGui<'a> {
         }
         
         if self.show_nav_map {
-            self.nav_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache, client_ship);
+            self.nav_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache, bc, client_ship);
         }
     }
     
