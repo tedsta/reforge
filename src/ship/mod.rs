@@ -501,6 +501,7 @@ impl Ship {
             target_sector: None,
             module_plans: self.modules.iter().map(|m| m.create_plans()).collect(),
             plan_power_use: self.state.power_use,
+            waypoints: Vec::new(),
         }
     }
     

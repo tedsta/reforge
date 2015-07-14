@@ -1,6 +1,7 @@
 use module::{Module, ModuleIndex, ModulePlans};
 use sector_data::SectorId;
 use ship::{Ship, ShipIndex, ShipState};
+use vec::Vec2f;
 
 #[derive(Clone, RustcEncodable, RustcDecodable)]
 pub struct ShipPlans {
@@ -9,6 +10,8 @@ pub struct ShipPlans {
     pub module_plans: Vec<ModulePlans>,
     
     pub plan_power_use: u8,
+
+    pub waypoints: Vec<Vec2f>,
 }
 
 impl ShipPlans {    

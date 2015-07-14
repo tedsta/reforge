@@ -52,7 +52,7 @@ impl NavMapGui {
                 Button::Mouse(button) => {
                     match button {
                         mouse::MouseButton::Left => {
-                            self.on_mouse_left_pressed(mouse_pos, button, client_ship.get_mut(bc));
+                            self.on_mouse_left_pressed(mouse_pos, button, bc, client_ship);
                         },
                         mouse::MouseButton::Right => { },
                         _ => {},
@@ -71,28 +71,31 @@ impl NavMapGui {
         self.action.take()
     }
 
-    fn on_mouse_left_pressed(&mut self, mouse_pos: [f64; 2], button: mouse::MouseButton, client_ship: &mut Ship) {
+    fn on_mouse_left_pressed(&mut self, mouse_pos: [f64; 2], button: mouse::MouseButton, bc: &BattleContext, client_ship: ShipIndex) {
         let mouse_pos = Vec2::new(mouse_pos[0] - 288.0, mouse_pos[1] - 202.0);
+        let client_pos = client_ship.get(bc).position;
     
-        /*for ship in bc.ships_iter() {
-            // Draw ship's icon if it's in the radar
-            let screen_pos = (ship.position - client_pos) * self.scale;
-            
-            if screen_pos.length() < 160.0 {
-                let context = context.trans(screen_pos.x, -screen_pos.y).scale(self.scale, self.scale);
-                let size = Vec2::new(ship.get_width() as f64, ship.get_height() as f64);
-                let half_size = size / 2.0;
-                let color =
-                    if ship.index == client_ship.index {
-                        [0.0, 1.0, 0.0, 1.0]
-                    } else {
-                        [1.0, 0.0, 0.0, 1.0]
-                    };
-                Rectangle::new(color)
-                    .draw([-half_size.x, -half_size.y, size.x, size.y],
-                           &context.draw_state, context.transform, gl);
+        // If inside circle clicked
+        if mouse_pos.length() < 160.0 {
+            // Check if space object was selected
+            for ship in bc.ships_iter() {
+                // Draw ship's icon if it's in the radar
+                let mut screen_pos = (ship.position - client_pos) * self.scale;
+                
+                if screen_pos.length() < 160.0 + f64::max(ship.get_width() as f64, ship.get_height() as f64) {
+                    screen_pos.y *= -1.0;
+                    screen_pos = screen_pos*self.scale;
+                    let size = Vec2::new(ship.get_width() as f64, ship.get_height() as f64);
+                    let half_size = size / 2.0;
+                    if mouse_pos.x > screen_pos.x-half_size.x && mouse_pos.x < screen_pos.x+half_size.x &&
+                       mouse_pos.y > screen_pos.y-half_size.y && mouse_pos.y < screen_pos.y+half_size.y {
+                        // TODO select the ship
+                    }
+                }
             }
-        }*/
+
+            // If nothing was selected, then it's a waypoint
+        }
     }
     
     fn on_key_pressed(&mut self, key: keyboard::Key) {
@@ -138,6 +141,10 @@ impl NavMapGui {
 }
 
 fn lerp_ship_waypoint(ship: &mut Ship, time: f64) -> Vec2f {
-    let next_pos = ship.waypoints[0];
-    ship.position + next_pos*(time/5.0)
+    if ship.waypoints.len() > 0 {
+        let next_pos = ship.waypoints[0];
+        ship.position + next_pos*(time/5.0)
+    } else {
+        ship.position
+    }
 }
