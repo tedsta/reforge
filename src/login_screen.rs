@@ -133,7 +133,6 @@ impl LoginScreen {
 
     fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, bg_texture: &Texture) {
         use graphics::*;
-        use graphics::text::Text;
         
         // Clear the screen
         clear([0.0; 4], gl);

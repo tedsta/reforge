@@ -18,11 +18,11 @@ path = "../src/client.rs"
 
 [dependencies.sdl2]
 #git = "https://github.com/AngryLawyer/rust-sdl2"
-version = "0.2.1"
+version = "0.5.0"
 
 [dependencies.sdl2_mixer]
 #git = "https://github.com/andelf/rust-sdl2_mixer"
-version = "0.2.1"
+version = "0.5.0"
 
 [dependencies.freetype-rs]
 #git = "https://github.com/pistondevelopers/freetype-rs"
@@ -47,7 +47,7 @@ rustc-serialize = "0.3.*"
 rand = "0.3.7"
 num = "*"
 
-piston = "0.1.4"
-piston2d-graphics = "0.1.4"
-pistoncore-glutin_window = "0.1.0"
-piston2d-opengl_graphics = "0.1.0"
+piston = "0.3.0"
+piston2d-graphics = "0.4.0"
+pistoncore-glutin_window = "0.4.0"
+piston2d-opengl_graphics = "0.4.0"

@@ -72,9 +72,9 @@ impl NavMapGui {
     }
 
     fn on_mouse_left_pressed(&mut self, mouse_pos: [f64; 2], button: mouse::MouseButton, client_ship: &mut Ship) {
-        let mouse_pos = Vec2::new(mouse_pos[0] - 288.0, y: mouse_pos[1] - 202.0);
+        let mouse_pos = Vec2::new(mouse_pos[0] - 288.0, mouse_pos[1] - 202.0);
     
-        for ship in bc.ships_iter() {
+        /*for ship in bc.ships_iter() {
             // Draw ship's icon if it's in the radar
             let screen_pos = (ship.position - client_pos) * self.scale;
             
@@ -92,7 +92,7 @@ impl NavMapGui {
                     .draw([-half_size.x, -half_size.y, size.x, size.y],
                            &context.draw_state, context.transform, gl);
             }
-        }
+        }*/
     }
     
     fn on_key_pressed(&mut self, key: keyboard::Key) {
@@ -101,7 +101,6 @@ impl NavMapGui {
     pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache,
                 bc: &BattleContext, client_ship: &Ship) {
         use graphics::*;
-        use graphics::text::Text;
         
         Ellipse::new([0.0, 0.5, 0.0, 1.0])
                 .draw([118.0, 32.0, 340.0, 340.0], &context.draw_state, context.transform, gl);

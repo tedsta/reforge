@@ -169,7 +169,6 @@ impl TextButton {
     
     pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache) {
         use graphics::*;
-        use graphics::text::Text;
     
         let bg_color =
             match self.mouse_focus {
@@ -300,7 +299,6 @@ impl TextBox {
     
     pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache) {
         use graphics::*;
-        use graphics::text::Text;
         
         let bg_color =
             match self.mouse_focus {

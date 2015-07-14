@@ -794,7 +794,6 @@ impl TargetIcon {
             i: f64,
             highlight_color: Color) {
         use graphics::*;
-        use graphics::text::Text;
         
         let (target_screen_x1, target_screen_h1, target_screen_x2, target_screen_h2) =
             (target_screen[0], target_screen[1], target_screen[2], target_screen[3]);
@@ -934,7 +933,6 @@ fn draw_stats(context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCac
     use std::cmp;
 
     use graphics::*;
-    use graphics::text::Text;
     
     let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
     let shield_rect = Rectangle::new([0.0, 0.0, 1.0, 1.0]);

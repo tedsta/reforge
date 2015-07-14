@@ -124,7 +124,6 @@ impl<'a> ShipEditGui<'a> {
 
     pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, mouse_pos: Vec2f, ship: &ShipStored) {
         use graphics::*;
-        use graphics::text::Text;
         
         // Render background window
         Rectangle::new([0.2, 0.05, 0.3, 0.8])

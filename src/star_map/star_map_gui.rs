@@ -87,7 +87,6 @@ impl StarMapGui {
 
     pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache) {
         use graphics::*;
-        use graphics::text::Text;
         
         Rectangle::new([0.2, 0.05, 0.3, 0.8])
             .draw([0.0, 0.0, 800.0, 450.0], &context.draw_state, context.transform, gl);

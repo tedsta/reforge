@@ -114,7 +114,6 @@ impl ChatGui {
 
     pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache) {
         use graphics::*;
-        use graphics::text::Text;
         
         image(&self.chat_slider, context.trans(0.0, 0.0).transform, gl);
         {

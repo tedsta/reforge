@@ -100,16 +100,14 @@ mod vec;
 
 #[cfg(feature = "client")]
 fn main () {
-    let opengl = OpenGL::_3_0;
-    
+    let opengl = OpenGL::_3_2;
     // Create an window.
     let window = GlutinWindow::new(
-        opengl,
         WindowSettings::new("Reforge".to_string(), Size { width: 1280, height: 720 }),
     );
     
     // Initialize SDL mixer
-    sdl2::init(sdl2::INIT_AUDIO | sdl2::INIT_TIMER);
+    sdl2::init().video().audio().timer();
     sdl2_mixer::init(sdl2_mixer::INIT_MP3 | sdl2_mixer::INIT_FLAC |
         sdl2_mixer::INIT_MOD | sdl2_mixer::INIT_FLUIDSYNTH |
         sdl2_mixer::INIT_MODPLUG | sdl2_mixer::INIT_OGG);
