@@ -283,7 +283,7 @@ impl SectorState {
         // Send the results packet
         let mut results_packet = self.build_results_packet();
         self.slot.broadcast(results_packet);
-        
+
         // Run the simulation
         self.do_simulation();
         

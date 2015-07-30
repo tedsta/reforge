@@ -575,7 +575,7 @@ impl ModuleStored {
 
 pub type ModuleInnerBox = Box<IModule+'static>;
 
-#[derive(Copy, Clone, PartialEq, RustcEncodable, RustcDecodable)]
+#[derive(Copy, Clone, Debug, PartialEq, RustcEncodable, RustcDecodable)]
 pub enum ModuleClass {
     ProjectileWeapon,
     Shield,

@@ -31,7 +31,14 @@ pub struct BattleContext {
 }
 
 impl BattleContext {
-    pub fn new(ships: Vec<Option<Ship>>) -> BattleContext {
+    pub fn new(mut ships: Vec<Option<Ship>>) -> BattleContext {
+        // Set correct indices
+        for (i, ship) in ships.iter_mut().enumerate() {
+            if let Some(ref mut ship) = *ship {
+                ship.index = ShipIndex(i as u32);
+            }
+        }
+
         // Build (ShipId -> ship index) map
         let mut ships_ship_id = HashMap::new();
         for (i, ship) in ships.iter().enumerate() {
@@ -187,7 +194,6 @@ impl BattleContext {
         let num_ships: u32 = packet.read().unwrap();
         for _ in 0 .. num_ships {
             let ship: ShipIndex = packet.read().unwrap();
-            
             ship.get_mut(self).read_results(packet);
         }
     }

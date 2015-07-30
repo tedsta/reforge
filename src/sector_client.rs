@@ -93,7 +93,7 @@ impl<'a> ClientBattleState<'a> {
                 break;
             }
         }
-    
+
         loop {
             ////////////////////////////////
             // Simulate
@@ -329,6 +329,9 @@ impl<'a> ClientBattleState<'a> {
                 self.bc.add_ship(ship);
                 gui.try_lock(ship_index);
             }
+            println!("Added the ship");
         }
+
+        println!("Finished readng new ships");
     }
 }

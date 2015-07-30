@@ -191,7 +191,7 @@ pub struct Ship {
     
     // Nav map stuff
     pub position: Vec2f,
-    pub waypoints: VecDeque<Vec2f>,
+    //pub waypoints: VecDeque<Vec2f>,
     
     pub level: u8, // TODO: This is very temporary only for IC US semifinals
     
@@ -215,7 +215,7 @@ impl Ship {
             height: 0,
             
             position: Vec2::new(0.0, 0.0),
-            waypoints: VecDeque::new(),
+            //waypoints: VecDeque::new(),
             
             level: level,
 
@@ -501,7 +501,7 @@ impl Ship {
             target_sector: None,
             module_plans: self.modules.iter().map(|m| m.create_plans()).collect(),
             plan_power_use: self.state.power_use,
-            waypoints: Vec::new(),
+            //waypoints: Vec::new(),
         }
     }
     
@@ -530,14 +530,14 @@ impl Ship {
         
         // Jumping stuff
         packet.write(&self.jumping);
-        
+
         // Modoule results
         for module in &self.modules {
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Write the base results
             packet.write(&module.active);
             packet.write(&module.target);
-        
+
             module.inner.borrow().write_results(packet);
         }
     }
@@ -556,9 +556,9 @@ impl Ship {
             } else if was_active && !module.active {
                 module.inner.borrow_mut().on_deactivated(&mut self.state);
             }
-            
+
             module.target = packet.read().ok().expect("Failed to read Module target");
-        
+            
             module.inner.borrow_mut().read_results(packet);
         }
     }
@@ -699,7 +699,7 @@ impl ShipStored {
             width: self.width,
             height: self.height,
             position: Vec2::new(0.0, 0.0),
-            waypoints: VecDeque::new(),
+            //waypoints: VecDeque::new(),
             level: self.level,
             jumping: false,
             exploding: false,
