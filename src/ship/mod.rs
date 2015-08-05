@@ -191,7 +191,7 @@ pub struct Ship {
     
     // Nav map stuff
     pub position: Vec2f,
-    //pub waypoints: VecDeque<Vec2f>,
+    pub waypoints: VecDeque<Vec2f>,
     
     pub level: u8, // TODO: This is very temporary only for IC US semifinals
     
@@ -215,7 +215,7 @@ impl Ship {
             height: 0,
             
             position: Vec2::new(0.0, 0.0),
-            //waypoints: VecDeque::new(),
+            waypoints: VecDeque::new(),
             
             level: level,
 
@@ -501,7 +501,7 @@ impl Ship {
             target_sector: None,
             module_plans: self.modules.iter().map(|m| m.create_plans()).collect(),
             plan_power_use: self.state.power_use,
-            //waypoints: Vec::new(),
+            waypoints: Vec::new(),
         }
     }
     
@@ -699,7 +699,7 @@ impl ShipStored {
             width: self.width,
             height: self.height,
             position: Vec2::new(0.0, 0.0),
-            //waypoints: VecDeque::new(),
+            waypoints: VecDeque::new(),
             level: self.level,
             jumping: false,
             exploding: false,
