@@ -11,7 +11,7 @@ pub struct ShipPlans {
     
     pub plan_power_use: u8,
 
-    pub waypoints: Vec<Vec2f>,
+    pub next_waypoint: Option<Vec2f>,
 }
 
 impl ShipPlans {    

@@ -104,7 +104,9 @@ impl NavMapGui {
             }
 
             // If nothing was selected, then it's a waypoint
-            let screen_pos = mouse_pos/self.scale + radar_center;
+            let mut screen_pos = mouse_pos/self.scale;
+            screen_pos.y *= -1.0;
+            screen_pos = screen_pos + radar_center;
 
             self.waypoints.push_back(screen_pos);
         }
@@ -114,11 +116,13 @@ impl NavMapGui {
     }
 
     pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache,
-                bc: &BattleContext, client_ship: &Ship) {
+                bc: &BattleContext, client_ship: &Ship, time: f64) {
         use graphics::*;
         
         Ellipse::new([0.0, 0.5, 0.0, 1.0])
                 .draw([118.0, 32.0, 340.0, 340.0], &context.draw_state, context.transform, gl);
+
+        let client_pos = client_ship.lerp_next_waypoint(time);
         
         // Render all the stuff in the nav map
         {
@@ -126,7 +130,8 @@ impl NavMapGui {
             
             for ship in bc.ships_iter() {
                 // Draw ship's icon if it's in the radar
-                let screen_pos = (ship.position - client_ship.position) * self.scale;
+                let mut screen_pos = (ship.lerp_next_waypoint(time) - client_pos) * self.scale;
+                screen_pos.y *= -1.0;
                 
                 if screen_pos.length() < 170.0 {
                     let context = context.scale(self.scale, self.scale)
@@ -165,8 +170,18 @@ impl NavMapGui {
                                               None
                                           })
                                      });
-            for (cur, next) in waypoints {
-                let screen_pos = (cur - client_ship.position);
+            for (mut cur, next) in waypoints {
+                cur.y *= -1.0;
+                let screen_pos = (cur - client_pos);
+                if let Some(mut next_screen_pos) = next {
+                    next_screen_pos.y *= -1.0;
+                    next_screen_pos = (next_screen_pos - client_pos);
+                    Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
+                        .draw([screen_pos.x, screen_pos.y, next_screen_pos.x, next_screen_pos.y],
+                              &context.draw_state, context.transform, gl);
+                }
+
+                // Draw waypoint node
                 let context = context.trans(screen_pos.x, screen_pos.y)
                                      .rot_deg(45.0)
                                      .scale(self.scale, self.scale);
@@ -189,14 +204,5 @@ impl NavMapGui {
         let next_waypoint = self.current_waypoint;
         self.current_waypoint = self.waypoints.pop_front();
         next_waypoint
-    }
-}
-
-fn lerp_ship_waypoint(ship: &mut Ship, time: f64) -> Vec2f {
-    if ship.waypoints.len() > 0 {
-        let next_pos = ship.waypoints[0];
-        ship.position + next_pos*(time/5.0)
-    } else {
-        ship.position
     }
 }

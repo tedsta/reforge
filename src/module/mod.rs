@@ -64,6 +64,8 @@ pub struct ModuleContext<'a> {
     
     pub ship_id: ShipId,
     pub ship_state: &'a ShipState,
+    pub ship_position: Vec2f,
+    pub ship_next_waypoint: Option<Vec2f>,
 }
 
 impl<'a> ModuleContext<'a> {
@@ -77,6 +79,14 @@ impl<'a> ModuleContext<'a> {
     
     pub fn get_render_center(&self) -> Vec2f {
         self.get_render_position() + (self.get_render_size()/2.0)
+    }
+
+    pub fn ship_lerp_next_waypoint(&self, time: f64) -> Vec2f {
+        if let Some(next_waypoint) = self.ship_next_waypoint {
+            self.ship_position + (next_waypoint - self.ship_position)*(time/5.0)
+        } else {
+            self.ship_position
+        }
     }
 }
 
@@ -413,6 +423,8 @@ impl Module {
             
             ship_id: ship.id,
             ship_state: &ship.state,
+            ship_position: ship.position,
+            ship_next_waypoint: ship.next_waypoint,
         }
     }
     
@@ -566,6 +578,8 @@ impl ModuleStored {
             
             ship_id: ship.id,
             ship_state: &ship.state,
+            ship_position: Vec2::new(0.0, 0.0),
+            ship_next_waypoint: None,
         }
     }
 }

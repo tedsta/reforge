@@ -302,7 +302,7 @@ impl<'a> SpaceGui<'a> {
         }
         
         if self.show_nav_map {
-            self.nav_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache, bc, client_ship);
+            self.nav_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache, bc, client_ship, time);
         }
     }
     
@@ -744,6 +744,10 @@ impl<'a> SpaceGui<'a> {
     
     pub fn set_client_ship(&mut self, client_ship: &Ship) {
         self.plans = client_ship.create_plans();
+    }
+
+    pub fn set_next_waypoint(&mut self) {
+        self.plans.next_waypoint = self.nav_map_gui.get_next_waypoint();
     }
 }
 

@@ -250,7 +250,9 @@ impl<'a> ClientBattleState<'a> {
         logging_out
     }
     
-    fn build_plans_packet(&mut self, gui: &SpaceGui) -> OutPacket {
+    fn build_plans_packet(&mut self, gui: &mut SpaceGui) -> OutPacket {
+        self.player_ship.get_mut(&mut self.bc).next_waypoint = gui.plans.next_waypoint;
+        gui.set_next_waypoint();
         let mut packet = OutPacket::new();
         packet.write(&ServerBattlePacket::Plan).unwrap();
         packet.write(&gui.plans).unwrap();

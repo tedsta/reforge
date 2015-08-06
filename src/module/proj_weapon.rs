@@ -130,7 +130,9 @@ impl IModule for ProjectileWeaponModule {
         if let Some(ref target) = context.target {
             if let module::TargetManifestData::TargetModule(ref target_module) = target.data {
                 if self.base_sprite.is_some() {
-                    self.rotation = rng.gen::<f64>() * 2.0 * PI;
+                    let target_move_vector = target.ship.lerp_next_waypoint(tick_to_time(10)) -
+                                             context.ship_lerp_next_waypoint(tick_to_time(10));
+                    self.rotation = f64::atan2(target_move_vector.y, target_move_vector.x);
                 } else {
                     self.rotation = 0.0;
                 };
@@ -191,7 +193,7 @@ impl IModule for ProjectileWeaponModule {
                 sprite_sheet: weapon_sprite,
             });
     
-        // Firing visuals
+        // Base sprite animation
         if let Some(ref base_sprite_name) = self.base_sprite {
             let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info(base_sprite_name));
             base_sprite.add_named_stay(&"idle".to_string(), 0.0, 7.0);
@@ -199,8 +201,9 @@ impl IModule for ProjectileWeaponModule {
         }
         
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.turret_sprite));
-        
         weapon_sprite.center = self.turret_center;
+
+        let mut weapon_sprite_end_rotation = self.rotation;
         
         if context.is_active {
             if let Some(ref target) = context.target {
@@ -308,15 +311,40 @@ impl IModule for ProjectileWeaponModule {
                     
                     // Add last stay animation
                     weapon_sprite.add_named_stay(&"idle".to_string(), last_weapon_anim_end, 7.0);
+
+                    let end_aim_dir = target.ship.lerp_next_waypoint(last_weapon_anim_end) -
+                                      context.ship_lerp_next_waypoint(last_weapon_anim_end);
+                    let end_rotation = f64::atan2(end_aim_dir.y, end_aim_dir.x);
+                    effects.add_visual(ship_id, 2, 
+                                       LerpVisual {
+                                           start_time: tick_to_time(10),
+                                           end_time: last_weapon_anim_end,
+                                           start_pos: context.get_render_position() + weapon_sprite.center,
+                                           end_pos: context.get_render_position() + weapon_sprite.center,
+                                           start_rot: self.rotation,
+                                           end_rot: end_rotation,
+                                           sprite_sheet: weapon_sprite,
+                                       });
+
+                    let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.turret_sprite));
+                    weapon_sprite.add_named_stay(&"idle".to_string(), last_weapon_anim_end, 7.0);
+                    weapon_sprite.center = self.turret_center;
+                    effects.add_visual(ship_id, 2, 
+                                       SpriteVisual::new(context.get_render_position() + weapon_sprite.center,
+                                                         end_rotation, weapon_sprite));
                 }
             } else {
                 weapon_sprite.add_named_stay(&"idle".to_string(), 0.0, 7.0);
+                effects.add_visual(ship_id, 2, 
+                                   SpriteVisual::new(context.get_render_position() + weapon_sprite.center,
+                                                     self.rotation, weapon_sprite));
             }
         } else {
             weapon_sprite.add_named_stay(&"off".to_string(), 0.0, 7.0);
+            effects.add_visual(ship_id, 2, 
+                               SpriteVisual::new(context.get_render_position() + weapon_sprite.center,
+                                                 self.rotation, weapon_sprite));
         }
-        
-        effects.add_visual(ship_id, 2, SpriteVisual::new(context.get_render_position() + weapon_sprite.center, self.rotation, weapon_sprite));
     }
     
     fn after_simulation(&mut self, ship_state: &mut ShipState) {

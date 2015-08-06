@@ -191,7 +191,7 @@ pub struct Ship {
     
     // Nav map stuff
     pub position: Vec2f,
-    pub waypoints: VecDeque<Vec2f>,
+    pub next_waypoint: Option<Vec2f>,
     
     pub level: u8, // TODO: This is very temporary only for IC US semifinals
     
@@ -215,7 +215,7 @@ impl Ship {
             height: 0,
             
             position: Vec2::new(0.0, 0.0),
-            waypoints: VecDeque::new(),
+            next_waypoint: None,
             
             level: level,
 
@@ -242,6 +242,14 @@ impl Ship {
     
     pub fn get_height(&self) -> u8 {
         self.height
+    }
+
+    pub fn lerp_next_waypoint(&self, time: f64) -> Vec2f {
+        if let Some(next_waypoint) = self.next_waypoint {
+            self.position + (next_waypoint - self.position)*(time/5.0)
+        } else {
+            self.position
+        }
     }
     
     pub fn is_space_free(&self, x: u8, y: u8, shape: &ModuleShape) -> bool {
@@ -501,7 +509,7 @@ impl Ship {
             target_sector: None,
             module_plans: self.modules.iter().map(|m| m.create_plans()).collect(),
             plan_power_use: self.state.power_use,
-            waypoints: Vec::new(),
+            next_waypoint: self.next_waypoint,
         }
     }
     
@@ -523,6 +531,11 @@ impl Ship {
             // Apply target plans
             module.target = module_plans.target;
         }
+
+        if let Some(next_waypoint) = self.next_waypoint {
+            self.position = next_waypoint;
+        }
+        self.next_waypoint = plans.next_waypoint;
     }
     
     pub fn write_results(&self, packet: &mut OutPacket) {
@@ -530,6 +543,10 @@ impl Ship {
         
         // Jumping stuff
         packet.write(&self.jumping);
+
+        // Waypoint stuff
+        packet.write(&self.position);
+        packet.write(&self.next_waypoint);
 
         // Modoule results
         for module in &self.modules {
@@ -545,6 +562,8 @@ impl Ship {
     pub fn read_results(&mut self, packet: &mut InPacket) {
         self.state.power_use = packet.read().ok().expect("Failed to read ShipState::power_use");
         self.jumping = packet.read().ok().expect("Failed to read Ship::jumping");
+        self.position = packet.read().ok().expect("Failed to read Ship::position");
+        self.next_waypoint = packet.read().ok().expect("Failed to read Ship::next_waypoint");
         for module in &mut self.modules {
             // TODO: fix this ugliness when inheritance is a thing in Rust
             // Read the base results
@@ -699,7 +718,7 @@ impl ShipStored {
             width: self.width,
             height: self.height,
             position: Vec2::new(0.0, 0.0),
-            waypoints: VecDeque::new(),
+            next_waypoint: None,
             level: self.level,
             jumping: false,
             exploding: false,
