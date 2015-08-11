@@ -47,7 +47,7 @@ impl NavMapGui {
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2], bc: &mut BattleContext,
-                                  client_ship: ShipIndex) -> Option<NavMapGuiAction> {
+                                  client_ship: ShipIndex, time: f64) -> Option<NavMapGuiAction> {
         use piston::event::*;
         
         e.press(|button| {
@@ -56,7 +56,7 @@ impl NavMapGui {
                 Button::Mouse(button) => {
                     match button {
                         mouse::MouseButton::Left => {
-                            self.on_mouse_left_pressed(mouse_pos, button, bc, client_ship);
+                            self.on_mouse_left_pressed(mouse_pos, button, bc, client_ship, time);
                         },
                         mouse::MouseButton::Right => { },
                         _ => {},
@@ -75,11 +75,12 @@ impl NavMapGui {
         self.action.take()
     }
 
-    fn on_mouse_left_pressed(&mut self, mouse_pos: [f64; 2], button: mouse::MouseButton, bc: &mut BattleContext, client_ship: ShipIndex) {
+    fn on_mouse_left_pressed(&mut self, mouse_pos: [f64; 2], button: mouse::MouseButton,
+                             bc: &mut BattleContext, client_ship: ShipIndex, time: f64) {
         self.selection = None;
 
         let mouse_pos = Vec2::new(mouse_pos[0] - 288.0, mouse_pos[1] - 202.0);
-        let radar_center = client_ship.get(bc).position;
+        let radar_center = client_ship.get(bc).lerp_next_waypoint(time);
     
         // If inside circle clicked
         if mouse_pos.length() < 160.0 {
@@ -130,8 +131,7 @@ impl NavMapGui {
             
             for ship in bc.ships_iter() {
                 // Draw ship's icon if it's in the radar
-                let mut screen_pos = (ship.lerp_next_waypoint(time) - client_pos) * self.scale;
-                screen_pos.y *= -1.0;
+                let screen_pos = (ship.lerp_next_waypoint(time) - client_pos) * self.scale;
                 
                 if screen_pos.length() < 170.0 {
                     let context = context.scale(self.scale, self.scale)
@@ -171,18 +171,16 @@ impl NavMapGui {
                                           })
                                      });
             for (mut cur, next) in waypoints {
-                cur.y *= -1.0;
                 let screen_pos = (cur - client_pos);
                 if let Some(mut next_screen_pos) = next {
-                    next_screen_pos.y *= -1.0;
                     next_screen_pos = (next_screen_pos - client_pos);
                     Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
-                        .draw([screen_pos.x, screen_pos.y, next_screen_pos.x, next_screen_pos.y],
+                        .draw([screen_pos.x, -screen_pos.y, next_screen_pos.x, -next_screen_pos.y],
                               &context.draw_state, context.transform, gl);
                 }
 
                 // Draw waypoint node
-                let context = context.trans(screen_pos.x, screen_pos.y)
+                let context = context.trans(screen_pos.x, -screen_pos.y)
                                      .rot_deg(45.0)
                                      .scale(self.scale, self.scale);
                 let size = Vec2::new(4.0f64, 4.0f64);

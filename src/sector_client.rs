@@ -205,7 +205,7 @@ impl<'a> ClientBattleState<'a> {
             }
         
             // Forward events to GUI
-            let gui_action = gui.event(&mut self.bc, &e, self.player_ship);
+            let gui_action = gui.event(&mut self.bc, &e, self.player_ship, elapsed_seconds);
             
             if let Some(gui_action) = gui_action {
                 match gui_action {

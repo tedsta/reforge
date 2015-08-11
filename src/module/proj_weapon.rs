@@ -132,7 +132,7 @@ impl IModule for ProjectileWeaponModule {
                 if self.base_sprite.is_some() {
                     let target_move_vector = target.ship.lerp_next_waypoint(tick_to_time(10)) -
                                              context.ship_lerp_next_waypoint(tick_to_time(10));
-                    self.rotation = f64::atan2(target_move_vector.y, target_move_vector.x);
+                    self.rotation = f64::atan2(-target_move_vector.y, target_move_vector.x);
                 } else {
                     self.rotation = 0.0;
                 };
@@ -310,15 +310,15 @@ impl IModule for ProjectileWeaponModule {
                     }
                     
                     // Add last stay animation
-                    weapon_sprite.add_named_stay(&"idle".to_string(), last_weapon_anim_end, 7.0);
+                    weapon_sprite.add_named_stay(&"idle".to_string(), last_weapon_anim_end, 5.0);
 
-                    let end_aim_dir = target.ship.lerp_next_waypoint(last_weapon_anim_end) -
-                                      context.ship_lerp_next_waypoint(last_weapon_anim_end);
-                    let end_rotation = f64::atan2(end_aim_dir.y, end_aim_dir.x);
+                    let end_aim_dir = target.ship.lerp_next_waypoint(5.0) -
+                                      context.ship_lerp_next_waypoint(5.0);
+                    let end_rotation = f64::atan2(-end_aim_dir.y, end_aim_dir.x);
                     effects.add_visual(ship_id, 2, 
                                        LerpVisual {
                                            start_time: tick_to_time(10),
-                                           end_time: last_weapon_anim_end,
+                                           end_time: 5.0,
                                            start_pos: context.get_render_position() + weapon_sprite.center,
                                            end_pos: context.get_render_position() + weapon_sprite.center,
                                            start_rot: self.rotation,
@@ -327,11 +327,11 @@ impl IModule for ProjectileWeaponModule {
                                        });
 
                     let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.turret_sprite));
-                    weapon_sprite.add_named_stay(&"idle".to_string(), last_weapon_anim_end, 7.0);
+                    weapon_sprite.add_named_stay(&"idle".to_string(), 5.0, 7.0);
                     weapon_sprite.center = self.turret_center;
                     effects.add_visual(ship_id, 2, 
                                        SpriteVisual::new(context.get_render_position() + weapon_sprite.center,
-                                                         end_rotation, weapon_sprite));
+                                                         self.rotation, weapon_sprite));
                 }
             } else {
                 weapon_sprite.add_named_stay(&"idle".to_string(), 0.0, 7.0);

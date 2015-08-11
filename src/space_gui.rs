@@ -172,7 +172,7 @@ impl<'a> SpaceGui<'a> {
         }
     }
     
-    pub fn event<E: GenericEvent>(&mut self, bc: &mut BattleContext, e: &E, client_ship: ShipIndex) -> Option<SpaceGuiAction> {
+    pub fn event<E: GenericEvent>(&mut self, bc: &mut BattleContext, e: &E, client_ship: ShipIndex, time: f64) -> Option<SpaceGuiAction> {
         use piston::event::*;
         
         if client_ship.get(bc).state.get_hp() == 0 {
@@ -222,7 +222,7 @@ impl<'a> SpaceGui<'a> {
         } else if self.show_nav_map {
             if let Some(nav_map_result) =
                 self.nav_map_gui.event(e, [self.mouse_pos.x - 200.0, self.mouse_pos.y - 200.0],
-                                       bc, client_ship)
+                                       bc, client_ship, time)
             {
                 match nav_map_result {
                     NavMapGuiAction::Close => {
@@ -1022,16 +1022,23 @@ impl SpaceStars {
         let mut stars = Vec::with_capacity(5); // Five layers of stars
         for i in 0..stars.capacity() {
             let mut layer = Vec::with_capacity(50);
-            let star_count = 
+            let star_count: u32 = 
                 if i == 0 {
-                    200
+                   5000
                 } else {
-                    20
+                    100
                 };
-            for _ in 0u8..star_count {
+            let size =
+                if i == 0 {
+                    1.0
+                } else {
+                    (rng.gen::<u8>() % 5 + 1) as f64
+                };
+            println!("star_count: {}", star_count);
+            for _ in 0..star_count {
                 layer.push(Star {
                     position: [rng.gen::<f64>() * 1290.0, rng.gen::<f64>() * 730.0],
-                    size: (rng.gen::<u8>() % 5 + 1) as f64,
+                    size: size,
                 });
             }
             stars.push(layer);
@@ -1044,9 +1051,12 @@ impl SpaceStars {
     
     pub fn update(&mut self, dt: f64) {
         for (i, stars) in self.stars.iter_mut().enumerate() {
-            let i = i as f64;
             for star in stars.iter_mut() {
-                star.position[0] -= (50.0/i)*dt;
+                if i == 0 {
+                    star.position[0] -= 2.0*dt;
+                } else {
+                    star.position[0] -= (50.0/(i+1) as f64)*dt;
+                }
                 
                 if star.position[0] < 0.0 - star.size {
                     star.position[0] += 1290.0
@@ -1061,11 +1071,8 @@ impl SpaceStars {
         let star_rect = Rectangle::new([1.0, 1.0, 1.0, 1.0]);
         for stars in self.stars.iter() {
             for star in stars.iter() {
-                star_rect.draw(
-                    [star.position[0], star.position[1], star.size, star.size],
-                    &context.draw_state, context.transform,
-                    gl
-                );
+                star_rect.draw([star.position[0], star.position[1], star.size, star.size],
+                               &context.draw_state, context.transform, gl);
             }
         }
     }
