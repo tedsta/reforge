@@ -33,6 +33,7 @@ use asset_store::AssetStore;
 pub struct ProjectileWeaponModule {
     old_rotation: f64,
     rotation: f64,
+    next_rotation: f64,
     projectiles: Vec<Projectile>,
     
     base_sprite: Option<String>,
@@ -54,6 +55,7 @@ impl ProjectileWeaponModule {
             ProjectileWeaponModule {
                 old_rotation: 0.0,
                 rotation: 0.0,
+                next_rotation: 0.0,
                 projectiles: repeat(projectile).take(3).collect(),
                 
                 base_sprite: Some("pewpewbase".to_string()),
@@ -85,6 +87,7 @@ impl ProjectileWeaponModule {
             ProjectileWeaponModule {
                 old_rotation: 0.0,
                 rotation: 0.0,
+                next_rotation: 0.0,
                 projectiles: repeat(projectile).take(prop["num_projectiles"].parse().unwrap()).collect(),
                 
                 base_sprite: prop.get(&"base".to_string()).map(|s| s.clone()),
@@ -125,7 +128,7 @@ impl IModule for ProjectileWeaponModule {
     
         let mut rng = rand::thread_rng();
         
-        self.old_rotation = self.rotation;
+        self.old_rotation = self.next_rotation;
     
         if let Some(ref target) = context.target {
             if let module::TargetManifestData::TargetModule(ref target_module) = target.data {
@@ -133,8 +136,13 @@ impl IModule for ProjectileWeaponModule {
                     let target_move_vector = target.ship.lerp_next_waypoint(tick_to_time(10)) -
                                              context.ship_lerp_next_waypoint(tick_to_time(10));
                     self.rotation = f64::atan2(-target_move_vector.y, target_move_vector.x);
+
+                    let target_move_vector = target.ship.lerp_next_waypoint(tick_to_time(100)) -
+                                             context.ship_lerp_next_waypoint(tick_to_time(100));
+                    self.next_rotation = f64::atan2(-target_move_vector.y, target_move_vector.x);
                 } else {
                     self.rotation = 0.0;
+                    self.next_rotation = 0.0;
                 };
             
                 for (i, projectile) in self.projectiles.iter_mut().enumerate() {                                            
@@ -188,7 +196,7 @@ impl IModule for ProjectileWeaponModule {
                 end_time: tick_to_time(10),
                 start_pos: context.get_render_position() + weapon_sprite.center,
                 end_pos: context.get_render_position() + weapon_sprite.center,
-                start_rot: self.old_rotation,
+                start_rot: self.rotation,
                 end_rot: self.rotation,
                 sprite_sheet: weapon_sprite,
             });
