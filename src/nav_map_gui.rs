@@ -174,7 +174,7 @@ impl NavMapGui {
                 let screen_pos = (cur - client_pos);
                 if let Some(mut next_screen_pos) = next {
                     next_screen_pos = (next_screen_pos - client_pos);
-                    Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
+                    Line::new([1.0, 0.0, 0.0, 1.0], 1.0)
                         .draw([screen_pos.x, -screen_pos.y, next_screen_pos.x, -next_screen_pos.y],
                               &context.draw_state, context.transform, gl);
                 }
