@@ -36,7 +36,7 @@ pub struct ProjectileWeaponModule {
     next_rotation: f64,
     projectiles: Vec<Projectile>,
     
-    base_sprite: Option<String>,
+    base_sprite: String,
     turret_sprite: String,
     projectile_sprite: String,
     explosion_sprite: String,
@@ -58,7 +58,7 @@ impl ProjectileWeaponModule {
                 next_rotation: 0.0,
                 projectiles: repeat(projectile).take(3).collect(),
                 
-                base_sprite: Some("pewpewbase".to_string()),
+                base_sprite: "pewpewbase".to_string(),
                 turret_sprite: "pewpewfire".to_string(),
                 projectile_sprite: "laser2".to_string(),
                 explosion_sprite: "explosion1".to_string(),
@@ -90,7 +90,7 @@ impl ProjectileWeaponModule {
                 next_rotation: 0.0,
                 projectiles: repeat(projectile).take(prop["num_projectiles"].parse().unwrap()).collect(),
                 
-                base_sprite: prop.get(&"base".to_string()).map(|s| s.clone()),
+                base_sprite: prop[&"base".to_string()].clone(),
                 turret_sprite: prop[&"turret".to_string()].clone(),
                 projectile_sprite: prop[&"projectile".to_string()].clone(),
                 explosion_sprite: prop[&"explosion".to_string()].clone(),
@@ -132,18 +132,13 @@ impl IModule for ProjectileWeaponModule {
     
         if let Some(ref target) = context.target {
             if let module::TargetManifestData::TargetModule(ref target_module) = target.data {
-                if self.base_sprite.is_some() {
-                    let target_move_vector = target.ship.lerp_next_waypoint(tick_to_time(10)) -
-                                             context.ship_lerp_next_waypoint(tick_to_time(10));
-                    self.rotation = f64::atan2(-target_move_vector.y, target_move_vector.x);
+                let target_move_vector = target.ship.lerp_next_waypoint(tick_to_time(10)) -
+                                         context.ship_lerp_next_waypoint(tick_to_time(10));
+                self.rotation = f64::atan2(-target_move_vector.y, target_move_vector.x);
 
-                    let target_move_vector = target.ship.lerp_next_waypoint(tick_to_time(100)) -
-                                             context.ship_lerp_next_waypoint(tick_to_time(100));
-                    self.next_rotation = f64::atan2(-target_move_vector.y, target_move_vector.x);
-                } else {
-                    self.rotation = 0.0;
-                    self.next_rotation = 0.0;
-                };
+                let target_move_vector = target.ship.lerp_next_waypoint(tick_to_time(100)) -
+                                         context.ship_lerp_next_waypoint(tick_to_time(100));
+                self.next_rotation = f64::atan2(-target_move_vector.y, target_move_vector.x);
             
                 for (i, projectile) in self.projectiles.iter_mut().enumerate() {                                            
                     let start = (i*10) as u32;
@@ -164,11 +159,10 @@ impl IModule for ProjectileWeaponModule {
     
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        if let Some(ref base_sprite_name) = self.base_sprite {
-            let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info(base_sprite_name));
-            base_sprite.add_named_stay(&"idle".to_string(), 0.0, 7.0);
-            effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, base_sprite));
-        }
+        let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.base_sprite));
+        base_sprite.add_named_stay(&"idle".to_string(), 0.0, 7.0);
+        effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, base_sprite));
+
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.turret_sprite));
         
         weapon_sprite.center = self.turret_center;
@@ -202,11 +196,9 @@ impl IModule for ProjectileWeaponModule {
             });
     
         // Base sprite animation
-        if let Some(ref base_sprite_name) = self.base_sprite {
-            let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info(base_sprite_name));
-            base_sprite.add_named_stay(&"idle".to_string(), 0.0, 7.0);
-            effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, base_sprite));
-        }
+        let mut base_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.base_sprite));
+        base_sprite.add_named_stay(&"idle".to_string(), 0.0, 7.0);
+        effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, base_sprite));
         
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.turret_sprite));
         weapon_sprite.center = self.turret_center;
