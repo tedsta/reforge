@@ -1024,7 +1024,7 @@ impl SpaceStars {
             let mut layer = Vec::with_capacity(50);
             let star_count: u32 = 
                 if i == 0 {
-                   5000
+                   1000
                 } else {
                     100
                 };

@@ -1,5 +1,9 @@
 use num::Float;
+use std::error::Error;
+use std::fmt;
+use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, Sub, Mul, Div};
+use std::str::FromStr;
 
 pub type Vec2f = Vec2<f64>;
 
@@ -72,5 +76,46 @@ impl<T: Div+Copy> Div<T> for Vec2<T> {
 
     fn div(self, other: T) -> Vec2<<T as Div>::Output> {
         Vec2{x: self.x / other, y: self.y / other}
+    }
+}
+
+impl<T: FromStr+Copy> FromStr for Vec2<T> {
+    type Err = ParseVecError;
+
+    fn from_str(s: &str) -> Result<Vec2<T>, ParseVecError> {
+        if s.len() > 0 && s.as_bytes()[0] == b'(' && s.as_bytes()[s.len()-1] == b')' {
+            let components: Vec<T> =
+                s[1..s.len()-1].split(',')
+                               .map(|s| { s.trim_left().trim_right() })
+                               .map(|s| { s.parse().ok().unwrap() })
+                               .collect();
+            Ok(Vec2::new(components[0], components[1]))
+        } else {
+            Err(ParseVecError)
+        }
+    }
+}
+
+pub struct ParseVecError;
+
+impl Error for ParseVecError {
+    fn description(&self) -> &str {
+        "Couldn't parse the vector"
+    }
+
+    fn cause(&self) -> Option<&Error> {
+        None
+    }
+}
+
+impl Debug for ParseVecError {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        Ok(try!(f.write_str("Make sure your vector is all like this: (x, y)")))
+    }
+}
+
+impl Display for ParseVecError {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+        Ok(try!(f.write_str("Make sure your vector is all like this: (x, y)")))
     }
 }

@@ -32,6 +32,7 @@ pub use self::cabin::CabinModule;
 pub use self::command::CommandModule;
 pub use self::beam_weapon::BeamWeaponModule;
 pub use self::repair::RepairModule;
+pub use self::volley_missile::VolleyMissileModule;
 
 pub use self::target::{Target, TargetMode, TargetData, TargetManifest, TargetManifestData};
 pub use self::damage_visual::{DamageVisual, DamageVisualKind};
@@ -45,6 +46,7 @@ pub mod cabin;
 pub mod command;
 pub mod beam_weapon;
 pub mod repair;
+pub mod volley_missile;
 
 pub mod target;
 pub mod damage_visual;
@@ -599,6 +601,7 @@ pub enum ModuleClass {
     Cabin,
     BeamWeapon,
     Repair,
+    VolleyMissile,
 }
 
 impl Decodable for ModuleInnerBox {
@@ -624,6 +627,8 @@ impl Decodable for ModuleInnerBox {
                 Ok(Box::new(try!(<BeamWeaponModule as Decodable>::decode(d)))),
             Repair =>
                 Ok(Box::new(try!(<RepairModule as Decodable>::decode(d)))),
+            VolleyMissile =>
+                Ok(Box::new(try!(<VolleyMissileModule as Decodable>::decode(d)))),
         }
     }
 }
@@ -671,6 +676,10 @@ impl Encodable for ModuleInnerBox {
             Repair => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
                 try!(<RepairModule as Encodable>::encode(mem::transmute(to.data), s));
+            },
+            VolleyMissile => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.deref());
+                try!(<VolleyMissileModule as Encodable>::encode(mem::transmute(to.data), s));
             },
         }
         Ok(())
