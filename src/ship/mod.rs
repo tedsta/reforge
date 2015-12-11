@@ -694,8 +694,6 @@ impl ShipStored {
     }
     
     pub fn from_ship(ship: Ship) -> ShipStored {
-        use std::rc::try_unwrap;
-    
         ShipStored {
             id: ship.id,
             name: ship.name,

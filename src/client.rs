@@ -20,6 +20,7 @@
 #![feature(os)]
 #![feature(std_misc)]
 #![feature(path_ext)]
+#![feature(path_ext_deprecated)]
 
 extern crate bincode;
 extern crate float;

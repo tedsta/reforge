@@ -1,4 +1,3 @@
-use std::ops::{Deref, DerefMut};
 use rand::Rng;
 use rand;
 use std::any::TypeId;

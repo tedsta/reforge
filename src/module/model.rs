@@ -291,7 +291,6 @@ impl ModelStore {
         
         self.models.push(Model {
             index: index,
-            index: ModelIndex(self.models.len() as u16),
             name: prop["name"].clone(),
             factory: factory,
             shape: ModuleShape::new(shape),
