@@ -1,7 +1,8 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use piston::event::Events;
+use piston::event_loop::Events;
+use piston::input::*;
 use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 use glutin_window::GlutinWindow;
@@ -59,11 +60,11 @@ impl<'a> StationClient<'a> {
     
         let mut time: f64 = 0.0;
         for e in Events::events(window.clone()) {
-            use piston::event;
+            use piston::event_loop as event;
             use piston::input;
-            use piston::event::*;
+            use piston::event_loop::*;
 
-            let e: event::Event<input::Input> = e;
+            let e: input::Event<input::Input> = e;
         
             // Forward events to GUI
             let gui_action = gui.event(&e, &self.player_ship);

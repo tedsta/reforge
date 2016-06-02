@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fs::PathExt;
 use std::io::{BufRead, BufReader, Read};
 use std::str;
 

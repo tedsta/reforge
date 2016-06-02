@@ -3,9 +3,9 @@ use std::cell::RefCell;
 use std::path::Path;
 
 use glutin_window::GlutinWindow;
-use piston::event::{Events, GenericEvent};
+use piston::event_loop::Events;
 use graphics::{Context, ImageSize};
-use piston::input::{keyboard, mouse, Button};
+use piston::input::*;
 use opengl_graphics::{GlGraphics, Texture};
 
 #[derive(PartialEq)]
@@ -46,11 +46,11 @@ impl MainMenu {
     {
         // Main loop
         for e in Events::events(window.clone()) {
-            use piston::event;
+            use piston::event_loop as event;
             use piston::input;
-            use piston::event::*;
+            use piston::event_loop::*;
 
-            let e: event::Event<input::Input> = e;
+            let e: input::Event<input::Input> = e;
 
             self.event(&e);
 
@@ -77,7 +77,7 @@ impl MainMenu {
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E) {
-        use piston::event::*;
+        use piston::event_loop::*;
         
         e.mouse_cursor(|x, y| {
             self.on_mouse_moved(x, y);
@@ -88,6 +88,7 @@ impl MainMenu {
                 Button::Mouse(button) => {
                     self.on_mouse_pressed(button);
                 },
+                _ => { },
             }
         });
     }

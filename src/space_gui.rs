@@ -4,11 +4,12 @@ use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
-use piston::event::{Events, GenericEvent, RenderArgs};
+//use piston::event_loop::{Events, GenericEvent, RenderArgs};
+use piston::event_loop::*;
 use graphics::{Context, Rectangle};
 use graphics::math::Matrix2d;
 use graphics::types::Color;
-use piston::input::{keyboard, mouse, Button};
+use piston::input::*;
 use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -173,7 +174,7 @@ impl<'a> SpaceGui<'a> {
     }
     
     pub fn event<E: GenericEvent>(&mut self, bc: &mut BattleContext, e: &E, client_ship: ShipIndex, time: f64) -> Option<SpaceGuiAction> {
-        use piston::event::*;
+        use piston::event_loop::*;
         
         if client_ship.get(bc).state.get_hp() == 0 {
             return None;
@@ -242,6 +243,7 @@ impl<'a> SpaceGui<'a> {
                             _ => {},
                         }
                     },
+                    _ => { },
                 }
             });
         }
@@ -882,7 +884,7 @@ impl TargetIcon {
         // Draw ship's name
         {
             /*let context = context.trans(2.0, 94.0);
-            Text::colored([1.0; 4], 10).draw(
+            Text::new_color([1.0; 4], 10).draw(
                 ship.name.as_str(),
                 glyph_cache,
                 &context.draw_state, context.transform,
@@ -992,7 +994,7 @@ fn draw_stats(context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCac
     
     {
         let context = context.trans(5.0, 160.0);
-        Text::colored([1.0; 4], 30).draw(
+        Text::new_color([1.0; 4], 30).draw(
             ship.name.as_str(),
             glyph_cache,
             &context.draw_state, context.transform,

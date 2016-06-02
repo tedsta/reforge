@@ -600,7 +600,7 @@ impl Ship {
                         let context = context.trans((x as f64) * 48.0, (y as f64) * 48.0);
                         let context = context.trans(24.0 - shield_size_x/2.0, 24.0 - shield_size_y/2.0);
                         
-                        Image::new_colored([1.0, 1.0, 1.0, opacity])
+                        Image::new_color([1.0, 1.0, 1.0, opacity])
                             .draw(shield_texture.deref(), &context.draw_state, context.transform, gl);
                     }
                 }

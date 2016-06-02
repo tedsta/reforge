@@ -2,9 +2,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use glutin_window::GlutinWindow;
-use piston::event::{Events, GenericEvent};
+use piston::event_loop::Events;
 use graphics::Context;
-use piston::input::{keyboard, mouse, Button};
+use piston::input::*;
 use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -60,11 +60,11 @@ impl LoginScreen {
     pub fn run(&mut self, window: &Rc<RefCell<GlutinWindow>>, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, bg_texture: &Texture) -> LoginGuiAction {
         // Main loop
         for e in Events::events(window.clone()) {
-            use piston::event;
+            use piston::event_loop as event;
             use piston::input;
-            use piston::event::*;
+            use piston::event_loop::*;
 
-            let e: event::Event<input::Input> = e;
+            let e: input::Event<input::Input> = e;
 
             self.event(&e);
 
@@ -84,7 +84,7 @@ impl LoginScreen {
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E) {
-        use piston::event::*;
+        use piston::event_loop::*;
         
         e.mouse_cursor(|x, y| {
             self.on_mouse_moved(x, y);
@@ -142,7 +142,7 @@ impl LoginScreen {
         // Draw the username and password labels
         {
             let context = context.trans(400.0, 330.0);
-            Text::colored([1.0; 4], 32).draw(
+            Text::new_color([1.0; 4], 32).draw(
                 "Username",
                 glyph_cache,
                 &context.draw_state, context.transform,
@@ -152,7 +152,7 @@ impl LoginScreen {
         
         {
             let context = context.trans(400.0, 400.0);
-            Text::colored([1.0; 4], 32).draw(
+            Text::new_color([1.0; 4], 32).draw(
                 "Password",
                 glyph_cache,
                 &context.draw_state, context.transform,
@@ -162,7 +162,7 @@ impl LoginScreen {
         
         {
             let context = context.trans(400.0, 470.0);
-            Text::colored([1.0; 4], 32).draw(
+            Text::new_color([1.0; 4], 32).draw(
                 "IP Address",
                 glyph_cache,
                 &context.draw_state, context.transform,
@@ -184,7 +184,7 @@ impl LoginScreen {
             match login_error {
                 LoginError::NoSuchAccount => {
                     let context = context.trans(910.0, 330.0);
-                    Text::colored([1.0, 0.0, 0.0, 1.0], 30).draw(
+                    Text::new_color([1.0, 0.0, 0.0, 1.0], 30).draw(
                         "User doesn't exist",
                         glyph_cache,
                         &context.draw_state, context.transform,
@@ -193,7 +193,7 @@ impl LoginScreen {
                 },
                 LoginError::AlreadyLoggedIn => {
                     let context = context.trans(910.0, 330.0);
-                    Text::colored([1.0, 0.0, 0.0, 1.0], 30).draw(
+                    Text::new_color([1.0, 0.0, 0.0, 1.0], 30).draw(
                         "User already logged in",
                         glyph_cache,
                         &context.draw_state, context.transform,
@@ -202,7 +202,7 @@ impl LoginScreen {
                 },
                 LoginError::WrongPassword => {
                     let context = context.trans(910.0, 400.0);
-                    Text::colored([1.0, 0.0, 0.0, 1.0], 30).draw(
+                    Text::new_color([1.0, 0.0, 0.0, 1.0], 30).draw(
                         "Incorrect password",
                         glyph_cache,
                         &context.draw_state, context.transform,

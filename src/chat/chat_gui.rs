@@ -1,6 +1,5 @@
-use piston::event::GenericEvent;
 use graphics::Context;
-use piston::input::{keyboard, mouse, Button};
+use piston::input::*;
 use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 use std::path::Path;
@@ -53,7 +52,7 @@ impl ChatGui {
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: Vec2f) -> Option<ChatGuiAction> {
-        use piston::event::*;
+        use piston::event_loop::*;
         
         self.msg_box.event(e, [mouse_pos.x, mouse_pos.y]);
         
@@ -66,6 +65,7 @@ impl ChatGui {
                         _ => {},
                     }
                 },
+                _ => { },
             }
         });
         
@@ -118,7 +118,7 @@ impl ChatGui {
         image(&self.chat_slider, context.trans(0.0, 0.0).transform, gl);
         {
             let context = context.trans(30.0, 0.0);
-            Image::new_colored([1.0, 1.0, 1.0, 0.75])
+            Image::new_color([1.0, 1.0, 1.0, 0.75])
                 .draw(&self.screen_glow, &context.draw_state, context.transform, gl);
         }
         //image(&self.screen_glow, context.trans(30.0, 0.0).transform, gl);
@@ -127,7 +127,7 @@ impl ChatGui {
             let max_messages = 3;
             for(i, msg) in self.messages.iter().rev().take(max_messages).enumerate() {
                 let context = context.trans(45.0, 40.0 + 15.0*((max_messages - 1 - i) as f64));
-                Text::colored([0.7, 0.7, 1.0, 1.0], 12).draw(
+                Text::new_color([0.7, 0.7, 1.0, 1.0], 12).draw(
                     msg.author_name.as_str(),
                     glyph_cache,
                     &context.draw_state, context.transform,
@@ -135,7 +135,7 @@ impl ChatGui {
                 );
                 
                 let context = context.trans(msg.author_name.len() as f64 * 10.0, 0.0);
-                Text::colored([0.7, 0.7, 0.7, 1.0], 12).draw(
+                Text::new_color([0.7, 0.7, 0.7, 1.0], 12).draw(
                     msg.content.as_str(),
                     glyph_cache,
                     &context.draw_state, context.transform,

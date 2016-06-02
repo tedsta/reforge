@@ -7,7 +7,8 @@ use std::thread;
 use std::time::Duration;
 use time;
 
-use piston::event::Events;
+use piston::event_loop::Events;
+use piston::input::*;
 use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 use glutin_window::GlutinWindow;
@@ -157,11 +158,11 @@ impl<'a> ClientBattleState<'a> {
         let mut next_tick = 0;
         let mut plans_sent = false;
         for e in Events::events(window.clone()) {
-            use piston::event;
+            use piston::event_loop as event;
             use piston::input;
-            use piston::event::*;
+            use piston::event_loop::*;
 
-            let e: event::Event<input::Input> = e;
+            let e: input::Event<input::Input> = e;
         
             // Calculate a bunch of time stuff
             let current_time = time::now().to_timespec();

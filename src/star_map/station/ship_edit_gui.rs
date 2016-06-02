@@ -1,6 +1,5 @@
-use piston::event::GenericEvent;
 use graphics::Context;
-use piston::input::{mouse, Button};
+use piston::input::*;
 use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -40,7 +39,7 @@ impl<'a> ShipEditGui<'a> {
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: Vec2f, ship: &ShipStored) -> Option<ShipEditAction> {
-        use piston::event::*;
+        use piston::event_loop::*;
         
         e.press(|button| {
             match button {
@@ -132,7 +131,7 @@ impl<'a> ShipEditGui<'a> {
         // Label text
         {
             let context = context.trans(5.0, 30.0);
-            Text::colored([1.0; 4], 24).draw(
+            Text::new_color([1.0; 4], 24).draw(
                 "module inventory",
                 glyph_cache,
                 &context.draw_state, context.transform,
@@ -157,7 +156,7 @@ impl<'a> ShipEditGui<'a> {
                     // Category label
                     {
                         let context = context.trans(5.0, 21.0);
-                        Text::colored([1.0; 4], 18).draw(
+                        Text::new_color([1.0; 4], 18).draw(
                             category,
                             glyph_cache,
                             &context.draw_state, context.transform,

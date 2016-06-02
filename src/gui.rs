@@ -1,6 +1,5 @@
-use piston::event::{GenericEvent};
 use graphics::{Context, ImageSize};
-use piston::input::{keyboard, mouse, Button};
+use piston::input::*;
 use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 use std::path::Path;
@@ -69,7 +68,7 @@ impl SpriteButton {
     }
     
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) {
-        use piston::event::*;
+        use piston::event_loop::*;
         
         e.mouse_cursor(|_, _| {
             if self.mouse_focus != MouseFocus::Focus {
@@ -189,7 +188,7 @@ impl TextButton {
         {
             let buffer = (self.size[1] - (self.font_size as f64)) / 2.0;
             let context = context.trans(self.position[0] + buffer, self.position[1] + self.size[1] - buffer);
-            Text::colored(self.text_color, self.font_size).draw(
+            Text::new_color(self.text_color, self.font_size).draw(
                 self.text.as_str(),
                 glyph_cache,
                 &context.draw_state, context.transform,
@@ -199,7 +198,7 @@ impl TextButton {
     }
     
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) {
-        use piston::event::*;
+        use piston::event_loop::*;
         
         e.mouse_cursor(|_, _| {
             if self.mouse_focus != MouseFocus::Focus {
@@ -326,7 +325,7 @@ impl TextBox {
         
             let buffer = (self.size[1] - (self.font_size as f64)) / 2.0;
             let context = context.trans(self.position[0] + buffer, self.position[1] + self.size[1] - buffer);
-            Text::colored(self.text_color, self.font_size).draw(
+            Text::new_color(self.text_color, self.font_size).draw(
                 text.as_str(),
                 glyph_cache,
                 &context.draw_state, context.transform,
@@ -336,7 +335,7 @@ impl TextBox {
     }
     
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) {
-        use piston::event::*;
+        use piston::event_loop::*;
         
         e.mouse_cursor(|_, _| {
             if self.mouse_focus != MouseFocus::Focus {
@@ -375,6 +374,7 @@ impl TextBox {
                         }
                     }
                 },
+                _ => { },
             }
         });
         e.text(|text| {

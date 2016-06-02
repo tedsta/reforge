@@ -101,7 +101,7 @@ mod vec;
 
 #[cfg(feature = "client")]
 fn main () {
-    let opengl = OpenGL::_3_2;
+    let opengl = OpenGL::V3_2;
     // Create an window.
     let window = GlutinWindow::new(
         WindowSettings::new("Reforge".to_string(), Size { width: 1280, height: 720 }),
@@ -130,7 +130,7 @@ fn main () {
     let ref model_store = ModelStore::new();
 
     // Wrap window in RefCell
-    let window = Rc::new(RefCell::new(window));
+    let window = Rc::new(RefCell::new(window.unwrap()));
     
     let music = sdl2_mixer::Music::from_file(&Path::new("content/audio/music/space.wav")).unwrap();
     

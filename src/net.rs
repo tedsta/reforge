@@ -9,7 +9,8 @@ use std::thread::{Builder, spawn};
 use rustc_serialize::Encodable;
 use rustc_serialize::Decodable;
 
-use bincode::{EncoderWriter, EncodingError, DecoderReader, DecodingError, encode_into, decode_from, SizeLimit};
+use bincode::rustc_serialize::{EncoderWriter, EncodingError, DecoderReader, DecodingError, encode_into, decode_from};
+use bincode::SizeLimit;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Some basic types

@@ -1,5 +1,5 @@
 use std::fs;
-use std::fs::{File, PathExt};
+use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 
 use std::collections::HashMap;
@@ -104,6 +104,7 @@ impl AssetStore {
         let texture_path = "content/textures/".to_string() + &prop["texture"];
         let rows = prop["rows"].parse().unwrap();
         let columns = prop["columns"].parse().unwrap();
+        println!("{:?}", Texture::from_path(&Path::new(texture_path.as_str())).err());
         let texture =
             Rc::new(
                 Texture::from_path(&Path::new(texture_path.as_str()))

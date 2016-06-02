@@ -1,9 +1,8 @@
 use std::rc::Rc;
 use std::collections::VecDeque;
 
-use piston::event::GenericEvent;
 use graphics::Context;
-use piston::input::{keyboard, mouse, Button};
+use piston::input::*;
 use opengl_graphics::{GlGraphics, Texture};
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -48,7 +47,7 @@ impl NavMapGui {
 
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2], bc: &mut BattleContext,
                                   client_ship: ShipIndex, time: f64) -> Option<NavMapGuiAction> {
-        use piston::event::*;
+        use piston::event_loop::*;
         
         e.press(|button| {
             match button {
@@ -62,6 +61,7 @@ impl NavMapGui {
                         _ => {},
                     }
                 },
+                _ => { },
             }
         });
         

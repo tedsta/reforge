@@ -1,6 +1,5 @@
-use piston::event::GenericEvent;
 use graphics::Context;
-use piston::input::{mouse, Button};
+use piston::input::*;
 use opengl_graphics::GlGraphics;
 use opengl_graphics::glyph_cache::GlyphCache;
 
@@ -40,7 +39,7 @@ impl StarMapGui {
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E, mouse_pos: [f64; 2]) -> Option<StarMapGuiAction> {
-        use piston::event::*;
+        use piston::event_loop::*;
         
         e.press(|button| {
             match button {
@@ -119,7 +118,7 @@ impl StarMapGui {
         
         {
             let context = context.trans(5.0, 20.0);
-            Text::colored([1.0; 4], 15).draw(
+            Text::new_color([1.0; 4], 15).draw(
                 "star map",
                 glyph_cache,
                 &context.draw_state, context.transform,
