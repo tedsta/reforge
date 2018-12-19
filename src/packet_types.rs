@@ -1,7 +1,7 @@
 use chat::ChatMsg;
 
 // Packets sent from client to server
-#[derive(RustcEncodable, RustcDecodable)]
+#[derive(Serialize, Deserialize)]
 pub enum ServerBattlePacket {
     Plan,
     Chat(String),
@@ -9,7 +9,7 @@ pub enum ServerBattlePacket {
 }
 
 // Packets sent from server to client
-#[derive(RustcEncodable, RustcDecodable)]
+#[derive(Serialize, Deserialize)]
 pub enum ClientBattlePacket {
     NewShipsPre,
     SimResults,

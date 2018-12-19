@@ -8,7 +8,7 @@ use sector_data::SectorId;
 
 pub type AccountBox = Box<Account>;
 
-#[derive(Copy, Clone, PartialEq, RustcEncodable, RustcDecodable)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub enum LoginError {
     NoSuchAccount,
     WrongPassword,
@@ -43,7 +43,7 @@ impl AccountManager {
             password: password,
             ship: None,
             client_id: None,
-            sector: SectorId(1),
+            sector: SectorId(0), // Start in the station
             module_inventory: HashMap::new(),
         })));
     }

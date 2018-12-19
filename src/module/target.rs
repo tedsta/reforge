@@ -4,7 +4,7 @@ use vec::{Vec2, Vec2f};
 
 use super::{Module, ModuleIndex};
 
-#[derive(Clone, PartialEq, RustcEncodable, RustcDecodable)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum TargetMode {
     TargetShip,
     TargetModule,
@@ -13,13 +13,13 @@ pub enum TargetMode {
     Beam(u8),
 }
 
-#[derive(Clone, Copy, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct Target {
     pub ship: ShipIndex,
     pub data: TargetData,
 }
 
-#[derive(Clone, Copy, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum TargetData {
     TargetShip,
     TargetModule(ModuleIndex),

@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
-use graphics::Context;
-use opengl_graphics::{GlGraphics, Texture};
+use ggez::{Context, GameResult};
+use ggez::graphics::{self, DrawParam, Image, Point2, Rect};
 
 use sim::SimVisual;
 use sprite_sheet::SpriteSheet;
@@ -19,13 +19,15 @@ pub struct LerpVisual {
 }
 
 impl SimVisual for LerpVisual {
-    fn draw(&mut self, context: &Context, gl: &mut GlGraphics, time: f64) {
+    fn draw(&mut self, ctx: &mut Context, time: f64) -> GameResult<()> {
         if time >= self.start_time && time <= self.end_time {
             let interp = (time-self.start_time)/(self.end_time-self.start_time);
             let pos = self.start_pos + (self.end_pos-self.start_pos)*interp;
             let rot = self.start_rot + (self.end_rot-self.start_rot)*interp;
-            self.sprite_sheet.draw(context, gl, pos.x, pos.y, rot, time);
+            self.sprite_sheet.draw(ctx, pos.x, pos.y, rot, time)?;
         }
+
+        Ok(())
     }
 }
 
@@ -38,22 +40,24 @@ pub struct BeamExitVisual {
     
     pub beam_start: Vec2f,
     
-    pub texture: Rc<Texture>,
+    pub texture: Rc<Image>,
 }
 
 impl SimVisual for BeamExitVisual {
-    fn draw(&mut self, context: &Context, gl: &mut GlGraphics, time: f64) {
-        use graphics::Image;
-        use graphics::ImageSize;
-        use std::ops::Deref;
-    
+    fn draw(&mut self, ctx: &mut Context, time: f64) -> GameResult<()> {
         if time >= self.start_time && time <= self.end_time {
-            let (_, height) = self.texture.get_size();
-        
-            Image::new()
-                .rect([self.beam_start.x, self.beam_start.y, 1500.0, height as f64])
-                .draw(self.texture.deref(), &context.draw_state, context.transform, gl);
+            graphics::draw_ex(
+                ctx, &*self.texture,
+                DrawParam {
+                    dest: Point2::new(
+                        self.beam_start.x as f32,
+                        self.beam_start.y as f32),
+                    src: Rect::new(0.0, 0.0, 1500.0, 1.0),
+                    ..Default::default()
+                })?;
         }
+
+        Ok(())
     }
 }
 
@@ -67,12 +71,12 @@ pub struct BeamVisual {
     pub beam_start: Vec2f,
     pub beam_end: Vec2f,
     
-    pub part: Rc<Texture>,
+    pub part: Rc<Image>,
     pub end: SpriteSheet,
 }
 
 impl BeamVisual {
-    pub fn new(start_time: f64, end_time: f64, beam_start: Vec2f, beam_end: Vec2f, part: Rc<Texture>, mut end: SpriteSheet) -> BeamVisual {
+    pub fn new(start_time: f64, end_time: f64, beam_start: Vec2f, beam_end: Vec2f, part: Rc<Image>, mut end: SpriteSheet) -> BeamVisual {
         end.center();
     
         BeamVisual {
@@ -89,9 +93,7 @@ impl BeamVisual {
 }
 
 impl SimVisual for BeamVisual {
-    fn draw(&mut self, context: &Context, gl: &mut GlGraphics, time: f64) {
-        use graphics::Image;
-        use graphics::ImageSize;
+    fn draw(&mut self, ctx: &mut Context, time: f64) -> GameResult<()> {
         use float::Radians;
     
         if time >= self.start_time && time <= self.end_time {
@@ -100,16 +102,24 @@ impl SimVisual for BeamVisual {
             let beam_pos = self.beam_start + (self.beam_end - self.beam_start)*interp;
             
             let (width, height) = self.end.get_frame_size();
-            let (width, height) = (width as f64, height as f64);
+            let (width, height) = (width as f32, height as f32);
         
             // Draw beam part
-            Image::new()
-                .rect([beam_pos.x, beam_pos.y - (height/2.0), 1500.0, height as f64])
-                .draw(&*self.part, &context.draw_state, context.transform, gl);
+            graphics::draw_ex(
+                ctx, &*self.part,
+                DrawParam {
+                    dest: Point2::new(
+                        beam_pos.x as f32,
+                        (beam_pos.y as f32) - height / 2.0),
+                    src: Rect::new(0.0, 0.0, 1500.0, 1.0),
+                    ..Default::default()
+                })?;
                 
             // Draw beam end
-            self.end.draw(&context, gl, beam_pos.x, beam_pos.y, Radians::_180(), time - self.start_time);
+            self.end.draw(ctx, beam_pos.x, beam_pos.y, Radians::_180(), time - self.start_time)?;
         }
+
+        Ok(())
     }
 }
 
@@ -133,7 +143,7 @@ impl SpriteVisual {
 }
 
 impl SimVisual for SpriteVisual {
-    fn draw(&mut self, context: &Context, gl: &mut GlGraphics, time: f64) {
-        self.sprite_sheet.draw(context, gl, self.position.x, self.position.y, self.rotation, time);
+    fn draw(&mut self, ctx: &mut Context, time: f64) -> GameResult<()> {
+        self.sprite_sheet.draw(ctx, self.position.x, self.position.y, self.rotation, time)
     }
 }

@@ -1,10 +1,5 @@
 use std::collections::HashMap;
 
-#[cfg(feature = "client")]
-use graphics::Context;
-#[cfg(feature = "client")]
-use opengl_graphics::GlGraphics;
-
 use battle_context::BattleContext;
 use module;
 use module::{IModule, Model, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData};
@@ -23,7 +18,7 @@ use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(feature = "client")]
 use asset_store::AssetStore;
 
-#[derive(RustcEncodable, RustcDecodable, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct BeamWeaponModule {
     damage: u8,
 
@@ -129,6 +124,7 @@ impl IModule for BeamWeaponModule {
             effects.add_visual(context.ship_id, 0, SpriteVisual::new(context.get_render_position(), 0.0, base_sprite));
         }
         let mut weapon_sprite = SpriteSheet::new(asset_store.get_sprite_info(&self.turret_sprite));
+        println!("Beam {}", self.turret_sprite);
         
         weapon_sprite.center = self.turret_center;
         
@@ -147,7 +143,11 @@ impl IModule for BeamWeaponModule {
                 0
             };
         
-        effects.add_visual(context.ship_id, layer, SpriteVisual::new(context.get_render_position() + weapon_sprite.center, self.rotation, weapon_sprite));
+        effects.add_visual(
+            context.ship_id, layer,
+            SpriteVisual::new(
+                context.get_render_position() + weapon_sprite.center,
+                self.rotation, weapon_sprite));
     }
     
     #[cfg(feature = "client")]

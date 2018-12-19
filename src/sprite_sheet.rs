@@ -2,8 +2,8 @@ use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 use num::Float;
 
-use graphics::{Context, ImageSize};
-use opengl_graphics::{GlGraphics, Texture};
+use ggez::{Context, GameResult};
+use ggez::graphics::{self, DrawParam, Image, Point2, Rect};
 
 use asset_store::SpriteInfo;
 use vec::{Vec2, Vec2f};
@@ -16,10 +16,11 @@ pub enum SpriteAnimation {
 
 pub struct SpriteSheet {
     // Texture
-    texture: Rc<Texture>,
+    texture: Rc<Image>,
     
     // Sprite sheet info
-    columns: u8,
+    rows: u32,
+    columns: u32,
     frame_width: u32,
     frame_height: u32,
     
@@ -38,16 +39,18 @@ pub struct SpriteSheet {
 
 impl SpriteSheet {
     pub fn new(sprite_info: &SpriteInfo) -> SpriteSheet {
-        let (texture_width, texture_height) = sprite_info.texture.get_size();
+        let sheet_width = sprite_info.texture.width();
+        let sheet_height = sprite_info.texture.height();
         
-        let columns = sprite_info.columns;
-        let rows = sprite_info.rows;
+        let columns = sprite_info.columns as u32;
+        let rows = sprite_info.rows as u32;
         
         SpriteSheet {
             texture: sprite_info.texture.clone(),
+            rows: rows,
             columns: columns,
-            frame_width: texture_width/(columns as u32),
-            frame_height: texture_height/(rows as u32),
+            frame_width: sheet_width / columns,
+            frame_height: sheet_height / rows,
             current_frame: 0,
             animations: VecDeque::new(),
             anim_map: sprite_info.animations.clone(),
@@ -85,7 +88,9 @@ impl SpriteSheet {
         self.animations.push_back(SpriteAnimation::Stay(start, end, frame_interval.0));
     }
     
-    pub fn draw(&mut self, context: &Context, gl: &mut GlGraphics, x: f64, y: f64, rotation: f64, time: f64) {
+    pub fn draw(&mut self, ctx: &mut Context,
+                x: f64, y: f64, rotation: f64, time: f64) -> GameResult<()>
+    {
         let mut anim_done = false;
         match self.animations.front() {
             Some(animation) =>
@@ -98,7 +103,7 @@ impl SpriteSheet {
                             } else {
                                 anim_done = true;
                             }
-                            self.draw_current_frame(context, gl, x, y, rotation);
+                            self.draw_current_frame(ctx, x, y, rotation)?;
                         }
                     },
                     SpriteAnimation::Loop(start_time, end_time, start_frame, end_frame, interval) => {
@@ -111,7 +116,7 @@ impl SpriteSheet {
                             } else {
                                 anim_done = true;
                             }
-                            self.draw_current_frame(context, gl, x, y, rotation);
+                            self.draw_current_frame(ctx, x, y, rotation)?;
                         }
                     },
                     SpriteAnimation::Stay(start_time, end_time, frame) => {
@@ -121,7 +126,7 @@ impl SpriteSheet {
                             } else {
                                 anim_done = true;
                             }
-                            self.draw_current_frame(context, gl, x, y, rotation);
+                            self.draw_current_frame(ctx, x, y, rotation)?;
                         }
                     },
                 },
@@ -131,24 +136,29 @@ impl SpriteSheet {
         if anim_done {
             self.animations.pop_front();
         }
+
+        Ok(())
     }
     
-    fn draw_current_frame(&self, context: &Context, gl: &mut GlGraphics, x: f64, y: f64, rotation: f64) {
-        use graphics::*;
-    
-        let source_x = ((self.current_frame % (self.columns as u32)) as f64) * (self.frame_width as f64);
-        let source_y = ((self.current_frame / (self.columns as u32)) as f64) * (self.frame_height as f64);
-        
-        let source_end_x = source_x + (self.frame_width as f64);
-        let source_end_y = source_y + (self.frame_height as f64);
-        
-        let mut context = context.trans(x, y)
-                                 .rot_rad(rotation)
-                                 .trans(-self.center.x, -self.center.y);
-        
-        Image::new()
-            .src_rect([source_x as i32, source_y as i32, self.frame_width as i32, self.frame_height as i32])
-            .draw(&*self.texture, &context.draw_state, context.transform, gl);
+    fn draw_current_frame(&self, ctx: &mut Context,
+                          x: f64, y: f64, rotation: f64) -> GameResult<()>
+    {
+        let frame_w = 1.0 / (self.columns as f32);
+        let frame_h = 1.0 / (self.rows as f32);
+        let src_x = ((self.current_frame % self.columns) as f32) * frame_w;
+        let src_y = ((self.current_frame / self.columns) as f32) * frame_h;
+
+        graphics::draw_ex(
+            ctx, &*self.texture,
+            DrawParam {
+                offset: Point2::new(self.center.x as f32, self.center.y as f32),
+                dest: Point2::new(x as f32, y as f32),
+                src: Rect::new(src_x, src_y, frame_w, frame_h),
+				rotation: rotation as f32,
+                ..Default::default()
+            });
+
+        Ok(())
     }
     
     pub fn set_frame(&mut self, frame: u32) {

@@ -1,12 +1,8 @@
-use std::rc::Rc;
-use std::cell::RefCell;
-use std::path::Path;
+use ggez::{Context, GameResult};
+use ggez::graphics::{self, Image, Point2};
+use ggez::event::{Event, Keycode, MouseButton};
 
-use glutin_window::GlutinWindow;
-use piston::event_loop::Events;
-use graphics::{Context, ImageSize};
-use piston::input::*;
-use opengl_graphics::{GlGraphics, Texture};
+use game_state::GameState;
 
 #[derive(PartialEq)]
 pub enum MainMenuSelection {
@@ -16,119 +12,72 @@ pub enum MainMenuSelection {
 
 pub struct MainMenu {
     selected: u8,
-    done: bool,
 
     mouse_x: f64,
     mouse_y: f64,
 
     // Textures
-    bg_texture: Texture,
-    multiplayer_texture: Texture,
-    exit_texture: Texture,
+    bg_texture: Image,
+    multiplayer_texture: Image,
+    exit_texture: Image,
 }
 
 impl MainMenu {
-    pub fn new() -> MainMenu {
-        MainMenu {
+    pub fn new(ctx: &mut Context) -> GameResult<MainMenu> {
+        Ok(MainMenu {
             selected: 0,
-            done: false,
             mouse_x: 0.0,
             mouse_y: 0.0,
-            bg_texture: Texture::from_path(&Path::new("content/textures/gui/main_menu.png")).unwrap(),
-            multiplayer_texture: Texture::from_path(&Path::new("content/textures/gui/multiplayer.png")).unwrap(),
-            exit_texture: Texture::from_path(&Path::new("content/textures/gui/exit.png")).unwrap(),
-        }
+
+            bg_texture: Image::new(ctx, "/textures/gui/main_menu.png")?,
+            multiplayer_texture: Image::new(ctx, "/textures/gui/multiplayer.png")?,
+            exit_texture: Image::new(ctx, "/textures/gui/exit.png")?,
+        })
     }
 
-    pub fn run<F>(mut self, window: &Rc<RefCell<GlutinWindow>>, gl: &mut GlGraphics, mut f: F)
-        where
-            F: FnMut(&Rc<RefCell<GlutinWindow>>, &mut GlGraphics, &Texture, MainMenuSelection) -> bool
-    {
-        // Main loop
-        for e in Events::events(window.clone()) {
-            use piston::event_loop as event;
-            use piston::input;
-            use piston::event_loop::*;
-
-            let e: input::Event<input::Input> = e;
-
-            self.event(&e);
-
-            // Render GUI
-            e.render(|args| {
-                gl.draw(args.viewport(), |c, gl| {
-                    self.draw(&c, gl);
-                });
-            });
-
-            if self.done {
-                let menu_selection =
-                    match self.selected {
-                        0 => MainMenuSelection::Multiplayer,
-                        1 => MainMenuSelection::Exit,
-                        _ => panic!("Invalid main menu selection"),
-                    };
-                if !f(window, gl, &self.bg_texture, menu_selection) {
-                    break;
-                }
-                self.done = false;
-            }
-        }
-    }
-
-    pub fn event<E: GenericEvent>(&mut self, e: &E) {
-        use piston::event_loop::*;
-        
-        e.mouse_cursor(|x, y| {
-            self.on_mouse_moved(x, y);
-        });
-        e.press(|button| {
-            match button {
-                Button::Keyboard(key) => self.on_key_pressed(key), 
-                Button::Mouse(button) => {
-                    self.on_mouse_pressed(button);
-                },
-                _ => { },
-            }
-        });
-    }
-
-    fn on_key_pressed(&mut self, key: keyboard::Key) {
-        use piston::input::keyboard::Key;
+    pub fn on_key_pressed(&mut self, key: Keycode) -> Option<MainMenuSelection> {
         match key {
-            Key::Up if self.selected > 0 => { self.selected -= 1; },
-            Key::Up if self.selected == 0 => { self.selected = 1; },
-            Key::Down if self.selected < 1 => { self.selected += 1; },
-            Key::Down if self.selected == 1 => { self.selected = 0; },
-            Key::Return => { self.done = true; },
-            _ => {},
+            Keycode::Up if self.selected > 0 => { self.selected -= 1; },
+            Keycode::Up if self.selected == 0 => { self.selected = 1; },
+            Keycode::Down if self.selected < 1 => { self.selected += 1; },
+            Keycode::Down if self.selected == 1 => { self.selected = 0; },
+            Keycode::Return => { return Some(self.get_selection()); },
+            _ => { },
+        }
+
+        None
+    }
+
+    pub fn on_mouse_left_pressed(&mut self) -> Option<MainMenuSelection> {
+        if self.is_mouse_over_button().is_some() {
+            Some(self.get_selection())
+        } else {
+            None
         }
     }
 
-    fn on_mouse_pressed(&mut self, button: mouse::MouseButton) {
-        match button {
-            mouse::MouseButton::Left => {
-                if self.is_mouse_over_button() == 0 {
-                    self.done = true;
-                } else if self.is_mouse_over_button() == 1 {
-                    self.done = true;
-                } else {}
-            },
-            mouse::MouseButton::Right => {},
-            _ => {},
-        }
-    }
-
-    fn on_mouse_moved(&mut self, x: f64, y: f64) {
+    pub fn on_mouse_moved(&mut self, x: f64, y: f64) {
         self.mouse_x = x;
         self.mouse_y = y;
 
-        self.selected = self.is_mouse_over_button();
+        if let Some(s) = self.is_mouse_over_button() {
+            self.selected = s;
+        }
     }
 
-    fn is_mouse_over_button(&mut self) -> u8 {
-        let (m_width, m_height) = self.multiplayer_texture.get_size();
-        let (e_width, e_height) = self.exit_texture.get_size();
+    fn get_selection(&self) -> MainMenuSelection {
+        match self.selected {
+            0 => MainMenuSelection::Multiplayer,
+            1 => MainMenuSelection::Exit,
+            _ => panic!("Invalid main menu selection"),
+        }
+    }
+
+    fn is_mouse_over_button(&mut self) -> Option<u8> {
+        let m_width = self.multiplayer_texture.width();
+        let m_height = self.multiplayer_texture.height();
+        let e_width = self.exit_texture.width();
+        let e_height = self.exit_texture.height();
 
         let mut selected: u8; // is the "button" selected
         selected = self.selected;
@@ -136,35 +85,63 @@ impl MainMenu {
         if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (m_width as f64)) && 
             self.mouse_y > 300.0 && self.mouse_y < (300.0 + (m_height as f64)) {
             selected = 0;
+            Some(0)
         } else if self.mouse_x > 550.0 && self.mouse_x < (550.0 + (e_width as f64)) && 
             self.mouse_y > 400.0 && self.mouse_y < (400.0 + (e_height as f64)) {
             selected = 1;
+            Some(1)
+        } else {
+            None
         }
+    }
+}
 
-        selected
+impl GameState for MainMenu {
+    type Context = ();
+    type Action = MainMenuSelection;
+
+    fn event(&mut self, _gtx: &mut Self::Context, e: &Event) -> Option<Self::Action> {
+        use Event::*;
+
+        match *e {
+            KeyDown { keycode: Some(keycode), .. } => {
+                self.on_key_pressed(keycode)
+            }
+            MouseMotion { x, y, .. } => {
+                self.on_mouse_moved(x as f64, y as f64);
+                None
+            }
+            MouseButtonUp { mouse_btn, .. } => {
+                match mouse_btn {
+                    MouseButton::Left => self.on_mouse_left_pressed(),
+                    _ => { None },
+                }
+            }
+            _ => None,
+        }
     }
 
-    fn draw(&mut self, context: &Context, gl: &mut GlGraphics) {
-        use graphics::*;
-        
-        // Clear the screen
-        clear([0.0; 4], gl);
+    fn draw(&mut self, _gtx: &mut Self::Context, ctx: &mut Context) -> GameResult<()> {
+        graphics::draw(ctx, &self.bg_texture, Point2::new(0.0, 0.0), 0.0)?;
+        //graphics::draw(ctx, &self.multiplayer_texture, Point2::new(550.0, 300.0), 0.0)?;
+        graphics::draw_ex(
+            ctx, &self.multiplayer_texture, graphics::DrawParam {
+                dest: Point2::new(550.0, 300.0),
+                src: graphics::Rect::new(0.0, 0.0, 1.0, 1.0),
+                ..Default::default()
+            })?;
+        graphics::draw(ctx, &self.exit_texture, Point2::new(550.0, 400.0), 0.0)?;
 
-        image(&self.bg_texture, context.transform, gl);
-        image(&self.multiplayer_texture, context.trans(550.0, 300.0).transform, gl);
-        image(&self.exit_texture, context.trans(550.0, 400.0).transform, gl);
-
+        // Draw selected text
+        graphics::set_color(ctx, [1.0, 0.0, 0.0, 1.0].into());
         if self.selected == 0 {
-            let context = context.trans(550.0, 300.0);
-            Image::new()
-                .color([1.0, 0.0, 0.0, 1.0])
-                .draw(&self.multiplayer_texture, &context.draw_state, context.transform, gl);
+            graphics::draw(ctx, &self.multiplayer_texture, Point2::new(550.0, 300.0), 0.0)?;
         }
         if self.selected == 1 {
-            let context = context.trans(550.0, 400.0);
-            Image::new()
-                .color([1.0, 0.0, 0.0, 1.0])
-                .draw(&self.exit_texture, &context.draw_state, context.transform, gl);
+            graphics::draw(ctx, &self.exit_texture, Point2::new(550.0, 400.0), 0.0)?;
         }
+        graphics::set_color(ctx, [1.0, 1.0, 1.0, 1.0].into());
+
+        Ok(())
     }
 }

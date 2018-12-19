@@ -7,7 +7,7 @@ use std::str::FromStr;
 
 pub type Vec2f = Vec2<f64>;
 
-#[derive(Clone, Copy, RustcEncodable, RustcDecodable, Debug)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
 pub struct Vec2<T> {
     pub x: T,
     pub y: T,

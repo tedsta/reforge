@@ -1,4 +1,4 @@
-#[derive(Copy, Clone, RustcEncodable, RustcDecodable)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub enum ClientAction {
     JoinSector,
     JoinStation,

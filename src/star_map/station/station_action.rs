@@ -2,7 +2,7 @@ use sector_data::SectorId;
 
 use super::ShipEditAction;
 
-#[derive(Clone, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum StationAction {
     Jump(SectorId),
     ShipEdit(ShipEditAction),

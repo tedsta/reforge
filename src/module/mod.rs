@@ -4,9 +4,9 @@ use std::cell::RefCell;
 use std::ops::{Deref, DerefMut};
 use rand;
 use rand::Rng;
-use std::marker::Reflect;
+//use std::marker::Reflect;
 
-use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
+use serde::{Serialize, Serializer, Deserialize, Deserializer};
 
 use battle_context::BattleContext;
 use net::{InPacket, OutPacket};
@@ -14,10 +14,6 @@ use ship::{Ship, ShipId, ShipIndex, ShipState, ShipStored};
 use sim::SimEvents;
 use vec::{Vec2, Vec2f};
 
-#[cfg(feature = "client")]
-use graphics::Context;
-#[cfg(feature = "client")]
-use opengl_graphics::GlGraphics;
 #[cfg(feature = "client")]
 use sim::SimEffects;
 #[cfg(feature = "client")]
@@ -118,7 +114,7 @@ pub trait IModule : Send {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Clone, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ModulePlans {
     pub active: bool,
     pub target: Option<Target>,
@@ -146,7 +142,7 @@ impl ModulePlans {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Copy, Clone, RustcEncodable, RustcDecodable)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct ModuleStats {
     pub hp: u8,
     pub max_hp: u8,
@@ -176,7 +172,7 @@ impl ModuleStats {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Copy, Clone, PartialEq, RustcEncodable, RustcDecodable)]
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ModuleIndex(pub u32);
 
 impl ModuleIndex {
@@ -195,7 +191,7 @@ impl ModuleIndex {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Clone, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ModuleShape {
     grid: Vec<Vec<u8>>,
     side: u8, // Has to be a square, because squares are easy to rotate
@@ -234,7 +230,7 @@ impl ModuleShape {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(RustcEncodable, RustcDecodable)]
+#[derive(Serialize, Deserialize)]
 pub struct Module {
     pub model: ModelIndex,
 
@@ -463,7 +459,7 @@ impl Module {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(RustcEncodable, RustcDecodable)]
+#[derive(Serialize, Deserialize)]
 pub struct ModuleStored {
     pub model: ModelIndex,
 
@@ -591,7 +587,7 @@ impl ModuleStored {
 
 pub type ModuleInnerBox = Box<IModule+'static>;
 
-#[derive(Copy, Clone, Debug, PartialEq, RustcEncodable, RustcDecodable)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ModuleClass {
     ProjectileWeapon,
     Shield,
@@ -604,84 +600,147 @@ pub enum ModuleClass {
     VolleyMissile,
 }
 
-impl Decodable for ModuleInnerBox {
-    fn decode<D: Decoder>(d: &mut D) -> Result<ModuleInnerBox, D::Error> {
+impl<'de> Deserialize<'de> for ModuleInnerBox {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         use self::ModuleClass::*;
-        
-        let module_class: ModuleClass = try!(Decodable::decode(d));
-        
-        match module_class {
-            ProjectileWeapon =>
-                Ok(Box::new(try!(<ProjectileWeaponModule as Decodable>::decode(d)))),
-            Shield =>
-                Ok(Box::new(try!(<ShieldModule as Decodable>::decode(d)))),
-            Engine => 
-                Ok(Box::new(try!(<EngineModule as Decodable>::decode(d)))),
-            Solar =>
-                Ok(Box::new(try!(<SolarModule as Decodable>::decode(d)))),
-            Command =>
-                Ok(Box::new(try!(<CommandModule as Decodable>::decode(d)))),
-            Cabin =>
-                Ok(Box::new(try!(<CabinModule as Decodable>::decode(d)))),
-            BeamWeapon =>
-                Ok(Box::new(try!(<BeamWeaponModule as Decodable>::decode(d)))),
-            Repair =>
-                Ok(Box::new(try!(<RepairModule as Decodable>::decode(d)))),
-            VolleyMissile =>
-                Ok(Box::new(try!(<VolleyMissileModule as Decodable>::decode(d)))),
+        use serde::de::{self, SeqAccess, Visitor};
+        use std::fmt;
+
+        struct ModuleInnerBoxVisitor;
+        impl<'de> Visitor<'de> for ModuleInnerBoxVisitor {
+            type Value = ModuleInnerBox;
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "Expected a seq containing exactly 2 elements")
+            }
+            fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Self::Value, A::Error> {
+                let module_class: ModuleClass = seq.next_element()?.unwrap();
+                
+                match module_class {
+                    ProjectileWeapon => {
+                        seq.next_element::<ProjectileWeaponModule>()?
+                            .map(|x| Box::new(x) as Box<dyn IModule>)
+                            .ok_or_else(|| {
+                                de::Error::custom("Failed to deserialize EngineModule")
+                            })
+                    },
+                    Shield => {
+                        seq.next_element::<ShieldModule>()?
+                            .map(|x| Box::new(x) as Box<dyn IModule>)
+                            .ok_or_else(|| {
+                                de::Error::custom("Failed to deserialize EngineModule")
+                            })
+                    },
+                    Engine => {
+                        let result = seq.next_element::<EngineModule>()?
+                            .map(|x| Box::new(x) as Box<dyn IModule>)
+                            .ok_or_else(|| {
+                                de::Error::custom("Failed to deserialize EngineModule")
+                            });
+                        result
+                    },
+                    Solar => {
+                        seq.next_element::<SolarModule>()?
+                            .map(|x| Box::new(x) as Box<dyn IModule>)
+                            .ok_or_else(|| {
+                                de::Error::custom("Failed to deserialize EngineModule")
+                            })
+                    },
+                    Command => {
+                        seq.next_element::<CommandModule>()?
+                            .map(|x| Box::new(x) as Box<dyn IModule>)
+                            .ok_or_else(|| {
+                                de::Error::custom("Failed to deserialize EngineModule")
+                            })
+                    },
+                    Cabin => {
+                        seq.next_element::<CabinModule>()?
+                            .map(|x| Box::new(x) as Box<dyn IModule>)
+                            .ok_or_else(|| {
+                                de::Error::custom("Failed to deserialize EngineModule")
+                            })
+                    },
+                    BeamWeapon => {
+                        seq.next_element::<BeamWeaponModule>()?
+                            .map(|x| Box::new(x) as Box<dyn IModule>)
+                            .ok_or_else(|| {
+                                de::Error::custom("Failed to deserialize EngineModule")
+                            })
+                    },
+                    Repair => {
+                        seq.next_element::<RepairModule>()?
+                            .map(|x| Box::new(x) as Box<dyn IModule>)
+                            .ok_or_else(|| {
+                                de::Error::custom("Failed to deserialize EngineModule")
+                            })
+                    },
+                    VolleyMissile => {
+                        seq.next_element::<VolleyMissileModule>()?
+                            .map(|x| Box::new(x) as Box<dyn IModule>)
+                            .ok_or_else(|| {
+                                de::Error::custom("Failed to deserialize EngineModule")
+                            })
+                    },
+                }
+            }
         }
+
+        d.deserialize_tuple(2, ModuleInnerBoxVisitor)
     }
 }
 
-impl Encodable for ModuleInnerBox {
-    fn encode<S: Encoder>(&self, s: &mut S) -> Result<(), S::Error> {
+impl Serialize for ModuleInnerBox {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         use std::mem;
         use std::raw;
+        use serde::ser::SerializeTuple;
         
         use self::ModuleClass::*;
+
+        let mut tup = s.serialize_tuple(2)?;
         
         let module_class = self.get_class();
-    
-        try!(module_class.encode(s));
+        tup.serialize_element(&module_class)?;
         
         match module_class {
             ProjectileWeapon => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
-                try!(<ProjectileWeaponModule as Encodable>::encode(mem::transmute(to.data), s));
+                tup.serialize_element(mem::transmute::<_, &ProjectileWeaponModule>(to.data))?;
             },
             Shield => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
-                try!(<ShieldModule as Encodable>::encode(mem::transmute(to.data), s));
+                tup.serialize_element(mem::transmute::<_, &ShieldModule>(to.data))?;
             },
             Engine => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
-                try!(<EngineModule as Encodable>::encode(mem::transmute(to.data), s));
+                let module: &EngineModule = mem::transmute(to.data);
+                tup.serialize_element(module)?;
             },
             Solar => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
-                try!(<SolarModule as Encodable>::encode(mem::transmute(to.data), s));
+                tup.serialize_element(mem::transmute::<_, &SolarModule>(to.data))?;
             },
             Command => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
-                try!(<CommandModule as Encodable>::encode(mem::transmute(to.data), s));
+                tup.serialize_element(mem::transmute::<_, &CommandModule>(to.data))?;
             },
             Cabin => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
-                try!(<CabinModule as Encodable>::encode(mem::transmute(to.data), s));
+                tup.serialize_element(mem::transmute::<_, &CabinModule>(to.data))?;
             },
             BeamWeapon => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
-                try!(<BeamWeaponModule as Encodable>::encode(mem::transmute(to.data), s));
+                tup.serialize_element(mem::transmute::<_, &BeamWeaponModule>(to.data))?;
             },
             Repair => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
-                try!(<RepairModule as Encodable>::encode(mem::transmute(to.data), s));
+                tup.serialize_element(mem::transmute::<_, &RepairModule>(to.data))?;
             },
             VolleyMissile => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
-                try!(<VolleyMissileModule as Encodable>::encode(mem::transmute(to.data), s));
+                tup.serialize_element(mem::transmute::<_, &VolleyMissileModule>(to.data))?;
             },
         }
-        Ok(())
+
+        tup.end()
     }
 }

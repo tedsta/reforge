@@ -13,7 +13,7 @@ use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(feature = "client")]
 use asset_store::AssetStore;
 
-#[derive(RustcEncodable, RustcDecodable, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct RepairModule;
 
 impl RepairModule {

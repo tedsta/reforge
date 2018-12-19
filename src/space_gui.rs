@@ -4,34 +4,33 @@ use std::rc::Rc;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
-//use piston::event_loop::{Events, GenericEvent, RenderArgs};
-use piston::event_loop::*;
-use graphics::{Context, Rectangle};
-use graphics::math::Matrix2d;
-use graphics::types::Color;
-use piston::input::*;
-use opengl_graphics::{GlGraphics, Texture};
-use opengl_graphics::glyph_cache::GlyphCache;
+use ggez::{
+    Context, GameResult,
+    event::{Event, Keycode, MouseButton},
+    graphics::{self, DrawMode, DrawParam, Image, Point2, Rect},
+};
 
 use asset_store::AssetStore;
 use battle_context::BattleContext;
-use chat::{ChatGui, ChatGuiAction};
+//use chat::{ChatGui, ChatGuiAction};
+use client_context::ReforgeClientContext;
 use gui::{TextButton, SpriteButton};
 use module;
 use module::{IModule, Module, ModuleIndex};
-use nav_map_gui::{NavMapGui, NavMapGuiAction};
+//use nav_map_gui::{NavMapGui, NavMapGuiAction};
 use net::ClientId;
 use sector_data::SectorData;
 use ship::{Ship, ShipId, ShipIndex, ShipPlans, ShipState};
 use sim::SimEffects;
 use star_map::{StarMapGui, StarMapGuiAction};
+use util::with_translate;
 use vec::{Vec2, Vec2f};
 
-static SHIP_OFFSET_X: f64 = 80.0;
-static SHIP_OFFSET_Y: f64 = 170.0;
+static SHIP_OFFSET_X: f32 = 80.0;
+static SHIP_OFFSET_Y: f32 = 170.0;
 
-static ENEMY_OFFSET_X: f64 = 80.0;
-static ENEMY_OFFSET_Y: f64 = 50.0;
+static ENEMY_OFFSET_X: f32 = 80.0;
+static ENEMY_OFFSET_Y: f32 = 50.0;
 
 pub enum SpaceGuiAction {
     Chat(String),
@@ -39,17 +38,17 @@ pub enum SpaceGuiAction {
 }
 
 pub struct ModuleIcons {
-    pub power_on_texture: Texture,
-    pub power_off_texture: Texture,
+    pub power_on_texture: Image,
+    pub power_off_texture: Image,
 }
 
 pub struct StatsLabels {
-    hp_texture: Texture,
-    shield_texture: Texture,
-    power_texture: Texture,
+    hp_texture: Image,
+    shield_texture: Image,
+    power_texture: Image,
 }
 
-pub struct SpaceGui<'a> {
+pub struct SpaceGui {
     // Plans for player's ship
     pub plans: ShipPlans,
 
@@ -65,18 +64,18 @@ pub struct SpaceGui<'a> {
     mouse_pos: Vec2f,
     
     // Textures
-    overlay_hud: Texture,
+    overlay_hud: Image,
     
-    small_ship_icon: Texture,
-    medium_ship_icon: Texture,
-    big_ship_icon: Texture,
+    small_ship_icon: Image,
+    medium_ship_icon: Image,
+    big_ship_icon: Image,
     
     stats_labels: StatsLabels,
     
     module_icons: ModuleIcons,
     
     // Space background
-    space_bg: SpaceStars,
+    //space_bg: SpaceStars,
     
     // Star map stuff
     star_map_button: SpriteButton,
@@ -85,13 +84,13 @@ pub struct SpaceGui<'a> {
     
     // Nav map stuff
     nav_map_button: SpriteButton,
-    nav_map_gui: NavMapGui,
+    //nav_map_gui: NavMapGui,
     show_nav_map: bool,
     
     // Chat
     chat_button: SpriteButton,
     chat_gui_pos: Vec2f,
-    pub chat_gui: &'a mut ChatGui,
+    //pub chat_gui: &'a mut ChatGui,
     
     // Logout button
     logout_button: SpriteButton,
@@ -100,18 +99,18 @@ pub struct SpaceGui<'a> {
     target_icons: Vec<TargetIcon>,
 }
 
-impl<'a> SpaceGui<'a> {
-    pub fn new(asset_store: &AssetStore,
-               context: &BattleContext,
-               chat_gui: &'a mut ChatGui,
-               sectors: Vec<SectorData>,
-               my_ship: ShipIndex) -> SpaceGui<'a> {
+impl SpaceGui {
+    pub fn new(gtx: &mut ReforgeClientContext,
+               bc: &BattleContext,
+               ctx: &mut Context,
+               //chat_gui: &'a mut ChatGui,
+               my_ship: ShipIndex) -> GameResult<SpaceGui> {
         // Set up the render area
         //let target = RenderTexture::new(500, 500, false).expect("Failed to create render texture");
         //let texture = target.get_texture().expect("Failed to get render texture's texture");
         let x = 1280.0 - 5.0 - 560.0;
         let y = 128.0;
-        let ship = context.ships_iter().filter(|ship| ship.index != my_ship).next().map(|ship| ship.index);
+        let ship = bc.ships_iter().filter(|ship| ship.index != my_ship).next().map(|ship| ship.index);
         let render_area = ShipRenderArea {
             ship: ship,
             x: x,
@@ -123,93 +122,102 @@ impl<'a> SpaceGui<'a> {
         };
 
         let target_icons =
-            context.ships_iter()
+            bc.ships_iter()
             .filter(|ship| ship.index != my_ship)
             .take(5)
             .map(|ship| TargetIcon { ship: ship.index })
             .collect();
     
-        SpaceGui {
-            plans: my_ship.get(context).create_plans(),
+        Ok(SpaceGui {
+            plans: my_ship.get(bc).create_plans(),
             render_area: render_area,
             selection: None,
             beam_targeting_state: None,
             mouse_pos: Vec2::new(0.0, 0.0),
             
-            overlay_hud: Texture::from_path(&Path::new("content/textures/gui/overlay_hud.png")).unwrap(),
+            overlay_hud: Image::new(ctx, "/textures/gui/overlay_hud.png")?,
             
-            small_ship_icon: Texture::from_path(&Path::new("content/textures/gui/small_target.png")).unwrap(),
-            medium_ship_icon: Texture::from_path(&Path::new("content/textures/gui/medium_target.png")).unwrap(),
-            big_ship_icon: Texture::from_path(&Path::new("content/textures/gui/big_target.png")).unwrap(),
+            small_ship_icon: Image::new(ctx, "/textures/gui/small_target.png")?,
+            medium_ship_icon: Image::new(ctx, "/textures/gui/medium_target.png")?,
+            big_ship_icon: Image::new(ctx, "/textures/gui/big_target.png")?,
             
             stats_labels: StatsLabels {
-                hp_texture: Texture::from_path(&Path::new("content/textures/gui/hp_text.png")).unwrap(),
-                shield_texture: Texture::from_path(&Path::new("content/textures/gui/shield_text.png")).unwrap(),
-                power_texture: Texture::from_path(&Path::new("content/textures/gui/power_text.png")).unwrap(),
+                hp_texture: Image::new(ctx, "/textures/gui/hp_text.png")?,
+                shield_texture: Image::new(ctx, "/textures/gui/shield_text.png")?,
+                power_texture: Image::new(ctx, "/textures/gui/power_text.png")?,
             },
             
             module_icons: ModuleIcons {
-                power_on_texture: Texture::from_path(&Path::new("content/textures/gui/power_on_icon.png")).unwrap(),
-                power_off_texture: Texture::from_path(&Path::new("content/textures/gui/power_off_icon.png")).unwrap(),
+                power_on_texture: Image::new(ctx, "/textures/gui/power_on_icon.png")?,
+                power_off_texture: Image::new(ctx, "/textures/gui/power_off_icon.png")?,
             },
             
-            space_bg: SpaceStars::new(),
+            //space_bg: SpaceStars::new(),
             
-            star_map_button: SpriteButton::new("content/textures/gui/starmap.png", 3, 1, [488.0, 1.0]),
-            star_map_gui: StarMapGui::new(sectors),
+            star_map_button: SpriteButton::new(ctx, "/textures/gui/starmap.png", 3, 1, [488.0, 1.0])?,
+            star_map_gui: StarMapGui::new(gtx)?,
             show_star_map: false,
             
-            nav_map_button: SpriteButton::new("content/textures/gui/target.png", 3, 1, [626.0, 7.0]),
-            nav_map_gui: NavMapGui::new(asset_store),
+            nav_map_button: SpriteButton::new(ctx, "/textures/gui/target.png", 3, 1, [626.0, 7.0])?,
+            //nav_map_gui: NavMapGui::new(&gtx.asset_store),
             show_nav_map: false,
             
-            chat_button: SpriteButton::new("content/textures/gui/chat.png", 3, 1, [86.0, 654.0]),
+            chat_button: SpriteButton::new(ctx, "/textures/gui/chat.png", 3, 1, [86.0, 654.0])?,
             chat_gui_pos: Vec2::new(437.0, 608.0),
-            chat_gui: chat_gui,
+            //chat_gui: chat_gui,
             
-            logout_button: SpriteButton::new("content/textures/gui/logout.png", 3, 1, [16.0, 14.0]),
+            logout_button: SpriteButton::new(ctx, "/textures/gui/logout.png", 3, 1, [16.0, 14.0])?,
             
             target_icons: target_icons,
-        }
+        })
     }
     
-    pub fn event<E: GenericEvent>(&mut self, bc: &mut BattleContext, e: &E, client_ship: ShipIndex, time: f64) -> Option<SpaceGuiAction> {
-        use piston::event_loop::*;
-        
+    pub fn event(
+        &mut self,
+        gtx: &mut ReforgeClientContext, bc: &mut BattleContext,
+        e: &Event, client_ship: ShipIndex, time: f64)
+        -> Option<SpaceGuiAction>
+    {
+        use Event::*;
+
         if client_ship.get(bc).state.get_hp() == 0 {
             return None;
         }
-    
-        e.mouse_cursor(|x, y| {
-            self.mouse_pos.x = x;
-            self.mouse_pos.y = y;
-        });
+
+        match *e {
+            MouseMotion { x, y, .. } => {
+                self.mouse_pos = Vec2::new(x as f64, y as f64);
+            },
+            _ => { },
+        }
         
-        if let Some(chat_action) = self.chat_gui.event(e, self.mouse_pos - self.chat_gui_pos) {
+        /*if let Some(chat_action) = self.chat_gui.event(e, self.mouse_pos - self.chat_gui_pos) {
             match chat_action {
                 ChatGuiAction::SendMsg(msg) => {
                     return Some(SpaceGuiAction::Chat(msg));
                 },
             }
-        }
+        }*/
         
-        self.chat_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
+        self.chat_button.event(e, self.mouse_pos);
         if self.chat_button.get_clicked() {
             // do something
         }
         
-        self.star_map_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
+        self.star_map_button.event(e, self.mouse_pos);
         if self.star_map_button.get_clicked() {
             self.show_star_map = !self.show_star_map;
         }
         
-        self.nav_map_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
+        /*self.nav_map_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
         if self.nav_map_button.get_clicked() {
             self.show_nav_map = !self.show_nav_map;
-        }
+        }*/
         
         if self.show_star_map {
-            if let Some(star_map_result) = self.star_map_gui.event(e, [self.mouse_pos.x - 200.0, self.mouse_pos.y - 200.0]) {
+            if let Some(star_map_result) = self.star_map_gui.event(
+                gtx, e, self.mouse_pos - Vec2::new(200.0, 200.0)
+            ) {
                 match star_map_result {
                     StarMapGuiAction::Jump(sector) => {
                         self.plans.target_sector = Some(sector);
@@ -221,7 +229,7 @@ impl<'a> SpaceGui<'a> {
                 }
             }
         } else if self.show_nav_map {
-            if let Some(nav_map_result) =
+            /*if let Some(nav_map_result) =
                 self.nav_map_gui.event(e, [self.mouse_pos.x - 200.0, self.mouse_pos.y - 200.0],
                                        bc, client_ship, time)
             {
@@ -230,25 +238,28 @@ impl<'a> SpaceGui<'a> {
                         self.show_nav_map = false;
                     },
                 }
-            }
+            }*/
         } else {
-            e.press(|button| {
-                match button {
-                    Button::Keyboard(key) => self.on_key_pressed(key), 
-                    Button::Mouse(button) => {
-                        let (mouse_x, mouse_y) = (self.mouse_pos.x, self.mouse_pos.y);
-                        match button {
-                            mouse::MouseButton::Left => self.on_mouse_left_pressed(bc, mouse_x, mouse_y, client_ship.get(bc)),
-                            mouse::MouseButton::Right => self.on_mouse_right_pressed(bc, mouse_x, mouse_y, client_ship.get(bc)),
-                            _ => {},
-                        }
-                    },
-                    _ => { },
+            match *e {
+                KeyDown { keycode: Some(keycode), .. } => {
+                    self.on_key_pressed(keycode);
+                },
+                MouseButtonDown { mouse_btn, .. } => {
+                    match mouse_btn {
+                        MouseButton::Left => {
+                            self.on_mouse_left_pressed(bc, self.mouse_pos, client_ship.get(bc));
+                        },
+                        MouseButton::Left => {
+                            self.on_mouse_right_pressed(bc, self.mouse_pos, client_ship.get(bc));
+                        },
+                        _ => { },
+                    }
                 }
-            });
+                _ => { }
+            }
         }
         
-        self.logout_button.event(e, [self.mouse_pos.x, self.mouse_pos.y]);
+        self.logout_button.event(e, self.mouse_pos);
         if self.logout_button.get_clicked() {
             return Some(SpaceGuiAction::Logout);
         }
@@ -258,23 +269,16 @@ impl<'a> SpaceGui<'a> {
     
     pub fn draw_simulating(
         &mut self,
+        gtx: &mut ReforgeClientContext,
         bc: &BattleContext,
-        context: &Context,
-        gl: &mut GlGraphics,
-        glyph_cache: &mut GlyphCache,
-        asset_store: &AssetStore,
+        ctx: &mut Context,
         sim_effects: &mut SimEffects,
         client_ship: &Ship,
         time: f64,
-        dt: f64
-    )
+        dt: f64)
+        -> GameResult<()>
     {
-        use graphics::*;
-        
-        // Clear the screen
-        clear([0.0; 4], gl);
-        
-        self.draw_screen(bc, context, gl, glyph_cache, asset_store, sim_effects, client_ship, time, dt);
+        self.draw_screen(gtx, bc, ctx, sim_effects, client_ship, time, dt)?;
         
         // Draw plan timer bar
         let plan_timer =
@@ -282,74 +286,77 @@ impl<'a> SpaceGui<'a> {
                 (2.5 + time) / 5.0
             } else {
                 (time - 2.5) / 5.0
-            };
+            } as f32;
+        graphics::set_color(ctx, [0.0, 0.0, 1.0, 0.5].into())?;
+        graphics::rectangle(ctx, DrawMode::Fill, Rect::new(550.0, 10.0, 100.0, 32.0))?;
+        graphics::set_color(ctx, [0.0, 0.0, 1.0, 1.0].into())?;
+        graphics::rectangle(ctx, DrawMode::Fill, Rect::new(550.0, 10.0, plan_timer * 100.0, 32.0))?;
         
-        Rectangle::new([0.0, 0.0, 1.0, 0.5])
-                .draw(
-                    [550.0, 10.0, 100.0, 32.0],
-                    &context.draw_state, context.transform,
-                    gl
-                );
-        Rectangle::new([0.0, 0.0, 1.0, 1.0])
-                .draw(
-                    [550.0, 10.0, plan_timer * 100.0, 32.0],
-                    &context.draw_state, context.transform,
-                    gl
-                );
-        
-        self.chat_gui.draw(&context.trans(self.chat_gui_pos.x, self.chat_gui_pos.y), gl, glyph_cache);
+        //self.chat_gui.draw(&ctx.trans(self.chat_gui_pos.x, self.chat_gui_pos.y), gl, glyph_cache);
         
         if self.show_star_map {
-            self.star_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache);
+            with_translate(ctx, Point2::new(200.0, 200.0), |ctx| {
+                self.star_map_gui.draw(gtx, ctx)
+            })?;
         }
         
         if self.show_nav_map {
-            self.nav_map_gui.draw(&context.trans(200.0, 200.0), gl, glyph_cache, bc, client_ship, time);
+            //self.nav_map_gui.draw(&ctx.trans(200.0, 200.0), gl, glyph_cache, bc, client_ship, time);
         }
+
+        Ok(())
     }
     
     fn draw_screen(
         &mut self,
+        gtx: &mut ReforgeClientContext,
         bc: &BattleContext,
-        context: &Context,
-        gl: &mut GlGraphics,
-        glyph_cache: &mut GlyphCache,
-        asset_store: &AssetStore,
+        ctx: &mut Context,
         sim_effects: &mut SimEffects,
         client_ship: &Ship,
         time: f64,
-        dt: f64,
-    )
+        dt: f64)
+        -> GameResult<()>
     {
         use graphics::*;
         // Draw the space background
-        self.space_bg.update(dt);
-        self.space_bg.draw(context, gl);
+        // TODO
+        //self.space_bg.update(dt);
+        //self.space_bg.draw(ctx, gl);
         
-        image(&self.overlay_hud, context.transform, gl);
+        graphics::draw_ex(ctx, &self.overlay_hud, Default::default())?;
         
         // Draw player ship
-        draw_ship(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, asset_store, sim_effects, client_ship, time);
-        client_ship.draw_module_powered_icons(&context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y), gl, &self.module_icons, &self.plans);
-        draw_stats(context, gl, glyph_cache, &self.stats_labels, &self.plans, client_ship, true);
+        with_translate(ctx, Point2::new(SHIP_OFFSET_X, SHIP_OFFSET_Y), |ctx| -> GameResult<()> {
+            draw_ship(gtx, ctx, sim_effects, client_ship, time);
+            client_ship.draw_module_powered_icons(ctx, &self.module_icons, &self.plans);
+            Ok(())
+        })?;
+        draw_stats(ctx, &self.stats_labels, &self.plans, client_ship, true);
     
         let mut enemy_alive = false;
         if let Some(ship) = self.render_area.ship {
             // TODO clear render texture
             
-            Rectangle::new([1.0, 0.7, 0.2, 0.5])
-                .draw(
-                    [self.render_area.x, self.render_area.y, self.render_area.width, self.render_area.height],
-                    &context.draw_state, context.transform,
-                    gl
-                );
+            graphics::set_color(ctx, [1.0, 0.7, 0.2, 0.5].into())?;
+            graphics::rectangle(
+                ctx, DrawMode::Fill,
+                Rect::new(self.render_area.x, self.render_area.y,
+                          self.render_area.width, self.render_area.height))?;
+            graphics::set_color(ctx, [1.0; 4].into())?;
         
-            {
-                let context = context.trans(self.render_area.x, self.render_area.y);
-                
-                draw_ship(&context.trans(ENEMY_OFFSET_X, ENEMY_OFFSET_Y), gl, asset_store, sim_effects, ship.get(bc), time);
-                draw_stats(&context.trans(0.0, 400.0), gl, glyph_cache, &self.stats_labels, &self.plans, ship.get(bc), false);
-            }
+            with_translate(
+                ctx, Point2::new(self.render_area.x, self.render_area.y),
+                |ctx| -> GameResult<()> {
+                    with_translate(
+                        ctx, Point2::new(ENEMY_OFFSET_X, ENEMY_OFFSET_Y),
+                        |ctx| draw_ship(gtx, ctx, sim_effects, ship.get(bc), time))?;
+                    with_translate(
+                        ctx, Point2::new(0.0, 400.0),
+                        |ctx| draw_stats(
+                            ctx, &self.stats_labels, &self.plans, ship.get(bc), false))?;
+                    Ok(())
+                })?;
             
             // TODO draw render texture
         
@@ -358,7 +365,7 @@ impl<'a> SpaceGui<'a> {
             }
         }
         
-        if let Some(ref selection) = self.selection {
+        /*if let Some(ref selection) = self.selection {
             let &(selected_module, ref target_mode) = selection;
             
             let selected_module = selected_module.get(client_ship);
@@ -367,7 +374,7 @@ impl<'a> SpaceGui<'a> {
             {
                 let Vec2{x: module_x, y: module_y} = selected_module.get_render_position();
                 
-                let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
+                let ctx = ctx.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
                 
                 for x in (0..selected_module.shape.side()) {
                     for y in (0..selected_module.shape.side()) {
@@ -378,14 +385,14 @@ impl<'a> SpaceGui<'a> {
                                 Rectangle::new([0.0, 1.0, 0.0, 0.5])
                                     .draw(
                                         [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                        &context.draw_state, context.transform,
+                                        &ctx.draw_state, ctx.transform,
                                         gl
                                     );
                             } else if self.plans.can_plan_activate_module(&client_ship.state, selected_module) {
                                 Rectangle::new([1.0, 1.0, 0.0, 0.5])
                                     .draw(
                                         [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                        &context.draw_state, context.transform,
+                                        &ctx.draw_state, ctx.transform,
                                         gl
                                     );
                             }
@@ -400,7 +407,7 @@ impl<'a> SpaceGui<'a> {
             // Draw beam targeting visual
             match target_mode {
                 &module::TargetMode::Beam(beam_length) => {
-                    let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
+                    let ctx = ctx.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
                     
                     if let Some(ship) = self.render_area.ship {
                         let beam = self.beam_targeting_state.map(|beam_start| {
@@ -426,7 +433,7 @@ impl<'a> SpaceGui<'a> {
                             
                             circle.draw(
                                 [circle_pos.x - radius, circle_pos.y - radius, size, size],
-                                &context.draw_state, context.transform,
+                                &ctx.draw_state, ctx.transform,
                                 gl
                             );
                         });
@@ -435,7 +442,7 @@ impl<'a> SpaceGui<'a> {
                             Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
                                 .draw(
                                     [beam_start.x, beam_start.y, beam_end.x, beam_end.y],
-                                    &context.draw_state, context.transform,
+                                    &ctx.draw_state, ctx.transform,
                                     gl
                                 );
                         }
@@ -450,7 +457,7 @@ impl<'a> SpaceGui<'a> {
                         apply_to_module_if_point_inside(ship.get(bc), x, y, |_, _, module| {
                             let Vec2{x: module_x, y: module_y} = module.get_render_position();
                             
-                            let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
+                            let ctx = ctx.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
                             
                             for x in (0..module.shape.side()) {
                                 for y in (0..module.shape.side()) {
@@ -461,7 +468,7 @@ impl<'a> SpaceGui<'a> {
                                         Rectangle::new([1.0, 0.0, 0.0, 0.5])
                                             .draw(
                                                 [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                                &context.draw_state, context.transform,
+                                                &ctx.draw_state, ctx.transform,
                                                 gl
                                             );
                                     }
@@ -478,7 +485,7 @@ impl<'a> SpaceGui<'a> {
                     apply_to_module_if_point_inside(client_ship, x, y, |_, _, module| {
                         let Vec2{x: module_x, y: module_y} = module.get_render_position();
                         
-                        let context = context.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
+                        let ctx = ctx.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
                             
                         for x in (0..module.shape.side()) {
                             for y in (0..module.shape.side()) {
@@ -489,7 +496,7 @@ impl<'a> SpaceGui<'a> {
                                     Rectangle::new([0.0, 1.0, 0.0, 0.5])
                                         .draw(
                                             [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                            &context.draw_state, context.transform,
+                                            &ctx.draw_state, ctx.transform,
                                             gl
                                         );
                                 }
@@ -507,7 +514,7 @@ impl<'a> SpaceGui<'a> {
             apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
                 let Vec2{x: module_x, y: module_y} = module.get_render_position();
             
-                let context = context.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
+                let ctx = ctx.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
                 
                 for x in (0..module.shape.side()) {
                     for y in (0..module.shape.side()) {
@@ -518,14 +525,14 @@ impl<'a> SpaceGui<'a> {
                                 Rectangle::new([0.0, 0.0, 1.0, 0.5])
                                     .draw(
                                         [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                        &context.draw_state, context.transform,
+                                        &ctx.draw_state, ctx.transform,
                                         gl
                                     );
                             } else if self.plans.can_plan_activate_module(ship_state, module) {
                                 Rectangle::new([1.0, 1.0, 0.0, 0.5])
                                     .draw(
                                         [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                        &context.draw_state, context.transform,
+                                        &ctx.draw_state, ctx.transform,
                                         gl
                                     );
                             }
@@ -533,15 +540,15 @@ impl<'a> SpaceGui<'a> {
                     }
                 }
             });
-        }
+        }*/
         
-        self.chat_button.draw(context, gl);
-        self.star_map_button.draw(context, gl);
-        self.logout_button.draw(context, gl);
-        self.nav_map_button.draw(context, gl);
+        self.chat_button.draw(ctx);
+        self.star_map_button.draw(ctx);
+        self.logout_button.draw(ctx);
+        self.nav_map_button.draw(ctx);
 
         // Draw target icons
-        for (i, icon) in self.target_icons.iter().enumerate() {
+        /*for (i, icon) in self.target_icons.iter().enumerate() {
             let i = i as f64;
             
             let icon_x = 715.0+(i*100.0);
@@ -563,18 +570,20 @@ impl<'a> SpaceGui<'a> {
                 },
             }
             
-            icon.draw(bc, &context, gl, glyph_cache, asset_store, target_screen, i, highlight_color);
-        }
+            icon.draw(bc, &ctx, gl, glyph_cache, asset_store, target_screen, i, highlight_color);
+        }*/
+
+        Ok(())
     }
     
-    fn on_key_pressed(&mut self, key: keyboard::Key) {
+    fn on_key_pressed(&mut self, key: Keycode) {
     }
     
-    fn on_mouse_left_pressed(&mut self, bc: &BattleContext, x: f64, y: f64, client_ship: &Ship) {
+    fn on_mouse_left_pressed(&mut self, bc: &BattleContext, mouse_pos: Vec2f, client_ship: &Ship) {
         // Handle module plan powering and selection
         if self.selection.is_none() {
-            let x = x - SHIP_OFFSET_X;
-            let y = y - SHIP_OFFSET_Y;
+            let x = mouse_pos.x - (SHIP_OFFSET_X as f64);
+            let y = mouse_pos.y - (SHIP_OFFSET_Y as f64);
             
             let mut exit_after = false;
             
@@ -605,8 +614,8 @@ impl<'a> SpaceGui<'a> {
 
             match *target_mode {
                 TargetMode::TargetModule => {
-                    let x = x - self.render_area.x - ENEMY_OFFSET_X;
-                    let y = y - self.render_area.y - ENEMY_OFFSET_Y;
+                    let x = mouse_pos.x - ((self.render_area.x - ENEMY_OFFSET_X) as f64);
+                    let y = mouse_pos.y - ((self.render_area.y - ENEMY_OFFSET_Y) as f64);
                     
                     if let Some(ship) = self.render_area.ship {
                         if !ship.get(bc).jumping && !ship.get(bc).exploding {
@@ -624,8 +633,8 @@ impl<'a> SpaceGui<'a> {
                     }
                 },
                 TargetMode::OwnModule => {
-                    let x = x - SHIP_OFFSET_X;
-                    let y = y - SHIP_OFFSET_Y;
+                    let x = mouse_pos.x - (SHIP_OFFSET_X as f64);
+                    let y = mouse_pos.y - (SHIP_OFFSET_Y as f64);
                     
                     let ref mut plans = self.plans;
                     
@@ -639,8 +648,8 @@ impl<'a> SpaceGui<'a> {
                     });
                 },
                 TargetMode::Beam(beam_length) => {
-                    let x = x - self.render_area.x - ENEMY_OFFSET_X;
-                    let y = y - self.render_area.y - ENEMY_OFFSET_Y;
+                    let x = mouse_pos.x - ((self.render_area.x - ENEMY_OFFSET_X) as f64);
+                    let y = mouse_pos.y - ((self.render_area.y - ENEMY_OFFSET_Y) as f64);
                     let beam_length = (beam_length as f64) * 48.0;
                     
                     if x >= 0.0 && y >= 0.0 {
@@ -677,7 +686,9 @@ impl<'a> SpaceGui<'a> {
             let icon_w = 96.0;
             let icon_h = 96.0;
 
-            if x >= icon_x && x <= icon_x+icon_w && y >= icon_y && y <= icon_y+icon_h {
+            if mouse_pos.x >= icon_x && mouse_pos.x <= icon_x+icon_w &&
+                mouse_pos.y >= icon_y && mouse_pos.y <= icon_y+icon_h
+            {
                 let mut should_change = false;
 
                 if let Some(ship) = self.render_area.ship { // switching to a new ship
@@ -695,12 +706,12 @@ impl<'a> SpaceGui<'a> {
         }
     }
     
-    fn on_mouse_right_pressed(&mut self, bc: &BattleContext, x: f64, y: f64, client_ship: &Ship) {
+    fn on_mouse_right_pressed(&mut self, bc: &BattleContext, mouse_pos: Vec2f, client_ship: &Ship) {
         let mut module_was_deactivated = false;
     
         if self.selection.is_none() {
-            let x = x - SHIP_OFFSET_X;
-            let y = y - SHIP_OFFSET_Y;
+            let x = mouse_pos.x - (SHIP_OFFSET_X as f64);
+            let y = mouse_pos.y - (SHIP_OFFSET_Y as f64);
             
             apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
                 if module.get_power() > 0 && self.plans.module_plans(module.index).active {
@@ -749,7 +760,7 @@ impl<'a> SpaceGui<'a> {
     }
 
     pub fn set_next_waypoint(&mut self) {
-        self.plans.next_waypoint = self.nav_map_gui.get_next_waypoint();
+        //self.plans.next_waypoint = self.nav_map_gui.get_next_waypoint();
     }
 }
 
@@ -792,28 +803,25 @@ struct TargetIcon {
 
 impl TargetIcon {
     fn draw(&self, bc: &BattleContext,
-            context: &Context,
-            gl: &mut GlGraphics,
-            glyph_cache: &mut GlyphCache,
+            ctx: &mut Context,
             asset_store: &AssetStore,
             target_screen: [f64; 4],
             i: f64,
-            highlight_color: Color) {
-        use graphics::*;
-        
+            highlight_color: [f32; 4])
+    {
         let (target_screen_x1, target_screen_h1, target_screen_x2, target_screen_h2) =
             (target_screen[0], target_screen[1], target_screen[2], target_screen[3]);
         
         let ship = self.ship.get(bc);
         
-        let icon =
-            match ship.get_height() {
-                1...2 => asset_store.get_texture_str("small_target"),
-                3 => asset_store.get_texture_str("medium_target"),
-                4...255 => asset_store.get_texture_str("big_target"),
-                _ => unreachable!(),
-            };
-        let (icon_w, icon_h) = icon.get_size();
+        let icon = match ship.get_height() {
+            1...2 => asset_store.get_texture_str("small_target"),
+            3 => asset_store.get_texture_str("medium_target"),
+            4...255 => asset_store.get_texture_str("big_target"),
+            _ => unreachable!(),
+        };
+        let icon_w = icon.width();
+        let icon_h = icon.height();
         
         let section_width = (target_screen_x2 - target_screen_x1)/5.0;
         
@@ -828,14 +836,14 @@ impl TargetIcon {
         let icon_cur_h2 = target_screen_h1 + (target_screen_h2 - target_screen_h1)*((i + 1.0)/5.0);
         
         //let (half_icon_w, half_icon_h) = ((icon_w/2) as f64, (icon_h/2) as f64);
-        //image(icon.deref(), context.trans(48.0 - half_icon_w, 34.0 - half_icon_h).transform, gl);
+        //image(icon.deref(), ctx.trans(48.0 - half_icon_w, 34.0 - half_icon_h).transform, gl);
         
-        gl.tri_list_uv(
-            &context.draw_state,
+        /*gl.tri_list_uv(
+            &ctx.draw_state,
             &[1.0; 4],
             icon.deref(),
             |f| f(
-                &squish_rect_tri_list_xy(context.transform, [icon_x + icon_offset_x,
+                &squish_rect_tri_list_xy(ctx.transform, [icon_x + icon_offset_x,
                                                              icon_y + icon_offset_y_top,
                                                              icon_x2 - icon_offset_x,
                                                              icon_cur_h1 - icon_offset_y_bot,
@@ -846,12 +854,12 @@ impl TargetIcon {
         
         // Squished highlight rectangle
         gl.tri_list(
-            &context.draw_state,
+            &ctx.draw_state,
             &highlight_color,
             |f| f(
-                &squish_rect_tri_list_xy(context.transform, [icon_x, icon_y, icon_x2, icon_cur_h1, icon_cur_h2]),
+                &squish_rect_tri_list_xy(ctx.transform, [icon_x, icon_y, icon_x2, icon_cur_h1, icon_cur_h2]),
             )
-        );
+        );*/
         
         // Draw stats bars
         
@@ -864,30 +872,30 @@ impl TargetIcon {
         
         // HP
         //Rectangle::new([0.0, 1.0, 0.0, 0.5])
-        //    .draw([2.0, 72.0, max_hp, 3.0], &context.draw_state, context.transform, gl);
+        //    .draw([2.0, 72.0, max_hp, 3.0], &ctx.draw_state, ctx.transform, gl);
         /*Rectangle::new([0.0, 1.0, 0.0, 1.0])
-            .draw([2.0, 72.0, hp, 3.0], &context.draw_state, context.transform, gl);
+            .draw([2.0, 72.0, hp, 3.0], &ctx.draw_state, ctx.transform, gl);
         
         // Shields
         Rectangle::new([0.0, 0.0, 1.0, 0.5])
-            .draw([2.0, 76.0, max_shields, 3.0], &context.draw_state, context.transform, gl);
+            .draw([2.0, 76.0, max_shields, 3.0], &ctx.draw_state, ctx.transform, gl);
         Rectangle::new([0.0, 0.0, 1.0, 1.0])
-            .draw([2.0, 76.0, shields, 3.0], &context.draw_state, context.transform, gl);
+            .draw([2.0, 76.0, shields, 3.0], &ctx.draw_state, ctx.transform, gl);
         
         // Power
         Rectangle::new([1.0, 1.0, 0.0, 0.5])
-            .draw([2.0, 80.0, max_power, 3.0], &context.draw_state, context.transform, gl);
+            .draw([2.0, 80.0, max_power, 3.0], &ctx.draw_state, ctx.transform, gl);
         Rectangle::new([1.0, 1.0, 0.0, 1.0])
-            .draw([2.0, 80.0, power, 3.0], &context.draw_state, context.transform, gl);*/
+            .draw([2.0, 80.0, power, 3.0], &ctx.draw_state, ctx.transform, gl);*/
         
         
         // Draw ship's name
         {
-            /*let context = context.trans(2.0, 94.0);
+            /*let ctx = ctx.trans(2.0, 94.0);
             Text::new_color([1.0; 4], 10).draw(
                 ship.name.as_str(),
                 glyph_cache,
-                &context.draw_state, context.transform,
+                &ctx.draw_state, ctx.transform,
                 gl,
             );*/
         }
@@ -895,7 +903,7 @@ impl TargetIcon {
 }
 
 /// Creates triangle list vertices from a rotated rectangle.
-#[inline(always)]
+/*#[inline(always)]
 pub fn squish_rect_tri_list_xy(m: Matrix2d, rect: [f64; 5]) -> [f32; 12] {
     use graphics::triangulation;
     
@@ -908,105 +916,139 @@ pub fn squish_rect_tri_list_xy(m: Matrix2d, rect: [f64; 5]) -> [f32; 12] {
         triangulation::tx(m, x2, bot_right), triangulation::ty(m, x2, bot_right),
         triangulation::tx(m, x, bot_left), triangulation::ty(m, x, bot_left)
     ]
-}
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct ShipRenderArea {
     ship: Option<ShipIndex>,
-    x: f64,
-    y: f64,
-    width: f64,
-    height: f64,
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
     //target: RenderTexture,
-    //texture: Texture,
+    //texture: Image,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-fn draw_ship(context: &Context, gl: &mut GlGraphics, asset_store: &AssetStore, sim_effects: &mut SimEffects, ship: &Ship, time: f64) {
-    ship.draw(context, gl, asset_store);
-    sim_effects.update(context, gl, ship.id, time);
+fn draw_ship(
+    gtx: &mut ReforgeClientContext, ctx: &mut Context, sim_effects: &mut SimEffects,
+    ship: &Ship, time: f64)
+    -> GameResult<()>
+{
+    ship.draw(ctx, &gtx.asset_store);
+    sim_effects.update(ctx, ship.id, time);
     
     if !ship.exploding {
-        ship.draw_module_hp(context, gl);
+        ship.draw_module_hp(ctx);
     }
+    
+    Ok(())
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-fn draw_stats(context: &Context, gl: &mut GlGraphics, glyph_cache: &mut GlyphCache, stats_labels: &StatsLabels, plans: &ShipPlans, ship: &Ship, is_client_ship: bool) {
+fn draw_stats(
+    ctx: &mut Context, stats_labels: &StatsLabels, plans: &ShipPlans,
+    ship: &Ship, is_client_ship: bool)
+    -> GameResult<()>
+{
     use std::cmp;
 
     use graphics::*;
     
-    let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
-    let shield_rect = Rectangle::new([0.0, 0.0, 1.0, 1.0]);
-    let power_rect = Rectangle::new([1.0, 1.0, 0.0, 1.0]);
+    let hp_rect = graphics::rectangle(ctx, DrawMode::Fill, Rect::new(0.0, 1.0, 0.0, 1.0));
+    let shield_rect = graphics::rectangle(ctx, DrawMode::Fill, Rect::new(0.0, 0.0, 1.0, 1.0));
+    let power_rect = graphics::rectangle(ctx, DrawMode::Fill, Rect::new(1.0, 1.0, 0.0, 1.0));
     
     {
-        let context = context.trans(5.0, 5.0 + 14.0);
+        graphics::set_color(ctx, [0.0, 1.0, 0.0, 1.0].into())?;
         for i in 0..ship.state.get_hp() {
-            hp_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
+            graphics::rectangle(
+                ctx, graphics::DrawMode::Fill,
+                Rect::new((i as f32) * 10.0 + 5.0, 5.0 + 14.0, 8.0, 16.0))?;
         }
     }
     
     {
-        let context = context.trans(5.0, 5.0 + 52.0);
+        graphics::set_color(ctx, [0.0, 0.0, 1.0, 1.0].into())?;
         for i in 0..ship.state.shields {
-            shield_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
+            graphics::rectangle(
+                ctx, graphics::DrawMode::Fill,
+                Rect::new((i as f32) * 10.0 + 5.0, 5.0 + 52.0, 8.0, 16.0))?;
         }
     }
     
-    {
-        let context = context.trans(5.0, 5.0 + 90.0);
+    with_translate(ctx, Point2::new(5.0, 5.0 + 90.0), |ctx| -> GameResult<()> {
         if is_client_ship {
-            let used_power_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
-            let new_power_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
-            
             let available_power = ship.state.available_power();
             let available_plan_power = plans.available_plan_power(&ship.state);
             
+            // Available power bars
+            graphics::set_color(ctx, [1.0, 1.0, 0.0, 1.0].into())?;
             for i in 0..cmp::min(available_plan_power, available_power) {
-                power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
+                graphics::rectangle(
+                    ctx, graphics::DrawMode::Fill,
+                    Rect::new((i as f32) * 10.0 + 5.0, 5.0 + 90.0, 8.0, 16.0))?;
             }
         
             if available_plan_power < available_power {
+                // Used power bars
+                graphics::set_color(ctx, [1.0, 1.0, 0.0, 0.5].into())?;
                 for i in available_plan_power..available_power {
-                    used_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
+                    graphics::rectangle(
+                        ctx, graphics::DrawMode::Fill,
+                        Rect::new((i as f32) * 10.0 + 5.0, 5.0 + 90.0, 8.0, 16.0))?;
                 }
             } else if available_plan_power > available_power {
+                // Newly usable power bars
+                graphics::set_color(ctx, [0.0, 1.0, 0.0, 0.5].into())?;
                 for i in available_power..available_plan_power {
-                    new_power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
+                    graphics::rectangle(
+                        ctx, graphics::DrawMode::Fill,
+                        Rect::new((i as f32) * 10.0 + 5.0, 5.0 + 90.0, 8.0, 16.0))?;
                 }
             }
         } else {
+            // Available power bars for another player's ship
+            graphics::set_color(ctx, [1.0, 1.0, 0.0, 1.0].into())?;
             for i in 0..ship.state.available_power() {
-                power_rect.draw([(i as f64)*10.0, 0.0, 8.0, 16.0], &context.draw_state, context.transform, gl);
+                graphics::rectangle(
+                    ctx, graphics::DrawMode::Fill,
+                    Rect::new((i as f32) * 10.0 + 5.0, 5.0 + 90.0, 8.0, 16.0))?;
             }
         }
-    }
+
+        // Back to white
+        graphics::set_color(ctx, [1.0; 4].into())?;
+
+        Ok(())
+    })?;
     
     // Draw labels for hp, shields and power meters
-    image(&stats_labels.hp_texture, context.trans(5.0, 4.0).transform, gl);
-    image(&stats_labels.shield_texture, context.trans(5.0, 42.0).transform, gl);
-    image(&stats_labels.power_texture, context.trans(5.0, 80.0).transform, gl);
+    /*image(&stats_labels.hp_texture, ctx.trans(5.0, 4.0).transform, gl);
+    image(&stats_labels.shield_texture, ctx.trans(5.0, 42.0).transform, gl);
+    image(&stats_labels.power_texture, ctx.trans(5.0, 80.0).transform, gl);
     
     {
-        let context = context.trans(5.0, 160.0);
+        let ctx = ctx.trans(5.0, 160.0);
         Text::new_color([1.0; 4], 30).draw(
             ship.name.as_str(),
             glyph_cache,
-            &context.draw_state, context.transform,
+            &ctx.draw_state, ctx.transform,
             gl,
         );
-    }
+    }*/
+
+    Ok(())
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Yo dawg imma draw me some space stars
 
-struct Star {
+// TODO
+/*struct Star {
     position: [f64; 2],
     size: f64,
 }
@@ -1067,15 +1109,15 @@ impl SpaceStars {
         }
     }
     
-    pub fn draw(&self, context: &Context, gl: &mut GlGraphics) {
+    pub fn draw(&self, ctx: &mut Context) {
         use graphics::*;
         
         let star_rect = Rectangle::new([1.0, 1.0, 1.0, 1.0]);
         for stars in self.stars.iter() {
             for star in stars.iter() {
                 star_rect.draw([star.position[0], star.position[1], star.size, star.size],
-                               &context.draw_state, context.transform, gl);
+                               &ctx.draw_state, ctx.transform, gl);
             }
         }
     }
-}
+}*/

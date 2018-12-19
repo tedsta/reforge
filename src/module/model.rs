@@ -6,7 +6,7 @@ use std::path::Path;
 use std::str;
 
 #[cfg(feature = "client")]
-use opengl_graphics::Texture;
+use ggez::{Context, GameResult, graphics::Image};
 
 use super::{
     ModuleShape,
@@ -30,7 +30,7 @@ pub struct Model {
     factory: Box<Fn(&Model) -> Module + Sync + Send>,
     
     #[cfg(feature = "client")]
-    pub icon: Texture,
+    pub icon: Image,
     
     pub shape: ModuleShape,
     pub power: u8,  // Power consumption
@@ -51,14 +51,14 @@ pub struct ModelStore {
 
 impl ModelStore {
     #[cfg(feature = "client")]
-    pub fn new() -> ModelStore {
+    pub fn new(ctx: &mut Context) -> ModelStore {
         let mut models =
             vec![
                 Model {
                     index: ModelIndex(0),
                     name: "Engine Mk1".to_string(),
                     factory: Box::new(move |_| EngineModule::new(ModelIndex(0))),
-                    icon: Texture::from_path(&Path::new("content/textures/modules/icons/engine.png")).unwrap(),
+                    icon: Image::new(ctx, "/textures/modules/icons/engine.png").unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#', b'#'],
                                                  vec![b'.', b'.']]),
                     power: 2,
@@ -69,7 +69,7 @@ impl ModelStore {
                     index: ModelIndex(1),
                     name: "Command Mk1".to_string(),
                     factory: Box::new(move |_| CommandModule::new(ModelIndex(1))),
-                    icon: Texture::from_path(&Path::new("content/textures/modules/icons/command.png")).unwrap(),
+                    icon: Image::new(ctx, "/textures/modules/icons/command.png").unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#', b'.'],
                                                  vec![b'#', b'.']]),
                     power: 2,
@@ -80,7 +80,7 @@ impl ModelStore {
                     index: ModelIndex(2),
                     name: "Solar Mk1".to_string(),
                     factory: Box::new(move |_| SolarModule::new(ModelIndex(2))),
-                    icon: Texture::from_path(&Path::new("content/textures/modules/icons/solar.png")).unwrap(),
+                    icon: Image::new(ctx, "/textures/modules/icons/solar.png").unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
                     min_hp: 2,
@@ -90,7 +90,7 @@ impl ModelStore {
                     index: ModelIndex(3),
                     name: "Shield Mk1".to_string(),
                     factory: Box::new(move |_| ShieldModule::new(ModelIndex(3))),
-                    icon: Texture::from_path(&Path::new("content/textures/modules/icons/shield.png")).unwrap(),
+                    icon: Image::new(ctx, "/textures/modules/icons/shield.png").unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
                     min_hp: 2,
@@ -100,7 +100,7 @@ impl ModelStore {
                     index: ModelIndex(4),
                     name: "Blaster Mk1".to_string(),
                     factory: Box::new(move |_| ProjectileWeaponModule::new(ModelIndex(4))),
-                    icon: Texture::from_path(&Path::new("content/textures/modules/icons/pewpew.png")).unwrap(),
+                    icon: Image::new(ctx, "/textures/modules/icons/pewpew.png").unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
                     min_hp: 2,
@@ -110,7 +110,7 @@ impl ModelStore {
                     index: ModelIndex(5),
                     name: "Beam Mk1".to_string(),
                     factory: Box::new(move |_| BeamWeaponModule::new(ModelIndex(5))),
-                    icon: Texture::from_path(&Path::new("content/textures/modules/icons/beam.png")).unwrap(),
+                    icon: Image::new(ctx, "/textures/modules/icons/beam.png").unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
                     min_hp: 2,
@@ -120,7 +120,7 @@ impl ModelStore {
                     index: ModelIndex(6),
                     name: "Repair Mk1".to_string(),
                     factory: Box::new(move |_| RepairModule::new(ModelIndex(6))),
-                    icon: Texture::from_path(&Path::new("content/textures/modules/icons/repair.png")).unwrap(),
+                    icon: Image::new(ctx, "/textures/modules/icons/repair.png").unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#']]),
                     power: 2,
                     min_hp: 2,
@@ -130,7 +130,7 @@ impl ModelStore {
                     index: ModelIndex(7),
                     name: "Cabin Mk1".to_string(),
                     factory: Box::new(move |_| CabinModule::new(ModelIndex(7))),
-                    icon: Texture::from_path(&Path::new("content/textures/modules/icons/cabin.png")).unwrap(),
+                    icon: Image::new(ctx, "/textures/modules/icons/cabin.png").unwrap(),
                     shape: ModuleShape::new(vec![vec![b'#', b'.', b'.'],
                                                  vec![b'#', b'#', b'.'],
                                                  vec![b'#', b'.', b'.']]),
@@ -145,11 +145,11 @@ impl ModelStore {
         println!("about to load models client");
         
         // Read module models from text files
-        let paths = fs::read_dir(&Path::new("content/data/modules")).unwrap();
+        let paths = fs::read_dir("resources/data/modules").unwrap();
         for path in paths.map(|p| p.unwrap().path()) {
             if path.is_file() {
                 println!("pre adding model");
-                model_store.add_model_from_properties(&config::read_properties(BufReader::new(File::open(&path).unwrap())));
+                model_store.add_model_from_properties(ctx, &config::read_properties(BufReader::new(File::open(&path).unwrap())));
             }
         }
         
@@ -243,7 +243,7 @@ impl ModelStore {
         let mut model_store = ModelStore { models: models };
 
         // Read module models from text files
-        let paths = fs::read_dir(&Path::new("content/data/modules")).unwrap();
+        let paths = fs::read_dir("resources/data/modules").unwrap();
         for path in paths.map(|p| p.unwrap().path()) {
             if path.is_file() {
                 model_store.add_model_from_properties(&config::read_properties(BufReader::new(File::open(&path).unwrap())));
@@ -254,7 +254,7 @@ impl ModelStore {
     }
     
     #[cfg(feature = "client")]
-    fn add_model_from_properties(&mut self, prop: &HashMap<String, String>) {
+    fn add_model_from_properties(&mut self, ctx: &mut Context, prop: &HashMap<String, String>) {
         let factory = factory_from_properties(prop);
         
         let shape: Vec<Vec<u8>> =
@@ -268,7 +268,7 @@ impl ModelStore {
             index: index,
             name: prop["name"].clone(),
             factory: factory,
-            icon: Texture::from_path(&Path::new(prop["icon"].as_str())).unwrap(),
+            icon: Image::new(ctx, prop["icon"].as_str()).unwrap(),
             shape: ModuleShape::new(shape),
             power: prop["power"].parse().unwrap(),
             min_hp: prop["min_hp"].parse().unwrap(),
@@ -305,7 +305,7 @@ impl ModelStore {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash, RustcEncodable, RustcDecodable)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ModelIndex(pub u16);
 
 impl ModelIndex {

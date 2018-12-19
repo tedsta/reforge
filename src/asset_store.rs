@@ -4,17 +4,15 @@ use std::io::{BufRead, BufReader, Read};
 
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::cell::RefCell;
 use std::path::Path;
 
-use graphics::ImageSize;
-use opengl_graphics::Texture;
-use sdl2_mixer;
+use ggez::{audio, Context, GameResult};
+use ggez::graphics::Image;
 
 use config;
 
 pub struct SpriteInfo {
-    pub texture: Rc<Texture>,
+    pub texture: Rc<Image>,
     pub columns: u8, 
     pub rows: u8,
     pub animations: HashMap<String, (u32, u32)>,
@@ -23,47 +21,45 @@ pub struct SpriteInfo {
 pub struct AssetStore {
     sprite_info: HashMap<String, SpriteInfo>,
     
-    sounds: HashMap<String, Rc<RefCell<sdl2_mixer::Chunk>>>,
+    sounds: HashMap<String, Rc<audio::Source>>,
 }
 
 impl AssetStore {
-    pub fn new() -> AssetStore {
+    pub fn new(ctx: &mut Context) -> GameResult<AssetStore> {
+        let mut laser_snd = audio::Source::new(ctx, "/audio/effects/laser.wav")?;
+        laser_snd.set_volume(0.5);
+        let mut small_explosion_snd =
+            audio::Source::new(ctx, "/audio/effects/small_explosion.wav")?;
+        small_explosion_snd.set_volume(0.5);
+
         let mut sounds = HashMap::new();
         sounds.insert(
             "effects/small_explosion.wav".to_string(),
-            Rc::new(RefCell::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/small_explosion.wav"))
-                .ok().expect("Failed to load sound")))
-        );
+            Rc::new(small_explosion_snd));
         sounds.insert(
             "effects/laser.wav".to_string(),
-            Rc::new(RefCell::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/laser.wav"))
-                .ok().expect("Failed to load sound")))
-        );
+            Rc::new(laser_snd));
         sounds.insert(
             "effects/beam1.ogg".to_string(),
-            Rc::new(RefCell::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/beam1.ogg"))
-                .ok().expect("Failed to load sound")))
-        );
+            Rc::new(audio::Source::new(ctx, "/audio/effects/beam1.ogg")?));
         sounds.insert(
             "effects/ship_explosion1.ogg".to_string(),
-            Rc::new(RefCell::new(sdl2_mixer::Chunk::from_file(&Path::new("content/audio/effects/ship_explosion1.ogg"))
-                .ok().expect("Failed to load sound")))
-        );
+            Rc::new(audio::Source::new(ctx, "/audio/effects/ship_explosion1.ogg")?));
         
-        sounds.get_mut("effects/laser.wav").expect("This should exist").borrow_mut().set_volume(32);
-        sounds.get_mut("effects/small_explosion.wav").expect("This should exist").borrow_mut().set_volume(32);
-    
         let mut asset_store = AssetStore {
             sprite_info: HashMap::new(),
             
             sounds: sounds,
         };
+
+        println!("Loading sprites...");
         
         // Read module models from text files
-        let paths = fs::read_dir(&Path::new("content/data/sprites")).unwrap();
+        let paths = fs::read_dir(&Path::new("resources/data/sprites")).unwrap();
         for path in paths.map(|p| p.unwrap().path()) {
             if path.is_file() {
-                asset_store.load_sprite(&config::read_properties(BufReader::new(File::open(&path).unwrap())));
+                asset_store.load_sprite(
+                    ctx, &config::read_properties(BufReader::new(File::open(&path).unwrap())));
             }
         }
         
@@ -93,23 +89,22 @@ impl AssetStore {
         asset_store.load_texture("gui/medium_target.png", 1, 1);
         asset_store.load_texture("gui/big_target.png", 1, 1);*/
         
-        asset_store
+        Ok(asset_store)
     }
     
-    fn load_sprite(&mut self, prop: &HashMap<String, String>) {
+    fn load_sprite(&mut self, ctx: &mut Context, prop: &HashMap<String, String>) -> GameResult<()> {
         println!("loading {:?}", prop);
     
         let name = prop["name"].clone();
         
-        let texture_path = "content/textures/".to_string() + &prop["texture"];
+        let texture_path = "/textures/".to_string() + &prop["texture"];
         let rows = prop["rows"].parse().unwrap();
         let columns = prop["columns"].parse().unwrap();
-        println!("{:?}", Texture::from_path(&Path::new(texture_path.as_str())).err());
-        let texture =
-            Rc::new(
-                Texture::from_path(&Path::new(texture_path.as_str()))
-                    .ok().expect(format!("Failed to load {}", name).as_str())
-            );
+        let mut texture = Image::new(ctx, texture_path.as_str())?;
+        // Default to wrapping textures
+        // TODO can we wrap a single tile in a sprite sheet?
+        texture.set_wrap(
+            gfx_core::texture::WrapMode::Tile, gfx_core::texture::WrapMode::Tile);
         let mut anim_map = HashMap::new();
         if prop.contains_key("animations") {
             let animations: Vec<String> = prop["animations"].split("\n")
@@ -125,29 +120,34 @@ impl AssetStore {
             }
         }
         println!("animations: {:?}", anim_map);
-        self.sprite_info.insert(name,
-                                SpriteInfo {
-                                    texture: texture,
-                                    columns: columns,
-                                    rows: rows,
-                                    animations: anim_map,
-                                });
+        self.sprite_info.insert(
+            name,
+            SpriteInfo {
+                texture: Rc::new(texture),
+                columns: columns,
+                rows: rows,
+                animations: anim_map,
+            });
+        
+        Ok(())
     }
     
-    pub fn get_texture<'a>(&'a self, texture: &String) -> &'a Rc<Texture> {
+    pub fn get_texture<'a>(&'a self, texture: &String) -> &'a Rc<Image> {
         &self.sprite_info[texture].texture
     }
     
-    pub fn get_texture_str<'a>(&'a self, texture: &str) -> &'a Rc<Texture> {
+    pub fn get_texture_str<'a>(&'a self, texture: &str) -> &'a Rc<Image> {
         &self.sprite_info[&texture.to_string()].texture
     }
     
     pub fn get_texture_size(&self, texture: &String) -> (u32, u32) {
-        self.sprite_info[texture].texture.get_size()
+        let ref texture = self.sprite_info[texture].texture;
+        (texture.width(), texture.height())
     }
     
     pub fn get_texture_size_str(&self, texture: &str) -> (u32, u32) {
-        self.sprite_info[&texture.to_string()].texture.get_size()
+        let ref texture = self.sprite_info[&texture.to_string()].texture;
+        (texture.width(), texture.height())
     }
     
     pub fn get_sprite_info<'a>(&'a self, texture: &String) -> &'a SpriteInfo {
@@ -158,7 +158,7 @@ impl AssetStore {
         &self.sprite_info[&texture.to_string()]
     }
     
-    pub fn get_sound(&self, name: &String) -> &Rc<RefCell<sdl2_mixer::Chunk>> {
+    pub fn get_sound(&self, name: &String) -> &Rc<audio::Source> {
         &self.sounds[name]
     }
 }

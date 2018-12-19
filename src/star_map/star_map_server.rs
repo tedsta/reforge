@@ -130,7 +130,7 @@ impl StarMapServer {
             });
         
         // Sector 2
-        let (to_sector_sender, to_sector_receiver) = channel();
+        /*let (to_sector_sender, to_sector_receiver) = channel();
         let (from_sector_sender, from_sector_receiver) = channel();
         let (ack_sender, ack_receiver) = channel();
         let (chat_sender, sector_chat_in) = channel();
@@ -168,7 +168,7 @@ impl StarMapServer {
                                                          sector_model_store,
                                                          false);
                 sector_server.run(ack_sender);
-            });
+            });*/
         
         // Start the chat server
         Builder::new()

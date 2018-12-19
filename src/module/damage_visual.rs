@@ -1,10 +1,10 @@
-#[derive(Clone, Copy, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub enum DamageVisualKind {
     Fire,
     Smoke,
 }
 
-#[derive(Clone, Copy, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct DamageVisual {
     pub x: f64,
     pub y: f64,

@@ -61,7 +61,9 @@ pub fn run_login_server(model_store: Arc<ModelStore>,
                                 
                                 account.ship = Some(player_ship);
                                 
-                                slot.transfer_client(account.client_id.expect("This must have a client ID"), star_map_slot_id);
+                                slot.transfer_client(
+                                    account.client_id.expect("This must have a client ID"),
+                                    star_map_slot_id);
                                 star_map_chan.send(account);
                                 
                             } else {

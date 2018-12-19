@@ -1,8 +1,3 @@
-#[cfg(feature = "client")]
-use graphics::Context;
-#[cfg(feature = "client")]
-use opengl_graphics::GlGraphics;
-
 use battle_context::BattleContext;
 use module;
 use module::{IModule, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
@@ -20,7 +15,7 @@ use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(feature = "client")]
 use asset_store::AssetStore;
 
-#[derive(RustcEncodable, RustcDecodable, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct CabinModule;
 
 impl CabinModule {

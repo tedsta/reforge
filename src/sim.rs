@@ -7,11 +7,7 @@ use ship::{ShipId, ShipIndex, ShipState};
 
 // SimVisual imports
 #[cfg(feature = "client")]
-use graphics::Context;
-#[cfg(feature = "client")]
-use opengl_graphics::GlGraphics;
-#[cfg(feature = "client")]
-use sdl2_mixer;
+use ggez::{audio, Context, GameResult};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -53,7 +49,7 @@ static NUM_LAYERS: u8 = 20;
 
 #[cfg(feature = "client")]
 pub trait SimVisual {
-    fn draw(&mut self, context: &Context, gl: &mut GlGraphics, time: f64);
+    fn draw(&mut self, context: &mut Context, time: f64) -> GameResult<()>;
 }
 
 #[cfg(feature = "client")]
@@ -61,7 +57,7 @@ pub struct SimEffects<'a> {
     effects: [Vec<(ShipId, Box<SimVisual+'a>)>; 20],
     
     // Audio stuff
-    sounds: Vec<(f64, isize, Rc<RefCell<sdl2_mixer::Chunk>>)>,
+    sounds: Vec<(f64, isize, Rc<audio::Source>)>,
     next_sound: usize,
 }
 
@@ -86,7 +82,7 @@ impl<'a> SimEffects<'a> {
         self.effects[layer as usize].push((ship, Box::new(visual)));
     }
     
-    pub fn add_sound(&mut self, time: f64, loops: isize, sound: Rc<RefCell<sdl2_mixer::Chunk>>) {
+    pub fn add_sound(&mut self, time: f64, loops: isize, sound: Rc<audio::Source>) {
         let mut index = 0;
         for &(sound_time, _, _) in self.sounds.iter() {
             if sound_time > time {
@@ -98,10 +94,10 @@ impl<'a> SimEffects<'a> {
         self.sounds.insert(index, (time, loops, sound));
     }
     
-    pub fn update(&mut self, context: &Context, gl: &mut GlGraphics, ship: ShipId, time: f64) {
+    pub fn update(&mut self, context: &mut Context, ship: ShipId, time: f64) -> GameResult<()> {
         use std::default::Default;
     
-        while self.next_sound < self.sounds.len() {
+        /*while self.next_sound < self.sounds.len() {
             let (sound_time, loops, ref sound) = self.sounds[self.next_sound];
             if sound_time > time {
                 break;
@@ -114,19 +110,21 @@ impl<'a> SimEffects<'a> {
                 println!("Failed to play sound");
             }
             self.next_sound += 1;
-        }
+        }*/
     
         for layer in self.effects.iter_mut() {
             for &mut (v_ship, ref mut visual) in layer.iter_mut() {
                 if v_ship == ship {
-                    visual.draw(context, gl, time);
+                    visual.draw(context, time)?;
                 }
             }
         }
+
+        Ok(())
     }
     
     pub fn reset(&mut self) {
-        self.sounds.clear();
+        //self.sounds.clear();
         self.next_sound = 0;
         for visual_vec in self.effects.iter_mut() {
             visual_vec.clear();

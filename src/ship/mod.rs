@@ -2,7 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::cmp;
 use std::collections::VecDeque;
-use std::marker::Reflect;
+//use std::marker::Reflect;
 
 use battle_context::BattleContext;
 use module;
@@ -19,14 +19,15 @@ use module::{
 };
 use net::{ClientId, InPacket, OutPacket};
 use self::ship_gen::{generate_ship, generate_dummy_ship, generate_dev_ship};
-use sector_data::SectorId;
 use sim::SimEvents;
+use util::with_translate;
 use vec::{Vec2, Vec2f};
 
 #[cfg(feature = "client")]
-use graphics::Context;
-#[cfg(feature = "client")]
-use opengl_graphics::GlGraphics;
+use ggez::{
+    Context, GameResult,
+    graphics::{self, DrawParam, DrawMode, FontId, Image, Point2, Rect, Scale, TextCached},
+};
 
 #[cfg(feature = "client")]
 use sim::SimEffects;
@@ -41,7 +42,7 @@ mod ship_gen;
 mod plans;
 
 // Holds everything about the ship's damage, capabilities, etc.
-#[derive(Clone, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ShipState {
     pub hp: u8,
     total_module_hp: u8, // Sum of HP of all modules, used to recalculate HP when damaged
@@ -154,7 +155,7 @@ impl ShipState {
 // Type for the ID of a ship
 pub type ShipId = u64;
 
-#[derive(Copy, Clone, Debug, PartialEq, RustcEncodable, RustcDecodable)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ShipIndex(pub u32);
 
 impl ShipIndex {
@@ -176,7 +177,7 @@ impl ShipIndex {
     }
 }
 
-#[derive(RustcEncodable, RustcDecodable)]
+#[derive(Serialize, Deserialize)]
 pub struct Ship {
     pub id: ShipId,
     pub name: String,
@@ -583,25 +584,26 @@ impl Ship {
     }
     
     #[cfg(feature = "client")]
-    pub fn draw(&self, context: &Context, gl: &mut GlGraphics, asset_store: &AssetStore) {
-        use std::ops::Deref;
-        use graphics::*;
-        
-        let opacity = (self.state.shields as f32)/8.0;
+    pub fn draw(&self, ctx: &mut Context, asset_store: &AssetStore) {
+        let opacity = (self.state.shields as f32) / 8.0;
     
         for module in &self.modules {
             let shield_texture = asset_store.get_texture_str("1_module_shield");
-            let (shield_size_x, shield_size_y) = shield_texture.get_size();
-            let (shield_size_x, shield_size_y) = (shield_size_x as f64, shield_size_y as f64);
+            let shield_width = shield_texture.width();
+            let shield_height = shield_texture.height();
+            let (shield_width, shield_height) = (shield_width as f32, shield_height as f32);
             
             for x in module.x..module.x+module.shape.side() {
                 for y in module.y..module.y+module.shape.side() {
                     if module.shape.get(x - module.x, y - module.y) == b'#' {
-                        let context = context.trans((x as f64) * 48.0, (y as f64) * 48.0);
-                        let context = context.trans(24.0 - shield_size_x/2.0, 24.0 - shield_size_y/2.0);
-                        
-                        Image::new_color([1.0, 1.0, 1.0, opacity])
-                            .draw(shield_texture.deref(), &context.draw_state, context.transform, gl);
+                        graphics::set_color(ctx, [1.0, 1.0, 1.0, opacity].into());
+                        graphics::draw_ex(ctx, &**shield_texture, DrawParam {
+                            dest: Point2::new(
+                                (x as f32) * 48.0 + 24.0 - shield_width / 2.0,
+                                (y as f32) * 48.0 + 24.0 - shield_height / 2.0,
+                            ), ..Default::default()
+                        });
+                        graphics::set_color(ctx, [1.0, 1.0, 1.0, 1.0].into());
                     }
                 }
             }
@@ -609,37 +611,59 @@ impl Ship {
     }
     
     #[cfg(feature = "client")]
-    pub fn draw_module_hp(&self, context: &Context, gl: &mut GlGraphics) {
-        use graphics::*;
-    
+    pub fn draw_module_hp(&self, ctx: &mut Context) {
         for (module, stats) in self.modules.iter().zip(self.state.module_stats.iter()) {
-            let context = context.trans((module.x as f64) * 48.0, (module.y as f64) * 48.0);
+            graphics::push_transform(ctx, Some(DrawParam {
+                dest: Point2::new((module.x as f32) * 48.0, (module.y as f32) * 48.0),
+                ..Default::default()
+            }.into_matrix()));
+            graphics::apply_transformations(ctx);
             
-            let hp_rect = Rectangle::new([0.0, 1.0, 0.0, 1.0]);
-            let hp_dmg_rect = Rectangle::new([1.0, 0.0, 0.0, 0.5]);
-            let armor_rect = Rectangle::new([1.0, 1.0, 0.0, 1.0]);
-            let armor_dmg_rect = Rectangle::new([1.0, 1.0, 0.0, 0.5]);
-        
             for i in 0..module.get_min_hp() {
                 if i < stats.hp {
-                    hp_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context.draw_state, context.transform, gl);
+                    // HP
+                    graphics::set_color(ctx, [0.0, 1.0, 0.0, 1.0].into());
+                    graphics::rectangle(
+                        ctx, DrawMode::Fill,
+                        Rect::new(0.0, 4.0 * (i as f32), 8.0, 2.0));
                 } else {
-                    hp_dmg_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context.draw_state, context.transform, gl);
+                    // HP damaged
+                    graphics::set_color(ctx, [1.0, 0.0, 0.0, 0.5].into());
+                    graphics::rectangle(
+                        ctx, DrawMode::Fill,
+                        Rect::new(0.0, 4.0 * (i as f32), 8.0, 2.0));
                 }
             }
             
             for i in module.get_min_hp()..stats.hp {
-                armor_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context.draw_state, context.transform, gl);
+                // Armor
+                graphics::set_color(ctx, [1.0, 1.0, 0.0, 1.0].into());
+                graphics::rectangle(
+                    ctx, DrawMode::Fill,
+                    Rect::new(0.0, 4.0 * (i as f32), 8.0, 2.0));
             }
             
             for i in cmp::max(module.get_min_hp(), stats.hp)..module.get_max_hp() {
-                armor_dmg_rect.draw([0.0, 4.0 * (i as f64), 8.0, 2.0], &context.draw_state, context.transform, gl);
+                // Armor damaged
+                graphics::set_color(ctx, [1.0, 1.0, 0.0, 0.5].into());
+                graphics::rectangle(
+                    ctx, DrawMode::Fill,
+                    Rect::new(0.0, 4.0 * (i as f32), 8.0, 2.0));
             }
+
+            graphics::pop_transform(ctx);
+            graphics::apply_transformations(ctx);
         }
+
+        // Reset color back to white
+        graphics::set_color(ctx, [1.0, 1.0, 1.0, 1.0].into());
     }
     
     #[cfg(feature = "client")]
-    pub fn draw_module_powered_icons(&self, context: &Context, gl: &mut GlGraphics, module_icons: &ModuleIcons, plans: &ShipPlans) {
+    pub fn draw_module_powered_icons(
+        &self, ctx: &mut Context, module_icons: &ModuleIcons, plans: &ShipPlans)
+        -> GameResult<()>
+    {
         use graphics::*;
     
         for (module, plans) in self.modules.iter().zip(plans.module_plans.iter()) {
@@ -649,22 +673,27 @@ impl Ship {
             // Skip modules that aren't changing powered states
             if plans.active == module.active { continue; }
             
-            let context = context.trans((module.x as f64) * 48.0, (module.y as f64) * 48.0).trans(48.0/2.0 - 20.0, 2.0);
-            
-            if plans.active {
-                // Module is powering up, draw on icon
-                image(&module_icons.power_on_texture, context.transform, gl);
-            } else {
-                // Module is powering down, draw off icon
-                image(&module_icons.power_off_texture, context.transform, gl);
-            }
+            let translate = Point2::new(
+                (module.x as f32) * 48.0 + 48.0 / 2.0 - 20.0,
+                (module.y as f32) * 48.0 + 2.0);
+            with_translate(ctx, translate, |ctx| { 
+                if plans.active {
+                    // Module is powering up, draw on icon
+                    graphics::draw_ex(ctx, &module_icons.power_on_texture, Default::default())
+                } else {
+                    // Module is powering down, draw off icon
+                    graphics::draw_ex(ctx, &module_icons.power_off_texture, Default::default())
+                }
+            })?;
         }
+
+        Ok(())
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(RustcEncodable, RustcDecodable)]
+#[derive(Serialize, Deserialize)]
 pub struct ShipStored {
     pub id: ShipId,
     pub name: String,

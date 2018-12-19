@@ -55,7 +55,7 @@ impl NavMapGui {
                 Button::Mouse(button) => {
                     match button {
                         mouse::MouseButton::Left => {
-                            self.on_mouse_left_pressed(mouse_pos, button, bc, client_ship, time);
+                            self.on_mouse_left_pressed(mouse_pos, bc, client_ship, time);
                         },
                         mouse::MouseButton::Right => { },
                         _ => {},
@@ -75,7 +75,7 @@ impl NavMapGui {
         self.action.take()
     }
 
-    fn on_mouse_left_pressed(&mut self, mouse_pos: [f64; 2], button: mouse::MouseButton,
+    fn on_mouse_left_pressed(&mut self, mouse_pos: [f64; 2],
                              bc: &mut BattleContext, client_ship: ShipIndex, time: f64) {
         self.selection = None;
 

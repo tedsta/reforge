@@ -6,11 +6,6 @@ use std::ops::DerefMut;
 use rand::Rng;
 use rand;
 
-#[cfg(feature = "client")]
-use graphics::Context;
-#[cfg(feature = "client")]
-use opengl_graphics::GlGraphics;
-
 use battle_context::{BattleContext, tick_to_time};
 use module;
 use module::{IModule, Model, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest, TargetManifestData};
@@ -29,7 +24,7 @@ use sprite_sheet::{SpriteSheet, SpriteAnimation};
 #[cfg(feature = "client")]
 use asset_store::AssetStore;
 
-#[derive(RustcEncodable, RustcDecodable, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct VolleyMissileModule {
     old_rotation: f64,
     rotation: f64,
@@ -373,7 +368,7 @@ impl IModule for VolleyMissileModule {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(RustcEncodable, RustcDecodable, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 struct Projectile {
     damage: u8,
     hit: bool,

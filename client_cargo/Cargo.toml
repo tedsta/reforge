@@ -16,38 +16,24 @@ client = []
 name = "reforge_client"
 path = "../src/client.rs"
 
-[dependencies.sdl2]
-#git = "https://github.com/AngryLawyer/rust-sdl2"
-version = "0.5.0"
-
-[dependencies.sdl2_mixer]
-#git = "https://github.com/andelf/rust-sdl2_mixer"
-version = "0.5.0"
-
-[dependencies.freetype-rs]
-git = "https://github.com/pistondevelopers/freetype-rs"
-#version = "0.2.1"
+[dependencies.piston-float]
+version = "0.0.2"
 
 [dependencies.vecmath]
 #git = "https://github.com/pistondevelopers/vecmath"
 version = "0.0.23"
 
-[dependencies.piston-float]
-#git = "https://github.com/pistondevelopers/float"
-version = "0.0.2"
-
-[dependencies.bincode]
-#git = "https://github.com/tyoverby/bincode.git"
-version = "0.4.0"
-
 [dependencies]
 
 time = "0.1.*"
-rustc-serialize = "0.3.*"
 rand = "0.3.7"
 num = "*"
 
-piston = "0.15.1"
-piston2d-opengl_graphics = "0.19.0"
-piston2d-graphics = "0.11.0"
-pistoncore-glutin_window = "0.17.1"
+serde = "1"
+serde_derive = "1"
+erased-serde = "0.3"
+bincode = "1.0.1"
+
+ggez = "*"
+gfx_core = "*"
+nalgebra = "0.8"

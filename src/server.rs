@@ -4,20 +4,19 @@
 #![feature(core)]
 #![feature(alloc)]
 #![feature(thread_sleep)]
-#![feature(convert)]
-#![feature(collections_drain)]
 #![feature(duration)]
-#![feature(path_ext_deprecated)]
-#![feature(reflect_marker)]
 #![feature(raw)]
 #![feature(drain)]
 
-extern crate bincode;
 extern crate float;
 extern crate num;
 extern crate rand;
-extern crate rustc_serialize;
 extern crate time;
+
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate rmp_serde as rmps;
 
 use std::thread::Builder;
 use std::sync::Arc;
@@ -29,14 +28,12 @@ use star_map::StarMapServer;
 
 mod ai;
 mod battle_context;
-mod battle_type;
 mod chat;
 mod client_action;
 mod config;
 mod login;
 mod module;
 mod net;
-mod no_encode;
 mod packet_types;
 mod sector_data;
 mod sector_server;

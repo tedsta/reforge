@@ -6,11 +6,8 @@ use std::result::Result;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread::{Builder, spawn};
 
-use rustc_serialize::Encodable;
-use rustc_serialize::Decodable;
-
-use bincode::rustc_serialize::{EncoderWriter, EncodingError, DecoderReader, DecodingError, encode_into, decode_from};
-use bincode::SizeLimit;
+use serde::{Deserialize, Serialize};
+use bincode;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Some basic types
@@ -356,7 +353,7 @@ fn handle_client_out(mut stream: TcpStream, out_r: Receiver<OutPacket>) {
         let data = packet.buffer.get_ref();
         
         // Write the packet size, then the actual packet data
-        if let Err(e) = write_u16(&mut stream, data.len() as u16) {
+        if let Err(e) = write_u32(&mut stream, data.len() as u32) {
             println!("Client out failed to write packet length, shutting output thread down: {}", e);
             break;
         }
@@ -396,7 +393,12 @@ impl Client {
         Builder::new().name("client_packet_receiver".to_string()).spawn(move || {
             loop {
                 let packet = InPacket::try_new_from_reader(&mut thread_stream);
-                packet_sender.send(packet);
+                if let Err(e) = packet_sender.send(packet) {
+                    println!(
+                        "client_packet_receiver thread's channel broke. \
+                        Stopping...");
+                    break;
+                }
             }
         });
     
@@ -405,7 +407,7 @@ impl Client {
     
     pub fn send(&mut self, packet: &OutPacket) {
         let data = &packet.buffer.get_ref();
-        if let Err(e) = write_u16(&mut self.stream, data.len() as u16) {
+        if let Err(e) = write_u32(&mut self.stream, data.len() as u32) {
             panic!("Failed to send packet size to server: {}", e);
         }
         match self.stream.write(&(*data)[..]) {
@@ -459,10 +461,10 @@ impl OutPacket {
         self.buffer.get_ref().len()
     }
     
-    pub fn write<'a, T>(&mut self, t: &T) -> Result<(), EncodingError>
-        where T: Encodable
+    pub fn write<'a, T>(&mut self, t: &T) -> bincode::Result<()>
+        where T: Serialize
     {
-        encode_into(t, &mut self.buffer, SizeLimit::Infinite)
+        bincode::serialize_into(&mut self.buffer, t)
     }
 }
 
@@ -478,7 +480,7 @@ impl InPacket {
     pub fn new_from_reader<T: Read>(reader: &mut T) -> InPacket {
         // Get next packet size
         let packet_size =
-            match read_u16(reader) {
+            match read_u32(reader) {
                 Err(e) => panic!("Failed to receive packet size: {}", e),
                 Ok(packet_size) => packet_size
             };
@@ -500,7 +502,7 @@ impl InPacket {
     
     pub fn try_new_from_reader<T: Read>(reader: &mut T) -> io::Result<InPacket> {
         // Get next packet size
-        let packet_size = try!(read_u16(reader));
+        let packet_size = try!(read_u32(reader));
         let packet_size = packet_size as u64;
     
         // Get data
@@ -518,8 +520,11 @@ impl InPacket {
         self.buffer.get_ref().len()
     }
     
-    pub fn read<T: Decodable>(&mut self) -> Result<T, DecodingError> {
-        Ok(try!(decode_from(&mut self.buffer, SizeLimit::Infinite)))
+    pub fn read<T>(&mut self) -> bincode::Result<T>
+        where for<'de> T: serde::Deserialize<'de>
+    {
+        //T::deserialize(&mut bincode::Deserializer::new(&mut self.buffer))
+        bincode::deserialize_from(&mut self.buffer)
     }
 }
 

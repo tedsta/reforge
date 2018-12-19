@@ -3,7 +3,7 @@ use sector_data::SectorId;
 use ship::{Ship, ShipIndex, ShipState};
 use vec::Vec2f;
 
-#[derive(Clone, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ShipPlans {
     pub logout: bool,
     pub target_sector: Option<SectorId>,

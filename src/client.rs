@@ -1,69 +1,47 @@
 #![crate_name = "reforge_client"]
 #![crate_type = "bin"]
-#![feature(box_syntax)]
-#![feature(rand)]
-#![feature(core)]
 #![feature(os)]
-#![feature(io)]
-#![feature(old_io)]
 #![feature(alloc)]
 #![feature(thread_sleep)]
-#![feature(collections)]
-#![feature(std_misc)]
-#![feature(convert)]
-#![feature(collections_drain)]
-#![feature(duration)]
-#![feature(reflect_marker)]
 #![feature(raw)]
-#![feature(drain)]
-#![feature(rc_unique)]
-#![feature(os)]
-#![feature(std_misc)]
-#![feature(path_ext)]
-#![feature(path_ext_deprecated)]
+#![feature(nll)]
 
-extern crate bincode;
 extern crate float;
 extern crate num;
 extern crate rand;
-extern crate rustc_serialize;
 extern crate time;
 
-// Piston stuff
-extern crate sdl2;
-extern crate piston;
-extern crate glutin_window;
-extern crate opengl_graphics;
-extern crate graphics;
-extern crate sdl2_mixer;
-extern crate vecmath;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+#[macro_use]
+//extern crate erased_serde;
+extern crate bincode;
 
-use std::os;
-use std::rc::Rc;
-use std::cell::RefCell;
-use std::path::Path;
-use std::thread::{Builder, Thread};
+extern crate vecmath;
+extern crate ggez;
+extern crate gfx_core;
+extern crate nalgebra as na;
+
+use std::thread::{self, Thread};
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 
-use glutin_window::GlutinWindow;
-use opengl_graphics::{
-    GlGraphics,
-    OpenGL,
-};
-use opengl_graphics::glyph_cache::GlyphCache;
-use piston::window::{WindowSettings, Size};
+use ggez::{event, graphics, Context, GameResult};
+use ggez::graphics::{Font, FontId};
+use ggez::event::{Event, Events};
 
 use asset_store::AssetStore;
 use battle_context::BattleContext;
-use battle_type::BattleType;
-use sector_client::ClientBattleState;
+use client_context::ReforgeClientContext;
+//use sector_client::ClientBattleState;
 use client_state::run_client_state_manager;
 use login::{LoginPacket, LoginError};
 use login_screen::{LoginScreen, LoginGuiAction};
 use main_menu::{MainMenu, MainMenuSelection};
 use module::ModelStore;
 use net::{Client, OutPacket};
+use sector_data::SectorData;
 use star_map::StarMapServer;
 
 // Server stuff
@@ -72,20 +50,20 @@ use net::Server;
 mod ai;
 mod asset_store;
 mod battle_context;
-mod battle_type;
 mod sector_client;
 mod chat;
 mod client_action;
+mod client_context;
 mod client_state;
 mod config;
+mod game_state;
 mod gui;
 mod login;
 mod login_screen;
 mod main_menu;
 mod module;
-mod nav_map_gui;
+//mod nav_map_gui;
 mod net;
-mod no_encode;
 mod packet_types;
 mod sector_data;
 mod sector_server;
@@ -94,47 +72,27 @@ mod sim;
 mod sim_events;
 mod sim_visuals;
 mod space_gui;
-//mod sprite_mgr;
 mod sprite_sheet;
 mod star_map;
+mod util;
 mod vec;
 
+
 #[cfg(feature = "client")]
-fn main () {
-    let opengl = OpenGL::V3_2;
-    // Create an window.
-    let window = GlutinWindow::new(
-        WindowSettings::new("Reforge".to_string(), Size { width: 1280, height: 720 }),
-    );
-    
-    // Initialize SDL mixer
-    sdl2::init().video().audio().timer();
-    sdl2_mixer::init(sdl2_mixer::INIT_MP3 | sdl2_mixer::INIT_FLAC |
-        sdl2_mixer::INIT_MOD | sdl2_mixer::INIT_FLUIDSYNTH |
-        sdl2_mixer::INIT_MODPLUG | sdl2_mixer::INIT_OGG);
-    
-    // TODO: 0x8010 is SDL_audio flag
-    sdl2_mixer::open_audio(sdl2_mixer::DEFAULT_FREQUENCY, 0x8010u16, 2, 1024).ok().expect("Failed to initialize SDL2 mixer");
-    sdl2_mixer::allocate_channels(512);
-    
-    // Create GL device
-    let mut gl = GlGraphics::new(opengl);
+fn main() {
+    let ref mut ctx = ggez::ContextBuilder::new("Reforge", "Feedus Games")
+        .window_setup(ggez::conf::WindowSetup::default().title("Reforge"))
+        .window_mode(ggez::conf::WindowMode::default().dimensions(1280, 720))
+        .build().expect("Failed to build ggez context");
     
     // Load our font
-    let mut glyph_cache = GlyphCache::new(&Path::new("content/fonts/OCRAStd.ttf")).unwrap();
+    let mut font: FontId = Font::new_glyph_font(ctx, "/fonts/OCRAStd.ttf").unwrap().into();
     
-    // Create the asset store
-    let ref asset_store = AssetStore::new();
-    
-    // Create the module model store
-    let ref model_store = ModelStore::new();
+    let asset_store = AssetStore::new(ctx).expect("Failed to load assets");
+    let model_store = ModelStore::new(ctx);
 
-    // Wrap window in RefCell
-    let window = Rc::new(RefCell::new(window.unwrap()));
-    
-    let music = sdl2_mixer::Music::from_file(&Path::new("content/audio/music/space.wav")).unwrap();
-    
-    music.play(-1).ok().expect("Failed to play background music");
+    //let music = sdl2_mixer::Music::from_file(&Path::new("content/audio/music/space.wav")).unwrap();
+    //music.play(-1).ok().expect("Failed to play background music");
     
     // Start a local server
     let mut server = Server::new();
@@ -143,64 +101,84 @@ fn main () {
     let star_map_slot_id = star_map_slot.get_id();
     let (star_map_account_sender, star_map_account_receiver) = channel();
     let (logout_sender, logout_receiver) = channel();
-    let login_model_store = Arc::new(ModelStore::new());
+    let login_model_store = Arc::new(ModelStore::new(ctx));
     let star_map_model_store = login_model_store.clone();
     
-    Builder::new().name("server_master".to_string()).spawn(move || {
+    thread::Builder::new().name("server_master".to_string()).spawn(move || {
         server.listen("localhost:30000");
     });
     
-    Builder::new().name("login_server".to_string()).spawn(move || {
-        login::run_login_server(login_model_store, login_slot, star_map_slot_id, star_map_account_sender, logout_receiver);
+    thread::Builder::new().name("login_server".to_string()).spawn(move || {
+        login::run_login_server(
+            login_model_store, login_slot, star_map_slot_id,
+            star_map_account_sender, logout_receiver);
     });
     
     let mut star_map_server = StarMapServer::new(star_map_model_store, star_map_slot);
-    Builder::new().name("star_map_server".to_string()).spawn(move || {
+    thread::Builder::new().name("star_map_server".to_string()).spawn(move || {
         star_map_server.run(star_map_account_receiver, logout_sender);
     });
-    
-    // Create main menu
-    let mut main_menu = MainMenu::new();
-    main_menu.run(&window, &mut gl, |window, gl, menu_bg, selection| {
-        match selection {
-            MainMenuSelection::Multiplayer => {
-                let mut login_screen = LoginScreen::new();
-            
-                loop {
-                    match login_screen.run(&window, gl, &mut glyph_cache, menu_bg) {
-                        LoginGuiAction::Login(username, password, ip_address) => {
-                            // Connect to server
-                            let mut client = Client::new((ip_address+":30000").as_str());
 
-                            let mut packet = OutPacket::new();
-                            packet.write(&LoginPacket{username: username, password: password});
-                            client.send(&packet);
-                            
-                            let mut login_result_packet = client.receive();
-                            let login_result: Option<LoginError> = login_result_packet.read().unwrap();
-                            
-                            match login_result {
-                                Some(login_error) => {
-                                    login_screen.login_error = Some(login_error);
-                                },
-                                None => {
-                                    run_client_state_manager(&window, gl, &mut glyph_cache, asset_store, model_store, client);
-                                    break;
-                                },
-                            }
-                        },
-                        LoginGuiAction::Back => {
-                            break;
-                        },
-                    }
+    graphics::set_background_color(ctx, [0.0, 0.0, 0.0, 0.0].into());
+    match run_reforge_client(ctx, font, asset_store, model_store) {
+        Err(e) => println!("Error: {}", e),
+        Ok(_) => println!("Reforge exited cleanly"),
+    }
+}
+
+fn run_reforge_client(
+    ctx: &mut Context, font: FontId,
+    asset_store: AssetStore, model_store: ModelStore)
+    -> GameResult<()>
+{
+    let mut main_menu = MainMenu::new(ctx).unwrap();
+    let mut login_screen = LoginScreen::new(ctx, font).unwrap();
+
+    loop {
+        match game_state::run(&mut (), ctx, &mut main_menu)? {
+            Some(MainMenuSelection::Multiplayer) => {
+                match game_state::run(&mut (), ctx, &mut login_screen)? {
+                    Some(LoginGuiAction::Login(username, password, ip_address)) => {
+                        // Connect to server
+                        let mut client = Client::new((ip_address+":30000").as_str());
+
+                        let mut packet = OutPacket::new();
+                        packet.write(&LoginPacket { username: username, password: password });
+                        client.send(&packet);
+                        
+                        let mut login_result_packet = client.receive();
+                        let login_result: Option<LoginError> = login_result_packet.read().unwrap();
+                        
+                        match login_result {
+                            Some(login_error) => {
+                                //login_screen.login_error = Some(login_error);
+                            },
+                            None => {
+                                // Receive the star map
+                                let mut packet = client.receive();
+                                let sectors: Vec<SectorData> =
+                                    packet.read().ok().expect("Failed to read star map");
+
+                                let mut gtx = ReforgeClientContext {
+                                    font, asset_store, model_store, client, sectors
+                                };
+
+                                run_client_state_manager(&mut gtx, ctx);
+                                break;
+                            },
+                        }
+                    },
+                    Some(LoginGuiAction::Back) => {
+                        // Go back to main menu
+                        break;
+                    },
+                    None => { },
                 }
-                
-                true
-            },
-            MainMenuSelection::Exit => { false },
+            }
+            Some(MainMenuSelection::Exit) => { break; }
+            _ => { break; },
         }
-    });
-    
-    sdl2_mixer::Music::halt();
-    sdl2_mixer::quit();
+    }
+
+    Ok(())
 }
