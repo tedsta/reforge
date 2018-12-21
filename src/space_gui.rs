@@ -365,7 +365,7 @@ impl SpaceGui {
             }
         }
         
-        /*if let Some(ref selection) = self.selection {
+        if let Some(ref selection) = self.selection {
             let &(selected_module, ref target_mode) = selection;
             
             let selected_module = selected_module.get(client_ship);
@@ -373,174 +373,199 @@ impl SpaceGui {
             // Highlight selected module
             {
                 let Vec2{x: module_x, y: module_y} = selected_module.get_render_position();
+                let module_x = module_x as f32;
+                let module_y = module_y as f32;
                 
-                let ctx = ctx.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
                 
                 for x in (0..selected_module.shape.side()) {
                     for y in (0..selected_module.shape.side()) {
                         if selected_module.shape.get(x, y) == b'#' {
-                            let offset_x = x as f64 * 48.0;
-                            let offset_y = y as f64 * 48.0;
+                            let offset_x = x as f32 * 48.0;
+                            let offset_y = y as f32 * 48.0;
                             if self.plans.module_plans(selected_module.index).active {
-                                Rectangle::new([0.0, 1.0, 0.0, 0.5])
-                                    .draw(
-                                        [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                        &ctx.draw_state, ctx.transform,
-                                        gl
-                                    );
+                                with_translate(
+                                    ctx, Point2::new(SHIP_OFFSET_X, SHIP_OFFSET_Y),
+                                    |ctx| -> GameResult<()> {
+                                        graphics::set_color(ctx, [0.0, 1.0, 0.0, 0.5].into())?;
+                                        graphics::rectangle(
+                                            ctx, DrawMode::Fill,
+                                            Rect::new(module_x + offset_x, module_y + offset_y, 48.0, 48.0))?;
+                                        graphics::set_color(ctx, [1.0; 4].into())?;
+                                        Ok(())
+                                    })?;
                             } else if self.plans.can_plan_activate_module(&client_ship.state, selected_module) {
-                                Rectangle::new([1.0, 1.0, 0.0, 0.5])
-                                    .draw(
-                                        [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                        &ctx.draw_state, ctx.transform,
-                                        gl
-                                    );
+                                with_translate(
+                                    ctx, Point2::new(SHIP_OFFSET_X, SHIP_OFFSET_Y),
+                                    |ctx| -> GameResult<()> {
+                                        graphics::set_color(ctx, [1.0, 1.0, 0.0, 0.5].into())?;
+                                        graphics::rectangle(
+                                            ctx, DrawMode::Fill,
+                                            Rect::new(module_x + offset_x, module_y + offset_y, 48.0, 48.0))?;
+                                        graphics::set_color(ctx, [1.0; 4].into())?;
+                                        Ok(())
+                                    })?;
                             }
                         }
                     }
                 }
             }
             
-            let x = self.mouse_pos.x - SHIP_OFFSET_X;
-            let y = self.mouse_pos.y - SHIP_OFFSET_Y;
+            let x = (self.mouse_pos.x as f32) - SHIP_OFFSET_X;
+            let y = (self.mouse_pos.y as f32) - SHIP_OFFSET_Y;
             
             // Draw beam targeting visual
             match target_mode {
                 &module::TargetMode::Beam(beam_length) => {
-                    let ctx = ctx.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
-                    
-                    if let Some(ship) = self.render_area.ship {
-                        let beam = self.beam_targeting_state.map(|beam_start| {
-                                let x = self.mouse_pos.x - self.render_area.x - ENEMY_OFFSET_X;
-                                let y = self.mouse_pos.y - self.render_area.y - ENEMY_OFFSET_Y;
-                                let beam_length = (beam_length as f64) * 48.0;
+                    with_translate(
+                        ctx, Point2::new(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y),
+                        |ctx| -> GameResult<()> {
+                            if let Some(ship) = self.render_area.ship {
+                                let beam = self.beam_targeting_state.map(|beam_start| {
+                                        let x = self.mouse_pos.x - ((self.render_area.x + ENEMY_OFFSET_X) as f64);
+                                        let y = self.mouse_pos.y - ((self.render_area.y + ENEMY_OFFSET_Y) as f64);
+                                        let beam_length = (beam_length as f64) * 48.0;
+                                        
+                                        let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
+                                        
+                                        (beam_start, beam_end)
+                                    });
                                 
-                                let beam_end = calculate_beam_end(beam_start, Vec2 { x: x, y: y }, beam_length);
+                                // Draw targeting circles
+                                ship.get(bc).beam_hits(beam, |_, circle_pos, radius, hit| {
+                                    let color =
+                                        if let Some(hit_dist) = hit {
+                                            [1.0, 0.0, 0.0, 0.5]
+                                        } else {
+                                            [0.0, 0.0, 1.0, 0.5]
+                                        };
+
+                                    graphics::set_color(ctx, color.into());
+                                    graphics::circle(
+                                        ctx, DrawMode::Fill, 
+                                        Point2::new(circle_pos.x as f32, circle_pos.y as f32), 
+                                        radius as f32,  20.0);
+                                    graphics::set_color(ctx, [1.0; 4].into());
+                                });
                                 
-                                (beam_start, beam_end)
-                            });
-                        
-                        // Draw targeting circles
-                        ship.get(bc).beam_hits(beam, |_, circle_pos, radius, hit| {
-                            let circle =
-                                if let Some(hit_dist) = hit {
-                                    Ellipse::new([1.0, 0.0, 0.0, 0.5])
-                                } else {
-                                    Ellipse::new([0.0, 0.0, 1.0, 0.5])
-                                };
-                            
-                            let size = radius * 2.0;
-                            
-                            circle.draw(
-                                [circle_pos.x - radius, circle_pos.y - radius, size, size],
-                                &ctx.draw_state, ctx.transform,
-                                gl
-                            );
+                                if let Some((beam_start, beam_end)) = beam {                            
+                                    graphics::set_color(ctx, [1.0, 0.0, 0.0, 1.0].into())?;
+                                    graphics::line(
+                                        ctx, &[
+                                            Point2::new(beam_start.x as f32, beam_start.y as f32),
+                                            Point2::new(beam_end.x as f32, beam_end.y as f32)
+                                        ], 2.0)?;
+                                    graphics::set_color(ctx, [1.0; 4].into())?;
+                                }
+                            }
+                            Ok(())
                         });
-                        
-                        if let Some((beam_start, beam_end)) = beam {
-                            Line::new([1.0, 0.0, 0.0, 1.0], 2.0)
-                                .draw(
-                                    [beam_start.x, beam_start.y, beam_end.x, beam_end.y],
-                                    &ctx.draw_state, ctx.transform,
-                                    gl
-                                );
-                        }
-                    }
                 },
                 &module::TargetMode::TargetModule => {
                     if let Some(ship) = self.render_area.ship {
                         // Highlight target modules the user mouses-over red
-                        let x = self.mouse_pos.x - self.render_area.x - ENEMY_OFFSET_X;
-                        let y = self.mouse_pos.y - self.render_area.y - ENEMY_OFFSET_Y;
+                        let x = (self.mouse_pos.x as f32) - self.render_area.x - ENEMY_OFFSET_X;
+                        let y = (self.mouse_pos.y as f32) - self.render_area.y - ENEMY_OFFSET_Y;
 
-                        apply_to_module_if_point_inside(ship.get(bc), x, y, |_, _, module| {
+                        if let Some(result) = apply_to_module_if_point_inside(ship.get(bc), x, y, |_, _, module| -> GameResult<()> {
                             let Vec2{x: module_x, y: module_y} = module.get_render_position();
-                            
-                            let ctx = ctx.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
-                            
-                            for x in (0..module.shape.side()) {
-                                for y in (0..module.shape.side()) {
-                                    if module.shape.get(x, y) == b'#' {
-                                        let offset_x = x as f64 * 48.0;
-                                        let offset_y = y as f64 * 48.0;
-                                        
-                                        Rectangle::new([1.0, 0.0, 0.0, 0.5])
-                                            .draw(
-                                                [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                                &ctx.draw_state, ctx.transform,
-                                                gl
-                                            );
+                            let module_x = module_x as f32;
+                            let module_y = module_y as f32;
+
+                            with_translate(
+                                ctx, Point2::new(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y),
+                                |ctx| -> GameResult<()> {
+                                    for x in (0..module.shape.side()) {
+                                        for y in (0..module.shape.side()) {
+                                            if module.shape.get(x, y) == b'#' {
+                                                let offset_x = x as f32 * 48.0;
+                                                let offset_y = y as f32 * 48.0;
+                                                
+                                                graphics::set_color(ctx, [1.0, 0.0, 0.0, 0.5].into())?;
+                                                graphics::rectangle(
+                                                    ctx, DrawMode::Fill,
+                                                    Rect::new(module_x + offset_x, module_y + offset_y, 48.0, 48.0))?;
+                                                graphics::set_color(ctx, [1.0; 4].into())?;
+                                            }
+                                        }
                                     }
-                                }
-                            }
-                        });
+                                    Ok(())
+                                })
+                        }) { result?; };
                     }
                 },
                 &module::TargetMode::OwnModule => {
                     // Highlight target modules the user mouses-over red
-                    let x = self.mouse_pos.x - SHIP_OFFSET_X;
-                    let y = self.mouse_pos.y - SHIP_OFFSET_Y;
+                    let x = (self.mouse_pos.x as f32) - SHIP_OFFSET_X;
+                    let y = (self.mouse_pos.y as f32) - SHIP_OFFSET_Y;
 
-                    apply_to_module_if_point_inside(client_ship, x, y, |_, _, module| {
+                    if let Some(result) = apply_to_module_if_point_inside(client_ship, x, y, |_, _, module| -> GameResult<()> {
                         let Vec2{x: module_x, y: module_y} = module.get_render_position();
+                        let module_x = module_x as f32;
+                        let module_y = module_y as f32;
                         
-                        let ctx = ctx.trans(self.render_area.x + ENEMY_OFFSET_X, self.render_area.y + ENEMY_OFFSET_Y);
-                            
-                        for x in (0..module.shape.side()) {
-                            for y in (0..module.shape.side()) {
-                                if module.shape.get(x, y) == b'#' {
-                                    let offset_x = x as f64 * 48.0;
-                                    let offset_y = y as f64 * 48.0;
-                                    
-                                    Rectangle::new([0.0, 1.0, 0.0, 0.5])
-                                        .draw(
-                                            [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                            &ctx.draw_state, ctx.transform,
-                                            gl
-                                        );
+                        with_translate(
+                            ctx, Point2::new(SHIP_OFFSET_X, SHIP_OFFSET_Y),
+                            |ctx| -> GameResult<()> {
+                                for x in (0..module.shape.side()) {
+                                    for y in (0..module.shape.side()) {
+                                        if module.shape.get(x, y) == b'#' {
+                                            let offset_x = x as f32 * 48.0;
+                                            let offset_y = y as f32 * 48.0;
+                                            
+                                            graphics::set_color(ctx, [0.0, 1.0, 0.0, 0.5].into())?;
+                                            graphics::rectangle(
+                                                ctx, DrawMode::Fill,
+                                                Rect::new(module_x + offset_x, module_y + offset_y, 48.0, 48.0))?;
+                                            graphics::set_color(ctx, [1.0; 4].into())?;
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                    });
+                                Ok(())
+                            })?;
+                        Ok(())
+                    }) { result?; }
                 },
                 _ => { },
             }
         } else {
             // If not currently selecting a module, highlight modules the user mouses-over
-            let x = self.mouse_pos.x - SHIP_OFFSET_X;
-            let y = self.mouse_pos.y - SHIP_OFFSET_Y;
+            let x = (self.mouse_pos.x as f32) - SHIP_OFFSET_X;
+            let y = (self.mouse_pos.y as f32) - SHIP_OFFSET_Y;
 
-            apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
+            if let Some(result) = apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| -> GameResult<()> {
                 let Vec2{x: module_x, y: module_y} = module.get_render_position();
-            
-                let ctx = ctx.trans(SHIP_OFFSET_X, SHIP_OFFSET_Y);
-                
-                for x in (0..module.shape.side()) {
-                    for y in (0..module.shape.side()) {
-                        if module.shape.get(x, y) == b'#' {
-                            let offset_x = x as f64 * 48.0;
-                            let offset_y = y as f64 * 48.0;
-                            if self.plans.module_plans(module.index).active {
-                                Rectangle::new([0.0, 0.0, 1.0, 0.5])
-                                    .draw(
-                                        [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                        &ctx.draw_state, ctx.transform,
-                                        gl
-                                    );
-                            } else if self.plans.can_plan_activate_module(ship_state, module) {
-                                Rectangle::new([1.0, 1.0, 0.0, 0.5])
-                                    .draw(
-                                        [module_x + offset_x, module_y + offset_y, 48.0, 48.0],
-                                        &ctx.draw_state, ctx.transform,
-                                        gl
-                                    );
+                let module_x = module_x as f32;
+                let module_y = module_y as f32;
+
+                with_translate(
+                    ctx, Point2::new(SHIP_OFFSET_X, SHIP_OFFSET_Y),
+                    |ctx| -> GameResult<()> {
+                        for x in (0..module.shape.side()) {
+                            for y in (0..module.shape.side()) {
+                                if module.shape.get(x, y) == b'#' {
+                                    let offset_x = x as f32 * 48.0;
+                                    let offset_y = y as f32 * 48.0;
+                                    if self.plans.module_plans(module.index).active {
+                                        graphics::set_color(ctx, [0.0, 0.0, 1.0, 0.5].into())?;
+                                        graphics::rectangle(
+                                            ctx, DrawMode::Fill,
+                                            Rect::new(module_x + offset_x, module_y + offset_y, 48.0, 48.0))?;
+                                        graphics::set_color(ctx, [1.0; 4].into())?;
+                                    } else if self.plans.can_plan_activate_module(ship_state, module) {
+                                        graphics::set_color(ctx, [1.0, 1.0, 0.0, 0.5].into())?;
+                                        graphics::rectangle(
+                                            ctx, DrawMode::Fill,
+                                            Rect::new(module_x + offset_x, module_y + offset_y, 48.0, 48.0))?;
+                                        graphics::set_color(ctx, [1.0; 4].into())?;
+                                    }
+                                }
                             }
                         }
-                    }
-                }
-            });
-        }*/
+                        Ok(())
+                    })?;
+                Ok(())
+            }) { result?; }
+        }
         
         self.chat_button.draw(ctx);
         self.star_map_button.draw(ctx);
@@ -582,8 +607,8 @@ impl SpaceGui {
     fn on_mouse_left_pressed(&mut self, bc: &BattleContext, mouse_pos: Vec2f, client_ship: &Ship) {
         // Handle module plan powering and selection
         if self.selection.is_none() {
-            let x = mouse_pos.x - (SHIP_OFFSET_X as f64);
-            let y = mouse_pos.y - (SHIP_OFFSET_Y as f64);
+            let x = (mouse_pos.x as f32) - SHIP_OFFSET_X;
+            let y = (mouse_pos.y as f32) - SHIP_OFFSET_Y;
             
             let mut exit_after = false;
             
@@ -614,8 +639,8 @@ impl SpaceGui {
 
             match *target_mode {
                 TargetMode::TargetModule => {
-                    let x = mouse_pos.x - ((self.render_area.x - ENEMY_OFFSET_X) as f64);
-                    let y = mouse_pos.y - ((self.render_area.y - ENEMY_OFFSET_Y) as f64);
+                    let x = (mouse_pos.x as f32) - (self.render_area.x + ENEMY_OFFSET_X);
+                    let y = (mouse_pos.y as f32) - (self.render_area.y + ENEMY_OFFSET_Y);
                     
                     if let Some(ship) = self.render_area.ship {
                         if !ship.get(bc).jumping && !ship.get(bc).exploding {
@@ -633,8 +658,8 @@ impl SpaceGui {
                     }
                 },
                 TargetMode::OwnModule => {
-                    let x = mouse_pos.x - (SHIP_OFFSET_X as f64);
-                    let y = mouse_pos.y - (SHIP_OFFSET_Y as f64);
+                    let x = (mouse_pos.x as f32) - SHIP_OFFSET_X;
+                    let y = (mouse_pos.y as f32) - SHIP_OFFSET_Y;
                     
                     let ref mut plans = self.plans;
                     
@@ -648,8 +673,8 @@ impl SpaceGui {
                     });
                 },
                 TargetMode::Beam(beam_length) => {
-                    let x = mouse_pos.x - ((self.render_area.x - ENEMY_OFFSET_X) as f64);
-                    let y = mouse_pos.y - ((self.render_area.y - ENEMY_OFFSET_Y) as f64);
+                    let x = mouse_pos.x - ((self.render_area.x + ENEMY_OFFSET_X) as f64);
+                    let y = mouse_pos.y - ((self.render_area.y + ENEMY_OFFSET_Y) as f64);
                     let beam_length = (beam_length as f64) * 48.0;
                     
                     if x >= 0.0 && y >= 0.0 {
@@ -710,8 +735,8 @@ impl SpaceGui {
         let mut module_was_deactivated = false;
     
         if self.selection.is_none() {
-            let x = mouse_pos.x - (SHIP_OFFSET_X as f64);
-            let y = mouse_pos.y - (SHIP_OFFSET_Y as f64);
+            let x = (mouse_pos.x as f32) - SHIP_OFFSET_X;
+            let y = (mouse_pos.y as f32) - SHIP_OFFSET_Y;
             
             apply_to_module_if_point_inside(client_ship, x, y, |_, ship_state, module| {
                 if module.get_power() > 0 && self.plans.module_plans(module.index).active {
@@ -768,9 +793,9 @@ impl SpaceGui {
 
 /// Applies function to a module in the ship if the mouse is over the module.
 /// Returns whether or not the function was applied.
-pub fn apply_to_module_if_point_inside<F>(ship: &Ship, x: f64, y: f64, mut f: F)
+pub fn apply_to_module_if_point_inside<F, T>(ship: &Ship, x: f32, y: f32, mut f: F) -> Option<T>
     where
-        F: FnMut(ShipIndex, &ShipState, &Module)
+        F: FnMut(ShipIndex, &ShipState, &Module) -> T
 {
     for module in ship.modules.iter() {
         for cx in (0..module.shape.side()) {
@@ -778,14 +803,16 @@ pub fn apply_to_module_if_point_inside<F>(ship: &Ship, x: f64, y: f64, mut f: F)
                 if module.shape.get(cx, cy) == b'#' {
                     // Get module position and size on screen
                     let Vec2{x: module_x, y: module_y} = module.get_render_position() + Vec2::new(cx as f64, cy as f64)*48.0;
+                    let module_x = module_x as f32;
+                    let module_y = module_y as f32;
                     if x >= module_x && x <= module_x+48.0 && y >= module_y && y <= module_y+48.0 {
-                        f(ship.index, &ship.state, module);
-                        return;
+                        return Some(f(ship.index, &ship.state, module));
                     }
                 }
             }
         }
     }
+    None
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

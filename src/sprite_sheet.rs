@@ -148,10 +148,13 @@ impl SpriteSheet {
         let src_x = ((self.current_frame % self.columns) as f32) * frame_w;
         let src_y = ((self.current_frame / self.columns) as f32) * frame_h;
 
+        let offset_x = (self.center.x as f32) / (self.frame_width as f32);
+        let offset_y = (self.center.y as f32) / (self.frame_height as f32);
+
         graphics::draw_ex(
             ctx, &*self.texture,
             DrawParam {
-                offset: Point2::new(self.center.x as f32, self.center.y as f32),
+                offset: Point2::new(offset_x, offset_y),
                 dest: Point2::new(x as f32, y as f32),
                 src: Rect::new(src_x, src_y, frame_w, frame_h),
 				rotation: rotation as f32,
