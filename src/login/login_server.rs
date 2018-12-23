@@ -57,8 +57,9 @@ pub fn run_login_server(model_store: Arc<ModelStore>,
                             // Log into the new account
                             if let Ok(mut account) = account_manager.login_account(username.clone(), password.clone(), client_id) {
                                 // Create ships
-                                let player_ship = ShipStored::from_ship(Ship::generate_dev(&*model_store, client_id as ShipId, username.clone()));
-                                
+                                //let player_ship = ShipStored::from_ship(Ship::generate_dev(&*model_store, client_id as ShipId, username.clone()));
+                                let player_ship = ShipStored::from_ship(Ship::new(client_id as ShipId, username.clone(), 1));
+
                                 account.ship = Some(player_ship);
                                 
                                 slot.transfer_client(

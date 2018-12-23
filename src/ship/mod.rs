@@ -613,46 +613,41 @@ impl Ship {
     #[cfg(feature = "client")]
     pub fn draw_module_hp(&self, ctx: &mut Context) {
         for (module, stats) in self.modules.iter().zip(self.state.module_stats.iter()) {
-            graphics::push_transform(ctx, Some(DrawParam {
-                dest: Point2::new((module.x as f32) * 48.0, (module.y as f32) * 48.0),
-                ..Default::default()
-            }.into_matrix()));
-            graphics::apply_transformations(ctx);
-            
-            for i in 0..module.get_min_hp() {
-                if i < stats.hp {
-                    // HP
-                    graphics::set_color(ctx, [0.0, 1.0, 0.0, 1.0].into());
-                    graphics::rectangle(
-                        ctx, DrawMode::Fill,
-                        Rect::new(0.0, 4.0 * (i as f32), 8.0, 2.0));
-                } else {
-                    // HP damaged
-                    graphics::set_color(ctx, [1.0, 0.0, 0.0, 0.5].into());
-                    graphics::rectangle(
-                        ctx, DrawMode::Fill,
-                        Rect::new(0.0, 4.0 * (i as f32), 8.0, 2.0));
-                }
-            }
-            
-            for i in module.get_min_hp()..stats.hp {
-                // Armor
-                graphics::set_color(ctx, [1.0, 1.0, 0.0, 1.0].into());
-                graphics::rectangle(
-                    ctx, DrawMode::Fill,
-                    Rect::new(0.0, 4.0 * (i as f32), 8.0, 2.0));
-            }
-            
-            for i in cmp::max(module.get_min_hp(), stats.hp)..module.get_max_hp() {
-                // Armor damaged
-                graphics::set_color(ctx, [1.0, 1.0, 0.0, 0.5].into());
-                graphics::rectangle(
-                    ctx, DrawMode::Fill,
-                    Rect::new(0.0, 4.0 * (i as f32), 8.0, 2.0));
-            }
-
-            graphics::pop_transform(ctx);
-            graphics::apply_transformations(ctx);
+            with_translate(
+                ctx, Point2::new((module.x as f32) * 48.0, (module.y as f32) * 48.0),
+                |ctx| -> () {
+                    for i in 0..module.get_min_hp() {
+                        if i < stats.hp {
+                            // HP
+                            graphics::set_color(ctx, [0.0, 1.0, 0.0, 1.0].into());
+                            graphics::rectangle(
+                                ctx, DrawMode::Fill,
+                                Rect::new(0.0, 4.0 * (i as f32), 8.0, 2.0));
+                        } else {
+                            // HP damaged
+                            graphics::set_color(ctx, [1.0, 0.0, 0.0, 0.5].into());
+                            graphics::rectangle(
+                                ctx, DrawMode::Fill,
+                                Rect::new(0.0, 4.0 * (i as f32), 8.0, 2.0));
+                        }
+                    }
+                    
+                    for i in module.get_min_hp()..stats.hp {
+                        // Armor
+                        graphics::set_color(ctx, [1.0, 1.0, 0.0, 1.0].into());
+                        graphics::rectangle(
+                            ctx, DrawMode::Fill,
+                            Rect::new(0.0, 4.0 * (i as f32), 8.0, 2.0));
+                    }
+                    
+                    for i in cmp::max(module.get_min_hp(), stats.hp)..module.get_max_hp() {
+                        // Armor damaged
+                        graphics::set_color(ctx, [1.0, 1.0, 0.0, 0.5].into());
+                        graphics::rectangle(
+                            ctx, DrawMode::Fill,
+                            Rect::new(0.0, 4.0 * (i as f32), 8.0, 2.0));
+                    }
+                });
         }
 
         // Reset color back to white

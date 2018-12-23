@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use battle_context::BattleContext;
 use module;
-use module::{IModule, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
+use module::{IModule, Model, ModelIndex, Module, ModuleClass, ModuleContext, ModuleShape, TargetManifest};
 use net::{InPacket, OutPacket};
 use ship::{Ship, ShipState};
 use sim::SimEvents;
@@ -16,13 +18,27 @@ use sprite_sheet::{SpriteSheet, SpriteAnimation};
 use asset_store::AssetStore;
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct CabinModule;
+pub struct CabinModule {
+    base_sprite: String,
+}
 
 impl CabinModule {
     pub fn new(model: ModelIndex) -> Module {
-        Module::new(model, ModuleShape::new(vec![vec![b'#', b'.', b'.'],
-                                                 vec![b'#', b'#', b'.'],
-                                                 vec![b'#', b'.', b'.']]), 0, 2, 4, CabinModule)
+        Module::new(
+            model,
+            ModuleShape::new(vec![
+                vec![b'#', b'.', b'.'],
+                vec![b'#', b'#', b'.'],
+                vec![b'#', b'.', b'.']]),
+            0, 2, 4, CabinModule { base_sprite: "cabin".to_owned() })
+    }
+
+    pub fn from_properties(model: &Model, prop: &HashMap<String, String>) -> Module {    
+        Module::from_model(model,
+            CabinModule {
+                base_sprite: prop[&"base".to_string()].clone(),
+            },
+        )
     }
 }
 
@@ -31,7 +47,7 @@ impl IModule for CabinModule {
 
     #[cfg(feature = "client")]
     fn add_plan_effects(&self, context: &ModuleContext, asset_store: &AssetStore, effects: &mut SimEffects) {
-        let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info_str("cabin"));
+        let mut command_sprite = SpriteSheet::new(asset_store.get_sprite_info_str(&self.base_sprite));
 
         if context.is_active {
             command_sprite.add_animation(SpriteAnimation::Loop(0.0, 7.0, 0, 7, 0.2));

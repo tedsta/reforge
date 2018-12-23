@@ -119,13 +119,11 @@ impl<'a> ClientBattleState<'a> {
             
             // Receive simulation results
             let mut new_ships_pre = self.new_ships_pre.take().expect("New ships pre packet must exist here");
-            //let mut results = self.results.take().expect("Results packet must exist here");
+            let mut results = self.results.take().expect("Results packet must exist here");
             let mut new_ships_post = self.new_ships_post.take().expect("New ships post packet must exist here");
             
             self.handle_new_ships_packet(&mut new_ships_pre);
-            if let Some(mut results) = self.results.take() {
-                self.handle_simulation_results(&mut results);
-            }
+            self.handle_simulation_results(&mut results);
             
             let continue_state = self.run_simulation_phase(gtx, ctx)?;
             
@@ -156,6 +154,7 @@ impl<'a> ClientBattleState<'a> {
 
         self.sim_events = SimEvents::new();
         self.plans_sent = false;
+        self.next_tick = 0;
 
         // Before simulation
         self.sim_effects.reset();
@@ -353,7 +352,7 @@ impl<'a> GameState for ClientBattleState<'a> {
         
         // Simulate any new ticks
         if self.next_tick < 100 {
-            for t in self.next_tick .. cmp::min(self.next_tick+tick-self.next_tick+1, 100) {
+            for t in self.next_tick .. cmp::min(tick+1, 100) {
                 self.sim_events.apply_tick(&mut self.bc, t);
             }
             self.next_tick = tick+1;

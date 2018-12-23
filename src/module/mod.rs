@@ -20,6 +20,7 @@ use sim::SimEffects;
 use asset_store::AssetStore;
 
 // Use+reexport all of the modules
+pub use self::dir_shield::DirShieldModule;
 pub use self::engine::EngineModule;
 pub use self::proj_weapon::ProjectileWeaponModule;
 pub use self::shield::ShieldModule;
@@ -34,6 +35,7 @@ pub use self::target::{Target, TargetMode, TargetData, TargetManifest, TargetMan
 pub use self::damage_visual::{DamageVisual, DamageVisualKind};
 pub use self::model::{Model, ModelIndex, ModelStore};
 
+pub mod dir_shield;
 pub mod engine;
 pub mod proj_weapon;
 pub mod shield;
@@ -591,6 +593,7 @@ pub type ModuleInnerBox = Box<IModule+'static>;
 pub enum ModuleClass {
     ProjectileWeapon,
     Shield,
+    DirShield,
     Engine,
     Solar,
     Command,
@@ -627,7 +630,14 @@ impl<'de> Deserialize<'de> for ModuleInnerBox {
                         seq.next_element::<ShieldModule>()?
                             .map(|x| Box::new(x) as Box<dyn IModule>)
                             .ok_or_else(|| {
-                                de::Error::custom("Failed to deserialize EngineModule")
+                                de::Error::custom("Failed to deserialize ShieldModule")
+                            })
+                    },
+                    DirShield => {
+                        seq.next_element::<DirShieldModule>()?
+                            .map(|x| Box::new(x) as Box<dyn IModule>)
+                            .ok_or_else(|| {
+                                de::Error::custom("Failed to deserialize DirShieldModule")
                             })
                     },
                     Engine => {
@@ -709,6 +719,10 @@ impl Serialize for ModuleInnerBox {
             Shield => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());
                 tup.serialize_element(mem::transmute::<_, &ShieldModule>(to.data))?;
+            },
+            DirShield => unsafe {
+                let to: raw::TraitObject = mem::transmute(self.deref());
+                tup.serialize_element(mem::transmute::<_, &DirShieldModule>(to.data))?;
             },
             Engine => unsafe {
                 let to: raw::TraitObject = mem::transmute(self.deref());

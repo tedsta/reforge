@@ -74,8 +74,8 @@ impl ShipEditGui {
 
     fn on_mouse_left_pressed(&mut self, gtx: &ReforgeClientContext, mouse_pos: Vec2f) -> Option<ShipEditAction> {
         for i in (0 .. self.inventory.len()) {
-            let category_offset = Vec2::new(5.0 + (i as f64 * 97.0), 35.0);
-            let label_width = 95.0;
+            let category_offset = Vec2::new(5.0 + (i as f64 * 60.0), 35.0);
+            let label_width = 58.0;
             let label_height = 24.0;
             
             if mouse_pos.x >= category_offset.x &&
@@ -138,13 +138,13 @@ impl ShipEditGui {
             let category_iter =
                 self.inventory.iter().zip(self.inventory_category_lbls.iter()).enumerate();
             for (cat_num, (&(ref category, ref modules), category_lbl)) in category_iter {
-                with_translate(ctx, Point2::new(cat_num as f32 * 97.0, 0.0), |ctx| -> GameResult<()> {
+                with_translate(ctx, Point2::new(cat_num as f32 * 60.0, 0.0), |ctx| -> GameResult<()> {
                     if cat_num == self.selected_category {
                         graphics::set_color(ctx, [1.0, 0.0, 0.0, 1.0].into())?;
                     } else {
                         graphics::set_color(ctx, [0.0, 1.0, 0.0, 1.0].into())?;
                     };
-                    graphics::rectangle(ctx, DrawMode::Fill, Rect::new(0.0, 0.0, 95.0, 24.0));
+                    graphics::rectangle(ctx, DrawMode::Fill, Rect::new(0.0, 0.0, 58.0, 24.0));
                     
                     // Category label
                     graphics::set_color(ctx, [1.0; 4].into())?;

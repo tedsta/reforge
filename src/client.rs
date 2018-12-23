@@ -89,7 +89,7 @@ fn main() {
     let mut font: FontId = Font::new_glyph_font(ctx, "/fonts/OCRAStd.ttf").unwrap().into();
     
     let asset_store = AssetStore::new(ctx).expect("Failed to load assets");
-    let model_store = ModelStore::new(ctx);
+    let model_store = Arc::new(ModelStore::new(ctx));
 
     //let music = sdl2_mixer::Music::from_file(&Path::new("content/audio/music/space.wav")).unwrap();
     //music.play(-1).ok().expect("Failed to play background music");
@@ -101,7 +101,7 @@ fn main() {
     let star_map_slot_id = star_map_slot.get_id();
     let (star_map_account_sender, star_map_account_receiver) = channel();
     let (logout_sender, logout_receiver) = channel();
-    let login_model_store = Arc::new(ModelStore::new(ctx));
+    let login_model_store = model_store.clone();
     let star_map_model_store = login_model_store.clone();
     
     thread::Builder::new().name("server_master".to_string()).spawn(move || {
@@ -128,7 +128,7 @@ fn main() {
 
 fn run_reforge_client(
     ctx: &mut Context, font: FontId,
-    asset_store: AssetStore, model_store: ModelStore)
+    asset_store: AssetStore, model_store: Arc<ModelStore>)
     -> GameResult<()>
 {
     let mut main_menu = MainMenu::new(ctx).unwrap();

@@ -15,6 +15,7 @@ use super::{
     EngineModule,
     ProjectileWeaponModule,
     ShieldModule,
+    DirShieldModule,
     SolarModule,
     CommandModule,
     CabinModule,
@@ -337,13 +338,18 @@ fn factory_from_properties(prop: &HashMap<String, String>)
                 })
             },
             "Cabin" => {
-                Box::new(move |_| {
-                    CabinModule::new(ModelIndex(7))
+                Box::new(move |model| {
+                    CabinModule::from_properties(model, &prop_cloned)
                 })
             },
             "Shield" => {
                 Box::new(move |_| {
                     ShieldModule::new(ModelIndex(3))
+                })
+            },
+            "DirShield" => {
+                Box::new(move |model| {
+                    DirShieldModule::from_properties(model, &prop_cloned)
                 })
             },
             "Solar" => {

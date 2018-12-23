@@ -328,11 +328,11 @@ impl SpaceGui {
         
         // Draw player ship
         with_translate(ctx, Point2::new(SHIP_OFFSET_X, SHIP_OFFSET_Y), |ctx| -> GameResult<()> {
-            draw_ship(gtx, ctx, sim_effects, client_ship, time);
-            client_ship.draw_module_powered_icons(ctx, &self.module_icons, &self.plans);
+            draw_ship(gtx, ctx, sim_effects, client_ship, time)?;
+            client_ship.draw_module_powered_icons(ctx, &self.module_icons, &self.plans)?;
             Ok(())
         })?;
-        draw_stats(ctx, &self.stats_labels, &self.plans, client_ship, true);
+        draw_stats(ctx, &self.stats_labels, &self.plans, client_ship, true)?;
     
         let mut enemy_alive = false;
         if let Some(ship) = self.render_area.ship {
